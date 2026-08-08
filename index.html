@@ -53,19 +53,20 @@
             </span>
         </div>
         
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2.5">
             <!-- SELETOR DE MÊS -->
-            <div class="flex items-center gap-1.5 bg-bg px-3 py-1.5 rounded-lg border border-line">
-                <i class="fa-solid fa-calendar text-xs text-secondary"></i>
-                <label for="monthSelect" class="text-xs text-secondary">Mês:</label>
-                <select id="monthSelect" onchange="changeMonthView(this.value)" class="bg-transparent text-white text-xs font-bold focus:outline-none"></select>
+            <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-blue-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
+                <i class="fa-solid fa-calendar-days text-xs text-blue-400"></i>
+                <label for="monthSelect" class="text-[11px] text-secondary font-medium">Mês:</label>
+                <select id="monthSelect" onchange="changeMonthView(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"></select>
+                <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             </div>
 
             <!-- SELETOR DE PERÍODO / SEMANA -->
-            <div class="flex items-center gap-1.5 bg-bg px-3 py-1.5 rounded-lg border border-line">
-                <i class="fa-solid fa-filter text-xs text-blue-500"></i>
-                <label for="periodSelect" class="text-xs text-secondary">Visão:</label>
-                <select id="periodSelect" onchange="changePeriodView(this.value)" class="bg-transparent text-white text-xs font-bold focus:outline-none">
+            <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-blue-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
+                <i class="fa-solid fa-filter text-xs text-blue-400"></i>
+                <label for="periodSelect" class="text-[11px] text-secondary font-medium">Visão:</label>
+                <select id="periodSelect" onchange="changePeriodView(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
                     <option value="ALL">Acumulado do Mês</option>
                     <option value="Semana 1">Semana 1</option>
                     <option value="Semana 2">Semana 2</option>
@@ -73,30 +74,42 @@
                     <option value="Semana 4">Semana 4</option>
                     <option value="Semana 5">Semana 5</option>
                 </select>
+                <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             </div>
 
             <!-- SELEÇÃO DEPARTAMENTO E ANALISTA -->
-            <div class="flex items-center gap-2 bg-surface2/50 p-1 rounded-lg border border-line">
-                <div class="flex items-center gap-1 px-2">
-                    <i class="fa-solid fa-users text-xs text-blue-500"></i>
-                    <select id="teamSelect" onchange="onTeamSelectChange(this.value)" class="bg-surface text-white text-xs font-semibold rounded px-2 py-1 border border-line focus:outline-none">
+            <div class="flex items-center bg-surface2/60 hover:bg-surface2 border border-line hover:border-blue-500/40 rounded-full transition-all duration-200 overflow-hidden">
+                <div class="relative flex items-center gap-1.5 pl-3.5 pr-6 py-2">
+                    <i id="teamSelectIcon" class="fa-solid fa-desktop text-xs text-blue-400 transition-colors duration-200"></i>
+                    <select id="teamSelect" onchange="onTeamSelectChange(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
                         <option value="Sistema">Dep. Sistema</option>
                         <option value="Catraca">Dep. Catraca</option>
                     </select>
+                    <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                 </div>
 
-                <div class="flex items-center gap-1 px-2 border-l border-line">
-                    <label for="userSelect" class="text-xs text-secondary">Usuário:</label>
-                    <select id="userSelect" onchange="switchAgent(this.value)" class="bg-surface text-white text-xs font-semibold rounded px-2 py-1 border border-line focus:outline-none"></select>
+                <div class="relative flex items-center gap-1.5 pl-3.5 pr-6 py-2 border-l border-line">
+                    <label for="userSelect" class="text-[11px] text-secondary font-medium">Usuário:</label>
+                    <select id="userSelect" onchange="switchAgent(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"></select>
+                    <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                 </div>
             </div>
 
+            <!-- BOTÃO ENVIO/COLETA DE PEÇAS -->
+            <button id="btnPecaAccess" onclick="openPecaModal()" class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5">
+                <i class="fa-solid fa-box"></i> Envio/Coleta
+            </button>
+
+            <button id="btnPecaLogout" onclick="logoutPeca()" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5">
+                <i class="fa-solid fa-right-from-bracket me-1"></i> Sair Envio/Coleta
+            </button>
+
             <!-- BOTÃO MODO ADM -->
-            <button id="btnAdminAccess" onclick="openAdminModal()" class="bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+            <button id="btnAdminAccess" onclick="openAdminModal()" class="bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5">
                 <i class="fa-solid fa-lock"></i> Modo Gestão
             </button>
 
-            <button id="btnAdminLogout" onclick="logoutAdmin()" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+            <button id="btnAdminLogout" onclick="logoutAdmin()" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5">
                 <i class="fa-solid fa-right-from-bracket me-1"></i> Sair do Modo ADM
             </button>
         </div>
@@ -202,10 +215,72 @@
                     </div>
                 </div>
             </div>
+
+            <!-- CADASTRO DE TRANSFERÊNCIA PELO ANALISTA -->
+            <div class="bg-surface border border-line rounded-xl p-6">
+                <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-right-left text-blue-400"></i> Registrar Protocolo de Transferência</h3>
+                <p class="text-xs text-secondary mb-4">Envie o protocolo e a justificativa para validação da gestão. Após aprovado, <strong class="text-emerald-400">1 ponto</strong> é creditado automaticamente.</p>
+                <form onsubmit="submitTransferRequest(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="md:col-span-1">
+                        <label class="block text-xs text-secondary mb-1">Nº do Protocolo</label>
+                        <input type="text" id="transferProtocolo" placeholder="Ex: 202608-1234" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-secondary mb-1">Justificativa</label>
+                        <input type="text" id="transferJustificativa" placeholder="Explique o motivo da transferência" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm transition">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Enviar para Validação
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-5">
+                    <h4 class="text-xs font-bold text-secondary uppercase mb-2">Minhas Transferências Enviadas</h4>
+                    <div class="overflow-x-auto max-h-44 overflow-y-auto">
+                        <table class="w-full text-left text-xs text-secondary">
+                            <thead class="bg-bg sticky top-0 uppercase text-[10px]">
+                                <tr>
+                                    <th class="p-2">Protocolo</th>
+                                    <th class="p-2">Justificativa</th>
+                                    <th class="p-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="myTransferRequestsTable" class="divide-y divide-line/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- VISÃO RANKING GERAL -->
         <div id="viewRanking" class="hidden space-y-6">
+            <!-- PÓDIO / DASH TOP 3 POR DEPARTAMENTO -->
+            <div class="relative bg-surface border border-line rounded-2xl p-6 overflow-hidden">
+                <div class="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-accent/10 rounded-full blur-3xl"></div>
+                <div class="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+                <div class="relative flex items-center justify-between flex-wrap gap-2 mb-1">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-accent"></i> Pódio Geral por Departamento
+                    </h3>
+                    <span class="text-[10px] bg-surface2 text-secondary px-2.5 py-1 rounded-full font-semibold border border-line flex items-center gap-1">
+                        <i class="fa-solid fa-arrows-rotate"></i> Atualizado em tempo real
+                    </span>
+                </div>
+                <p class="text-xs text-secondary mb-6 relative">Top 3 colocados de cada departamento com pontuação geral e valor de premiação.</p>
+                <div class="relative grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-xs font-bold text-blue-400 uppercase mb-4 flex items-center gap-1.5"><i class="fa-solid fa-desktop"></i> Dep. Sistema</h4>
+                        <div id="podiumSistema" class="grid grid-cols-3 gap-2 sm:gap-4 items-end"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-emerald-400 uppercase mb-4 flex items-center gap-1.5"><i class="fa-solid fa-turnstile"></i> Dep. Catraca</h4>
+                        <div id="podiumCatraca" class="grid grid-cols-3 gap-2 sm:gap-4 items-end"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- LEADERBOARD -->
             <div class="bg-surface border border-line rounded-xl p-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -236,8 +311,9 @@
                                 <th class="p-3 text-center">Resolvidos</th>
                                 <th class="p-3 text-center">Atendidos</th>
                                 <th class="p-3 text-center">NPS</th>
-                                <th class="p-3 text-center">Prioridades</th>
+                                <th class="p-3 text-center">Prior./Transf.</th>
                                 <th class="p-3 text-center">Sprint</th>
+                                <th class="p-3 text-center" title="Bônus por 1º/2º/3º lugar na semana (resolvidos, atendidos e taxa de recuperação)">Rank. Semanal</th>
                                 <th class="p-3 text-center" id="thExtraCol">Monit. / Peças</th>
                                 <th class="p-3 text-center text-red-400">Penal.</th>
                                 <th class="p-3 text-right">Total</th>
@@ -271,7 +347,7 @@
                     </button>
                 </div>
 
-                <div id="faqContentSistema" class="space-y-6 text-sm text-secondary">
+                <div id="faqContentSistema" class="space-y-4 text-sm text-secondary">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-blue-400 mb-2">🕐 Tempo Médio de Atendimento (TMA)</h4>
@@ -281,59 +357,306 @@
                                 <li>• 1h51 a 2h00 ➔ <strong>10 pts</strong></li>
                                 <li>• Acima de 2h00 ➔ <strong>0 pts</strong></li>
                             </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: considera o tempo total do atendimento, da abertura ao encerramento — quanto mais rápido, melhor o TMA.</p>
                         </div>
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-blue-400 mb-2">🏆 Ranking Protocolos Resolvidos</h4>
+                            <h4 class="font-bold text-blue-400 mb-2">🏆 Ranking Semanal – Protocolos Resolvidos</h4>
                             <ul class="text-xs space-y-1 text-secondary">
-                                <li>🥇 1º Lugar ➔ <strong>100 pts</strong></li>
-                                <li>🥈 2º Lugar ➔ <strong>50 pts</strong></li>
-                                <li>🥉 3º Lugar ➔ <strong>10 pts</strong></li>
-                                <li>🎖️ 4º em diante ➔ <strong>0 pts</strong></li>
+                                <li>🥇 Maior número resolvido ➔ <strong>100 pts</strong></li>
+                                <li>🥈 Segundo maior número ➔ <strong>50 pts</strong></li>
+                                <li>🥉 Terceiro maior número ➔ <strong>10 pts</strong></li>
+                                <li>🎖️ 4º colocado em diante ➔ <strong>0 pts</strong></li>
                             </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: baseado no volume de protocolos efetivamente resolvidos no período avaliado.</p>
                         </div>
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-blue-400 mb-2">📊 Protocolos Atendidos (Esforço)</h4>
                             <ul class="text-xs space-y-1 text-secondary">
-                                <li>• 101 a 120 protocolos ➔ <strong>100 pts</strong> (+1 pt adicional por protocolo > 120)</li>
+                                <li>• 101 a 120 protocolos ➔ <strong>100 pts</strong> <span class="text-secondary/70">(+1 pt adicional por protocolo acima de 120)</span></li>
                                 <li>• 91 a 100 protocolos ➔ <strong>50 pts</strong></li>
                                 <li>• 81 a 90 protocolos ➔ <strong>10 pts</strong></li>
-                                <li>• Abaixo de 80 ➔ <strong>0 pts</strong></li>
+                                <li>• Abaixo de 80 protocolos ➔ <strong>0 pts</strong></li>
                             </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: pontuação conforme o volume total de protocolos atendidos no período avaliado.</p>
                         </div>
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-blue-400 mb-2">⭐ Avaliação de Satisfação (NPS)</h4>
+                            <h4 class="font-bold text-blue-400 mb-2">⭐ Avaliação de Satisfação</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Nota 4.90 a 5.00 ➔ <strong>100 pts</strong></li>
                                 <li>• Nota 4.70 a 4.89 ➔ <strong>50 pts</strong></li>
                                 <li>• Nota 4.50 a 4.69 ➔ <strong>25 pts</strong></li>
                                 <li>• Nota 4.00 a 4.49 ➔ <strong>10 pts</strong></li>
+                                <li>• Abaixo de 4.00 ➔ <strong>0 pts</strong></li>
                             </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: pontuação baseada na média das notas recebidas no período avaliado.</p>
+                        </div>
+                        <div class="bg-bg/60 p-4 rounded-lg border border-line md:col-span-2">
+                            <h4 class="font-bold text-blue-400 mb-2">🚨 Atendimentos Prioritários da Gestão</h4>
+                            <ul class="text-xs space-y-1 text-secondary">
+                                <li>• Cada demanda prioritária resolvida ➔ <strong>+50 pts cada</strong></li>
+                            </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: resolução e retorno efetivo da demanda atribuída pela gestão.</p>
+                        </div>
+                    </div>
+
+                    <!-- SPRINT SEMANAL DE CRESCIMENTO -->
+                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <h4 class="font-bold text-blue-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-rocket"></i> 🚀 Sprint Semanal de Crescimento do Produto</h4>
+                        <p class="text-[11px] text-secondary/80 mb-3">Objetivo: promover o crescimento da utilização do sistema por meio de ações proativas junto aos clientes definidos para cada Sprint.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h5 class="text-[11px] font-bold text-white uppercase mb-1.5">Pontuação por Resultado</h5>
+                                <ul class="text-xs space-y-1 text-secondary">
+                                    <li>• Cliente recuperado (ganho) ➔ <strong class="text-emerald-400">+50 pts</strong></li>
+                                    <li>• Conclusão de 100% da Sprint, cumprindo todas as regras ➔ <strong class="text-emerald-400">+100 pts</strong></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h5 class="text-[11px] font-bold text-white uppercase mb-1.5">Ranking Semanal (Taxa de Recuperação)</h5>
+                                <ul class="text-xs space-y-1 text-secondary">
+                                    <li>🥇 1º Lugar ➔ <strong>100 pts</strong></li>
+                                    <li>🥈 2º Lugar ➔ <strong>50 pts</strong></li>
+                                    <li>🥉 3º Lugar ➔ <strong>25 pts</strong></li>
+                                    <li>🎖️ 4º colocado em diante ➔ <strong>0 pts</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-3 bg-surface2/70 border border-line rounded-lg px-3 py-2 text-[11px] text-secondary flex items-center gap-2">
+                            <i class="fa-solid fa-calculator text-blue-400"></i>
+                            <span>Fórmula: <strong class="text-white">Taxa de Recuperação (%) = (Clientes Recuperados ÷ Clientes Trabalhados na Sprint) × 100</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-red-500/5 p-4 rounded-lg border border-red-500/20">
+                            <h4 class="font-bold text-red-400 mb-2">⚠ Penalidades da Sprint</h4>
+                            <table class="w-full text-[11px] text-secondary">
+                                <tbody class="divide-y divide-line/40">
+                                    <tr><td class="py-1.5 pr-2">Não concluir a Sprint Semanal</td><td class="py-1.5 text-right font-bold text-red-400">-300 pts</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Não cumprir as regras de contato estabelecidas</td><td class="py-1.5 text-right font-bold text-red-400">-50 pts / ocorrência</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Manipular registros, informações ou indicadores</td><td class="py-1.5 text-right font-bold text-red-400">Desclassificação</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-blue-400 mb-2">⭐ Prioridades Validadas</h4>
-                            <ul class="text-xs space-y-1 text-secondary">
-                                <li>• Registre o protocolo e a justificativa na aba do Dashboard</li>
-                                <li>• Após aprovação da gestão ➔ <strong>+50 pts cada</strong></li>
+                            <h4 class="font-bold text-blue-400 mb-2">📋 Regras Gerais da Sprint</h4>
+                            <ul class="text-[11px] space-y-1 text-secondary list-disc list-inside">
+                                <li>Cada cliente recuperado contabiliza 50 pontos, independente da classificação de risco.</li>
+                                <li>Clientes sem retorno devem receber até 3 tentativas de contato durante a semana.</li>
+                                <li>O ranking semanal é calculado pela Taxa de Recuperação, garantindo equilíbrio entre carteiras de tamanhos diferentes.</li>
+                                <li>Todos os contatos devem ser registrados no CRM com os status do funil e comentários padronizados da Sprint.</li>
+                                <li>Auditorias podem ser realizadas a qualquer momento.</li>
                             </ul>
+                        </div>
+                    </div>
+
+                    <!-- MONITORAMENTO -->
+                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <h4 class="font-bold text-blue-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-magnifying-glass-chart"></i> 🎯 Monitoramento (até 100 pts totais)</h4>
+                        <p class="text-[11px] text-secondary/80 mb-3">Avaliação qualitativa do atendimento, dividida em 5 blocos de 20 pontos cada.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">1️⃣ Tempo e Agilidade <span class="text-blue-400">(20 pts)</span></p>
+                                <ul class="text-[10px] text-secondary space-y-0.5">
+                                    <li>TPR – Tempo de resposta ➔ 10 pts</li>
+                                    <li>TMA – Encerramento apropriado ➔ 10 pts</li>
+                                </ul>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">2️⃣ Comunicação e Clareza <span class="text-blue-400">(20 pts)</span></p>
+                                <ul class="text-[10px] text-secondary space-y-0.5">
+                                    <li>CVC – Clareza, vocabulário e coesão ➔ 10 pts</li>
+                                    <li>CEE – Cordialidade, empatia e engajamento ➔ 10 pts</li>
+                                </ul>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">3️⃣ Qualidade da Resolução <span class="text-blue-400">(20 pts)</span></p>
+                                <ul class="text-[10px] text-secondary space-y-0.5">
+                                    <li>ERS – Resolução sem reabertura ➔ 10 pts</li>
+                                    <li>IPC – Informação precisa e completa ➔ 10 pts</li>
+                                </ul>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">4️⃣ Experiência do Cliente <span class="text-blue-400">(20 pts)</span></p>
+                                <ul class="text-[10px] text-secondary space-y-0.5">
+                                    <li>PAC – Proatividade no atendimento ➔ 10 pts</li>
+                                    <li>TCS – Satisfação nota 4 ou 5 ➔ 10 pts</li>
+                                </ul>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">5️⃣ Encerramento e Feedback <span class="text-blue-400">(20 pts)</span></p>
+                                <ul class="text-[10px] text-secondary space-y-0.5">
+                                    <li>CRS – Confirmação de resolução ➔ 5 pts</li>
+                                    <li>LAU – Laudo de atendimento ➔ 5 pts</li>
+                                    <li>IRF – Incentivo ao retorno/feedback ➔ 5 pts</li>
+                                    <li>DPF – Despedida profissional ➔ 5 pts</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PENALIZAÇÕES -->
+                    <div class="bg-red-500/5 p-4 rounded-lg border border-red-500/20">
+                        <h4 class="font-bold text-red-400 mb-2 flex items-center gap-1.5">⚠️ Penalizações e Perdas de Pontos</h4>
+                        <p class="text-[11px] text-secondary/80 mb-3">Aplicadas conforme descumprimento de processos, conduta profissional e impacto na operação.</p>
+                        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-[11px] text-secondary">
+                            <li class="flex justify-between gap-2"><span>Transferência de ticket sem resolução no fim do expediente</span><strong class="text-red-400 whitespace-nowrap">-50 pts</strong></li>
+                            <li class="flex justify-between gap-2"><span>Falta de documentação / laudo obrigatório</span><strong class="text-red-400 whitespace-nowrap">-50 pts</strong></li>
+                            <li class="flex justify-between gap-2"><span>Telefone 3CX desligado durante o expediente</span><strong class="text-red-400 whitespace-nowrap">-50 pts</strong></li>
+                            <li class="flex justify-between gap-2"><span>Não seguimento dos processos estabelecidos</span><strong class="text-red-400 whitespace-nowrap text-right">Exclusão da pontuação mensal</strong></li>
+                            <li class="flex justify-between gap-2"><span>Tentativas de burlar o processo</span><strong class="text-red-400 whitespace-nowrap text-right">Não participação na semana</strong></li>
+                            <li class="flex justify-between gap-2"><span>Falta de pontualidade / ausência sem aviso</span><strong class="text-red-400 whitespace-nowrap">-100 pts</strong></li>
+                            <li class="flex justify-between gap-2"><span>Pausas ou atrasos irregulares no expediente</span><strong class="text-red-400 whitespace-nowrap">-50 pts</strong></li>
+                            <li class="flex justify-between gap-2"><span>Faltas injustificadas (2 ou mais na semana)</span><strong class="text-red-400 whitespace-nowrap text-right">Não participação na semana</strong></li>
+                            <li class="flex justify-between gap-2"><span>Volume acumulado por descuido operacional</span><strong class="text-red-400 whitespace-nowrap">-10 pts</strong></li>
+                            <li class="flex justify-between gap-2"><span>Reclamações pós-atendimento / retrabalho</span><strong class="text-red-400 whitespace-nowrap">-50 pts</strong></li>
+                            <li class="flex justify-between gap-2"><span>Uso indevido de celular / sites não relacionados</span><strong class="text-red-400 whitespace-nowrap">-100 pts</strong></li>
+                        </ul>
+                    </div>
+
+                    <!-- RANKING E PREMIAÇÃO -->
+                    <div class="bg-gradient-to-r from-amber-500/10 via-surface2/60 to-surface2/60 p-4 rounded-lg border border-amber-500/20">
+                        <h4 class="font-bold text-amber-400 mb-2">🏆 Ranking e Premiação</h4>
+                        <p class="text-[11px] text-secondary/80 mb-3">Classificação com base na pontuação final consolidada no período avaliado (soma das métricas qualitativas, operacionais e penalizações).</p>
+                        <div class="grid grid-cols-3 gap-3 text-center">
+                            <div class="bg-bg/60 rounded-lg p-3 border border-line"><p class="text-lg">🥇</p><p class="text-[11px] text-secondary">Top 1</p><p class="font-extrabold text-emerald-400 text-sm">R$ 1.000,00</p></div>
+                            <div class="bg-bg/60 rounded-lg p-3 border border-line"><p class="text-lg">🥈</p><p class="text-[11px] text-secondary">Top 2</p><p class="font-extrabold text-emerald-400 text-sm">R$ 500,00</p></div>
+                            <div class="bg-bg/60 rounded-lg p-3 border border-line"><p class="text-lg">🥉</p><p class="text-[11px] text-secondary">Top 3</p><p class="font-extrabold text-emerald-400 text-sm">R$ 300,00</p></div>
                         </div>
                     </div>
                 </div>
 
-                <div id="faqContentCatraca" class="hidden space-y-6 text-sm text-secondary">
+                <div id="faqContentCatraca" class="hidden space-y-4 text-sm text-secondary">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-emerald-400 mb-2">📑 Protocolos Resolvidos & Atendidos</h4>
+                            <h4 class="font-bold text-emerald-400 mb-2">⭐ Avaliação de Satisfação</h4>
                             <ul class="text-xs space-y-1 text-secondary">
-                                <li>• Cada protocolo resolvido ➔ <strong>+2 pts</strong></li>
-                                <li>• Cada protocolo atendido (esforço) ➔ <strong>+0.5 pt</strong></li>
+                                <li>• Média 4,90 a 5,00 ➔ <strong>100 pts</strong></li>
+                                <li>• Média 4,70 a 4,89 ➔ <strong>50 pts</strong></li>
+                                <li>• Média 4,50 a 4,69 ➔ <strong>25 pts</strong></li>
+                                <li>• Média 4,00 a 4,49 ➔ <strong>10 pts</strong></li>
+                                <li>• Abaixo de 4,00 ➔ <strong>0 pts</strong></li>
                             </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: calculada com base na média das avaliações recebidas no período (avaliação do cliente na plataforma de atendimento).</p>
                         </div>
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-emerald-400 mb-2">🔧 Peças & Prioridades</h4>
+                            <h4 class="font-bold text-emerald-400 mb-2">📑 Protocolos Resolvidos</h4>
                             <ul class="text-xs space-y-1 text-secondary">
-                                <li>• Registre o protocolo e a justificativa na aba do Dashboard; após aprovação da gestão ➔ <strong>+50 pts cada</strong></li>
-                                <li>• Peças & Despachos: até <strong>100 pts</strong></li>
+                                <li>• Cada protocolo efetivamente resolvido ➔ <strong>+2 pts</strong></li>
                             </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: será considerado apenas o protocolo encerrado com solução efetiva.</p>
+                        </div>
+                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                            <h4 class="font-bold text-emerald-400 mb-2">🏆 Ranking Semanal – Protocolos Resolvidos</h4>
+                            <ul class="text-xs space-y-1 text-secondary">
+                                <li>🥇 1º Lugar ➔ <strong>100 pts</strong></li>
+                                <li>🥈 2º Lugar ➔ <strong>50 pts</strong></li>
+                                <li>🥉 3º Lugar ➔ <strong>10 pts</strong></li>
+                                <li>🎖️ 4º colocado em diante ➔ <strong>0 pts</strong></li>
+                            </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: ranking baseado no maior número de protocolos efetivamente resolvidos durante a semana.</p>
+                        </div>
+                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                            <h4 class="font-bold text-emerald-400 mb-2">📊 Protocolos Atendidos (Esforço Operacional)</h4>
+                            <ul class="text-xs space-y-1 text-secondary">
+                                <li>• Cada protocolo atendido ➔ <strong>+0,5 pt</strong></li>
+                            </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Objetivo: valorizar o esforço operacional realizado pelos analistas.</p>
+                        </div>
+                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                            <h4 class="font-bold text-emerald-400 mb-2">🏆 Ranking Semanal – Protocolos Atendidos</h4>
+                            <ul class="text-xs space-y-1 text-secondary">
+                                <li>🥇 1º Lugar ➔ <strong>100 pts</strong></li>
+                                <li>🥈 2º Lugar ➔ <strong>50 pts</strong></li>
+                                <li>🥉 3º Lugar ➔ <strong>10 pts</strong></li>
+                                <li>🎖️ 4º colocado em diante ➔ <strong>0 pts</strong></li>
+                            </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: ranking baseado no maior volume de protocolos atendidos durante a semana.</p>
+                        </div>
+                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                            <h4 class="font-bold text-emerald-400 mb-2">🚨 Atendimentos Prioritários da Gestão</h4>
+                            <ul class="text-xs space-y-1 text-secondary">
+                                <li>• Demanda prioritária concluída com sucesso ➔ <strong>+50 pts</strong></li>
+                            </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: a demanda deve ser atribuída pela gestão, concluída e validada.</p>
+                        </div>
+                    </div>
+
+                    <!-- SPRINT SEMANAL DE CRESCIMENTO -->
+                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <h4 class="font-bold text-emerald-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-rocket"></i> 🚀 Sprint Semanal de Crescimento do Produto</h4>
+                        <p class="text-[11px] text-secondary/80 mb-3">Objetivo: promover o crescimento da utilização do sistema por meio de ações proativas junto aos clientes definidos para cada Sprint.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h5 class="text-[11px] font-bold text-white uppercase mb-1.5">Pontuação por Resultado</h5>
+                                <ul class="text-xs space-y-1 text-secondary">
+                                    <li>• Cliente recuperado/ganho ➔ <strong class="text-emerald-400">+50 pts</strong></li>
+                                    <li>• Conclusão de 100% da Sprint, cumprindo todas as regras ➔ <strong class="text-emerald-400">+100 pts</strong></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h5 class="text-[11px] font-bold text-white uppercase mb-1.5">Ranking Semanal (Taxa de Recuperação)</h5>
+                                <ul class="text-xs space-y-1 text-secondary">
+                                    <li>🥇 1º Lugar ➔ <strong>100 pts</strong></li>
+                                    <li>🥈 2º Lugar ➔ <strong>50 pts</strong></li>
+                                    <li>🥉 3º Lugar ➔ <strong>25 pts</strong></li>
+                                    <li>🎖️ 4º colocado em diante ➔ <strong>0 pts</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-3 bg-surface2/70 border border-line rounded-lg px-3 py-2 text-[11px] text-secondary flex items-center gap-2">
+                            <i class="fa-solid fa-calculator text-emerald-400"></i>
+                            <span>Fórmula: <strong class="text-white">Taxa de Recuperação (%) = (Clientes Recuperados ÷ Clientes Trabalhados na Sprint) × 100</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-red-500/5 p-4 rounded-lg border border-red-500/20">
+                            <h4 class="font-bold text-red-400 mb-2">⚠ Penalidades da Sprint</h4>
+                            <table class="w-full text-[11px] text-secondary">
+                                <tbody class="divide-y divide-line/40">
+                                    <tr><td class="py-1.5 pr-2">Não concluir a Sprint Semanal</td><td class="py-1.5 text-right font-bold text-red-400">-300 pts</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Não cumprir as regras de contato estabelecidas</td><td class="py-1.5 text-right font-bold text-red-400">-50 pts / ocorrência</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Manipular registros, informações ou indicadores</td><td class="py-1.5 text-right font-bold text-red-400">Desclassificação</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                            <h4 class="font-bold text-emerald-400 mb-2">📋 Regras Gerais da Sprint</h4>
+                            <ul class="text-[11px] space-y-1 text-secondary list-disc list-inside">
+                                <li>Cada cliente recuperado contabiliza 50 pontos, independente da classificação de risco.</li>
+                                <li>Clientes sem retorno devem receber até 3 tentativas de contato durante a semana.</li>
+                                <li>O ranking semanal é calculado pela Taxa de Recuperação, garantindo equilíbrio entre carteiras de tamanhos diferentes.</li>
+                                <li>Todos os contatos devem ser registrados no CRM com os status do funil e comentários padronizados da Sprint.</li>
+                                <li>Auditorias podem ser realizadas a qualquer momento.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- PEÇAS E DESPACHOS -->
+                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <h4 class="font-bold text-emerald-300 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-box"></i> 🔧 Pontuação – Peças e Despachos</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60 flex items-center justify-between">
+                                <span class="text-xs font-semibold text-white">📥 Coleta</span>
+                                <span class="text-xs font-bold text-emerald-400">4 etapas pontuáveis</span>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60 flex items-center justify-between">
+                                <span class="text-xs font-semibold text-white">📤 Envio</span>
+                                <span class="text-xs font-bold text-emerald-400">3 etapas pontuáveis</span>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-secondary/70 mt-3 italic">As etapas seguem os mesmos critérios de validação, conferência e auditoria adotados para as demais métricas do programa.</p>
+                    </div>
+
+                    <!-- RANKING E PREMIAÇÃO -->
+                    <div class="bg-gradient-to-r from-amber-500/10 via-surface2/60 to-surface2/60 p-4 rounded-lg border border-amber-500/20">
+                        <h4 class="font-bold text-amber-400 mb-2">🏆 Ranking e Premiação</h4>
+                        <p class="text-[11px] text-secondary/80 mb-3">Classificação com base na pontuação final consolidada no período avaliado (soma das métricas qualitativas, operacionais e penalizações).</p>
+                        <div class="grid grid-cols-3 gap-3 text-center">
+                            <div class="bg-bg/60 rounded-lg p-3 border border-line"><p class="text-lg">🥇</p><p class="text-[11px] text-secondary">Top 1</p><p class="font-extrabold text-emerald-400 text-sm">R$ 1.000,00</p></div>
+                            <div class="bg-bg/60 rounded-lg p-3 border border-line"><p class="text-lg">🥈</p><p class="text-[11px] text-secondary">Top 2</p><p class="font-extrabold text-emerald-400 text-sm">R$ 500,00</p></div>
+                            <div class="bg-bg/60 rounded-lg p-3 border border-line"><p class="text-lg">🥉</p><p class="text-[11px] text-secondary">Top 3</p><p class="font-extrabold text-emerald-400 text-sm">R$ 300,00</p></div>
                         </div>
                     </div>
                 </div>
@@ -373,6 +696,12 @@
                 <button onclick="switchAdminTab('prioridades')" id="admTabBtnPrioridades" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
                     <i class="fa-solid fa-star me-1"></i> Prioridades <span id="admPriorityPendingBadge" class="hidden ml-1 bg-amber-500 text-black rounded-full px-1.5 text-[10px]">0</span>
                 </button>
+                <button onclick="switchAdminTab('transferencias')" id="admTabBtnTransferencias" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
+                    <i class="fa-solid fa-right-left me-1"></i> Transferências <span id="admTransferPendingBadge" class="hidden ml-1 bg-amber-500 text-black rounded-full px-1.5 text-[10px]">0</span>
+                </button>
+                <button onclick="switchAdminTab('pecas')" id="admTabBtnPecas" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
+                    <i class="fa-solid fa-box me-1"></i> Peças Catraca
+                </button>
                 <button onclick="switchAdminTab('historico')" id="admTabBtnHistorico" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
                     <i class="fa-solid fa-clock-rotate-left me-1"></i> Histórico
                 </button>
@@ -394,6 +723,7 @@
                         <select id="inputUserRole" onchange="onUserRoleChange(this.value)" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                             <option value="Analista de sistema">Analista de sistema</option>
                             <option value="Analista de catraca">Analista de catraca</option>
+                            <option value="Envio/Coleta">Validação Técnica (Envio/Coleta)</option>
                             <option value="Gestor Adm">Gestor Adm</option>
                         </select>
                     </div>
@@ -409,7 +739,7 @@
                         <button type="button" id="btnCancelEdit" onclick="cancelEditUser()" class="hidden bg-surface2 hover:bg-surface3 text-white px-3 py-2.5 rounded-lg text-sm transition"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                     <div id="inputUserPasswordWrap" class="hidden md:col-span-2">
-                        <label class="block text-xs text-secondary mb-1">Senha de Acesso ao Modo Gestão (obrigatória para Gestor Adm)</label>
+                        <label class="block text-xs text-secondary mb-1">Senha de Acesso (obrigatória para Gestor Adm e Envio/Coleta)</label>
                         <input type="password" id="inputUserPassword" placeholder="Defina a senha deste gestor" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                 </form>
@@ -613,6 +943,85 @@
             </div>
             <!-- FIM PAINEL PRIORIDADES -->
 
+            <!-- PAINEL: TRANSFERÊNCIAS -->
+            <div id="admPanelTransferencias" class="hidden space-y-6">
+                <div class="bg-surface border border-line rounded-xl p-6">
+                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-right-left text-blue-400"></i> Validação de Transferências</h3>
+                    <p class="text-xs text-secondary mb-4">Analise o protocolo e a justificativa enviada pelo analista. Ao aprovar, <strong class="text-emerald-400">1 ponto</strong> é creditado automaticamente na pontuação geral.</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-secondary">
+                            <thead class="bg-bg text-secondary uppercase text-[10px]">
+                                <tr>
+                                    <th class="p-3">Data</th>
+                                    <th class="p-3">Analista</th>
+                                    <th class="p-3">Protocolo</th>
+                                    <th class="p-3">Justificativa</th>
+                                    <th class="p-3 text-center">Status</th>
+                                    <th class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admTransferRequestsTable" class="divide-y divide-line/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- FIM PAINEL TRANSFERÊNCIAS -->
+
+            <!-- PAINEL: PEÇAS CATRACA -->
+            <div id="admPanelPecas" class="hidden space-y-6">
+                <div class="bg-surface border border-line rounded-xl p-6">
+                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-box text-emerald-400"></i> Registrar Pontuação de Peça (Envio/Coleta)</h3>
+                    <p class="text-xs text-secondary mb-4">Espaço restrito à gestão e aos usuários com função Envio/Coleta. Ao enviar, a pontuação é creditada automaticamente na pontuação geral do analista de catraca.</p>
+                    <form onsubmit="addPecaScoreAdmin(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">Analista de Catraca</label>
+                            <select id="admPecaTargetUser" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">Tipo de Registro</label>
+                            <select id="admPecaTipo" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                                <option value="Envio">Envio</option>
+                                <option value="Coleta">Coleta</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">ID do Cliente</label>
+                            <input type="text" id="admPecaClientId" required placeholder="Ex: 12345" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">Pontuação da Peça</label>
+                            <input type="number" id="admPecaPoints" min="0" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                        </div>
+                        <div class="md:col-span-4 pt-2">
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-sm transition">
+                                <i class="fa-solid fa-paper-plane me-1"></i> Registrar e Atribuir Pontuação
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-surface border border-line rounded-xl p-6">
+                    <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-secondary"></i> Histórico de Peças Registradas</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-secondary">
+                            <thead class="bg-bg text-secondary uppercase text-[10px]">
+                                <tr>
+                                    <th class="p-3">Data/Hora</th>
+                                    <th class="p-3">Analista</th>
+                                    <th class="p-3">Registrado Por</th>
+                                    <th class="p-3">Tipo</th>
+                                    <th class="p-3">ID Cliente</th>
+                                    <th class="p-3 text-right">Pontos</th>
+                                    <th class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admPecaLogsTable" class="divide-y divide-line/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- FIM PAINEL PEÇAS CATRACA -->
+
             <!-- PAINEL: HISTÓRICO -->
             <div id="admPanelHistorico" class="hidden space-y-6">
             <!-- LOGS -->
@@ -638,6 +1047,65 @@
             </div>
             <!-- FIM PAINEL HISTÓRICO -->
         </div>
+
+        <!-- VISÃO ENVIO/COLETA DE PEÇAS -->
+        <div id="viewPecas" class="hidden space-y-6">
+            <div class="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl flex items-center gap-3">
+                <div class="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg"><i class="fa-solid fa-box text-xl"></i></div>
+                <div>
+                    <h3 class="font-bold text-emerald-300">Painel Envio/Coleta de Peças (<span id="loggedPecaName">-</span>)</h3>
+                    <p class="text-xs text-emerald-200/70">Registre a pontuação de peças enviadas/coletadas e atribua diretamente ao analista de catraca.</p>
+                </div>
+            </div>
+
+            <div class="bg-surface border border-line rounded-xl p-6">
+                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-box-open text-emerald-400"></i> Registrar Peça</h3>
+                <form onsubmit="submitPecaScore(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs text-secondary mb-1">Analista de Catraca</label>
+                        <select id="pecaTargetUser" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-secondary mb-1">Tipo de Registro</label>
+                        <select id="pecaTipo" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                            <option value="Envio">Envio</option>
+                            <option value="Coleta">Coleta</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-secondary mb-1">ID do Cliente</label>
+                        <input type="text" id="pecaClientId" required placeholder="Ex: 12345" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-secondary mb-1">Pontuação da Peça</label>
+                        <input type="number" id="pecaPoints" min="0" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    </div>
+                    <div class="md:col-span-4">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-lg text-sm transition">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Registrar e Atribuir Pontuação
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-surface border border-line rounded-xl p-6">
+                <h4 class="text-xs font-bold text-secondary uppercase mb-2">Peças Registradas por Mim</h4>
+                <div class="overflow-x-auto max-h-72 overflow-y-auto">
+                    <table class="w-full text-left text-xs text-secondary">
+                        <thead class="bg-bg sticky top-0 uppercase text-[10px]">
+                            <tr>
+                                <th class="p-2">Data</th>
+                                <th class="p-2">Analista</th>
+                                <th class="p-2">Tipo</th>
+                                <th class="p-2">ID Cliente</th>
+                                <th class="p-2 text-right">Pontos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myPecaRequestsTable" class="divide-y divide-line/50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL ADM -->
@@ -653,6 +1121,56 @@
                 <label class="block text-xs text-secondary mb-1">Senha cadastrada</label>
                 <input type="password" id="adminPass" placeholder="Digite a senha definida no cadastro..." required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-blue-500">
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Entrar no Modo ADM</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL ENVIO/COLETA DE PEÇAS -->
+    <div id="pecaModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-surface border border-line rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-box text-emerald-400"></i> Acesso Envio/Coleta de Peças</h3>
+                <button onclick="closePecaModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-secondary mb-4">Espaço restrito à gestão e aos usuários com função Envio/Coleta.</p>
+            <form onsubmit="loginPeca(event)">
+                <label class="block text-xs text-secondary mb-1">Usuário</label>
+                <select id="pecaUserSelect" required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-emerald-500"></select>
+                <label class="block text-xs text-secondary mb-1">Senha cadastrada</label>
+                <input type="password" id="pecaPass" placeholder="Digite sua senha..." required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-emerald-500">
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL JUSTIFICATIVA DE REPROVAÇÃO DE PRIORIDADE -->
+    <div id="rejectReasonModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-surface border border-line rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-400"></i> Reprovar Protocolo de Prioridade</h3>
+                <button onclick="closeRejectReasonModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="confirmRejectPriorityRequest(event)">
+                <input type="hidden" id="rejectReqId" value="">
+                <label class="block text-xs text-secondary mb-1">Justificativa da reprovação (visível para o analista)</label>
+                <textarea id="rejectReasonInput" rows="3" required placeholder="Explique o motivo da reprovação..." class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-red-500"></textarea>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Confirmar Reprovação</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL JUSTIFICATIVA DE REPROVAÇÃO DE TRANSFERÊNCIA -->
+    <div id="rejectTransferReasonModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-surface border border-line rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-400"></i> Reprovar Protocolo de Transferência</h3>
+                <button onclick="closeRejectTransferReasonModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="confirmRejectTransferRequest(event)">
+                <input type="hidden" id="rejectTransferReqId" value="">
+                <label class="block text-xs text-secondary mb-1">Justificativa da reprovação (visível para o analista)</label>
+                <textarea id="rejectTransferReasonInput" rows="3" required placeholder="Explique o motivo da reprovação..." class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-red-500"></textarea>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Confirmar Reprovação</button>
             </form>
         </div>
     </div>
@@ -679,7 +1197,9 @@
             felipe: { name: "Felipe", team: "Catraca", role: "Analista de catraca", initial: "FE" },
             marcos: { name: "Marcos", team: "Catraca", role: "Analista de catraca", initial: "MA" },
             dyego: { name: "Dyego", team: "Catraca", role: "Analista de catraca", initial: "DY" },
-            vitor: { name: "Vitor", team: "Catraca", role: "Analista de catraca", initial: "VI" }
+            vitor: { name: "Vitor", team: "Catraca", role: "Analista de catraca", initial: "VI" },
+            antonio_ec: { name: "Antonio", team: "Catraca", role: "Envio/Coleta", initial: "AN", active: true, password: "antonio123" },
+            jeremias_ec: { name: "Jeremias", team: "Catraca", role: "Envio/Coleta", initial: "JE", active: true, password: "jeremias123" }
         };
 
         const RECORD_ID = "global_store";
@@ -689,6 +1209,8 @@
         let activePeriodFilter = "ALL";
         let isAdminLoggedIn = false;
         let currentAdminId = null;
+        let isPecaLoggedIn = false;
+        let currentPecaUserId = null;
         let activeAdminTab = "cadastros";
         let appStore = null;
 
@@ -698,6 +1220,11 @@
 
         function uid() {
             return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+        }
+
+        // Usuários com função Gestor Adm ou Envio/Coleta não entram no ranking (não são analistas avaliados)
+        function isRankableUser(u) {
+            return !!u && u.role !== "Gestor Adm" && u.role !== "Envio/Coleta";
         }
 
         function showToast(msg, type = "success") {
@@ -741,17 +1268,31 @@
                     users: defaultUsers,
                     logs: [],
                     history: [],
-                    priorityRequests: []
+                    priorityRequests: [],
+                    transferRequests: []
                 };
                 await persistStore();
             } else {
                 if (!appStore.users) appStore.users = defaultUsers;
                 if (!appStore.priorityRequests) appStore.priorityRequests = [];
+                if (!appStore.transferRequests) appStore.transferRequests = [];
                 Object.values(appStore.users).forEach(u => { if (u.active === undefined) u.active = true; });
 
                 const hasMarcoNunes = Object.values(appStore.users).some(u => u.name === "Marco Nunes" && u.role === "Gestor Adm");
                 if (!hasMarcoNunes) {
                     appStore.users['marco_nunes'] = { name: "Marco Nunes", team: "Sistema", role: "Gestor Adm", initial: "MN", active: true, password: "admin123" };
+                    await persistStore();
+                }
+
+                const hasAntonio = Object.values(appStore.users).some(u => u.name === "Antonio" && u.role === "Envio/Coleta");
+                if (!hasAntonio) {
+                    appStore.users['antonio_ec'] = { name: "Antonio", team: "Catraca", role: "Envio/Coleta", initial: "AN", active: true, password: "antonio123" };
+                    await persistStore();
+                }
+
+                const hasJeremias = Object.values(appStore.users).some(u => u.name === "Jeremias" && u.role === "Envio/Coleta");
+                if (!hasJeremias) {
+                    appStore.users['jeremias_ec'] = { name: "Jeremias", team: "Catraca", role: "Envio/Coleta", initial: "JE", active: true, password: "jeremias123" };
                     await persistStore();
                 }
             }
@@ -780,6 +1321,91 @@
             }
         }
 
+        // --- BÔNUS DE RANKING SEMANAL (posição 1º/2º/3º dentro do próprio departamento, por semana) ---
+        // Tabelas de pontos por colocação, conforme o manual (FAQ):
+        const RESOLVIDOS_RANK_POINTS = [100, 50, 10];   // 1º / 2º / 3º — 4º em diante = 0
+        const ATENDIDOS_RANK_POINTS  = [100, 50, 10];   // 1º / 2º / 3º — 4º em diante = 0 (somente Catraca)
+        const SPRINT_RANK_POINTS     = [100, 50, 25];   // 1º / 2º / 3º — 4º em diante = 0 (Taxa de Recuperação)
+
+        // Ranking por "competição" (empate mantém a mesma pontuação e "pula" a posição seguinte,
+        // ex: dois empatados em 1º ganham 100 pts cada, o próximo colocado vai para a posição 3).
+        function competitionRanks(entries) {
+            const sorted = entries.slice().sort((a, b) => b.value - a.value);
+            const ranks = {};
+            let rank = 0, prevValue = null;
+            sorted.forEach((e, idx) => {
+                if (e.value !== prevValue) { rank = idx + 1; prevValue = e.value; }
+                ranks[e.id] = rank;
+            });
+            return ranks;
+        }
+
+        function pointsForRank(rank, table) {
+            return (rank >= 1 && rank <= table.length) ? table[rank - 1] : 0;
+        }
+
+        // Calcula, semana a semana e departamento a departamento, os bônus de colocação
+        // para Protocolos Resolvidos, Protocolos Atendidos (Catraca) e Taxa de Recuperação da Sprint.
+        function computeWeeklyRankingBonuses(targetLogs, usersList) {
+            const bonuses = {};
+            Object.keys(usersList).forEach(id => {
+                bonuses[id] = { resolvidosRankPts: 0, atendidosRankPts: 0, sprintRankPts: 0 };
+            });
+
+            const weeks = {};
+            targetLogs.forEach(l => {
+                if (l.type !== "WEEKLY" || !l.week) return;
+                if (!weeks[l.week]) weeks[l.week] = [];
+                weeks[l.week].push(l);
+            });
+
+            Object.values(weeks).forEach(weekLogs => {
+                ["Sistema", "Catraca"].forEach(team => {
+                    const perUser = {};
+                    weekLogs.forEach(l => {
+                        const u = usersList[l.userId];
+                        if (!u || u.team !== team || !isRankableUser(u)) return;
+                        if (!perUser[l.userId]) perUser[l.userId] = { resolvidos: 0, atendidos: 0, sprintGanhos: 0, sprintTrabalhados: 0 };
+                        perUser[l.userId].resolvidos += l.resolvidos || 0;
+                        perUser[l.userId].atendidos += l.atendidos || 0;
+                        perUser[l.userId].sprintGanhos += l.sprintGanhos || 0;
+                        perUser[l.userId].sprintTrabalhados += l.sprintTrabalhados || 0;
+                    });
+
+                    // Ranking de Protocolos Resolvidos (Sistema e Catraca)
+                    const resolvidosEntries = Object.keys(perUser)
+                        .filter(id => perUser[id].resolvidos > 0)
+                        .map(id => ({ id, value: perUser[id].resolvidos }));
+                    const resolvidosRanks = competitionRanks(resolvidosEntries);
+                    resolvidosEntries.forEach(e => {
+                        bonuses[e.id].resolvidosRankPts += pointsForRank(resolvidosRanks[e.id], RESOLVIDOS_RANK_POINTS);
+                    });
+
+                    // Ranking de Protocolos Atendidos — apenas Catraca (é o único departamento com essa métrica na FAQ)
+                    if (team === "Catraca") {
+                        const atendidosEntries = Object.keys(perUser)
+                            .filter(id => perUser[id].atendidos > 0)
+                            .map(id => ({ id, value: perUser[id].atendidos }));
+                        const atendidosRanks = competitionRanks(atendidosEntries);
+                        atendidosEntries.forEach(e => {
+                            bonuses[e.id].atendidosRankPts += pointsForRank(atendidosRanks[e.id], ATENDIDOS_RANK_POINTS);
+                        });
+                    }
+
+                    // Ranking da Taxa de Recuperação da Sprint (Sistema e Catraca)
+                    const sprintEntries = Object.keys(perUser)
+                        .filter(id => perUser[id].sprintTrabalhados > 0)
+                        .map(id => ({ id, value: (perUser[id].sprintGanhos / perUser[id].sprintTrabalhados) * 100 }));
+                    const sprintRanks = competitionRanks(sprintEntries);
+                    sprintEntries.forEach(e => {
+                        bonuses[e.id].sprintRankPts += pointsForRank(sprintRanks[e.id], SPRINT_RANK_POINTS);
+                    });
+                });
+            });
+
+            return bonuses;
+        }
+
         function getAggregatedMetrics(monthKey, periodFilter) {
             const store = getStore();
             const usersList = store.users || defaultUsers;
@@ -795,8 +1421,10 @@
             Object.keys(usersList).forEach(id => {
                 agg[id] = {
                     resolvidos: 0, atendidos: 0, satisfacaoSum: 0, satisfacaoCount: 0,
-                    prioridadesAprovadas: 0, prioridadesPts: 0, sprintTrabalhados: 0, sprintGanhos: 0, sprint100PctCount: 0,
-                    tmaPts: 0, pecasPts: 0, monitoramentoPts: 0, penalidades: 0, penaltiesList: []
+                    prioridadesAprovadas: 0, prioridadesPts: 0, transferenciasAprovadas: 0, transferenciaPts: 0,
+                    sprintTrabalhados: 0, sprintGanhos: 0, sprint100PctCount: 0,
+                    tmaPts: 0, pecasPts: 0, monitoramentoPts: 0, penalidades: 0, penaltiesList: [],
+                    resolvidosRankPts: 0, atendidosRankPts: 0, sprintRankPts: 0
                 };
             });
 
@@ -822,6 +1450,21 @@
                 } else if (l.type === "PRIORITY") {
                     m.prioridadesAprovadas += 1;
                     m.prioridadesPts += l.value || 0;
+                } else if (l.type === "TRANSFER") {
+                    m.transferenciasAprovadas += 1;
+                    m.transferenciaPts += l.value || 0;
+                } else if (l.type === "PECA") {
+                    m.pecasPts += l.value || 0;
+                }
+            });
+
+            const rankingBonuses = computeWeeklyRankingBonuses(targetLogs, usersList);
+            Object.keys(agg).forEach(id => {
+                const b = rankingBonuses[id];
+                if (b) {
+                    agg[id].resolvidosRankPts = b.resolvidosRankPts;
+                    agg[id].atendidosRankPts = b.atendidosRankPts;
+                    agg[id].sprintRankPts = b.sprintRankPts;
                 }
             });
 
@@ -836,9 +1479,15 @@
             if (!m || !user) return { total: 0, avgSatisfacao: 0, sprintRate: 0, breakdown: {} };
 
             let ptsResolvidos = 0, ptsAtendidos = 0, ptsSatisfacao = 0;
-            let ptsPrioridades = m.prioridadesPts || 0;
+            let ptsPrioridades = (m.prioridadesPts || 0) + (m.transferenciaPts || 0);
             let ptsSprintGanhos = m.sprintGanhos * 50;
             let ptsSprint100 = (m.sprint100PctCount || 0) * 100;
+
+            // Bônus de ranking semanal (posição 1º/2º/3º), calculados em getAggregatedMetrics
+            let ptsResolvidosRank = m.resolvidosRankPts || 0;
+            let ptsAtendidosRank = m.atendidosRankPts || 0;
+            let ptsSprintRank = m.sprintRankPts || 0;
+            let ptsRanking = ptsResolvidosRank + ptsAtendidosRank + ptsSprintRank;
 
             let avgSatisfacao = m.satisfacaoCount > 0 ? (m.satisfacaoSum / m.satisfacaoCount) : 0;
             let sprintRate = m.sprintTrabalhados > 0 ? ((m.sprintGanhos / m.sprintTrabalhados) * 100) : 0;
@@ -854,8 +1503,11 @@
                 else if (avgSatisfacao >= 4.50) ptsSatisfacao = 25;
                 else if (avgSatisfacao >= 4.00) ptsSatisfacao = 10;
 
-                ptsResolvidos = m.resolvidos * 2;
+                // Sistema: "Protocolos Resolvidos" pontua exclusivamente pelo Ranking Semanal
+                // (1º = 100 / 2º = 50 / 3º = 10 / 4º em diante = 0), não existe pontuação por unidade.
+                ptsResolvidos = 0;
             } else {
+                // Catraca: pontuação por unidade (+2 pts/protocolo) + bônus de ranking semanal (ptsRanking)
                 ptsResolvidos = (m.resolvidos || 0) * 2;
                 ptsAtendidos = (m.atendidos || 0) * 0.5;
 
@@ -866,7 +1518,7 @@
             }
 
             let total = ptsResolvidos + ptsAtendidos + ptsSatisfacao + ptsPrioridades + 
-                        ptsSprintGanhos + ptsSprint100 + (m.tmaPts || 0) + 
+                        ptsSprintGanhos + ptsSprint100 + ptsRanking + (m.tmaPts || 0) + 
                         (m.pecasPts || 0) + (m.monitoramentoPts || 0) + (m.penalidades || 0);
 
             return {
@@ -880,6 +1532,7 @@
                     ptsSatisfacao,
                     ptsPrioridades,
                     ptsSprint: ptsSprintGanhos + ptsSprint100,
+                    ptsRanking,
                     extraPts: (m.monitoramentoPts || 0) + (m.pecasPts || 0),
                     penalidades: m.penalidades || 0
                 }
@@ -901,19 +1554,42 @@
                 document.getElementById('viewAgent').classList.add('hidden');
                 document.getElementById('viewRanking').classList.add('hidden');
                 document.getElementById('viewFaq').classList.add('hidden');
+                document.getElementById('viewPecas').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
                 document.getElementById('publicTabsContainer').classList.add('hidden');
                 document.getElementById('btnAdminAccess').classList.add('hidden');
                 document.getElementById('btnAdminLogout').classList.remove('hidden');
+                document.getElementById('btnPecaAccess').classList.add('hidden');
+                document.getElementById('btnPecaLogout').classList.add('hidden');
                 document.getElementById('loggedAdminName').innerText = (usersList[currentAdminId] && usersList[currentAdminId].name) || "Gestor";
                 renderAdminLogs();
                 renderUsersManagementTable();
                 renderAdminPriorityRequests();
+                renderAdminTransferRequests();
+                populateCatracaAnalystOptions('admPecaTargetUser');
+                renderAdminPecaLogs();
+            } else if (isPecaLoggedIn) {
+                document.getElementById('viewAgent').classList.add('hidden');
+                document.getElementById('viewRanking').classList.add('hidden');
+                document.getElementById('viewFaq').classList.add('hidden');
+                document.getElementById('viewAdmin').classList.add('hidden');
+                document.getElementById('viewPecas').classList.remove('hidden');
+                document.getElementById('publicTabsContainer').classList.add('hidden');
+                document.getElementById('btnAdminAccess').classList.add('hidden');
+                document.getElementById('btnAdminLogout').classList.add('hidden');
+                document.getElementById('btnPecaAccess').classList.add('hidden');
+                document.getElementById('btnPecaLogout').classList.remove('hidden');
+                document.getElementById('loggedPecaName').innerText = (usersList[currentPecaUserId] && usersList[currentPecaUserId].name) || "-";
+                populateCatracaAnalystOptions('pecaTargetUser');
+                renderMyPecaRequests();
             } else {
                 document.getElementById('viewAdmin').classList.add('hidden');
+                document.getElementById('viewPecas').classList.add('hidden');
                 document.getElementById('publicTabsContainer').classList.remove('hidden');
                 document.getElementById('btnAdminAccess').classList.remove('hidden');
                 document.getElementById('btnAdminLogout').classList.add('hidden');
+                document.getElementById('btnPecaAccess').classList.remove('hidden');
+                document.getElementById('btnPecaLogout').classList.add('hidden');
 
                 document.getElementById('agentName').innerText = user.name;
                 document.getElementById('agentTeam').innerText = user.team;
@@ -925,7 +1601,7 @@
                 document.getElementById('agentTotalPts').innerText = `${calc.total} pts`;
 
                 const currentTeamList = Object.keys(usersList)
-                    .filter(id => usersList[id].team === user.team && usersList[id].role !== "Gestor Adm")
+                    .filter(id => usersList[id].team === user.team && isRankableUser(usersList[id]) && usersList[id].active !== false)
                     .map(id => ({ id, total: calculatePoints(id, metrics).total }))
                     .sort((a, b) => b.total - a.total);
 
@@ -953,9 +1629,11 @@
                 renderHistoricalStats(currentActiveUser);
                 renderCharts(currentActiveUser);
                 renderMyPriorityRequests();
+                renderMyTransferRequests();
             }
 
             renderLeaderboard(metrics);
+            renderTopDashboard(metrics);
         }
 
         function renderHistoricalStats(userId) {
@@ -971,7 +1649,7 @@
                 weeks.forEach(week => {
                     const weekMetrics = getAggregatedMetrics(monthEntry.id, week);
                     const sortedWeek = Object.keys(usersList)
-                        .filter(id => usersList[id].team === userTeam && usersList[id].role !== "Gestor Adm")
+                        .filter(id => usersList[id].team === userTeam && isRankableUser(usersList[id]) && usersList[id].active !== false)
                         .map(id => ({ id, total: calculatePoints(id, weekMetrics).total }))
                         .sort((a, b) => b.total - a.total);
 
@@ -1084,7 +1762,7 @@
             document.getElementById('thExtraCol').innerText = activeRankingTab === "Sistema" ? "Monit. Qualidade" : "Peças & Despachos";
 
             const list = Object.keys(usersList)
-                .filter(id => usersList[id].team === activeRankingTab && usersList[id].role !== "Gestor Adm")
+                .filter(id => usersList[id].team === activeRankingTab && isRankableUser(usersList[id]) && usersList[id].active !== false)
                 .map(id => {
                     const c = calculatePoints(id, metrics);
                     return { id, name: usersList[id].name, total: c.total, calc: c, metrics: metrics[id] };
@@ -1110,13 +1788,100 @@
                         <td class="p-3 text-center">+${b.ptsSatisfacao} <span class="text-[10px] text-secondary">(${item.calc.avgSatisfacao}★)</span></td>
                         <td class="p-3 text-center">+${b.ptsPrioridades}</td>
                         <td class="p-3 text-center">+${b.ptsSprint}</td>
+                        <td class="p-3 text-center text-accent font-semibold">+${b.ptsRanking}</td>
                         <td class="p-3 text-center">+${b.extraPts}</td>
                         <td class="p-3 text-center text-red-400 font-bold">${b.penalidades}</td>
                         <td class="p-3 text-right font-extrabold text-accent text-sm">${item.total} pts</td>
                     </tr>
                 `;
             });
-            document.getElementById('leaderboardBody').innerHTML = html || `<tr><td colspan="11" class="p-4 text-center text-secondary">Nenhum lançamento neste período.</td></tr>`;
+            document.getElementById('leaderboardBody').innerHTML = html || `<tr><td colspan="12" class="p-4 text-center text-secondary">Nenhum lançamento neste período.</td></tr>`;
+        }
+
+        function renderTopDashboard(metrics) {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const prizes = ["R$ 1.000,00", "R$ 500,00", "R$ 300,00"];
+            const medals = ["🥇", "🥈", "🥉"];
+
+            // Estilo visual por posição: [1º, 2º, 3º] -- ordem de exibição no grid: 2º / 1º / 3º
+            const podiumStyle = [
+                { // 1º lugar
+                    order: "order-2",
+                    lift: "-translate-y-3",
+                    height: "min-h-[168px]",
+                    card: "bg-gradient-to-b from-accent/20 via-surface2 to-surface2 border-accent/60 ring-2 ring-accent/40 shadow-[0_0_30px_-8px_rgba(0,240,255,0.45)]",
+                    avatar: "bg-gradient-to-br from-accent to-blue-500 text-bg w-16 h-16 text-lg",
+                    posBadge: "bg-accent text-bg",
+                    nameColor: "text-white",
+                    ptsColor: "text-accent",
+                    crown: true,
+                    scale: "scale-[1.04] z-10"
+                },
+                { // 2º lugar
+                    order: "order-1",
+                    lift: "",
+                    height: "min-h-[140px]",
+                    card: "bg-gradient-to-b from-slate-300/10 via-surface2 to-surface2 border-slate-300/30",
+                    avatar: "bg-gradient-to-br from-slate-300 to-slate-500 text-bg w-12 h-12 text-sm",
+                    posBadge: "bg-slate-300 text-bg",
+                    nameColor: "text-white",
+                    ptsColor: "text-slate-200",
+                    crown: false,
+                    scale: ""
+                },
+                { // 3º lugar
+                    order: "order-3",
+                    lift: "",
+                    height: "min-h-[124px]",
+                    card: "bg-gradient-to-b from-amber-600/10 via-surface2 to-surface2 border-amber-600/30",
+                    avatar: "bg-gradient-to-br from-amber-500 to-amber-700 text-bg w-11 h-11 text-sm",
+                    posBadge: "bg-amber-500 text-bg",
+                    nameColor: "text-white",
+                    ptsColor: "text-amber-400",
+                    crown: false,
+                    scale: ""
+                }
+            ];
+
+            ["Sistema", "Catraca"].forEach(team => {
+                const list = Object.keys(usersList)
+                    .filter(id => usersList[id].team === team && isRankableUser(usersList[id]) && usersList[id].active !== false)
+                    .map(id => ({ id, name: usersList[id].name, initial: usersList[id].initial || usersList[id].name.slice(0, 2).toUpperCase(), total: calculatePoints(id, metrics).total }))
+                    .sort((a, b) => b.total - a.total)
+                    .slice(0, 3);
+
+                let html = "";
+                for (let i = 0; i < 3; i++) {
+                    const item = list[i];
+                    const s = podiumStyle[i];
+                    if (item) {
+                        html += `
+                            <div class="${s.order} ${s.scale} relative ${s.lift} ${s.height} ${s.card} border rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center transition-transform hover:-translate-y-1">
+                                ${s.crown ? `<i class="fa-solid fa-crown text-accent text-lg absolute -top-3 left-1/2 -translate-x-1/2 animate-bounce [animation-duration:2.2s]"></i>` : ''}
+                                <span class="absolute top-2 left-2 w-5 h-5 rounded-full ${s.posBadge} text-[10px] font-extrabold flex items-center justify-center">${i + 1}</span>
+                                <div class="relative mb-2">
+                                    <div class="${s.avatar} rounded-full flex items-center justify-center font-extrabold border-2 border-bg shadow-lg">${item.initial}</div>
+                                    <span class="absolute -bottom-1 -right-1 text-base">${medals[i]}</span>
+                                </div>
+                                <p class="text-xs sm:text-sm font-bold ${s.nameColor} truncate max-w-[100px] sm:max-w-[120px]" title="${item.name}">${item.name}</p>
+                                <p class="text-base sm:text-lg font-extrabold ${s.ptsColor} mt-0.5 leading-none">${item.total}<span class="text-[10px] font-semibold ml-0.5">pts</span></p>
+                                <p class="text-[10px] text-emerald-400 font-semibold mt-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">${prizes[i]}</p>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="${s.order} ${s.height} bg-surface2/40 border border-line border-dashed rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center opacity-50">
+                                <div class="w-11 h-11 rounded-full bg-surface3 flex items-center justify-center text-secondary mb-2"><i class="fa-solid fa-user text-xs"></i></div>
+                                <p class="text-xs font-bold text-secondary">Vago</p>
+                                <p class="text-base font-extrabold text-secondary mt-0.5">0<span class="text-[10px] font-semibold ml-0.5">pts</span></p>
+                                <p class="text-[10px] text-secondary font-semibold mt-1.5">${prizes[i]}</p>
+                            </div>
+                        `;
+                    }
+                }
+                document.getElementById(team === "Sistema" ? "podiumSistema" : "podiumCatraca").innerHTML = html;
+            });
         }
 
         function renderAdminLogs() {
@@ -1203,7 +1968,7 @@
 
         function onUserRoleChange(role) {
             const wrap = document.getElementById('inputUserPasswordWrap');
-            if (role === "Gestor Adm") wrap.classList.remove('hidden');
+            if (role === "Gestor Adm" || role === "Envio/Coleta") wrap.classList.remove('hidden');
             else wrap.classList.add('hidden');
         }
 
@@ -1243,8 +2008,8 @@
 
             if (!name) return;
 
-            if (role === "Gestor Adm" && !password && !(editId && appStore.users[editId] && appStore.users[editId].password)) {
-                showToast("Defina uma senha de acesso para o Gestor Adm.", "error");
+            if ((role === "Gestor Adm" || role === "Envio/Coleta") && !password && !(editId && appStore.users[editId] && appStore.users[editId].password)) {
+                showToast("Defina uma senha de acesso para este perfil.", "error");
                 return;
             }
 
@@ -1261,7 +2026,7 @@
                 // Cadastra novo usuário
                 const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Math.random().toString(36).slice(2, 5);
                 const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-                appStore.users[newId] = { name, team, role, initial: initials, active: true, password: role === "Gestor Adm" ? password : undefined };
+                appStore.users[newId] = { name, team, role, initial: initials, active: true, password: (role === "Gestor Adm" || role === "Envio/Coleta") ? password : undefined };
                 showToast("Novo usuário cadastrado com sucesso!");
             }
 
@@ -1317,7 +2082,7 @@
                 document.getElementById(btns[key]).className = key === tab ? activeClass : inactiveClass;
             });
 
-            if (tab === 'dashboard') renderMyPriorityRequests();
+            if (tab === 'dashboard') { renderMyPriorityRequests(); renderMyTransferRequests(); }
         }
 
         function toggleFaqDept(dept) {
@@ -1350,7 +2115,7 @@
             const usersList = store.users || defaultUsers;
             let options = "";
             Object.keys(usersList).forEach(id => {
-                if (usersList[id].team === team && usersList[id].active !== false && usersList[id].role !== "Gestor Adm") {
+                if (usersList[id].team === team && usersList[id].active !== false && isRankableUser(usersList[id])) {
                     options += `<option value="${id}">${usersList[id].name}</option>`;
                 }
             });
@@ -1361,8 +2126,8 @@
 
         function switchAdminTab(tab) {
             activeAdminTab = tab;
-            const panels = { cadastros: 'admPanelCadastros', lancamentos: 'admPanelLancamentos', prioridades: 'admPanelPrioridades', historico: 'admPanelHistorico' };
-            const btns = { cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'admTabBtnPrioridades', historico: 'admTabBtnHistorico' };
+            const panels = { cadastros: 'admPanelCadastros', lancamentos: 'admPanelLancamentos', prioridades: 'admPanelPrioridades', transferencias: 'admPanelTransferencias', pecas: 'admPanelPecas', historico: 'admPanelHistorico' };
+            const btns = { cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'admTabBtnPrioridades', transferencias: 'admTabBtnTransferencias', pecas: 'admTabBtnPecas', historico: 'admTabBtnHistorico' };
             const activeClass = "px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white";
             const inactiveClass = "px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white";
 
@@ -1393,7 +2158,7 @@
 
             let sisOpt = "", catOpt = "", admOpt = "";
             Object.keys(usersList).forEach(id => {
-                if (usersList[id].active === false || usersList[id].role === "Gestor Adm") return;
+                if (usersList[id].active === false || !isRankableUser(usersList[id])) return;
                 admOpt += `<option value="${id}">${usersList[id].name} (${usersList[id].team})</option>`;
                 if (usersList[id].team === "Sistema") sisOpt += `<option value="${id}">${usersList[id].name}</option>`;
                 else catOpt += `<option value="${id}">${usersList[id].name}</option>`;
@@ -1403,12 +2168,36 @@
             document.getElementById('admUserCatraca').innerHTML = catOpt;
             document.getElementById('penaltyUser').innerHTML = admOpt;
 
+            populateCatracaAnalystOptions('admPecaTargetUser');
+            populateCatracaAnalystOptions('pecaTargetUser');
+
             onTeamSelectChange("Sistema");
+        }
+
+        function populateCatracaAnalystOptions(selectId) {
+            const el = document.getElementById(selectId);
+            if (!el) return;
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            let opts = "";
+            Object.keys(usersList).forEach(id => {
+                const u = usersList[id];
+                if (u.team === "Catraca" && u.role === "Analista de catraca" && u.active !== false) {
+                    opts += `<option value="${id}">${u.name}</option>`;
+                }
+            });
+            el.innerHTML = opts || `<option value="">Nenhum analista disponível</option>`;
         }
 
         function switchRankingTab(team) {
             activeRankingTab = team;
             document.getElementById('teamSelect').value = team;
+            const teamIcon = document.getElementById('teamSelectIcon');
+            if (teamIcon) {
+                teamIcon.className = team === 'Sistema'
+                    ? "fa-solid fa-desktop text-xs text-blue-400 transition-colors duration-200"
+                    : "fa-solid fa-gear text-xs text-emerald-400 transition-colors duration-200";
+            }
             document.getElementById('tabSistema').className = team === 'Sistema' 
                 ? "px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white" 
                 : "px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white";
@@ -1583,7 +2372,8 @@
                 const badge = r.status === "aprovado"
                     ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check me-1"></i>Aprovado (+50 pts)</span>`
                     : r.status === "reprovado"
-                        ? `<span class="text-red-400 font-bold"><i class="fa-solid fa-circle-xmark me-1"></i>Reprovado</span>`
+                        ? `<span class="text-red-400 font-bold"><i class="fa-solid fa-circle-xmark me-1"></i>Reprovado</span>` +
+                          (r.rejectReason ? `<div class="text-[10px] text-red-300 mt-1"><i class="fa-solid fa-comment-dots me-1"></i>Motivo da gestão: ${r.rejectReason}</div>` : '')
                         : `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock me-1"></i>Pendente</span>`;
                 html += `
                     <tr>
@@ -1622,7 +2412,9 @@
                     actionsCell = `<span class="text-[10px] text-secondary">+50 pts creditados</span>`;
                 } else {
                     statusCell = `<span class="text-[10px] bg-red-500/10 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">Reprovado</span>`;
-                    actionsCell = `<span class="text-[10px] text-secondary">Sem pontuação</span>`;
+                    actionsCell = r.rejectReason
+                        ? `<span class="text-[10px] text-secondary" title="${r.rejectReason}">Motivo: ${r.rejectReason.length > 30 ? r.rejectReason.slice(0, 30) + '...' : r.rejectReason}</span>`
+                        : `<span class="text-[10px] text-secondary">Sem pontuação</span>`;
                 }
 
                 html += `
@@ -1671,17 +2463,194 @@
             render();
         }
 
-        async function rejectPriorityRequest(id) {
+        function rejectPriorityRequest(id) {
             const req = (appStore.priorityRequests || []).find(r => r.id === id);
             if (!req || req.status !== "pendente") return;
-            if (!confirm("Reprovar este protocolo de prioridade?")) return;
+            document.getElementById('rejectReqId').value = id;
+            document.getElementById('rejectReasonInput').value = "";
+            document.getElementById('rejectReasonModal').classList.remove('hidden');
+        }
+
+        function closeRejectReasonModal() {
+            document.getElementById('rejectReasonModal').classList.add('hidden');
+        }
+
+        async function confirmRejectPriorityRequest(e) {
+            e.preventDefault();
+            const id = document.getElementById('rejectReqId').value;
+            const reason = document.getElementById('rejectReasonInput').value.trim();
+            const req = (appStore.priorityRequests || []).find(r => r.id === id);
+            if (!req || req.status !== "pendente") { closeRejectReasonModal(); return; }
+            if (!reason) return;
 
             req.status = "reprovado";
             req.resolvedBy = currentAdminId;
             req.resolvedAt = Date.now();
+            req.rejectReason = reason;
 
             const ok = await persistStore();
-            if (ok) showToast("Protocolo reprovado.");
+            closeRejectReasonModal();
+            if (ok) showToast("Protocolo reprovado e justificativa registrada.");
+            render();
+        }
+
+        // --- REGISTRO DE PROTOCOLO DE TRANSFERÊNCIA (mesmo fluxo de Prioridades, +1 pt ao aprovar) ---
+
+        async function submitTransferRequest(e) {
+            e.preventDefault();
+            setFormBusy(e.target, true);
+            const protocolo = document.getElementById('transferProtocolo').value.trim();
+            const justificativa = document.getElementById('transferJustificativa').value.trim();
+            if (!protocolo || !justificativa) { setFormBusy(e.target, false); return; }
+
+            if (!appStore.transferRequests) appStore.transferRequests = [];
+            appStore.transferRequests.push({
+                id: uid(),
+                userId: currentActiveUser,
+                protocolo,
+                justificativa,
+                status: "pendente",
+                timestamp: Date.now()
+            });
+
+            const ok = await persistStore();
+            setFormBusy(e.target, false);
+            if (ok) {
+                showToast("Protocolo de transferência enviado para validação!");
+                e.target.reset();
+            }
+            render();
+        }
+
+        function renderMyTransferRequests() {
+            const tbody = document.getElementById('myTransferRequestsTable');
+            if (!tbody) return;
+            const store = getStore();
+            const requests = (store.transferRequests || []).filter(r => r.userId === currentActiveUser).slice().reverse();
+            let html = "";
+            requests.forEach(r => {
+                const badge = r.status === "aprovado"
+                    ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check me-1"></i>Aprovado (+1 pt)</span>`
+                    : r.status === "reprovado"
+                        ? `<span class="text-red-400 font-bold"><i class="fa-solid fa-circle-xmark me-1"></i>Reprovado</span>` +
+                          (r.rejectReason ? `<div class="text-[10px] text-red-300 mt-1"><i class="fa-solid fa-comment-dots me-1"></i>Motivo da gestão: ${r.rejectReason}</div>` : '')
+                        : `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock me-1"></i>Pendente</span>`;
+                html += `
+                    <tr>
+                        <td class="p-2 font-semibold text-white">${r.protocolo}</td>
+                        <td class="p-2">${r.justificativa}</td>
+                        <td class="p-2">${badge}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html || `<tr><td colspan="3" class="p-3 text-center text-secondary">Nenhuma transferência enviada ainda.</td></tr>`;
+        }
+
+        function renderAdminTransferRequests() {
+            const tbody = document.getElementById('admTransferRequestsTable');
+            if (!tbody) return;
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const requests = (store.transferRequests || []).slice().reverse();
+            let html = "";
+            let pendingCount = 0;
+
+            requests.forEach(r => {
+                const user = usersList[r.userId];
+                const d = new Date(r.timestamp).toLocaleDateString("pt-BR");
+                let statusCell = "";
+                let actionsCell = "";
+                if (r.status === "pendente") {
+                    pendingCount++;
+                    statusCell = `<span class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">Pendente</span>`;
+                    actionsCell = `
+                        <button onclick="approveTransferRequest('${r.id}')" class="text-emerald-400 hover:text-emerald-300 text-xs font-semibold mr-3"><i class="fa-solid fa-check me-1"></i>Aprovar</button>
+                        <button onclick="rejectTransferRequest('${r.id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-xmark me-1"></i>Reprovar</button>
+                    `;
+                } else if (r.status === "aprovado") {
+                    statusCell = `<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Aprovado</span>`;
+                    actionsCell = `<span class="text-[10px] text-secondary">+1 pt creditado</span>`;
+                } else {
+                    statusCell = `<span class="text-[10px] bg-red-500/10 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">Reprovado</span>`;
+                    actionsCell = r.rejectReason
+                        ? `<span class="text-[10px] text-secondary" title="${r.rejectReason}">Motivo: ${r.rejectReason.length > 30 ? r.rejectReason.slice(0, 30) + '...' : r.rejectReason}</span>`
+                        : `<span class="text-[10px] text-secondary">Sem pontuação</span>`;
+                }
+
+                html += `
+                    <tr>
+                        <td class="p-3 text-secondary">${d}</td>
+                        <td class="p-3 font-semibold text-white">${user ? user.name : '-'}</td>
+                        <td class="p-3">${r.protocolo}</td>
+                        <td class="p-3">${r.justificativa}</td>
+                        <td class="p-3 text-center">${statusCell}</td>
+                        <td class="p-3 text-right whitespace-nowrap">${actionsCell}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html || `<tr><td colspan="6" class="p-4 text-center text-secondary">Nenhum protocolo de transferência enviado.</td></tr>`;
+
+            const badge = document.getElementById('admTransferPendingBadge');
+            if (pendingCount > 0) {
+                badge.classList.remove('hidden');
+                badge.innerText = pendingCount;
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        async function approveTransferRequest(id) {
+            const req = (appStore.transferRequests || []).find(r => r.id === id);
+            if (!req || req.status !== "pendente") return;
+
+            req.status = "aprovado";
+            req.resolvedBy = currentAdminId;
+            req.resolvedAt = Date.now();
+
+            appStore.logs.push({
+                id: uid(),
+                type: "TRANSFER",
+                userId: req.userId,
+                value: 1,
+                relatedRequestId: req.id,
+                protocolo: req.protocolo,
+                timestamp: Date.now()
+            });
+
+            const ok = await persistStore();
+            if (ok) showToast("Transferência aprovada! 1 ponto creditado.");
+            render();
+        }
+
+        function rejectTransferRequest(id) {
+            const req = (appStore.transferRequests || []).find(r => r.id === id);
+            if (!req || req.status !== "pendente") return;
+            document.getElementById('rejectTransferReqId').value = id;
+            document.getElementById('rejectTransferReasonInput').value = "";
+            document.getElementById('rejectTransferReasonModal').classList.remove('hidden');
+        }
+
+        function closeRejectTransferReasonModal() {
+            document.getElementById('rejectTransferReasonModal').classList.add('hidden');
+        }
+
+        async function confirmRejectTransferRequest(e) {
+            e.preventDefault();
+            const id = document.getElementById('rejectTransferReqId').value;
+            const reason = document.getElementById('rejectTransferReasonInput').value.trim();
+            const req = (appStore.transferRequests || []).find(r => r.id === id);
+            if (!req || req.status !== "pendente") { closeRejectTransferReasonModal(); return; }
+            if (!reason) return;
+
+            req.status = "reprovado";
+            req.resolvedBy = currentAdminId;
+            req.resolvedAt = Date.now();
+            req.rejectReason = reason;
+
+            const ok = await persistStore();
+            closeRejectTransferReasonModal();
+            if (ok) showToast("Transferência reprovada e justificativa registrada.");
             render();
         }
 
@@ -1769,6 +2738,175 @@
             isAdminLoggedIn = false;
             currentAdminId = null;
             render();
+        }
+
+        function openPecaModal() {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            let opts = "";
+            Object.keys(usersList).forEach(id => {
+                const u = usersList[id];
+                if (u.role === "Envio/Coleta" && u.active !== false) {
+                    opts += `<option value="${id}">${u.name}</option>`;
+                }
+            });
+            document.getElementById('pecaUserSelect').innerHTML = opts || `<option value="">Nenhum usuário cadastrado</option>`;
+            document.getElementById('pecaModal').classList.remove('hidden');
+        }
+        function closePecaModal() { document.getElementById('pecaModal').classList.add('hidden'); }
+
+        function loginPeca(e) {
+            e.preventDefault();
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const selectedId = document.getElementById('pecaUserSelect').value;
+            const pass = document.getElementById('pecaPass').value;
+            const user = usersList[selectedId];
+
+            if (!user || user.role !== "Envio/Coleta") {
+                showToast("Selecione um usuário válido.", "error");
+                return;
+            }
+            if (user.active === false) {
+                showToast("Este usuário está inativo e não pode acessar este espaço.", "error");
+                return;
+            }
+            if (!user.password) {
+                showToast("Este usuário ainda não possui senha cadastrada.", "error");
+                return;
+            }
+            if (pass === user.password) {
+                isPecaLoggedIn = true;
+                currentPecaUserId = selectedId;
+                document.getElementById('pecaPass').value = "";
+                closePecaModal();
+                render();
+            } else {
+                showToast("Senha incorreta!", "error");
+            }
+        }
+
+        function logoutPeca() {
+            isPecaLoggedIn = false;
+            currentPecaUserId = null;
+            render();
+        }
+
+        async function submitPecaScore(e) {
+            e.preventDefault();
+            setFormBusy(e.target, true);
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const targetUser = document.getElementById('pecaTargetUser').value;
+            const tipo = document.getElementById('pecaTipo').value;
+            const clientId = document.getElementById('pecaClientId').value.trim();
+            const points = parseInt(document.getElementById('pecaPoints').value) || 0;
+
+            if (!targetUser || !clientId) { setFormBusy(e.target, false); return; }
+
+            appStore.logs.push({
+                id: uid(),
+                type: "PECA",
+                userId: targetUser,
+                clientId,
+                tipo,
+                value: points,
+                registradoPor: currentPecaUserId,
+                timestamp: Date.now()
+            });
+
+            const ok = await persistStore();
+            setFormBusy(e.target, false);
+            if (ok) {
+                showToast(`Peça registrada! ${points} pts atribuídos a ${usersList[targetUser].name}.`);
+                e.target.reset();
+            }
+            render();
+        }
+
+        function renderMyPecaRequests() {
+            const tbody = document.getElementById('myPecaRequestsTable');
+            if (!tbody) return;
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const logs = (store.logs || []).filter(l => l.type === "PECA" && l.registradoPor === currentPecaUserId).slice().reverse();
+            let html = "";
+            logs.forEach(l => {
+                const user = usersList[l.userId];
+                const d = new Date(l.timestamp).toLocaleDateString("pt-BR");
+                html += `
+                    <tr>
+                        <td class="p-2 text-secondary">${d}</td>
+                        <td class="p-2 font-semibold text-white">${user ? user.name : '-'}</td>
+                        <td class="p-2">${l.tipo || '-'}</td>
+                        <td class="p-2">${l.clientId || '-'}</td>
+                        <td class="p-2 text-right font-bold text-emerald-400">+${l.value} pts</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html || `<tr><td colspan="5" class="p-3 text-center text-secondary">Nenhuma peça registrada ainda.</td></tr>`;
+        }
+
+        async function addPecaScoreAdmin(e) {
+            e.preventDefault();
+            setFormBusy(e.target, true);
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const targetUser = document.getElementById('admPecaTargetUser').value;
+            const tipo = document.getElementById('admPecaTipo').value;
+            const clientId = document.getElementById('admPecaClientId').value.trim();
+            const points = parseInt(document.getElementById('admPecaPoints').value) || 0;
+
+            if (!targetUser || !clientId) { setFormBusy(e.target, false); return; }
+
+            appStore.logs.push({
+                id: uid(),
+                type: "PECA",
+                userId: targetUser,
+                clientId,
+                tipo,
+                value: points,
+                registradoPor: currentAdminId,
+                timestamp: Date.now()
+            });
+
+            const ok = await persistStore();
+            setFormBusy(e.target, false);
+            if (ok) {
+                showToast(`Peça registrada! ${points} pts atribuídos a ${usersList[targetUser].name}.`);
+                e.target.reset();
+            }
+            render();
+        }
+
+        function renderAdminPecaLogs() {
+            const tbody = document.getElementById('admPecaLogsTable');
+            if (!tbody) return;
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const isCurrentMonth = activeMonthKey === "atual";
+            const logs = (store.logs || []).filter(l => l.type === "PECA").slice().reverse();
+            let html = "";
+            logs.forEach(l => {
+                const user = usersList[l.userId];
+                const registrador = usersList[l.registradoPor];
+                const d = new Date(l.timestamp).toLocaleDateString("pt-BR") + " " + new Date(l.timestamp).toLocaleTimeString("pt-BR", {hour: '2-digit', minute:'2-digit'});
+                const deleteBtn = isCurrentMonth
+                    ? `<button onclick="deleteLog('${l.id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>`
+                    : `<span class="text-[10px] text-secondary">Mês fechado</span>`;
+                html += `
+                    <tr>
+                        <td class="p-3 text-secondary">${d}</td>
+                        <td class="p-3 font-semibold text-white">${user ? user.name : '-'}</td>
+                        <td class="p-3">${registrador ? registrador.name : '-'}</td>
+                        <td class="p-3">${l.tipo || '-'}</td>
+                        <td class="p-3">${l.clientId || '-'}</td>
+                        <td class="p-3 text-right font-bold text-emerald-400">+${l.value} pts</td>
+                        <td class="p-3 text-right">${deleteBtn}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html || `<tr><td colspan="7" class="p-4 text-center text-secondary">Nenhuma peça registrada.</td></tr>`;
         }
 
         window.onload = initApp;
