@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js para Gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -1273,7 +1274,49 @@
             isAdminLoggedIn = false;
             render();
         }
+// Conexão com o Supabase
+const SUPABASE_URL = "https://qmhmriiyzxhshjxttixo.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RyM0bVKx1unGJeXjw_7XUg_iK7GDpo4";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+async function persistStore() {
+  try {
+    const { error } = await supabaseClient
+      .from('app_state')
+      .upsert({ id: 'main_store', data: store });
+      
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error("Erro ao salvar no Supabase:", err);
+    return false;
+  }
+}
+
+async function loadStore() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('app_state')
+      .select('data')
+      .eq('id', 'main_store')
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    if (data && data.data) {
+      store = data.data;
+    }
+  } catch (err) {
+    console.error("Erro ao carregar do Supabase:", err);
+  }
+}
+
+async function initApp() {
+  await loadStore();
+  populateDropdowns();
+  render();
+}
+
+        
         window.onload = initApp;
     </script>
 </body>
