@@ -1279,12 +1279,22 @@ const SUPABASE_URL = "https://qmhmriiyzxhshjxttixo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtaG1yaWl5enhoc2hqeHR0aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODM0MzcsImV4cCI6MjEwMTc1OTQzN30.1PfYZ1At-uQi6z-RNHDtJQwuedMCJNfDE5s5jfH9QLk";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Estado padrão garantido
+let store = {
+  usuarios: [],
+  modulos: [],
+  notas: {},
+  frequencia: {},
+  pesos: {},
+  currentMonthName: ""
+};
+
 async function persistStore() {
   try {
     const { error } = await supabaseClient
       .from('app_state')
       .upsert({ id: 'main_store', data: store });
-      
+
     if (error) throw error;
     return true;
   } catch (err) {
@@ -1301,42 +1311,36 @@ async function loadStore() {
       .eq('id', 'main_store')
       .maybeSingle();
 
-    if (error) console.warn('Erro ao carregar do Supabase:', error);
+    if (error) console.warn('Aviso do Supabase:', error);
 
     if (data && data.data) {
-      store = data.data;
-    } else {
       store = {
         usuarios: [],
         modulos: [],
         notas: {},
         frequencia: {},
         pesos: {},
-        currentMonthName: ""
+        currentMonthName: "",
+        ...data.data
       };
-      saveStore();
+    } else {
+      await persistStore();
     }
   } catch (err) {
     console.error('Falha de conexão:', err);
-    store = {
-      usuarios: [],
-      modulos: [],
-      notas: {},
-      frequencia: {},
-      pesos: {},
-      currentMonthName: ""
-    };
   }
 }
 
 async function initApp() {
   await loadStore();
+  if (!store) {
+    store = { usuarios: [], modulos: [], notas: {}, frequencia: {}, pesos: {}, currentMonthName: "" };
+  }
   populateDropdowns();
   render();
 }
 
-        
-        window.onload = initApp;
-    </script>
+window.onload = initApp;
+</script>
 </body>
 </html>
