@@ -1299,14 +1299,33 @@ async function loadStore() {
       .from('app_state')
       .select('data')
       .eq('id', 'main_store')
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) console.warn('Erro ao carregar do Supabase:', error);
+
     if (data && data.data) {
       store = data.data;
+    } else {
+      store = {
+        usuarios: [],
+        modulos: [],
+        notas: {},
+        frequencia: {},
+        pesos: {},
+        currentMonthName: ""
+      };
+      saveStore();
     }
   } catch (err) {
-    console.error("Erro ao carregar do Supabase:", err);
+    console.error('Falha de conexão:', err);
+    store = {
+      usuarios: [],
+      modulos: [],
+      notas: {},
+      frequencia: {},
+      pesos: {},
+      currentMonthName: ""
+    };
   }
 }
 
