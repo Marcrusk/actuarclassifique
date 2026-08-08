@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma de Ranking & Performance</title>
+    <title>Plataforma de Ranking & Performance - Complete Edition</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -34,7 +34,7 @@
     <!-- OVERLAY DE CARREGAMENTO INICIAL -->
     <div id="loadingOverlay" class="fixed inset-0 bg-bg flex flex-col items-center justify-center z-[100] gap-3">
         <i class="fa-solid fa-trophy text-4xl text-accent animate-pulse"></i>
-        <p class="text-sm text-secondary">Carregando dados do ranking...</p>
+        <p class="text-sm text-secondary">Carregando ecossistema completo do ranking...</p>
     </div>
 
     <!-- TOAST DE FEEDBACK -->
@@ -47,7 +47,7 @@
                 <i class="fa-solid fa-trophy me-1"></i> RankPro
             </div>
             <span class="text-xs bg-surface2 text-secondary px-2.5 py-1 rounded-full font-medium">ClickMassa Operational</span>
-            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full font-medium flex items-center gap-1">
+            <span id="cloudStatusBadge" class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full font-medium flex items-center gap-1">
                 <i class="fa-solid fa-cloud"></i> Nuvem Actuar Ativa
             </span>
         </div>
@@ -73,7 +73,7 @@
                 </select>
             </div>
 
-            <!-- SELEÇÃO "VER COMO" POR DEPARTAMENTO E ANALISTA -->
+            <!-- SELEÇÃO DE VISUALIZAÇÃO -->
             <div class="flex items-center gap-2 bg-surface2/50 p-1 rounded-lg border border-line">
                 <div class="flex items-center gap-1 px-2">
                     <i class="fa-solid fa-users text-xs text-blue-500"></i>
@@ -95,14 +95,14 @@
             </button>
 
             <button id="btnAdminLogout" onclick="logoutAdmin()" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
-                <i class="fa-solid fa-right-from-bracket me-1"></i> Sair do Modo ADM
+                <i class="fa-solid fa-right-from-bracket me-1"></i> Sair da Gestão
             </button>
         </div>
     </nav>
 
     <div class="max-w-7xl mx-auto px-6 py-8">
 
-        <!-- ABAS DE NAVEGAÇÃO DA VISÃO PÚBLICA -->
+        <!-- ABAS DE NAVEGAÇÃO PÚBLICA -->
         <div id="publicTabsContainer" class="flex gap-3 mb-6 border-b border-line pb-3">
             <button onclick="switchPublicTab('dashboard')" id="btnTabDashboard" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white">
                 <i class="fa-solid fa-chart-line me-1"></i> Dashboard & Ranking
@@ -112,10 +112,10 @@
             </button>
         </div>
 
-        <!-- VISÃO DO AGENTE / PÚBLICA -->
+        <!-- VISÃO PÚBLICA DO ANALISTA -->
         <div id="viewAgent" class="space-y-6">
             
-            <!-- CARDS DE PERFORMANCE INDIVIDUAL -->
+            <!-- CARDS DE PERFORMANCE -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="md:col-span-2 bg-surface border border-line rounded-xl p-6 flex items-center justify-between flex-wrap gap-4">
                     <div class="flex items-center gap-4">
@@ -124,6 +124,7 @@
                             <h2 class="text-xl font-bold text-white" id="agentName">Selecione um Analista</h2>
                             <p class="text-sm text-secondary">Departamento: <span id="agentTeam" class="text-blue-500 font-semibold">--</span></p>
                             <p class="text-xs text-secondary mt-1">Status: <span id="agentStatus" class="text-emerald-400 font-medium">Ativo no Ciclo</span></p>
+                            <div id="agentPenaltiesBox" class="hidden mt-2 text-[11px] bg-red-500/10 border border-red-500/20 text-red-400 p-2 rounded-lg"></div>
                         </div>
                     </div>
                     <div class="border-l border-line pl-4 space-y-1 text-right">
@@ -146,7 +147,7 @@
                 </div>
             </div>
 
-            <!-- GRÁFICOS DE EVOLUÇÃO E PERFORMANCE -->
+            <!-- GRÁFICOS DE PERFORMANCE -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-surface border border-line rounded-xl p-5">
                     <h4 class="text-xs font-bold text-secondary mb-3 flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-blue-500"></i> Atendimentos & Resolvidos</h4>
@@ -162,14 +163,14 @@
                 </div>
             </div>
 
-            <!-- TABELA DETALHADA DE CLASSIFICAÇÃO -->
+            <!-- TABELA DETALHADA DO RANKING -->
             <div class="bg-surface border border-line rounded-xl p-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
                         <h3 class="text-lg font-bold text-white flex items-center gap-2">
                             <i class="fa-solid fa-ranking-star text-accent"></i> Detalhamento do Ranking - Departamento <span id="rankingTitleTeam" class="text-blue-500">Sistema</span>
                         </h3>
-                        <p class="text-xs text-secondary">Pontuações calculadas acumuladas ou por semana</p>
+                        <p class="text-xs text-secondary">Tabela unificada com critérios operacionais e pontuações finais</p>
                     </div>
 
                     <div class="flex gap-2 bg-bg p-1.5 rounded-lg border border-line">
@@ -205,7 +206,7 @@
             </div>
         </div>
 
-        <!-- VISÃO DA CENTRAL DE FAQ & REGRAS -->
+        <!-- VISÃO DE FAQ E MANUAL DE REGRAS -->
         <div id="viewFaq" class="hidden space-y-6">
             <div class="bg-surface border border-line rounded-xl p-6">
                 <div class="flex items-center gap-3 border-b border-line pb-4 mb-6">
@@ -255,8 +256,8 @@
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-emerald-400 mb-2">📑 Protocolos Resolvidos & Atendidos</h4>
                             <ul class="text-xs space-y-1 text-secondary">
-                                <li>• Cada protocolo resolvido ➔ <strong>+2 pts</strong></li>
-                                <li>• Cada protocolo atendido ➔ <strong>+0.5 pt</strong></li>
+                                <li>• Cada protocolo resolvido ➔ <strong>+3 pts</strong></li>
+                                <li>• Cada protocolo atendido ➔ <strong>+1 pt</strong></li>
                             </ul>
                         </div>
                     </div>
@@ -276,7 +277,7 @@
             </div>
         </div>
 
-        <!-- VISÃO DA GESTÃO / MODO ADM -->
+        <!-- MODO GESTÃO COMPLETO (PAINEL DO GESTOR) -->
         <div id="viewAdmin" class="hidden space-y-6">
             <div class="bg-blue-500/10 border border-blue-500/30 p-4 rounded-xl flex flex-wrap justify-between items-center gap-4">
                 <div class="flex items-center gap-3">
@@ -284,23 +285,40 @@
                         <i class="fa-solid fa-user-shield text-xl"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-blue-300">Painel do Gestor</h3>
-                        <p class="text-xs text-blue-200/70">Lançamentos semanais de métricas e controle de ranking.</p>
+                        <h3 class="font-bold text-blue-300">Painel do Gestor (Marco ADM)</h3>
+                        <p class="text-xs text-blue-200/70">Lançamentos semanais, cadastro de analistas, gestão de penalidades e backups.</p>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-3 flex-wrap">
-                    <div class="bg-bg px-3 py-1.5 rounded-lg border border-line flex items-center gap-2">
-                        <span class="text-xs text-secondary">Departamento Gestão:</span>
-                        <select id="admDeptSelect" onchange="onAdminDeptChange(this.value)" class="bg-transparent text-blue-400 font-bold text-xs focus:outline-none">
-                            <option value="Sistema">Dep. Sistema</option>
-                            <option value="Catraca">Dep. Catraca</option>
-                        </select>
-                    </div>
+                    <button onclick="openManageUsersModal()" class="bg-surface2 hover:bg-surface3 text-white text-xs font-bold px-3 py-2 rounded-lg shadow flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-user-plus text-blue-400"></i> Gerenciar Analistas
+                    </button>
+
+                    <button onclick="openPenaltyModal()" class="bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-400 text-xs font-bold px-3 py-2 rounded-lg shadow flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Aplicar Penalidade
+                    </button>
+
+                    <button onclick="exportBackup()" class="bg-surface2 hover:bg-surface3 text-white text-xs font-bold px-3 py-2 rounded-lg shadow flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-download"></i> Exportar Backup (JSON)
+                    </button>
+
+                    <button onclick="closeCurrentMonth()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-box-archive"></i> Fechar Mês & Zerar
+                    </button>
                 </div>
             </div>
 
-            <!-- FORMULÁRIO DINÂMICO DE SISTEMA -->
+            <!-- SELETOR DE FORMULÁRIO DO DEPARTAMENTO -->
+            <div class="flex items-center gap-3 bg-surface p-3 rounded-xl border border-line">
+                <span class="text-xs text-secondary font-bold">Lançamento de Dados para:</span>
+                <select id="admDeptSelect" onchange="onAdminDeptChange(this.value)" class="bg-surface2 text-blue-400 font-bold text-xs rounded px-3 py-1.5 border border-line focus:outline-none">
+                    <option value="Sistema">Departamento Sistema</option>
+                    <option value="Catraca">Departamento Catraca</option>
+                </select>
+            </div>
+
+            <!-- FORMULÁRIO DINÂMICO - SISTEMA -->
             <div id="formDeptSistema" class="bg-surface border border-line rounded-xl p-6">
                 <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2">
                     <i class="fa-solid fa-desktop text-blue-500"></i> Lançamento Semanal - Departamento Sistema
@@ -308,7 +326,7 @@
                 <form onsubmit="addSistemaScore(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-xs text-secondary mb-1">Analista (Sistema)</label>
-                        <select id="admUserSistema" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
+                        <select id="admUserSistema" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line" required></select>
                     </div>
                     <div>
                         <label class="block text-xs text-secondary mb-1">Semana de Referência</label>
@@ -320,7 +338,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs text-secondary mb-1">TMA Pontos</label>
+                        <label class="block text-xs text-secondary mb-1">TMA Médio</label>
                         <select id="admTMA" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                             <option value="50">Até 1h20 (+50 pts)</option>
                             <option value="25">1h21 a 1h50 (+25 pts)</option>
@@ -345,12 +363,12 @@
                         <input type="number" id="admSisPrioridades" value="0" min="0" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                     <div>
-                        <label class="block text-xs text-secondary mb-1">Monitoramento (0 a 100 pts)</label>
+                        <label class="block text-xs text-secondary mb-1">Monitoramento / Qualidade (0 a 100 pts)</label>
                         <input type="number" id="admSisMonitoramento" value="0" min="0" max="100" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                     <div class="flex items-center gap-2 pt-5">
                         <input type="checkbox" id="admSisSprint100" class="w-4 h-4 text-blue-500 rounded">
-                        <label for="admSisSprint100" class="text-xs text-secondary">Concluiu Sprint (+100 pts)</label>
+                        <label for="admSisSprint100" class="text-xs text-secondary">Concluiu 100% da Sprint (+100 pts)</label>
                     </div>
                     <div class="md:col-span-3 pt-2">
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition">
@@ -360,7 +378,7 @@
                 </form>
             </div>
 
-            <!-- FORMULÁRIO DINÂMICO DE CATRACA -->
+            <!-- FORMULÁRIO DINÂMICO - CATRACA -->
             <div id="formDeptCatraca" class="hidden bg-surface border border-line rounded-xl p-6">
                 <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2">
                     <i class="fa-solid fa-turnstile text-emerald-400"></i> Lançamento Semanal - Departamento Catraca
@@ -368,7 +386,7 @@
                 <form onsubmit="addCatracaScore(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-xs text-secondary mb-1">Analista (Catraca)</label>
-                        <select id="admUserCatraca" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
+                        <select id="admUserCatraca" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line" required></select>
                     </div>
                     <div>
                         <label class="block text-xs text-secondary mb-1">Semana de Referência</label>
@@ -401,7 +419,7 @@
                     </div>
                     <div class="flex items-center gap-2 pt-5">
                         <input type="checkbox" id="admCatSprint100" class="w-4 h-4 text-emerald-500 rounded">
-                        <label for="admCatSprint100" class="text-xs text-secondary">Concluiu Sprint (+100 pts)</label>
+                        <label for="admCatSprint100" class="text-xs text-secondary">Concluiu 100% da Sprint (+100 pts)</label>
                     </div>
                     <div class="md:col-span-3 pt-2">
                         <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg text-sm transition">
@@ -422,15 +440,71 @@
                 </h3>
                 <button onclick="closeAdminModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-xs text-secondary">Digite a senha do gestor para desbloquear os lançamentos.</p>
+            <p class="text-xs text-secondary">Digite a senha para acessar o painel de gerenciamento.</p>
             <input type="password" id="adminPassword" placeholder="Senha do Gestor" class="w-full bg-surface2 border border-line rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
             <button onclick="loginAdmin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Acessar Painel</button>
         </div>
     </div>
 
-    <!-- LÓGICA DE NEGÓCIO E DADOS BASE -->
+    <!-- MODAL GERENCIAR ANALISTAS -->
+    <div id="modalManageUsers" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+        <div class="bg-surface border border-line rounded-xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-line pb-3">
+                <h3 class="font-bold text-white text-base flex items-center gap-2">
+                    <i class="fa-solid fa-users-gear text-blue-500"></i> Cadastro & Gestão de Analistas
+                </h3>
+                <button onclick="closeManageUsersModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="addNewAnalyst(event)" class="grid grid-cols-2 gap-3">
+                <input type="text" id="newAnalystName" placeholder="Nome do Analista" required class="col-span-2 bg-surface2 text-white border border-line rounded p-2 text-xs">
+                <select id="newAnalystDept" class="bg-surface2 text-white border border-line rounded p-2 text-xs">
+                    <option value="Sistema">Dep. Sistema</option>
+                    <option value="Catraca">Dep. Catraca</option>
+                </select>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded p-2">Adicionar Analista</button>
+            </form>
+            <div class="border-t border-line pt-3 max-h-48 overflow-y-auto space-y-2" id="analystsListManage"></div>
+        </div>
+    </div>
+
+    <!-- MODAL PENALIDADES -->
+    <div id="modalPenalty" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+        <div class="bg-surface border border-line rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-line pb-3">
+                <h3 class="font-bold text-red-400 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Registrar Penalidade / Desconto
+                </h3>
+                <button onclick="closePenaltyModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="applyPenalty(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs text-secondary mb-1">Analista</label>
+                    <select id="penUser" class="w-full bg-surface2 text-white border border-line rounded p-2 text-xs"></select>
+                </div>
+                <div>
+                    <label class="block text-xs text-secondary mb-1">Semana do Ocorrido</label>
+                    <select id="penWeek" class="w-full bg-surface2 text-white border border-line rounded p-2 text-xs">
+                        <option value="Semana 1">Semana 1</option>
+                        <option value="Semana 2">Semana 2</option>
+                        <option value="Semana 3">Semana 3</option>
+                        <option value="Semana 4">Semana 4</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-secondary mb-1">Pontos a Descontar (-)</label>
+                    <input type="number" id="penPoints" value="20" min="1" required class="w-full bg-surface2 text-white border border-line rounded p-2 text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs text-secondary mb-1">Motivo / Descrição</label>
+                    <input type="text" id="penReason" placeholder="Ex: Falha grave de atendimento" required class="w-full bg-surface2 text-white border border-line rounded p-2 text-xs">
+                </div>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded p-2.5">Aplicar Penalidade</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT E LÓGICA DE NEGÓCIO RESTAURADA -->
     <script>
-        // DADOS PADRÃO PARA INICIALIZAR A PLATAFORMA COM INFORMAÇÕES
         const initialData = {
             currentMonthName: "Março 2026",
             analistas: [
@@ -441,12 +515,12 @@
                 { id: "5", nome: "Mateus", departamento: "Catraca", vitoriasSemana: 0, vitoriasMes: 0 }
             ],
             lancamentos: [
-                { analistaId: "1", semana: "Semana 1", tmaPts: 50, resolvidos: 45, atendidos: 52, nps: 4.9, prioridades: 5, sprint100: true, extra: 90, penalidade: 0 },
-                { analistaId: "1", semana: "Semana 2", tmaPts: 50, resolvidos: 40, atendidos: 48, nps: 4.8, prioridades: 4, sprint100: false, extra: 85, penalidade: 0 },
-                { analistaId: "2", semana: "Semana 1", tmaPts: 25, resolvidos: 38, atendidos: 44, nps: 4.7, prioridades: 3, sprint100: true, extra: 80, penalidade: 0 },
-                { analistaId: "3", semana: "Semana 1", tmaPts: 10, resolvidos: 30, atendidos: 35, nps: 4.5, prioridades: 2, sprint100: false, extra: 70, penalidade: 0 },
-                { analistaId: "4", semana: "Semana 1", tmaPts: 0, resolvidos: 60, atendidos: 70, nps: 4.95, prioridades: 8, sprint100: true, extra: 95, penalidade: 0 },
-                { analistaId: "5", semana: "Semana 1", tmaPts: 0, resolvidos: 50, atendidos: 55, nps: 4.6, prioridades: 4, sprint100: false, extra: 80, penalidade: 0 }
+                { analistaId: "1", semana: "Semana 1", tmaPts: 50, resolvidos: 45, atendidos: 52, nps: 4.9, prioridades: 5, sprint100: true, extra: 90, penalidade: 0, penalidadeMotivo: "" },
+                { analistaId: "1", semana: "Semana 2", tmaPts: 50, resolvidos: 40, atendidos: 48, nps: 4.8, prioridades: 4, sprint100: false, extra: 85, penalidade: 0, penalidadeMotivo: "" },
+                { analistaId: "2", semana: "Semana 1", tmaPts: 25, resolvidos: 38, atendidos: 44, nps: 4.7, prioridades: 3, sprint100: true, extra: 80, penalidade: 0, penalidadeMotivo: "" },
+                { analistaId: "3", semana: "Semana 1", tmaPts: 10, resolvidos: 30, atendidos: 35, nps: 4.5, prioridades: 2, sprint100: false, extra: 70, penalidade: 0, penalidadeMotivo: "" },
+                { analistaId: "4", semana: "Semana 1", tmaPts: 0, resolvidos: 60, atendidos: 70, nps: 4.95, prioridades: 8, sprint100: true, extra: 95, penalidade: 0, penalidadeMotivo: "" },
+                { analistaId: "5", semana: "Semana 1", tmaPts: 0, resolvidos: 50, atendidos: 55, nps: 4.6, prioridades: 4, sprint100: false, extra: 80, penalidade: 0, penalidadeMotivo: "" }
             ]
         };
 
@@ -467,9 +541,10 @@
 
         async function persistStore() {
             try {
+                localStorage.setItem('rankpro_store', JSON.stringify(store));
                 await supabaseClient.from('app_state').upsert({ id: 'main_store', data: store });
             } catch (err) {
-                console.error("Erro ao salvar Supabase:", err);
+                console.warn("Erro ao sincronizar Supabase, salvo localmente:", err);
             }
         }
 
@@ -479,12 +554,14 @@
                 if (data && data.data && data.data.analistas) {
                     store = data.data;
                 } else {
-                    store = { ...initialData };
-                    await persistStore();
+                    const local = localStorage.getItem('rankpro_store');
+                    if (local) store = JSON.parse(local);
+                    else store = { ...initialData };
                 }
             } catch (err) {
-                console.warn("Usando estado local por erro na conexao:", err);
-                store = { ...initialData };
+                const local = localStorage.getItem('rankpro_store');
+                if (local) store = JSON.parse(local);
+                else store = { ...initialData };
             }
         }
 
@@ -523,9 +600,9 @@
             const userSelect = document.getElementById('userSelect');
             const admSis = document.getElementById('admUserSistema');
             const admCat = document.getElementById('admUserCatraca');
+            const penUser = document.getElementById('penUser');
 
             const filtered = store.analistas.filter(a => a.departamento === currentSelectedTeam);
-            
             userSelect.innerHTML = filtered.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
             
             if (filtered.length > 0) {
@@ -535,14 +612,9 @@
                 userSelect.value = currentSelectedUser;
             }
 
-            if (admSis) {
-                admSis.innerHTML = store.analistas.filter(a => a.departamento === 'Sistema')
-                    .map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
-            }
-            if (admCat) {
-                admCat.innerHTML = store.analistas.filter(a => a.departamento === 'Catraca')
-                    .map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
-            }
+            if (admSis) admSis.innerHTML = store.analistas.filter(a => a.departamento === 'Sistema').map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+            if (admCat) admCat.innerHTML = store.analistas.filter(a => a.departamento === 'Catraca').map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+            if (penUser) penUser.innerHTML = store.analistas.map(a => `<option value="${a.id}">${a.nome} (${a.departamento})</option>`).join('');
         }
 
         function renderLeaderboard() {
@@ -633,11 +705,22 @@
 
             const userLancamentos = getFilteredLancamentos(user.id);
             let total = 0;
-            userLancamentos.forEach(l => total += calculatePoints(l, user.departamento));
+            let penText = "";
+            userLancamentos.forEach(l => {
+                total += calculatePoints(l, user.departamento);
+                if (l.penalidade > 0) penText += `• ${l.semana}: -${l.penalidade} pts (${l.penalidadeMotivo || 'Sem motivo'}) `;
+            });
 
             document.getElementById('agentTotalPts').innerText = `${total} pts`;
 
-            // Projeção de prêmio fictícia baseada em pontos
+            const penBox = document.getElementById('agentPenaltiesBox');
+            if (penText) {
+                penBox.innerText = penText;
+                penBox.classList.remove('hidden');
+            } else {
+                penBox.classList.add('hidden');
+            }
+
             let prize = "R$ 0,00";
             if (total > 300) prize = "R$ 1.000,00";
             else if (total > 200) prize = "R$ 500,00";
@@ -685,13 +768,8 @@
         }
 
         function onAdminDeptChange(dept) {
-            if (dept === 'Sistema') {
-                document.getElementById('formDeptSistema').classList.remove('hidden');
-                document.getElementById('formDeptCatraca').classList.add('hidden');
-            } else {
-                document.getElementById('formDeptSistema').classList.add('hidden');
-                document.getElementById('formDeptCatraca').classList.remove('hidden');
-            }
+            document.getElementById('formDeptSistema').classList.toggle('hidden', dept !== 'Sistema');
+            document.getElementById('formDeptCatraca').classList.toggle('hidden', dept !== 'Catraca');
         }
 
         async function addSistemaScore(e) {
@@ -709,7 +787,8 @@
                 prioridades: parseInt(document.getElementById('admSisPrioridades').value),
                 sprint100: document.getElementById('admSisSprint100').checked,
                 extra: parseInt(document.getElementById('admSisMonitoramento').value),
-                penalidade: 0
+                penalidade: 0,
+                penalidadeMotivo: ""
             };
 
             store.lancamentos = store.lancamentos.filter(l => !(l.analistaId === analistaId && l.semana === semana));
@@ -733,7 +812,8 @@
                 prioridades: parseInt(document.getElementById('admCatPrioridades').value),
                 sprint100: document.getElementById('admCatSprint100').checked,
                 extra: parseInt(document.getElementById('admCatPecas').value),
-                penalidade: 0
+                penalidade: 0,
+                penalidadeMotivo: ""
             };
 
             store.lancamentos = store.lancamentos.filter(l => !(l.analistaId === analistaId && l.semana === semana));
@@ -774,6 +854,94 @@
             document.getElementById('btnAdminAccess').classList.remove('hidden');
             document.getElementById('btnAdminLogout').classList.add('hidden');
             document.getElementById('viewAdmin').classList.add('hidden');
+        }
+
+        // GERENCIAR ANALISTAS
+        function openManageUsersModal() {
+            renderAnalystsList();
+            document.getElementById('modalManageUsers').classList.remove('hidden');
+        }
+        function closeManageUsersModal() { document.getElementById('modalManageUsers').classList.add('hidden'); }
+
+        function renderAnalystsList() {
+            const container = document.getElementById('analystsListManage');
+            container.innerHTML = store.analistas.map(a => `
+                <div class="flex justify-between items-center bg-surface2 p-2 rounded text-xs border border-line">
+                    <span>${a.nome} (${a.departamento})</span>
+                    <button onclick="removeAnalyst('${a.id}')" class="text-red-400 hover:text-red-300 font-bold"><i class="fa-solid fa-trash"></i> Excluir</button>
+                </div>
+            `).join('');
+        }
+
+        async function addNewAnalyst(e) {
+            e.preventDefault();
+            const nome = document.getElementById('newAnalystName').value.trim();
+            const departamento = document.getElementById('newAnalystDept').value;
+            if (!nome) return;
+
+            const newA = { id: Date.now().toString(), nome, departamento, vitoriasSemana: 0, vitoriasMes: 0 };
+            store.analistas.push(newA);
+            await persistStore();
+            renderAnalystsList();
+            renderUserDropdowns();
+            renderLeaderboard();
+            document.getElementById('newAnalystName').value = "";
+        }
+
+        async function removeAnalyst(id) {
+            if (!confirm('Deseja realmente remover este analista?')) return;
+            store.analistas = store.analistas.filter(a => a.id !== id);
+            store.lancamentos = store.lancamentos.filter(l => l.analistaId !== id);
+            await persistStore();
+            renderAnalystsList();
+            renderUserDropdowns();
+            renderLeaderboard();
+        }
+
+        // MODAL PENALIDADES
+        function openPenaltyModal() { document.getElementById('modalPenalty').classList.remove('hidden'); }
+        function closePenaltyModal() { document.getElementById('modalPenalty').classList.add('hidden'); }
+
+        async function applyPenalty(e) {
+            e.preventDefault();
+            const analistaId = document.getElementById('penUser').value;
+            const semana = document.getElementById('penWeek').value;
+            const pts = parseInt(document.getElementById('penPoints').value);
+            const motivo = document.getElementById('penReason').value;
+
+            let lanc = store.lancamentos.find(l => l.analistaId === analistaId && l.semana === semana);
+            if (!lanc) {
+                lanc = { analistaId, semana, tmaPts: 0, resolvidos: 0, atendidos: 0, nps: 0, prioridades: 0, sprint100: false, extra: 0, penalidade: pts, penalidadeMotivo: motivo };
+                store.lancamentos.push(lanc);
+            } else {
+                lanc.penalidade = pts;
+                lanc.penalidadeMotivo = motivo;
+            }
+
+            await persistStore();
+            closePenaltyModal();
+            render();
+            alert('Penalidade aplicada com sucesso!');
+        }
+
+        // EXPORTAR BACKUP
+        function exportBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(store, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `backup_ranking_${store.currentMonthName.replace(" ", "_")}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // FECHAR MÊS
+        async function closeCurrentMonth() {
+            if (!confirm("Tem certeza que deseja fechar o mês atual e zerar o ranking para o próximo ciclo?")) return;
+            store.lancamentos = [];
+            await persistStore();
+            render();
+            alert("Mês encerrado com sucesso! Lançamentos zerados.");
         }
 
         window.onload = async () => {
