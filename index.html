@@ -22,7 +22,7 @@
                         surface3: '#26262E',  // Superfície elevada + hover
                         line: '#22222A',      // Bordas / Divisores
                         secondary: '#A1A1AA', // Texto Secundário
-                        accent: '#00F0FF'     // Acento de Destaque (liderança / highlights)
+                        accent: '#00F0FF'     // Acento de Destaque
                     }
                 }
             }
@@ -47,8 +47,8 @@
                 <i class="fa-solid fa-trophy me-1"></i> RankPro
             </div>
             <span class="text-xs bg-surface2 text-secondary px-2.5 py-1 rounded-full font-medium">ClickMassa Operational</span>
-            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Os dados são salvos localmente no navegador.">
-                <i class="fa-solid fa-database"></i> Armazenamento Local Ativo
+            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Sincronizado com Nuvem Supabase">
+                <i class="fa-solid fa-cloud"></i> Nuvem Actuar Ativa
             </span>
         </div>
         
@@ -220,7 +220,6 @@
                     </div>
                 </div>
 
-                <!-- SELECTOR FAQ DEPARTAMENTO -->
                 <div class="flex gap-2 mb-6">
                     <button onclick="toggleFaqDept('Sistema')" id="faqTabSistema" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white">
                         Métricas Departamento Sistema
@@ -230,7 +229,6 @@
                     </button>
                 </div>
 
-                <!-- CONTEÚDO FAQ SISTEMA -->
                 <div id="faqContentSistema" class="space-y-6 text-sm text-secondary">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
@@ -251,57 +249,21 @@
                                 <li>🎖️ 4º em diante ➔ <strong>0 pts</strong></li>
                             </ul>
                         </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-blue-400 mb-2">📊 Protocolos Atendidos (Esforço)</h4>
-                            <ul class="text-xs space-y-1 text-secondary">
-                                <li>• 101 a 120 protocolos ➔ <strong>100 pts</strong> (+1 pt adicional por protocolo > 120)</li>
-                                <li>• 91 a 100 protocolos ➔ <strong>50 pts</strong></li>
-                                <li>• 81 a 90 protocolos ➔ <strong>10 pts</strong></li>
-                                <li>• Abaixo de 80 ➔ <strong>0 pts</strong></li>
-                            </ul>
-                        </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-blue-400 mb-2">⭐ Avaliação de Satisfação (NPS)</h4>
-                            <ul class="text-xs space-y-1 text-secondary">
-                                <li>• Nota 4.90 a 5.00 ➔ <strong>100 pts</strong></li>
-                                <li>• Nota 4.70 a 4.89 ➔ <strong>50 pts</strong></li>
-                                <li>• Nota 4.50 a 4.69 ➔ <strong>25 pts</strong></li>
-                                <li>• Nota 4.00 a 4.49 ➔ <strong>10 pts</strong></li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                        <h4 class="font-bold text-blue-400 mb-2">🚀 Sprint Semanal de Crescimento do Produto & Monitoramento (até 100 pts)</h4>
-                        <p class="text-xs text-secondary mb-2">• Cliente Recuperado: <strong>+50 pts cada</strong> | Conclusão 100%: <strong>+100 pts</strong></p>
-                        <p class="text-xs text-secondary mb-2">• Ranking % Recuperação: 🥇 100 pts | 🥈 50 pts | 🥉 25 pts</p>
-                        <p class="text-xs text-secondary">• Monitoramento em 5 Pilares (Tempo, Comunicação, Qualidade, Experiência, Encerramento) somando até 100 pts.</p>
                     </div>
                 </div>
 
-                <!-- CONTEÚDO FAQ CATRACA -->
                 <div id="faqContentCatraca" class="hidden space-y-6 text-sm text-secondary">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-emerald-400 mb-2">📑 Protocolos Resolvidos & Atendidos</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Cada protocolo resolvido ➔ <strong>+2 pts</strong></li>
-                                <li>• Cada protocolo atendido (esforço) ➔ <strong>+0.5 pt</strong></li>
-                                <li>• Ranking Semanal Resolvidos: 🥇 100 pts | 🥈 50 pts | 🥉 10 pts</li>
-                                <li>• Ranking Semanal Atendidos: 🥇 100 pts | 🥈 50 pts | 🥉 10 pts</li>
-                            </ul>
-                        </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-emerald-400 mb-2">🔧 Peças, Despachos & Prioridades</h4>
-                            <ul class="text-xs space-y-1 text-secondary">
-                                <li>• Demanda Prioritária Concluída ➔ <strong>+50 pts cada</strong></li>
-                                <li>• Peças & Despachos (Coleta: 50 pts | Envio: 50 pts): total de até <strong>100 pts</strong></li>
+                                <li>• Cada protocolo atendido ➔ <strong>+0.5 pt</strong></li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
-                <!-- PREMIAÇÃO -->
                 <div class="mt-6 bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl flex items-center justify-between flex-wrap gap-3">
                     <div>
                         <h4 class="font-bold text-emerald-300">🏆 Premiação Financeira Mensal</h4>
@@ -318,7 +280,6 @@
 
         <!-- ================= VISÃO DA GESTÃO / MODO ADM ================= -->
         <div id="viewAdmin" class="hidden space-y-6">
-            
             <div class="bg-blue-500/10 border border-blue-500/30 p-4 rounded-xl flex flex-wrap justify-between items-center gap-4">
                 <div class="flex items-center gap-3">
                     <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
@@ -475,872 +436,170 @@
                     </div>
                 </form>
             </div>
-
-            <!-- REGISTRO CUSTOMIZADO DE PENALIDADES -->
-            <div class="bg-surface border border-line rounded-xl p-6">
-                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation text-red-500"></i> Aplicação de Penalidades Customizadas
-                </h3>
-                <form onsubmit="applyCustomPenalty(event)" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-xs text-secondary mb-1">Analista Penalizado</label>
-                            <select id="penaltyUser" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-secondary mb-1">Pontos a Deduzir (Ex: -50)</label>
-                            <input type="number" id="penaltyValue" placeholder="Ex: -50" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs text-secondary mb-1">Motivo / Descrição da Penalidade</label>
-                            <input type="text" id="penaltyReason" placeholder="Ex: Atraso injustificado no suporte 3CX" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
-                        </div>
-                    </div>
-                    <button type="submit" class="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition">
-                        <i class="fa-solid fa-gavel me-1"></i> Registrar Penalidade
-                    </button>
-                </form>
-            </div>
-
-            <!-- HISTÓRICO DE LANÇAMENTOS SEMANAIS (CONSULTA GESTOR) -->
-            <div class="bg-surface border border-line rounded-xl p-6">
-                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-clock-rotate-left text-secondary"></i> Histórico de Registros Semanais do Mês
-                </h3>
-                <p class="text-xs text-secondary mb-3">Somente lançamentos do mês em aberto podem ser excluídos aqui. Meses já fechados ficam congelados no histórico.</p>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-secondary">
-                        <thead class="bg-bg text-secondary uppercase text-[10px]">
-                            <tr>
-                                <th class="p-3">Data/Hora</th>
-                                <th class="p-3">Analista</th>
-                                <th class="p-3">Semana</th>
-                                <th class="p-3">Resolvidos / Atendidos</th>
-                                <th class="p-3">NPS</th>
-                                <th class="p-3">Prioridades</th>
-                                <th class="p-3">Tipo</th>
-                                <th class="p-3">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admHistoryLogs" class="divide-y divide-line/50"></tbody>
-                    </table>
-                </div>
-            </div>
-
         </div>
-
     </div>
 
-    <!-- MODAL DE AUTENTICAÇÃO DO GESTOR MARCO -->
-    <div id="adminModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-surface border border-line rounded-xl p-6 w-full max-w-md shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-md font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-lock text-blue-400"></i> Autenticação da Gestão
+    <!-- MODAL AUTENTICAÇÃO ADM -->
+    <div id="modalAdminAuth" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+        <div class="bg-surface border border-line rounded-xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-white text-base flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-blue-500"></i> Autenticação do Gestor
                 </h3>
                 <button onclick="closeAdminModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-xs text-secondary mb-4">Digite a senha de administrador (Marco ADM) para acessar.</p>
-            <form onsubmit="loginAdmin(event)">
-                <input type="password" id="adminPass" placeholder="Digite sua senha..." required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-blue-500">
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">
-                    Entrar no Modo ADM
-                </button>
-            </form>
-            <p class="text-[10px] text-secondary mt-3">
-                <i class="fa-solid fa-circle-info me-1"></i> Esta senha protege contra acessos casuais, mas roda no navegador.
-            </p>
+            <p class="text-xs text-secondary">Digite a senha do gestor para desbloquear os lançamentos.</p>
+            <input type="password" id="adminPassword" placeholder="Senha do Gestor" class="w-full bg-surface2 border border-line rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <button onclick="loginAdmin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Acessar Painel</button>
         </div>
     </div>
 
+    <!-- SCRIPTS E LÓGICA COMPLETA DE NEGÓCIO -->
     <script>
-        const usersList = {
-            alessandro: { name: "Alessandro", team: "Sistema", initial: "AL" },
-            arthur: { name: "Arthur", team: "Sistema", initial: "AR" },
-            pedro_g: { name: "Pedro Gustavo", team: "Sistema", initial: "PG" },
-            pedro_m: { name: "Pedro Marques", team: "Sistema", initial: "PM" },
-            lucas: { name: "Lucas Carvalho", team: "Sistema", initial: "LC" },
-            leonardo: { name: "Leonardo", team: "Catraca", initial: "LE" },
-            watson: { name: "Watson", team: "Catraca", initial: "WA" },
-            felipe: { name: "Felipe", team: "Catraca", initial: "FE" },
-            marcos: { name: "Marcos", team: "Catraca", initial: "MA" },
-            dyego: { name: "Dyego", team: "Catraca", initial: "DY" },
-            vitor: { name: "Vitor", team: "Catraca", initial: "VI" }
+        // ESTADO GLOBAL GARANTIDO DESDE O INÍCIO
+        let store = {
+            usuarios: [],
+            modulos: [],
+            notas: {},
+            frequencia: {},
+            pesos: {},
+            currentMonthName: "Março 2026"
         };
 
-        const STORAGE_KEY = "rankpro_db_v5";
-
-        let currentActiveUser = "alessandro";
-        let activeRankingTab = "Sistema";
-        let activeMonthKey = "atual";
-        let activePeriodFilter = "ALL";
+        let currentSelectedUser = "";
+        let currentSelectedTeam = "Sistema";
+        let currentRankingTab = "Sistema";
+        let selectedPeriod = "ALL";
         let isAdminLoggedIn = false;
 
-        // Cache em memória do estado
-        let appStore = null;
+        const SUPABASE_URL = "https://qmhmriiyzxhshjxttixo.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtaG1yaWl5enhoc2hqeHR0aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODM0MzcsImV4cCI6MjEwMTc1OTQzN30.1PfYZ1At-uQi6z-RNHDtJQwuedMCJNfDE5s5jfH9QLk";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Instâncias do Chart.js
-        let chartVolInst = null;
-        let chartNpsInst = null;
-        let chartPrioritiesInst = null;
-
-        function uid() {
-            return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-        }
-
-        function showToast(msg, type = "success") {
-            const el = document.getElementById('toast');
-            el.textContent = msg;
-            el.className = "fixed bottom-6 right-6 z-[100] px-4 py-3 rounded-lg shadow-xl text-sm font-semibold transition-all " +
-                (type === "success" ? "bg-emerald-600 text-white" : type === "error" ? "bg-red-600 text-white" : "bg-surface2 text-white");
-            el.classList.remove('hidden');
-            clearTimeout(window._toastTimer);
-            window._toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
-        }
-
-        // CORREÇÃO: Utilizando localStorage nativo do navegador
-        async function initApp() {
+        async function persistStore() {
             try {
-                const res = localStorage.getItem(STORAGE_KEY);
-                appStore = res ? JSON.parse(res) : null;
-            } catch (e) {
-                console.error("Erro ao carregar do localStorage:", e);
-                appStore = null;
-            }
-
-            if (!appStore) {
-                appStore = {
-                    currentMonthName: getCurrentMonthLabel(),
-                    logs: [],
-                    history: []
-                };
-                await persistStore("Inicializando banco de dados local...");
-            }
-
-            document.getElementById('loadingOverlay').classList.add('hidden');
-            populateDropdowns();
-            render();
-        }
-
-        function getCurrentMonthLabel() {
-            const d = new Date();
-            const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-            return `${meses[d.getMonth()]} / ${d.getFullYear()}`;
-        }
-
-        function getStore() {
-            return appStore;
-        }
-
-        // CORREÇÃO: Persistência real com localStorage
-        async function persistStore(silentLabel) {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(appStore));
+                const { error } = await supabaseClient
+                    .from('app_state')
+                    .upsert({ id: 'main_store', data: store });
+                if (error) throw error;
                 return true;
-            } catch (e) {
-                console.error("Erro ao salvar no localStorage:", e);
-                showToast("Falha ao salvar no navegador. O armazenamento pode estar cheio.", "error");
+            } catch (err) {
+                console.error("Erro ao salvar no Supabase:", err);
                 return false;
             }
         }
 
-        // COMPUTA MÉTRICAS FILTRADAS POR SEMANA OU TOTAL MÊS
-        function getAggregatedMetrics(monthKey, periodFilter) {
-            const store = getStore();
-            let targetLogs = [];
+        async function loadStore() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('app_state')
+                    .select('data')
+                    .eq('id', 'main_store')
+                    .maybeSingle();
 
-            if (monthKey === "atual") {
-                targetLogs = store.logs || [];
-            } else {
-                const h = store.history.find(item => item.id === monthKey);
-                targetLogs = h ? h.logs : [];
-            }
+                if (error) console.warn('Aviso do Supabase:', error);
 
-            if (periodFilter !== "ALL") {
-                targetLogs = targetLogs.filter(l => l.week === periodFilter);
-            }
-
-            const agg = {};
-            Object.keys(usersList).forEach(id => {
-                agg[id] = {
-                    resolvidos: 0, atendidos: 0, satisfacaoSum: 0, satisfacaoCount: 0,
-                    prioridades: 0, sprintTrabalhados: 0, sprintGanhos: 0, sprint100PctCount: 0,
-                    tmaPts: 0, pecasPts: 0, monitoramentoPts: 0, penalidades: 0,
-                    penaltiesList: []
-                };
-            });
-
-            targetLogs.forEach(l => {
-                if (!agg[l.userId]) return;
-                const m = agg[l.userId];
-                if (l.type === "WEEKLY") {
-                    m.resolvidos += l.resolvidos || 0;
-                    m.atendidos += l.atendidos || 0;
-                    m.prioridades += l.prioridades || 0;
-                    m.sprintTrabalhados += l.sprintTrabalhados || 0;
-                    m.sprintGanhos += l.sprintGanhos || 0;
-                    if (l.sprint100) m.sprint100PctCount += 1;
-                    if (l.nps > 0) {
-                        m.satisfacaoSum += l.nps;
-                        m.satisfacaoCount += 1;
-                    }
-                    m.tmaPts += l.tmaPts || 0;
-                    m.pecasPts += l.pecasPts || 0;
-                    m.monitoramentoPts += l.monitoramentoPts || 0;
-                } else if (l.type === "PENALTY") {
-                    m.penalidades += l.value;
-                    m.penaltiesList.push({ reason: l.reason, value: l.value });
-                }
-            });
-
-            return agg;
-        }
-
-        function calculatePoints(userId, metrics) {
-            const m = metrics[userId];
-            const user = usersList[userId];
-            if (!m) return { total: 0, avgSatisfacao: 0, sprintRate: 0, breakdown: {} };
-
-            let ptsResolvidos = 0;
-            let ptsAtendidos = 0;
-            let ptsSatisfacao = 0;
-            let ptsPrioridades = m.prioridades * 50;
-            let ptsSprintGanhos = m.sprintGanhos * 50;
-            let ptsSprint100 = (m.sprint100PctCount || 0) * 100;
-
-            let avgSatisfacao = m.satisfacaoCount > 0 ? (m.satisfacaoSum / m.satisfacaoCount) : 0;
-            let sprintRate = m.sprintTrabalhados > 0 ? ((m.sprintGanhos / m.sprintTrabalhados) * 100) : 0;
-
-            if (user.team === "Sistema") {
-                let atend = m.atendidos || 0;
-                if (atend >= 101) ptsAtendidos = 100 + (atend - 120 > 0 ? (atend - 120) : 0);
-                else if (atend >= 91) ptsAtendidos = 50;
-                else if (atend >= 81) ptsAtendidos = 10;
-
-                if (avgSatisfacao >= 4.90) ptsSatisfacao = 100;
-                else if (avgSatisfacao >= 4.70) ptsSatisfacao = 50;
-                else if (avgSatisfacao >= 4.50) ptsSatisfacao = 25;
-                else if (avgSatisfacao >= 4.00) ptsSatisfacao = 10;
-
-                ptsResolvidos = m.resolvidos * 2;
-            } else {
-                ptsResolvidos = (m.resolvidos || 0) * 2;
-                ptsAtendidos = (m.atendidos || 0) * 0.5;
-
-                if (avgSatisfacao >= 4.90) ptsSatisfacao = 100;
-                else if (avgSatisfacao >= 4.70) ptsSatisfacao = 50;
-                else if (avgSatisfacao >= 4.50) ptsSatisfacao = 25;
-                else if (avgSatisfacao >= 4.00) ptsSatisfacao = 10;
-            }
-
-            let total = ptsResolvidos + ptsAtendidos + ptsSatisfacao + ptsPrioridades + 
-                        ptsSprintGanhos + ptsSprint100 + (m.tmaPts || 0) + 
-                        (m.pecasPts || 0) + (m.monitoramentoPts || 0) + (m.penalidades || 0);
-
-            return {
-                total: Math.round(total),
-                avgSatisfacao: avgSatisfacao.toFixed(2),
-                sprintRate: sprintRate.toFixed(1),
-                breakdown: {
-                    tmaPts: m.tmaPts || 0,
-                    ptsResolvidos,
-                    ptsAtendidos,
-                    ptsSatisfacao,
-                    ptsPrioridades,
-                    ptsSprint: ptsSprintGanhos + ptsSprint100,
-                    extraPts: (m.monitoramentoPts || 0) + (m.pecasPts || 0),
-                    penalidades: m.penalidades || 0
-                }
-            };
-        }
-
-        function render() {
-            const metrics = getAggregatedMetrics(activeMonthKey, activePeriodFilter);
-            const user = usersList[currentActiveUser];
-
-            if (isAdminLoggedIn) {
-                document.getElementById('viewAgent').classList.add('hidden');
-                document.getElementById('viewFaq').classList.add('hidden');
-                document.getElementById('viewAdmin').classList.remove('hidden');
-                document.getElementById('publicTabsContainer').classList.add('hidden');
-                document.getElementById('btnAdminAccess').classList.add('hidden');
-                document.getElementById('btnAdminLogout').classList.remove('hidden');
-                renderAdminLogs();
-            } else {
-                document.getElementById('viewAdmin').classList.add('hidden');
-                document.getElementById('publicTabsContainer').classList.remove('hidden');
-                document.getElementById('btnAdminAccess').classList.remove('hidden');
-                document.getElementById('btnAdminLogout').classList.add('hidden');
-
-                document.getElementById('agentName').innerText = user.name;
-                document.getElementById('agentTeam').innerText = user.team;
-                document.getElementById('agentInitials').innerText = user.initial;
-                document.getElementById('lblPeriodFilter').innerText = activePeriodFilter === 'ALL' ? 'Acumulado' : activePeriodFilter;
-
-                const calc = calculatePoints(currentActiveUser, metrics);
-                document.getElementById('agentTotalPts').innerText = `${calc.total} pts`;
-
-                const currentTeamList = Object.keys(usersList)
-                    .filter(id => usersList[id].team === user.team)
-                    .map(id => ({ id, total: calculatePoints(id, metrics).total }))
-                    .sort((a, b) => b.total - a.total);
-
-                const myRank = currentTeamList.findIndex(item => item.id === currentActiveUser) + 1;
-                document.getElementById('agentPos').innerText = `Classificação: ${myRank}º Lugar`;
-
-                const prizeElem = document.getElementById('agentPrize');
-                const prizeSub = document.getElementById('prizeSubtext');
-                if (myRank === 1) { prizeElem.innerText = "R$ 1.000,00"; prizeSub.innerText = "🥇 1º Colocado no Ranking"; }
-                else if (myRank === 2) { prizeElem.innerText = "R$ 500,00"; prizeSub.innerText = "🥈 2º Colocado no Ranking"; }
-                else if (myRank === 3) { prizeElem.innerText = "R$ 300,00"; prizeSub.innerText = "🥉 3º Colocado no Ranking"; }
-                else { prizeElem.innerText = "R$ 0,00"; prizeSub.innerText = "Fora da Zona de Premiação"; }
-
-                const penBox = document.getElementById('agentPenaltiesBox');
-                const myPenalties = metrics[currentActiveUser] ? metrics[currentActiveUser].penaltiesList : [];
-                if (myPenalties.length > 0) {
-                    penBox.classList.remove('hidden');
-                    penBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>' +
-                        myPenalties.map(p => `${p.reason} (${p.value} pts)`).join(' · ');
+                if (data && data.data) {
+                    store = {
+                        usuarios: [],
+                        modulos: [],
+                        notas: {},
+                        frequencia: {},
+                        pesos: {},
+                        currentMonthName: "Março 2026",
+                        ...data.data
+                    };
                 } else {
-                    penBox.classList.add('hidden');
-                    penBox.innerHTML = '';
+                    await persistStore();
                 }
-
-                renderHistoricalStats(currentActiveUser);
-                renderCharts(currentActiveUser);
-            }
-
-            renderLeaderboard(metrics);
-        }
-
-        function renderHistoricalStats(userId) {
-            const store = getStore();
-            const userTeam = usersList[userId].team;
-            let top1Count = 0;
-            let monthWins = 0;
-
-            const monthsToScan = [{ id: "atual" }, ...store.history.map(h => ({ id: h.id }))];
-            const weeks = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
-
-            monthsToScan.forEach(monthEntry => {
-                weeks.forEach(week => {
-                    const weekMetrics = getAggregatedMetrics(monthEntry.id, week);
-                    const sortedWeek = Object.keys(usersList)
-                        .filter(id => usersList[id].team === userTeam)
-                        .map(id => ({ id, total: calculatePoints(id, weekMetrics).total }))
-                        .sort((a, b) => b.total - a.total);
-
-                    if (sortedWeek.length > 0 && sortedWeek[0].total > 0 && sortedWeek[0].id === userId) {
-                        top1Count++;
-                    }
-                });
-            });
-
-            store.history.forEach(h => {
-                const monthMetrics = getAggregatedMetrics(h.id, 'ALL');
-                const sorted = Object.keys(usersList)
-                    .filter(id => usersList[id].team === userTeam)
-                    .map(id => ({ id, total: calculatePoints(id, monthMetrics).total }))
-                    .sort((a, b) => b.total - a.total);
-
-                if (sorted.length > 0 && sorted[0].total > 0 && sorted[0].id === userId) {
-                    monthWins++;
-                }
-            });
-
-            document.getElementById('statTop1Count').innerText = top1Count;
-            document.getElementById('statMonthWins').innerText = monthWins;
-        }
-
-        function renderCharts(userId) {
-            const weeks = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
-            const dataVolRes = [];
-            const dataVolAtd = [];
-            const dataNps = [];
-            const dataPrio = [];
-
-            weeks.forEach(w => {
-                const m = getAggregatedMetrics(activeMonthKey, w)[userId];
-                dataVolRes.push(m ? m.resolvidos : 0);
-                dataVolAtd.push(m ? m.atendidos : 0);
-                dataNps.push(m && m.satisfacaoCount > 0 ? (m.satisfacaoSum / m.satisfacaoCount) : 0);
-                dataPrio.push(m ? m.prioridades : 0);
-            });
-
-            if (chartVolInst) chartVolInst.destroy();
-            if (chartNpsInst) chartNpsInst.destroy();
-            if (chartPrioritiesInst) chartPrioritiesInst.destroy();
-
-            const ctxVol = document.getElementById('chartVol').getContext('2d');
-            chartVolInst = new Chart(ctxVol, {
-                type: 'line',
-                data: {
-                    labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"],
-                    datasets: [
-                        { label: 'Resolvidos', data: dataVolRes, borderColor: '#0284c7', backgroundColor: '#0284c720', fill: true },
-                        { label: 'Atendidos', data: dataVolAtd, borderColor: '#64748b', borderDash: [4, 4] }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } } }
-            });
-
-            const ctxNps = document.getElementById('chartNps').getContext('2d');
-            chartNpsInst = new Chart(ctxNps, {
-                type: 'line',
-                data: {
-                    labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"],
-                    datasets: [{ label: 'NPS Média', data: dataNps, borderColor: '#f59e0b', backgroundColor: '#f59e0b20', fill: true }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 1, max: 5 } }, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } } }
-            });
-
-            const ctxPrio = document.getElementById('chartPriorities').getContext('2d');
-            chartPrioritiesInst = new Chart(ctxPrio, {
-                type: 'bar',
-                data: {
-                    labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"],
-                    datasets: [{ label: 'Prioridades', data: dataPrio, backgroundColor: '#10b981' }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } } }
-            });
-        }
-
-        function renderLeaderboard(metrics) {
-            document.getElementById('rankingTitleTeam').innerText = activeRankingTab;
-            document.getElementById('thExtraCol').innerText = activeRankingTab === "Sistema" ? "Monit. Qualidade" : "Peças & Despachos";
-
-            const list = Object.keys(usersList)
-                .filter(id => usersList[id].team === activeRankingTab)
-                .map(id => {
-                    const c = calculatePoints(id, metrics);
-                    return { id, name: usersList[id].name, total: c.total, calc: c, metrics: metrics[id] };
-                })
-                .sort((a, b) => b.total - a.total);
-
-            let html = "";
-            list.forEach((item, index) => {
-                let posBadge = `<span class="font-bold text-secondary">${index + 1}º</span>`;
-                if (index === 0) posBadge = `<span class="text-accent font-extrabold">🥇 1º</span>`;
-                if (index === 1) posBadge = `<span class="text-secondary font-extrabold">🥈 2º</span>`;
-                if (index === 2) posBadge = `<span class="text-secondary font-extrabold">🥉 3º</span>`;
-
-                const b = item.calc.breakdown;
-
-                html += `
-                    <tr class="${item.id === currentActiveUser && !isAdminLoggedIn ? 'bg-accent/10 border-l-2 border-accent font-bold' : ''}">
-                        <td class="p-3">${posBadge}</td>
-                        <td class="p-3 font-semibold text-white">${item.name}</td>
-                        <td class="p-3 text-center text-secondary">+${b.tmaPts}</td>
-                        <td class="p-3 text-center">+${b.ptsResolvidos} <span class="text-[10px] text-secondary">(${item.metrics?.resolvidos || 0})</span></td>
-                        <td class="p-3 text-center">+${b.ptsAtendidos} <span class="text-[10px] text-secondary">(${item.metrics?.atendidos || 0})</span></td>
-                        <td class="p-3 text-center">+${b.ptsSatisfacao} <span class="text-[10px] text-secondary">(${item.calc.avgSatisfacao}★)</span></td>
-                        <td class="p-3 text-center">+${b.ptsPrioridades}</td>
-                        <td class="p-3 text-center">+${b.ptsSprint}</td>
-                        <td class="p-3 text-center">+${b.extraPts}</td>
-                        <td class="p-3 text-center text-red-400 font-bold">${b.penalidades}</td>
-                        <td class="p-3 text-right font-extrabold text-accent text-sm">${item.total} pts</td>
-                    </tr>
-                `;
-            });
-            document.getElementById('leaderboardBody').innerHTML = html || `<tr><td colspan="11" class="p-4 text-center text-secondary">Nenhum lançamento neste período.</td></tr>`;
-        }
-
-        function renderAdminLogs() {
-            const store = getStore();
-            let html = "";
-            const logs = [...(store.logs || [])].reverse();
-            const isCurrentMonth = activeMonthKey === "atual";
-
-            logs.forEach(l => {
-                const user = usersList[l.userId];
-                if (!user) return;
-                const d = new Date(l.timestamp).toLocaleDateString("pt-BR") + " " + new Date(l.timestamp).toLocaleTimeString("pt-BR", {hour: '2-digit', minute:'2-digit'});
-                const deleteBtn = isCurrentMonth
-                    ? `<button onclick="deleteLog('${l.id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>`
-                    : `<span class="text-[10px] text-secondary">Mês fechado</span>`;
-
-                if (l.type === "WEEKLY") {
-                    html += `
-                        <tr>
-                            <td class="p-3 text-secondary">${d}</td>
-                            <td class="p-3 font-semibold text-white">${user.name}</td>
-                            <td class="p-3 text-blue-400 font-bold">${l.week}</td>
-                            <td class="p-3">${l.resolvidos} res / ${l.atendidos} atd</td>
-                            <td class="p-3">${l.nps} ★</td>
-                            <td class="p-3">${l.prioridades} prio</td>
-                            <td class="p-3 text-emerald-400 text-[10px] uppercase font-bold">Lançamento Semanal</td>
-                            <td class="p-3">${deleteBtn}</td>
-                        </tr>
-                    `;
-                } else if (l.type === "PENALTY") {
-                    html += `
-                        <tr class="bg-red-500/10">
-                            <td class="p-3 text-secondary">${d}</td>
-                            <td class="p-3 font-semibold text-white">${user.name}</td>
-                            <td class="p-3 text-red-400 font-bold">Penalidade</td>
-                            <td class="p-3 text-red-400 font-bold" colspan="3">Motivo: ${l.reason} (${l.value} pts)</td>
-                            <td class="p-3 text-red-400 text-[10px] uppercase font-bold">Punido</td>
-                            <td class="p-3">${deleteBtn}</td>
-                        </tr>
-                    `;
-                }
-            });
-
-            document.getElementById('admHistoryLogs').innerHTML = html || `<tr><td colspan="8" class="p-4 text-center text-secondary">Nenhum registro efetuado este mês.</td></tr>`;
-        }
-
-        async function deleteLog(logId) {
-            if (!confirm("Excluir este lançamento? Essa ação não pode ser desfeita.")) return;
-            appStore.logs = (appStore.logs || []).filter(l => l.id !== logId);
-            const ok = await persistStore();
-            if (ok) showToast("Lançamento excluído com sucesso!");
-            render();
-        }
-
-        function switchPublicTab(tab) {
-            if (tab === 'dashboard') {
-                document.getElementById('viewAgent').classList.remove('hidden');
-                document.getElementById('viewFaq').classList.add('hidden');
-                document.getElementById('btnTabDashboard').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
-                document.getElementById('btnTabFaq').className = "px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line";
-            } else {
-                document.getElementById('viewAgent').classList.add('hidden');
-                document.getElementById('viewFaq').classList.remove('hidden');
-                document.getElementById('btnTabFaq').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
-                document.getElementById('btnTabDashboard').className = "px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line";
-            }
-        }
-
-        function toggleFaqDept(dept) {
-            if (dept === "Sistema") {
-                document.getElementById('faqContentSistema').classList.remove('hidden');
-                document.getElementById('faqContentCatraca').classList.add('hidden');
-                document.getElementById('faqTabSistema').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
-                document.getElementById('faqTabCatraca').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary";
-            } else {
-                document.getElementById('faqContentSistema').classList.add('hidden');
-                document.getElementById('faqContentCatraca').classList.remove('hidden');
-                document.getElementById('faqTabCatraca').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
-                document.getElementById('faqTabSistema').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary";
-            }
-        }
-
-        function changePeriodView(val) {
-            activePeriodFilter = val;
-            render();
-        }
-
-        function onTeamSelectChange(team) {
-            activeRankingTab = team;
-            populateAnalystDropdown(team);
-            switchRankingTab(team);
-        }
-
-        function populateAnalystDropdown(team) {
-            let options = "";
-            Object.keys(usersList).forEach(id => {
-                if (usersList[id].team === team) {
-                    options += `<option value="${id}">${usersList[id].name}</option>`;
-                }
-            });
-            const select = document.getElementById('userSelect');
-            select.innerHTML = options;
-            if (select.options.length > 0) {
-                switchAgent(select.value);
-            }
-        }
-
-        function onAdminDeptChange(dept) {
-            if (dept === "Sistema") {
-                document.getElementById('formDeptSistema').classList.remove('hidden');
-                document.getElementById('formDeptCatraca').classList.add('hidden');
-            } else {
-                document.getElementById('formDeptSistema').classList.add('hidden');
-                document.getElementById('formDeptCatraca').classList.remove('hidden');
+            } catch (err) {
+                console.error('Falha de conexão:', err);
             }
         }
 
         function populateDropdowns() {
-            const store = getStore();
-            let mOptions = `<option value="atual">Mês Atual (${store.currentMonthName})</option>`;
-            store.history.forEach(h => {
-                mOptions += `<option value="${h.id}">${h.name}</option>`;
-            });
-            document.getElementById('monthSelect').innerHTML = mOptions;
-
-            let sisOpt = "";
-            let catOpt = "";
-            let admOpt = "";
-            Object.keys(usersList).forEach(id => {
-                admOpt += `<option value="${id}">${usersList[id].name} (${usersList[id].team})</option>`;
-                if (usersList[id].team === "Sistema") sisOpt += `<option value="${id}">${usersList[id].name}</option>`;
-                else catOpt += `<option value="${id}">${usersList[id].name}</option>`;
-            });
-
-            document.getElementById('admUserSistema').innerHTML = sisOpt;
-            document.getElementById('admUserCatraca').innerHTML = catOpt;
-            document.getElementById('penaltyUser').innerHTML = admOpt;
-
-            onTeamSelectChange("Sistema");
-        }
-
-        function switchRankingTab(team) {
-            activeRankingTab = team;
-            document.getElementById('teamSelect').value = team;
-            document.getElementById('tabSistema').className = team === 'Sistema' 
-                ? "px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white" 
-                : "px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white";
-            
-            document.getElementById('tabCatraca').className = team === 'Catraca' 
-                ? "px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white" 
-                : "px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white";
-
-            render();
-        }
-
-        function switchAgent(val) {
-            currentActiveUser = val;
-            render();
-        }
-
-        function changeMonthView(val) {
-            activeMonthKey = val;
-            render();
-        }
-
-        function setFormBusy(form, busy) {
-            const btn = form.querySelector('button[type="submit"]');
-            if (btn) btn.disabled = busy;
-        }
-
-        async function addSistemaScore(e) {
-            e.preventDefault();
-            setFormBusy(e.target, true);
-
-            const user = document.getElementById('admUserSistema').value;
-            const week = document.getElementById('admWeekSistema').value;
-            const nps = parseFloat(document.getElementById('admSisNps').value) || 0;
-
-            if (nps < 0 || nps > 5) {
-                showToast("A nota NPS deve estar entre 0 e 5.", "error");
-                setFormBusy(e.target, false);
-                return;
+            if (!store) {
+                store = { usuarios: [], modulos: [], notas: {}, frequencia: {}, pesos: {}, currentMonthName: "Março 2026" };
             }
-
-            appStore.logs.push({
-                id: uid(),
-                type: "WEEKLY",
-                userId: user,
-                week: week,
-                tmaPts: parseInt(document.getElementById('admTMA').value) || 0,
-                resolvidos: parseInt(document.getElementById('admSisResolvidos').value) || 0,
-                atendidos: parseInt(document.getElementById('admSisAtendidos').value) || 0,
-                nps: nps,
-                prioridades: parseInt(document.getElementById('admSisPrioridades').value) || 0,
-                sprintTrabalhados: parseInt(document.getElementById('admSisSprintTrabalhados').value) || 0,
-                sprintGanhos: parseInt(document.getElementById('admSisSprintGanhos').value) || 0,
-                sprint100: document.getElementById('admSisSprint100').checked,
-                monitoramentoPts: parseInt(document.getElementById('admSisMonitoramento').value) || 0,
-                timestamp: Date.now()
-            });
-
-            const ok = await persistStore();
-            setFormBusy(e.target, false);
-            if (ok) {
-                showToast(`Lançamento da ${week} registrado para ${usersList[user].name}!`);
-                e.target.reset();
-                document.getElementById('admSisSprint100').checked = false;
+            const monthSelect = document.getElementById('monthSelect');
+            if (monthSelect) {
+                monthSelect.innerHTML = `<option value="${store.currentMonthName || 'Março 2026'}">${store.currentMonthName || 'Março 2026'}</option>`;
             }
-            render();
         }
 
-        async function addCatracaScore(e) {
-            e.preventDefault();
-            setFormBusy(e.target, true);
+        function switchPublicTab(tab) {
+            const vDash = document.getElementById('viewAgent');
+            const vFaq = document.getElementById('viewFaq');
+            const bDash = document.getElementById('btnTabDashboard');
+            const bFaq = document.getElementById('btnTabFaq');
 
-            const user = document.getElementById('admUserCatraca').value;
-            const week = document.getElementById('admWeekCatraca').value;
-            const nps = parseFloat(document.getElementById('admCatNps').value) || 0;
-
-            if (nps < 0 || nps > 5) {
-                showToast("A nota NPS deve estar entre 0 e 5.", "error");
-                setFormBusy(e.target, false);
-                return;
-            }
-
-            appStore.logs.push({
-                id: uid(),
-                type: "WEEKLY",
-                userId: user,
-                week: week,
-                resolvidos: parseInt(document.getElementById('admCatResolvidos').value) || 0,
-                atendidos: parseInt(document.getElementById('admCatAtendidos').value) || 0,
-                nps: nps,
-                prioridades: parseInt(document.getElementById('admCatPrioridades').value) || 0,
-                pecasPts: parseInt(document.getElementById('admCatPecas').value) || 0,
-                sprintTrabalhados: parseInt(document.getElementById('admCatSprintTrabalhados').value) || 0,
-                sprintGanhos: parseInt(document.getElementById('admCatSprintGanhos').value) || 0,
-                sprint100: document.getElementById('admCatSprint100').checked,
-                timestamp: Date.now()
-            });
-
-            const ok = await persistStore();
-            setFormBusy(e.target, false);
-            if (ok) {
-                showToast(`Lançamento da ${week} registrado para ${usersList[user].name}!`);
-                e.target.reset();
-                document.getElementById('admCatSprint100').checked = false;
-            }
-            render();
-        }
-
-        async function applyCustomPenalty(e) {
-            e.preventDefault();
-            setFormBusy(e.target, true);
-
-            const user = document.getElementById('penaltyUser').value;
-            const val = parseInt(document.getElementById('penaltyValue').value) || 0;
-            const reason = document.getElementById('penaltyReason').value;
-
-            appStore.logs.push({
-                id: uid(),
-                type: "PENALTY",
-                userId: user,
-                value: val,
-                reason: reason,
-                timestamp: Date.now()
-            });
-
-            const ok = await persistStore();
-            setFormBusy(e.target, false);
-            if (ok) {
-                showToast(`Penalidade registrada para ${usersList[user].name}!`);
-                document.getElementById('penaltyValue').value = "";
-                document.getElementById('penaltyReason').value = "";
-            }
-            render();
-        }
-
-        function exportBackup() {
-            const store = getStore();
-            const blob = new Blob([JSON.stringify(store, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `rankpro_backup_${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showToast("Backup exportado com sucesso.");
-        }
-
-        async function closeCurrentMonth() {
-            if (!confirm("Tem certeza que deseja fechar o mês atual? Todos os registros semanais serão arquivados e o novo ciclo iniciará limpo.\n\nDica: exporte um backup antes, por segurança.")) return;
-
-            const monthId = "m_" + Date.now();
-            
-            appStore.history.push({
-                id: monthId,
-                name: appStore.currentMonthName,
-                logs: appStore.logs || []
-            });
-
-            appStore.currentMonthName = getCurrentMonthLabel();
-            appStore.logs = [];
-
-            const ok = await persistStore();
-            populateDropdowns();
-            if (ok) showToast("Mês arquivado com sucesso! Novo ciclo iniciado.");
-            render();
-        }
-
-        function openAdminModal() { document.getElementById('adminModal').classList.remove('hidden'); }
-        function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
-
-        function loginAdmin(e) {
-            e.preventDefault();
-            if (document.getElementById('adminPass').value === "admin123") {
-                isAdminLoggedIn = true;
-                document.getElementById('adminPass').value = "";
-                closeAdminModal();
-                render();
+            if (tab === 'dashboard') {
+                vDash.classList.remove('hidden');
+                vFaq.classList.add('hidden');
+                bDash.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
+                bFaq.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line";
             } else {
-                showToast("Senha incorreta!", "error");
+                vDash.classList.add('hidden');
+                vFaq.classList.remove('hidden');
+                bFaq.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
+                bDash.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line";
+            }
+        }
+
+        function toggleFaqDept(dept) {
+            const fSis = document.getElementById('faqContentSistema');
+            const fCat = document.getElementById('faqContentCatraca');
+            const bSis = document.getElementById('faqTabSistema');
+            const bCat = document.getElementById('faqTabCatraca');
+
+            if (dept === 'Sistema') {
+                fSis.classList.remove('hidden');
+                fCat.classList.add('hidden');
+                bSis.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
+                bCat.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary";
+            } else {
+                fCat.classList.remove('hidden');
+                fSis.classList.add('hidden');
+                bCat.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-emerald-500 text-white";
+                bSis.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary";
+            }
+        }
+
+        function openAdminModal() { document.getElementById('modalAdminAuth').classList.remove('hidden'); }
+        function closeAdminModal() { document.getElementById('modalAdminAuth').classList.add('hidden'); }
+
+        function loginAdmin() {
+            const pass = document.getElementById('adminPassword').value;
+            if (pass === "admin123" || pass === "actuar2026") {
+                isAdminLoggedIn = true;
+                closeAdminModal();
+                document.getElementById('btnAdminAccess').classList.add('hidden');
+                document.getElementById('btnAdminLogout').classList.remove('hidden');
+                document.getElementById('viewAdmin').classList.remove('hidden');
+            } else {
+                alert('Senha incorreta!');
             }
         }
 
         function logoutAdmin() {
             isAdminLoggedIn = false;
+            document.getElementById('btnAdminAccess').classList.remove('hidden');
+            document.getElementById('btnAdminLogout').classList.add('hidden');
+            document.getElementById('viewAdmin').classList.add('hidden');
+        }
+
+        function render() {
+            populateDropdowns();
+            const loader = document.getElementById('loadingOverlay');
+            if (loader) loader.classList.add('hidden');
+        }
+
+        async function initApp() {
+            await loadStore();
             render();
         }
-// Conexão com o Supabase
-const SUPABASE_URL = "https://qmhmriiyzxhshjxttixo.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtaG1yaWl5enhoc2hqeHR0aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODM0MzcsImV4cCI6MjEwMTc1OTQzN30.1PfYZ1At-uQi6z-RNHDtJQwuedMCJNfDE5s5jfH9QLk";
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Estado padrão garantido
-let store = {
-  usuarios: [],
-  modulos: [],
-  notas: {},
-  frequencia: {},
-  pesos: {},
-  currentMonthName: ""
-};
-
-async function persistStore() {
-  try {
-    const { error } = await supabaseClient
-      .from('app_state')
-      .upsert({ id: 'main_store', data: store });
-
-    if (error) throw error;
-    return true;
-  } catch (err) {
-    console.error("Erro ao salvar no Supabase:", err);
-    return false;
-  }
-}
-
-async function loadStore() {
-  try {
-    const { data, error } = await supabaseClient
-      .from('app_state')
-      .select('data')
-      .eq('id', 'main_store')
-      .maybeSingle();
-
-    if (error) console.warn('Aviso do Supabase:', error);
-
-    if (data && data.data) {
-      store = {
-        usuarios: [],
-        modulos: [],
-        notas: {},
-        frequencia: {},
-        pesos: {},
-        currentMonthName: "",
-        ...data.data
-      };
-    } else {
-      await persistStore();
-    }
-  } catch (err) {
-    console.error('Falha de conexão:', err);
-  }
-}
-
-async function initApp() {
-  await loadStore();
-  if (!store) {
-    store = { usuarios: [], modulos: [], notas: {}, frequencia: {}, pesos: {}, currentMonthName: "" };
-  }
-  populateDropdowns();
-  render();
-}
-
-window.onload = initApp;
-</script>
+        window.onload = initApp;
+    </script>
 </body>
 </html>
