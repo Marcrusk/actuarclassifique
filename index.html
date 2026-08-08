@@ -71,6 +71,7 @@
                     <option value="Semana 2">Semana 2</option>
                     <option value="Semana 3">Semana 3</option>
                     <option value="Semana 4">Semana 4</option>
+                    <option value="Semana 5">Semana 5</option>
                 </select>
             </div>
 
@@ -85,7 +86,7 @@
                 </div>
 
                 <div class="flex items-center gap-1 px-2 border-l border-line">
-                    <label for="userSelect" class="text-xs text-secondary">Analista:</label>
+                    <label for="userSelect" class="text-xs text-secondary">Usuário:</label>
                     <select id="userSelect" onchange="switchAgent(this.value)" class="bg-surface text-white text-xs font-semibold rounded px-2 py-1 border border-line focus:outline-none"></select>
                 </div>
             </div>
@@ -104,9 +105,12 @@
     <div class="max-w-7xl mx-auto px-6 py-8">
 
         <!-- ABAS DE NAVEGAÇÃO PÚBLICA -->
-        <div id="publicTabsContainer" class="flex gap-3 mb-6 border-b border-line pb-3">
+        <div id="publicTabsContainer" class="flex gap-3 mb-6 border-b border-line pb-3 flex-wrap">
             <button onclick="switchPublicTab('dashboard')" id="btnTabDashboard" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white">
-                <i class="fa-solid fa-chart-line me-1"></i> Dashboard & Ranking
+                <i class="fa-solid fa-chart-line me-1"></i> Dashboard e Resultado Individual
+            </button>
+            <button onclick="switchPublicTab('ranking')" id="btnTabRanking" class="px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line">
+                <i class="fa-solid fa-ranking-star me-1"></i> Ranking Geral
             </button>
             <button onclick="switchPublicTab('faq')" id="btnTabFaq" class="px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line">
                 <i class="fa-solid fa-circle-question me-1"></i> FAQ / Métricas & Regras
@@ -122,7 +126,7 @@
                         <div>
                             <h2 class="text-xl font-bold text-white" id="agentName">Alessandro</h2>
                             <p class="text-sm text-secondary">Departamento: <span id="agentTeam" class="text-blue-500 font-semibold">Sistema</span></p>
-                            <p class="text-xs text-secondary mt-1">Status: <span id="agentStatus" class="text-emerald-400 font-medium">Ativo no Ciclo</span></p>
+                            <p class="text-xs text-secondary mt-1">Função: <span id="agentRole" class="text-accent font-medium">Analista de sistema</span></p>
                             <div id="agentPenaltiesBox" class="hidden mt-2 text-[11px] text-red-400 max-w-xs"></div>
                         </div>
                     </div>
@@ -162,6 +166,46 @@
                 </div>
             </div>
 
+            <!-- CADASTRO DE PRIORIDADE PELO ANALISTA -->
+            <div class="bg-surface border border-line rounded-xl p-6">
+                <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-star text-amber-400"></i> Registrar Protocolo de Prioridade</h3>
+                <p class="text-xs text-secondary mb-4">Envie o protocolo e a justificativa para validação da gestão. Após aprovado, <strong class="text-emerald-400">50 pontos</strong> são creditados automaticamente.</p>
+                <form onsubmit="submitPriorityRequest(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="md:col-span-1">
+                        <label class="block text-xs text-secondary mb-1">Nº do Protocolo</label>
+                        <input type="text" id="priorityProtocolo" placeholder="Ex: 202608-1234" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-secondary mb-1">Justificativa</label>
+                        <input type="text" id="priorityJustificativa" placeholder="Explique o motivo da prioridade" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-2.5 rounded-lg text-sm transition">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Enviar para Validação
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-5">
+                    <h4 class="text-xs font-bold text-secondary uppercase mb-2">Meus Protocolos Enviados</h4>
+                    <div class="overflow-x-auto max-h-44 overflow-y-auto">
+                        <table class="w-full text-left text-xs text-secondary">
+                            <thead class="bg-bg sticky top-0 uppercase text-[10px]">
+                                <tr>
+                                    <th class="p-2">Protocolo</th>
+                                    <th class="p-2">Justificativa</th>
+                                    <th class="p-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="myPriorityRequestsTable" class="divide-y divide-line/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISÃO RANKING GERAL -->
+        <div id="viewRanking" class="hidden space-y-6">
             <!-- LEADERBOARD -->
             <div class="bg-surface border border-line rounded-xl p-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -187,7 +231,7 @@
                         <thead class="bg-bg/80 text-secondary uppercase text-[10px] border-b border-line">
                             <tr>
                                 <th class="p-3">Pos</th>
-                                <th class="p-3">Analista</th>
+                                <th class="p-3">Usuário</th>
                                 <th class="p-3 text-center">TMA</th>
                                 <th class="p-3 text-center">Resolvidos</th>
                                 <th class="p-3 text-center">Atendidos</th>
@@ -265,6 +309,13 @@
                                 <li>• Nota 4.00 a 4.49 ➔ <strong>10 pts</strong></li>
                             </ul>
                         </div>
+                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                            <h4 class="font-bold text-blue-400 mb-2">⭐ Prioridades Validadas</h4>
+                            <ul class="text-xs space-y-1 text-secondary">
+                                <li>• Registre o protocolo e a justificativa na aba do Dashboard</li>
+                                <li>• Após aprovação da gestão ➔ <strong>+50 pts cada</strong></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
@@ -280,7 +331,7 @@
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-emerald-400 mb-2">🔧 Peças & Prioridades</h4>
                             <ul class="text-xs space-y-1 text-secondary">
-                                <li>• Demanda Prioritária Concluída ➔ <strong>+50 pts cada</strong></li>
+                                <li>• Registre o protocolo e a justificativa na aba do Dashboard; após aprovação da gestão ➔ <strong>+50 pts cada</strong></li>
                                 <li>• Peças & Despachos: até <strong>100 pts</strong></li>
                             </ul>
                         </div>
@@ -295,20 +346,12 @@
                 <div class="flex items-center gap-3">
                     <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><i class="fa-solid fa-user-shield text-xl"></i></div>
                     <div>
-                        <h3 class="font-bold text-blue-300">Painel do Gestor (Marco ADM)</h3>
-                        <p class="text-xs text-blue-200/70">Lançamentos semanais e gestão de dados.</p>
+                        <h3 class="font-bold text-blue-300">Painel do Gestor (<span id="loggedAdminName">Gestor</span>)</h3>
+                        <p class="text-xs text-blue-200/70">Lançamentos semanais, gestão de usuários e validação de prioridades.</p>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-3 flex-wrap">
-                    <div class="bg-bg px-3 py-1.5 rounded-lg border border-line flex items-center gap-2">
-                        <span class="text-xs text-secondary">Departamento Gestão:</span>
-                        <select id="admDeptSelect" onchange="onAdminDeptChange(this.value)" class="bg-transparent text-blue-400 font-bold text-xs focus:outline-none">
-                            <option value="Sistema">Dep. Sistema</option>
-                            <option value="Catraca">Dep. Catraca</option>
-                        </select>
-                    </div>
-
                     <button onclick="exportBackup()" class="bg-surface2 hover:bg-surface3 text-white text-xs font-bold px-3 py-2 rounded-lg shadow flex items-center gap-1.5 transition">
                         <i class="fa-solid fa-download"></i> Exportar Backup (JSON)
                     </button>
@@ -319,12 +362,96 @@
                 </div>
             </div>
 
+            <!-- ABAS DO MODO GESTÃO -->
+            <div class="flex gap-2 flex-wrap bg-surface p-1.5 rounded-lg border border-line">
+                <button onclick="switchAdminTab('cadastros')" id="admTabBtnCadastros" class="px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white">
+                    <i class="fa-solid fa-users-gear me-1"></i> Cadastros e usuários
+                </button>
+                <button onclick="switchAdminTab('lancamentos')" id="admTabBtnLancamentos" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
+                    <i class="fa-solid fa-file-pen me-1"></i> Lançamentos
+                </button>
+                <button onclick="switchAdminTab('prioridades')" id="admTabBtnPrioridades" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
+                    <i class="fa-solid fa-star me-1"></i> Prioridades <span id="admPriorityPendingBadge" class="hidden ml-1 bg-amber-500 text-black rounded-full px-1.5 text-[10px]">0</span>
+                </button>
+                <button onclick="switchAdminTab('historico')" id="admTabBtnHistorico" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
+                    <i class="fa-solid fa-clock-rotate-left me-1"></i> Histórico
+                </button>
+            </div>
+
+            <!-- PAINEL: CADASTROS E USUÁRIOS -->
+            <div id="admPanelCadastros" class="space-y-6">
+            <!-- CADASTRO / EDIÇÃO DE USUÁRIOS -->
+            <div class="bg-surface border border-line rounded-xl p-6">
+                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-user-plus text-blue-500"></i> Cadastrar Novo Usuário / Editar Cadastro</h3>
+                <form onsubmit="saveUser(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <input type="hidden" id="editUserId" value="">
+                    <div>
+                        <label class="block text-xs text-secondary mb-1">Nome do Usuário</label>
+                        <input type="text" id="inputUserName" placeholder="Ex: João Silva" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-secondary mb-1">Função</label>
+                        <select id="inputUserRole" onchange="onUserRoleChange(this.value)" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                            <option value="Analista de sistema">Analista de sistema</option>
+                            <option value="Analista de catraca">Analista de catraca</option>
+                            <option value="Gestor Adm">Gestor Adm</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-secondary mb-1">Departamento</label>
+                        <select id="inputUserTeam" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                            <option value="Sistema">Sistema</option>
+                            <option value="Catraca">Catraca</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" id="btnSaveUser" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Salvar Usuário</button>
+                        <button type="button" id="btnCancelEdit" onclick="cancelEditUser()" class="hidden bg-surface2 hover:bg-surface3 text-white px-3 py-2.5 rounded-lg text-sm transition"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div id="inputUserPasswordWrap" class="hidden md:col-span-2">
+                        <label class="block text-xs text-secondary mb-1">Senha de Acesso ao Modo Gestão (obrigatória para Gestor Adm)</label>
+                        <input type="password" id="inputUserPassword" placeholder="Defina a senha deste gestor" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    </div>
+                </form>
+
+                <!-- LISTA DE USUÁRIOS CADASTRADOS PARA EDIÇÃO -->
+                <div class="mt-6">
+                    <h4 class="text-xs font-bold text-secondary uppercase mb-2">Usuários Cadastrados</h4>
+                    <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                        <table class="w-full text-left text-xs text-secondary">
+                            <thead class="bg-bg sticky top-0 uppercase text-[10px]">
+                                <tr>
+                                    <th class="p-2">Nome</th>
+                                    <th class="p-2">Função</th>
+                                    <th class="p-2">Departamento</th>
+                                    <th class="p-2 text-center">Status</th>
+                                    <th class="p-2 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersManagementTable" class="divide-y divide-line/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            </div>
+            <!-- FIM PAINEL CADASTROS -->
+
+            <!-- PAINEL: LANÇAMENTOS -->
+            <div id="admPanelLancamentos" class="hidden space-y-6">
+            <div class="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
+                <span class="text-xs text-secondary">Departamento em edição:</span>
+                <select id="admDeptSelect" onchange="onAdminDeptChange(this.value)" class="bg-bg text-blue-400 font-bold text-xs focus:outline-none px-3 py-1.5 rounded-lg border border-line">
+                    <option value="Sistema">Dep. Sistema</option>
+                    <option value="Catraca">Dep. Catraca</option>
+                </select>
+            </div>
+
             <!-- FORM SISTEMA -->
             <div id="formDeptSistema" class="bg-surface border border-line rounded-xl p-6">
                 <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-desktop text-blue-500"></i> Lançamento Semanal - Departamento Sistema</h3>
                 <form onsubmit="addSistemaScore(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-xs text-secondary mb-1">Analista (Sistema)</label>
+                        <label class="block text-xs text-secondary mb-1">Usuário (Sistema)</label>
                         <select id="admUserSistema" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
                     </div>
                     <div>
@@ -334,6 +461,7 @@
                             <option value="Semana 2">Semana 2</option>
                             <option value="Semana 3">Semana 3</option>
                             <option value="Semana 4">Semana 4</option>
+                            <option value="Semana 5">Semana 5</option>
                         </select>
                     </div>
                     <div>
@@ -356,10 +484,6 @@
                     <div>
                         <label class="block text-xs text-secondary mb-1">Nota NPS (0 a 5)</label>
                         <input type="number" step="0.01" min="0" max="5" id="admSisNps" placeholder="Ex: 4.85" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-secondary mb-1">Demandas Prioritárias (+)</label>
-                        <input type="number" id="admSisPrioridades" value="0" min="0" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                     <div>
                         <label class="block text-xs text-secondary mb-1">Sprint: Clientes Trabalhados</label>
@@ -390,7 +514,7 @@
                 <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-turnstile text-emerald-400"></i> Lançamento Semanal - Departamento Catraca</h3>
                 <form onsubmit="addCatracaScore(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-xs text-secondary mb-1">Analista (Catraca)</label>
+                        <label class="block text-xs text-secondary mb-1">Usuário (Catraca)</label>
                         <select id="admUserCatraca" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
                     </div>
                     <div>
@@ -400,6 +524,7 @@
                             <option value="Semana 2">Semana 2</option>
                             <option value="Semana 3">Semana 3</option>
                             <option value="Semana 4">Semana 4</option>
+                            <option value="Semana 5">Semana 5</option>
                         </select>
                     </div>
                     <div>
@@ -413,10 +538,6 @@
                     <div>
                         <label class="block text-xs text-secondary mb-1">Nota NPS (0 a 5)</label>
                         <input type="number" step="0.01" min="0" max="5" id="admCatNps" placeholder="Ex: 4.85" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-secondary mb-1">Demandas Prioritárias (+)</label>
-                        <input type="number" id="admCatPrioridades" value="0" min="0" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                     <div>
                         <label class="block text-xs text-secondary mb-1">Peças & Despachos (0 a 100 pts)</label>
@@ -448,7 +569,7 @@
                 <form onsubmit="applyCustomPenalty(event)" class="space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                            <label class="block text-xs text-secondary mb-1">Analista Penalizado</label>
+                            <label class="block text-xs text-secondary mb-1">Usuário Penalizado</label>
                             <select id="penaltyUser" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
                         </div>
                         <div>
@@ -465,7 +586,35 @@
                     </button>
                 </form>
             </div>
+            </div>
+            <!-- FIM PAINEL LANÇAMENTOS -->
 
+            <!-- PAINEL: PRIORIDADES -->
+            <div id="admPanelPrioridades" class="hidden space-y-6">
+                <div class="bg-surface border border-line rounded-xl p-6">
+                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-star text-amber-400"></i> Validação de Prioridades</h3>
+                    <p class="text-xs text-secondary mb-4">Analise o protocolo e a justificativa enviada pelo analista. Ao aprovar, <strong class="text-emerald-400">50 pontos</strong> são creditados automaticamente na pontuação geral.</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-secondary">
+                            <thead class="bg-bg text-secondary uppercase text-[10px]">
+                                <tr>
+                                    <th class="p-3">Data</th>
+                                    <th class="p-3">Analista</th>
+                                    <th class="p-3">Protocolo</th>
+                                    <th class="p-3">Justificativa</th>
+                                    <th class="p-3 text-center">Status</th>
+                                    <th class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admPriorityRequestsTable" class="divide-y divide-line/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- FIM PAINEL PRIORIDADES -->
+
+            <!-- PAINEL: HISTÓRICO -->
+            <div id="admPanelHistorico" class="hidden space-y-6">
             <!-- LOGS -->
             <div class="bg-surface border border-line rounded-xl p-6">
                 <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-secondary"></i> Histórico de Registros</h3>
@@ -474,11 +623,10 @@
                         <thead class="bg-bg text-secondary uppercase text-[10px]">
                             <tr>
                                 <th class="p-3">Data/Hora</th>
-                                <th class="p-3">Analista</th>
+                                <th class="p-3">Usuário</th>
                                 <th class="p-3">Semana</th>
                                 <th class="p-3">Resolvidos / Atendidos</th>
                                 <th class="p-3">NPS</th>
-                                <th class="p-3">Prioridades</th>
                                 <th class="p-3">Tipo</th>
                                 <th class="p-3">Ações</th>
                             </tr>
@@ -487,6 +635,8 @@
                     </table>
                 </div>
             </div>
+            </div>
+            <!-- FIM PAINEL HISTÓRICO -->
         </div>
     </div>
 
@@ -498,7 +648,10 @@
                 <button onclick="closeAdminModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form onsubmit="loginAdmin(event)">
-                <input type="password" id="adminPass" placeholder="Digite a senha..." required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-blue-500">
+                <label class="block text-xs text-secondary mb-1">Gestor</label>
+                <select id="adminUserSelect" required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-blue-500"></select>
+                <label class="block text-xs text-secondary mb-1">Senha cadastrada</label>
+                <input type="password" id="adminPass" placeholder="Digite a senha definida no cadastro..." required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-blue-500">
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Entrar no Modo ADM</button>
             </form>
         </div>
@@ -514,18 +667,19 @@
             supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         }
 
-        const usersList = {
-            alessandro: { name: "Alessandro", team: "Sistema", initial: "AL" },
-            arthur: { name: "Arthur", team: "Sistema", initial: "AR" },
-            pedro_g: { name: "Pedro Gustavo", team: "Sistema", initial: "PG" },
-            pedro_m: { name: "Pedro Marques", team: "Sistema", initial: "PM" },
-            lucas: { name: "Lucas Carvalho", team: "Sistema", initial: "LC" },
-            leonardo: { name: "Leonardo", team: "Catraca", initial: "LE" },
-            watson: { name: "Watson", team: "Catraca", initial: "WA" },
-            felipe: { name: "Felipe", team: "Catraca", initial: "FE" },
-            marcos: { name: "Marcos", team: "Catraca", initial: "MA" },
-            dyego: { name: "Dyego", team: "Catraca", initial: "DY" },
-            vitor: { name: "Vitor", team: "Catraca", initial: "VI" }
+        const defaultUsers = {
+            marco_adm: { name: "Marco Nunes", team: "Sistema", role: "Gestor Adm", initial: "MN", active: true, password: "admin123" },
+            alessandro: { name: "Alessandro", team: "Sistema", role: "Analista de sistema", initial: "AL", active: true },
+            arthur: { name: "Arthur", team: "Sistema", role: "Analista de sistema", initial: "AR" },
+            pedro_g: { name: "Pedro Gustavo", team: "Sistema", role: "Analista de sistema", initial: "PG" },
+            pedro_m: { name: "Pedro Marques", team: "Sistema", role: "Analista de sistema", initial: "PM" },
+            lucas: { name: "Lucas Carvalho", team: "Sistema", role: "Analista de sistema", initial: "LC" },
+            leonardo: { name: "Leonardo", team: "Catraca", role: "Analista de catraca", initial: "LE" },
+            watson: { name: "Watson", team: "Catraca", role: "Analista de catraca", initial: "WA" },
+            felipe: { name: "Felipe", team: "Catraca", role: "Analista de catraca", initial: "FE" },
+            marcos: { name: "Marcos", team: "Catraca", role: "Analista de catraca", initial: "MA" },
+            dyego: { name: "Dyego", team: "Catraca", role: "Analista de catraca", initial: "DY" },
+            vitor: { name: "Vitor", team: "Catraca", role: "Analista de catraca", initial: "VI" }
         };
 
         const RECORD_ID = "global_store";
@@ -534,6 +688,8 @@
         let activeMonthKey = "atual";
         let activePeriodFilter = "ALL";
         let isAdminLoggedIn = false;
+        let currentAdminId = null;
+        let activeAdminTab = "cadastros";
         let appStore = null;
 
         let chartVolInst = null;
@@ -582,10 +738,22 @@
             if (!appStore) {
                 appStore = {
                     currentMonthName: getCurrentMonthLabel(),
+                    users: defaultUsers,
                     logs: [],
-                    history: []
+                    history: [],
+                    priorityRequests: []
                 };
                 await persistStore();
+            } else {
+                if (!appStore.users) appStore.users = defaultUsers;
+                if (!appStore.priorityRequests) appStore.priorityRequests = [];
+                Object.values(appStore.users).forEach(u => { if (u.active === undefined) u.active = true; });
+
+                const hasMarcoNunes = Object.values(appStore.users).some(u => u.name === "Marco Nunes" && u.role === "Gestor Adm");
+                if (!hasMarcoNunes) {
+                    appStore.users['marco_nunes'] = { name: "Marco Nunes", team: "Sistema", role: "Gestor Adm", initial: "MN", active: true, password: "admin123" };
+                    await persistStore();
+                }
             }
 
             document.getElementById('loadingOverlay').classList.add('hidden');
@@ -614,6 +782,7 @@
 
         function getAggregatedMetrics(monthKey, periodFilter) {
             const store = getStore();
+            const usersList = store.users || defaultUsers;
             let targetLogs = monthKey === "atual" 
                 ? (store.logs || [])
                 : ((store.history.find(i => i.id === monthKey) || {}).logs || []);
@@ -626,7 +795,7 @@
             Object.keys(usersList).forEach(id => {
                 agg[id] = {
                     resolvidos: 0, atendidos: 0, satisfacaoSum: 0, satisfacaoCount: 0,
-                    prioridades: 0, sprintTrabalhados: 0, sprintGanhos: 0, sprint100PctCount: 0,
+                    prioridadesAprovadas: 0, prioridadesPts: 0, sprintTrabalhados: 0, sprintGanhos: 0, sprint100PctCount: 0,
                     tmaPts: 0, pecasPts: 0, monitoramentoPts: 0, penalidades: 0, penaltiesList: []
                 };
             });
@@ -637,7 +806,6 @@
                 if (l.type === "WEEKLY") {
                     m.resolvidos += l.resolvidos || 0;
                     m.atendidos += l.atendidos || 0;
-                    m.prioridades += l.prioridades || 0;
                     m.sprintTrabalhados += l.sprintTrabalhados || 0;
                     m.sprintGanhos += l.sprintGanhos || 0;
                     if (l.sprint100) m.sprint100PctCount += 1;
@@ -651,6 +819,9 @@
                 } else if (l.type === "PENALTY") {
                     m.penalidades += l.value;
                     m.penaltiesList.push({ reason: l.reason, value: l.value });
+                } else if (l.type === "PRIORITY") {
+                    m.prioridadesAprovadas += 1;
+                    m.prioridadesPts += l.value || 0;
                 }
             });
 
@@ -658,12 +829,14 @@
         }
 
         function calculatePoints(userId, metrics) {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
             const m = metrics[userId];
             const user = usersList[userId];
-            if (!m) return { total: 0, avgSatisfacao: 0, sprintRate: 0, breakdown: {} };
+            if (!m || !user) return { total: 0, avgSatisfacao: 0, sprintRate: 0, breakdown: {} };
 
             let ptsResolvidos = 0, ptsAtendidos = 0, ptsSatisfacao = 0;
-            let ptsPrioridades = m.prioridades * 50;
+            let ptsPrioridades = m.prioridadesPts || 0;
             let ptsSprintGanhos = m.sprintGanhos * 50;
             let ptsSprint100 = (m.sprint100PctCount || 0) * 100;
 
@@ -714,17 +887,28 @@
         }
 
         function render() {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
             const metrics = getAggregatedMetrics(activeMonthKey, activePeriodFilter);
-            const user = usersList[currentActiveUser];
+            
+            if (!usersList[currentActiveUser]) {
+                const firstKey = Object.keys(usersList)[0];
+                if (firstKey) currentActiveUser = firstKey;
+            }
+            const user = usersList[currentActiveUser] || { name: "-", team: "Sistema", role: "Analista de sistema", initial: "-" };
 
             if (isAdminLoggedIn) {
                 document.getElementById('viewAgent').classList.add('hidden');
+                document.getElementById('viewRanking').classList.add('hidden');
                 document.getElementById('viewFaq').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
                 document.getElementById('publicTabsContainer').classList.add('hidden');
                 document.getElementById('btnAdminAccess').classList.add('hidden');
                 document.getElementById('btnAdminLogout').classList.remove('hidden');
+                document.getElementById('loggedAdminName').innerText = (usersList[currentAdminId] && usersList[currentAdminId].name) || "Gestor";
                 renderAdminLogs();
+                renderUsersManagementTable();
+                renderAdminPriorityRequests();
             } else {
                 document.getElementById('viewAdmin').classList.add('hidden');
                 document.getElementById('publicTabsContainer').classList.remove('hidden');
@@ -733,19 +917,20 @@
 
                 document.getElementById('agentName').innerText = user.name;
                 document.getElementById('agentTeam').innerText = user.team;
-                document.getElementById('agentInitials').innerText = user.initial;
+                document.getElementById('agentRole').innerText = user.role;
+                document.getElementById('agentInitials').innerText = user.initial || user.name.slice(0, 2).toUpperCase();
                 document.getElementById('lblPeriodFilter').innerText = activePeriodFilter === 'ALL' ? 'Acumulado' : activePeriodFilter;
 
                 const calc = calculatePoints(currentActiveUser, metrics);
                 document.getElementById('agentTotalPts').innerText = `${calc.total} pts`;
 
                 const currentTeamList = Object.keys(usersList)
-                    .filter(id => usersList[id].team === user.team)
+                    .filter(id => usersList[id].team === user.team && usersList[id].role !== "Gestor Adm")
                     .map(id => ({ id, total: calculatePoints(id, metrics).total }))
                     .sort((a, b) => b.total - a.total);
 
                 const myRank = currentTeamList.findIndex(item => item.id === currentActiveUser) + 1;
-                document.getElementById('agentPos').innerText = `Classificação: ${myRank}º Lugar`;
+                document.getElementById('agentPos').innerText = `Classificação: ${myRank > 0 ? myRank + 'º' : '-'} Lugar`;
 
                 const prizeElem = document.getElementById('agentPrize');
                 const prizeSub = document.getElementById('prizeSubtext');
@@ -767,6 +952,7 @@
 
                 renderHistoricalStats(currentActiveUser);
                 renderCharts(currentActiveUser);
+                renderMyPriorityRequests();
             }
 
             renderLeaderboard(metrics);
@@ -774,17 +960,18 @@
 
         function renderHistoricalStats(userId) {
             const store = getStore();
-            const userTeam = usersList[userId].team;
+            const usersList = store.users || defaultUsers;
+            const userTeam = usersList[userId] ? usersList[userId].team : "Sistema";
             let top1Count = 0, monthWins = 0;
 
             const monthsToScan = [{ id: "atual" }, ...store.history.map(h => ({ id: h.id }))];
-            const weeks = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
+            const weeks = ["Semana 1", "Semana 2", "Semana 3", "Semana 4", "Semana 5"];
 
             monthsToScan.forEach(monthEntry => {
                 weeks.forEach(week => {
                     const weekMetrics = getAggregatedMetrics(monthEntry.id, week);
                     const sortedWeek = Object.keys(usersList)
-                        .filter(id => usersList[id].team === userTeam)
+                        .filter(id => usersList[id].team === userTeam && usersList[id].role !== "Gestor Adm")
                         .map(id => ({ id, total: calculatePoints(id, weekMetrics).total }))
                         .sort((a, b) => b.total - a.total);
 
@@ -797,7 +984,7 @@
             store.history.forEach(h => {
                 const monthMetrics = getAggregatedMetrics(h.id, 'ALL');
                 const sorted = Object.keys(usersList)
-                    .filter(id => usersList[id].team === userTeam)
+                    .filter(id => usersList[id].team === userTeam && usersList[id].role !== "Gestor Adm")
                     .map(id => ({ id, total: calculatePoints(id, monthMetrics).total }))
                     .sort((a, b) => b.total - a.total);
 
@@ -811,7 +998,8 @@
         }
 
         function renderCharts(userId) {
-            const weeks = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
+            const weeks = ["Semana 1", "Semana 2", "Semana 3", "Semana 4", "Semana 5"];
+            const labels = ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5"];
             const dataVolRes = [], dataVolAtd = [], dataNps = [], dataPrio = [];
 
             weeks.forEach(w => {
@@ -819,7 +1007,7 @@
                 dataVolRes.push(m ? m.resolvidos : 0);
                 dataVolAtd.push(m ? m.atendidos : 0);
                 dataNps.push(m && m.satisfacaoCount > 0 ? (m.satisfacaoSum / m.satisfacaoCount) : 0);
-                dataPrio.push(m ? m.prioridades : 0);
+                dataPrio.push(m ? m.prioridadesAprovadas : 0);
             });
 
             if (chartVolInst) chartVolInst.destroy();
@@ -827,45 +1015,76 @@
             if (chartPrioritiesInst) chartPrioritiesInst.destroy();
 
             const ctxVol = document.getElementById('chartVol').getContext('2d');
+            const gradRes = ctxVol.createLinearGradient(0, 0, 0, 180);
+            gradRes.addColorStop(0, 'rgba(0,240,255,0.35)');
+            gradRes.addColorStop(1, 'rgba(0,240,255,0)');
             chartVolInst = new Chart(ctxVol, {
                 type: 'line',
                 data: {
-                    labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"],
+                    labels: labels,
                     datasets: [
-                        { label: 'Resolvidos', data: dataVolRes, borderColor: '#0284c7', backgroundColor: '#0284c720', fill: true },
-                        { label: 'Atendidos', data: dataVolAtd, borderColor: '#64748b', borderDash: [4, 4] }
+                        { label: 'Resolvidos', data: dataVolRes, borderColor: '#00F0FF', backgroundColor: gradRes, fill: true, tension: 0.45, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#00F0FF', pointBorderColor: '#08080A' },
+                        { label: 'Atendidos', data: dataVolAtd, borderColor: '#64748b', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0.45, borderWidth: 2, pointRadius: 2 }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } } }
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: { legend: { labels: { color: '#A1A1AA', font: { size: 10 }, usePointStyle: true } } },
+                    scales: {
+                        x: { grid: { color: '#22222A' }, ticks: { color: '#A1A1AA', font: { size: 10 } } },
+                        y: { grid: { color: '#22222A' }, ticks: { color: '#A1A1AA', font: { size: 10 } }, beginAtZero: true }
+                    }
+                }
             });
 
             const ctxNps = document.getElementById('chartNps').getContext('2d');
+            const gradNps = ctxNps.createLinearGradient(0, 0, 0, 180);
+            gradNps.addColorStop(0, 'rgba(245,158,11,0.35)');
+            gradNps.addColorStop(1, 'rgba(245,158,11,0)');
             chartNpsInst = new Chart(ctxNps, {
                 type: 'line',
                 data: {
-                    labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"],
-                    datasets: [{ label: 'NPS Média', data: dataNps, borderColor: '#f59e0b', backgroundColor: '#f59e0b20', fill: true }]
+                    labels: labels,
+                    datasets: [{ label: 'NPS Média', data: dataNps, borderColor: '#f59e0b', backgroundColor: gradNps, fill: true, tension: 0.45, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#f59e0b', pointBorderColor: '#08080A' }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 1, max: 5 } }, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } } }
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    scales: {
+                        x: { grid: { color: '#22222A' }, ticks: { color: '#A1A1AA', font: { size: 10 } } },
+                        y: { min: 1, max: 5, grid: { color: '#22222A' }, ticks: { color: '#A1A1AA', font: { size: 10 } } }
+                    },
+                    plugins: { legend: { labels: { color: '#A1A1AA', font: { size: 10 }, usePointStyle: true } } }
+                }
             });
 
             const ctxPrio = document.getElementById('chartPriorities').getContext('2d');
             chartPrioritiesInst = new Chart(ctxPrio, {
                 type: 'bar',
                 data: {
-                    labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"],
-                    datasets: [{ label: 'Prioridades', data: dataPrio, backgroundColor: '#10b981' }]
+                    labels: labels,
+                    datasets: [{ label: 'Prioridades Validadas', data: dataPrio, backgroundColor: '#10b981', borderRadius: 8, maxBarThickness: 28, hoverBackgroundColor: '#34d399' }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } } }
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#A1A1AA', font: { size: 10 } } },
+                        y: { grid: { color: '#22222A' }, ticks: { color: '#A1A1AA', font: { size: 10 }, stepSize: 1 }, beginAtZero: true }
+                    },
+                    plugins: { legend: { labels: { color: '#A1A1AA', font: { size: 10 }, usePointStyle: true } } }
+                }
             });
         }
 
         function renderLeaderboard(metrics) {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
             document.getElementById('rankingTitleTeam').innerText = activeRankingTab;
             document.getElementById('thExtraCol').innerText = activeRankingTab === "Sistema" ? "Monit. Qualidade" : "Peças & Despachos";
 
             const list = Object.keys(usersList)
-                .filter(id => usersList[id].team === activeRankingTab)
+                .filter(id => usersList[id].team === activeRankingTab && usersList[id].role !== "Gestor Adm")
                 .map(id => {
                     const c = calculatePoints(id, metrics);
                     return { id, name: usersList[id].name, total: c.total, calc: c, metrics: metrics[id] };
@@ -902,6 +1121,7 @@
 
         function renderAdminLogs() {
             const store = getStore();
+            const usersList = store.users || defaultUsers;
             let html = "";
             const logs = [...(store.logs || [])].reverse();
             const isCurrentMonth = activeMonthKey === "atual";
@@ -922,7 +1142,6 @@
                             <td class="p-3 text-blue-400 font-bold">${l.week}</td>
                             <td class="p-3">${l.resolvidos} res / ${l.atendidos} atd</td>
                             <td class="p-3">${l.nps} ★</td>
-                            <td class="p-3">${l.prioridades} prio</td>
                             <td class="p-3 text-emerald-400 text-[10px] uppercase font-bold">Lançamento Semanal</td>
                             <td class="p-3">${deleteBtn}</td>
                         </tr>
@@ -933,15 +1152,150 @@
                             <td class="p-3 text-secondary">${d}</td>
                             <td class="p-3 font-semibold text-white">${user.name}</td>
                             <td class="p-3 text-red-400 font-bold">Penalidade</td>
-                            <td class="p-3 text-red-400 font-bold" colspan="3">Motivo: ${l.reason} (${l.value} pts)</td>
+                            <td class="p-3 text-red-400 font-bold" colspan="2">Motivo: ${l.reason} (${l.value} pts)</td>
                             <td class="p-3 text-red-400 text-[10px] uppercase font-bold">Punido</td>
+                            <td class="p-3">${deleteBtn}</td>
+                        </tr>
+                    `;
+                } else if (l.type === "PRIORITY") {
+                    html += `
+                        <tr class="bg-amber-500/10">
+                            <td class="p-3 text-secondary">${d}</td>
+                            <td class="p-3 font-semibold text-white">${user.name}</td>
+                            <td class="p-3 text-amber-400 font-bold">Prioridade</td>
+                            <td class="p-3 text-amber-400 font-bold" colspan="2">Protocolo ${l.protocolo || '-'} (+${l.value} pts)</td>
+                            <td class="p-3 text-amber-400 text-[10px] uppercase font-bold">Validada pela Gestão</td>
                             <td class="p-3">${deleteBtn}</td>
                         </tr>
                     `;
                 }
             });
 
-            document.getElementById('admHistoryLogs').innerHTML = html || `<tr><td colspan="8" class="p-4 text-center text-secondary">Nenhum registro efetuado este mês.</td></tr>`;
+            document.getElementById('admHistoryLogs').innerHTML = html || `<tr><td colspan="7" class="p-4 text-center text-secondary">Nenhum registro efetuado este mês.</td></tr>`;
+        }
+
+        function renderUsersManagementTable() {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            let html = "";
+            Object.keys(usersList).forEach(id => {
+                const u = usersList[id];
+                const active = u.active !== false;
+                const statusBadge = active
+                    ? `<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Ativo</span>`
+                    : `<span class="text-[10px] bg-red-500/10 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">Inativo</span>`;
+                html += `
+                    <tr class="border-b border-line/40 ${active ? '' : 'opacity-60'}">
+                        <td class="p-2 font-semibold text-white">${u.name}</td>
+                        <td class="p-2">${u.role}</td>
+                        <td class="p-2">${u.team}</td>
+                        <td class="p-2 text-center">${statusBadge}</td>
+                        <td class="p-2 text-right whitespace-nowrap">
+                            <button onclick="startEditUser('${id}')" class="text-blue-400 hover:text-blue-300 text-xs font-semibold mr-3"><i class="fa-solid fa-pen me-1"></i>Editar</button>
+                            <button onclick="toggleUserActive('${id}')" class="text-amber-400 hover:text-amber-300 text-xs font-semibold mr-3"><i class="fa-solid fa-power-off me-1"></i>${active ? 'Inativar' : 'Ativar'}</button>
+                            <button onclick="deleteUser('${id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('usersManagementTable').innerHTML = html || `<tr><td colspan="5" class="p-4 text-center text-secondary">Nenhum usuário cadastrado.</td></tr>`;
+        }
+
+        function onUserRoleChange(role) {
+            const wrap = document.getElementById('inputUserPasswordWrap');
+            if (role === "Gestor Adm") wrap.classList.remove('hidden');
+            else wrap.classList.add('hidden');
+        }
+
+        function startEditUser(id) {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const u = usersList[id];
+            if (!u) return;
+            document.getElementById('editUserId').value = id;
+            document.getElementById('inputUserName').value = u.name;
+            document.getElementById('inputUserRole').value = u.role;
+            document.getElementById('inputUserTeam').value = u.team;
+            document.getElementById('inputUserPassword').value = "";
+            document.getElementById('btnSaveUser').innerText = "Atualizar Usuário";
+            document.getElementById('btnCancelEdit').classList.remove('hidden');
+            onUserRoleChange(u.role);
+        }
+
+        function cancelEditUser() {
+            document.getElementById('editUserId').value = "";
+            document.getElementById('inputUserName').value = "";
+            document.getElementById('inputUserRole').value = "Analista de sistema";
+            document.getElementById('inputUserTeam').value = "Sistema";
+            document.getElementById('inputUserPassword').value = "";
+            document.getElementById('btnSaveUser').innerText = "Salvar Usuário";
+            document.getElementById('btnCancelEdit').classList.add('hidden');
+            onUserRoleChange("Analista de sistema");
+        }
+
+        async function saveUser(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editUserId').value;
+            const name = document.getElementById('inputUserName').value.trim();
+            const role = document.getElementById('inputUserRole').value;
+            const team = document.getElementById('inputUserTeam').value;
+            const password = document.getElementById('inputUserPassword').value;
+
+            if (!name) return;
+
+            if (role === "Gestor Adm" && !password && !(editId && appStore.users[editId] && appStore.users[editId].password)) {
+                showToast("Defina uma senha de acesso para o Gestor Adm.", "error");
+                return;
+            }
+
+            if (!appStore.users) appStore.users = defaultUsers;
+
+            if (editId && appStore.users[editId]) {
+                // Atualiza o usuário existente (Permite editar o nome e demais campos)
+                appStore.users[editId].name = name;
+                appStore.users[editId].role = role;
+                appStore.users[editId].team = team;
+                if (password) appStore.users[editId].password = password;
+                showToast("Usuário atualizado com sucesso!");
+            } else {
+                // Cadastra novo usuário
+                const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Math.random().toString(36).slice(2, 5);
+                const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                appStore.users[newId] = { name, team, role, initial: initials, active: true, password: role === "Gestor Adm" ? password : undefined };
+                showToast("Novo usuário cadastrado com sucesso!");
+            }
+
+            const ok = await persistStore();
+            if (ok) {
+                cancelEditUser();
+                populateDropdowns();
+                render();
+            }
+        }
+
+        async function toggleUserActive(id) {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const u = usersList[id];
+            if (!u) return;
+            u.active = u.active === false ? true : false;
+            const ok = await persistStore();
+            if (ok) showToast(`Usuário ${u.active ? 'ativado' : 'inativado'} com sucesso.`);
+            populateDropdowns();
+            render();
+        }
+
+        async function deleteUser(id) {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const u = usersList[id];
+            if (!u) return;
+            if (!confirm(`Excluir permanentemente o usuário "${u.name}"? Esta ação não pode ser desfeita.`)) return;
+            delete appStore.users[id];
+            const ok = await persistStore();
+            if (ok) showToast("Usuário excluído permanentemente.");
+            populateDropdowns();
+            render();
         }
 
         async function deleteLog(logId) {
@@ -953,17 +1307,17 @@
         }
 
         function switchPublicTab(tab) {
-            if (tab === 'dashboard') {
-                document.getElementById('viewAgent').classList.remove('hidden');
-                document.getElementById('viewFaq').classList.add('hidden');
-                document.getElementById('btnTabDashboard').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
-                document.getElementById('btnTabFaq').className = "px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line";
-            } else {
-                document.getElementById('viewAgent').classList.add('hidden');
-                document.getElementById('viewFaq').classList.remove('hidden');
-                document.getElementById('btnTabFaq').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
-                document.getElementById('btnTabDashboard').className = "px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line";
-            }
+            const views = { dashboard: 'viewAgent', ranking: 'viewRanking', faq: 'viewFaq' };
+            const btns = { dashboard: 'btnTabDashboard', ranking: 'btnTabRanking', faq: 'btnTabFaq' };
+            const activeClass = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
+            const inactiveClass = "px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line";
+
+            Object.keys(views).forEach(key => {
+                document.getElementById(views[key]).classList.toggle('hidden', key !== tab);
+                document.getElementById(btns[key]).className = key === tab ? activeClass : inactiveClass;
+            });
+
+            if (tab === 'dashboard') renderMyPriorityRequests();
         }
 
         function toggleFaqDept(dept) {
@@ -992,15 +1346,30 @@
         }
 
         function populateAnalystDropdown(team) {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
             let options = "";
             Object.keys(usersList).forEach(id => {
-                if (usersList[id].team === team) {
+                if (usersList[id].team === team && usersList[id].active !== false && usersList[id].role !== "Gestor Adm") {
                     options += `<option value="${id}">${usersList[id].name}</option>`;
                 }
             });
             const select = document.getElementById('userSelect');
             select.innerHTML = options;
             if (select.options.length > 0) switchAgent(select.value);
+        }
+
+        function switchAdminTab(tab) {
+            activeAdminTab = tab;
+            const panels = { cadastros: 'admPanelCadastros', lancamentos: 'admPanelLancamentos', prioridades: 'admPanelPrioridades', historico: 'admPanelHistorico' };
+            const btns = { cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'admTabBtnPrioridades', historico: 'admTabBtnHistorico' };
+            const activeClass = "px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white";
+            const inactiveClass = "px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white";
+
+            Object.keys(panels).forEach(key => {
+                document.getElementById(panels[key]).classList.toggle('hidden', key !== tab);
+                document.getElementById(btns[key]).className = key === tab ? activeClass : inactiveClass;
+            });
         }
 
         function onAdminDeptChange(dept) {
@@ -1015,6 +1384,7 @@
 
         function populateDropdowns() {
             const store = getStore();
+            const usersList = store.users || defaultUsers;
             let mOptions = `<option value="atual">Mês Atual (${store.currentMonthName})</option>`;
             store.history.forEach(h => {
                 mOptions += `<option value="${h.id}">${h.name}</option>`;
@@ -1023,6 +1393,7 @@
 
             let sisOpt = "", catOpt = "", admOpt = "";
             Object.keys(usersList).forEach(id => {
+                if (usersList[id].active === false || usersList[id].role === "Gestor Adm") return;
                 admOpt += `<option value="${id}">${usersList[id].name} (${usersList[id].team})</option>`;
                 if (usersList[id].team === "Sistema") sisOpt += `<option value="${id}">${usersList[id].name}</option>`;
                 else catOpt += `<option value="${id}">${usersList[id].name}</option>`;
@@ -1068,6 +1439,8 @@
             e.preventDefault();
             setFormBusy(e.target, true);
 
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
             const user = document.getElementById('admUserSistema').value;
             const week = document.getElementById('admWeekSistema').value;
             const nps = parseFloat(document.getElementById('admSisNps').value) || 0;
@@ -1087,7 +1460,6 @@
                 resolvidos: parseInt(document.getElementById('admSisResolvidos').value) || 0,
                 atendidos: parseInt(document.getElementById('admSisAtendidos').value) || 0,
                 nps: nps,
-                prioridades: parseInt(document.getElementById('admSisPrioridades').value) || 0,
                 sprintTrabalhados: parseInt(document.getElementById('admSisSprintTrabalhados').value) || 0,
                 sprintGanhos: parseInt(document.getElementById('admSisSprintGanhos').value) || 0,
                 sprint100: document.getElementById('admSisSprint100').checked,
@@ -1109,6 +1481,8 @@
             e.preventDefault();
             setFormBusy(e.target, true);
 
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
             const user = document.getElementById('admUserCatraca').value;
             const week = document.getElementById('admWeekCatraca').value;
             const nps = parseFloat(document.getElementById('admCatNps').value) || 0;
@@ -1127,7 +1501,6 @@
                 resolvidos: parseInt(document.getElementById('admCatResolvidos').value) || 0,
                 atendidos: parseInt(document.getElementById('admCatAtendidos').value) || 0,
                 nps: nps,
-                prioridades: parseInt(document.getElementById('admCatPrioridades').value) || 0,
                 pecasPts: parseInt(document.getElementById('admCatPecas').value) || 0,
                 sprintTrabalhados: parseInt(document.getElementById('admCatSprintTrabalhados').value) || 0,
                 sprintGanhos: parseInt(document.getElementById('admCatSprintGanhos').value) || 0,
@@ -1149,6 +1522,8 @@
             e.preventDefault();
             setFormBusy(e.target, true);
 
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
             const user = document.getElementById('penaltyUser').value;
             const val = parseInt(document.getElementById('penaltyValue').value) || 0;
             const reason = document.getElementById('penaltyReason').value;
@@ -1169,6 +1544,144 @@
                 document.getElementById('penaltyValue').value = "";
                 document.getElementById('penaltyReason').value = "";
             }
+            render();
+        }
+
+        async function submitPriorityRequest(e) {
+            e.preventDefault();
+            setFormBusy(e.target, true);
+            const protocolo = document.getElementById('priorityProtocolo').value.trim();
+            const justificativa = document.getElementById('priorityJustificativa').value.trim();
+            if (!protocolo || !justificativa) { setFormBusy(e.target, false); return; }
+
+            if (!appStore.priorityRequests) appStore.priorityRequests = [];
+            appStore.priorityRequests.push({
+                id: uid(),
+                userId: currentActiveUser,
+                protocolo,
+                justificativa,
+                status: "pendente",
+                timestamp: Date.now()
+            });
+
+            const ok = await persistStore();
+            setFormBusy(e.target, false);
+            if (ok) {
+                showToast("Protocolo de prioridade enviado para validação!");
+                e.target.reset();
+            }
+            render();
+        }
+
+        function renderMyPriorityRequests() {
+            const tbody = document.getElementById('myPriorityRequestsTable');
+            if (!tbody) return;
+            const store = getStore();
+            const requests = (store.priorityRequests || []).filter(r => r.userId === currentActiveUser).slice().reverse();
+            let html = "";
+            requests.forEach(r => {
+                const badge = r.status === "aprovado"
+                    ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check me-1"></i>Aprovado (+50 pts)</span>`
+                    : r.status === "reprovado"
+                        ? `<span class="text-red-400 font-bold"><i class="fa-solid fa-circle-xmark me-1"></i>Reprovado</span>`
+                        : `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock me-1"></i>Pendente</span>`;
+                html += `
+                    <tr>
+                        <td class="p-2 font-semibold text-white">${r.protocolo}</td>
+                        <td class="p-2">${r.justificativa}</td>
+                        <td class="p-2">${badge}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html || `<tr><td colspan="3" class="p-3 text-center text-secondary">Nenhum protocolo enviado ainda.</td></tr>`;
+        }
+
+        function renderAdminPriorityRequests() {
+            const tbody = document.getElementById('admPriorityRequestsTable');
+            if (!tbody) return;
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const requests = (store.priorityRequests || []).slice().reverse();
+            let html = "";
+            let pendingCount = 0;
+
+            requests.forEach(r => {
+                const user = usersList[r.userId];
+                const d = new Date(r.timestamp).toLocaleDateString("pt-BR");
+                let statusCell = "";
+                let actionsCell = "";
+                if (r.status === "pendente") {
+                    pendingCount++;
+                    statusCell = `<span class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">Pendente</span>`;
+                    actionsCell = `
+                        <button onclick="approvePriorityRequest('${r.id}')" class="text-emerald-400 hover:text-emerald-300 text-xs font-semibold mr-3"><i class="fa-solid fa-check me-1"></i>Aprovar</button>
+                        <button onclick="rejectPriorityRequest('${r.id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-xmark me-1"></i>Reprovar</button>
+                    `;
+                } else if (r.status === "aprovado") {
+                    statusCell = `<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Aprovado</span>`;
+                    actionsCell = `<span class="text-[10px] text-secondary">+50 pts creditados</span>`;
+                } else {
+                    statusCell = `<span class="text-[10px] bg-red-500/10 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">Reprovado</span>`;
+                    actionsCell = `<span class="text-[10px] text-secondary">Sem pontuação</span>`;
+                }
+
+                html += `
+                    <tr>
+                        <td class="p-3 text-secondary">${d}</td>
+                        <td class="p-3 font-semibold text-white">${user ? user.name : '-'}</td>
+                        <td class="p-3">${r.protocolo}</td>
+                        <td class="p-3">${r.justificativa}</td>
+                        <td class="p-3 text-center">${statusCell}</td>
+                        <td class="p-3 text-right whitespace-nowrap">${actionsCell}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html || `<tr><td colspan="6" class="p-4 text-center text-secondary">Nenhum protocolo de prioridade enviado.</td></tr>`;
+
+            const badge = document.getElementById('admPriorityPendingBadge');
+            if (pendingCount > 0) {
+                badge.classList.remove('hidden');
+                badge.innerText = pendingCount;
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        async function approvePriorityRequest(id) {
+            const req = (appStore.priorityRequests || []).find(r => r.id === id);
+            if (!req || req.status !== "pendente") return;
+
+            req.status = "aprovado";
+            req.resolvedBy = currentAdminId;
+            req.resolvedAt = Date.now();
+
+            appStore.logs.push({
+                id: uid(),
+                type: "PRIORITY",
+                userId: req.userId,
+                value: 50,
+                relatedRequestId: req.id,
+                protocolo: req.protocolo,
+                timestamp: Date.now()
+            });
+
+            const ok = await persistStore();
+            if (ok) showToast("Prioridade aprovada! 50 pontos creditados.");
+            render();
+        }
+
+        async function rejectPriorityRequest(id) {
+            const req = (appStore.priorityRequests || []).find(r => r.id === id);
+            if (!req || req.status !== "pendente") return;
+            if (!confirm("Reprovar este protocolo de prioridade?")) return;
+
+            req.status = "reprovado";
+            req.resolvedBy = currentAdminId;
+            req.resolvedAt = Date.now();
+
+            const ok = await persistStore();
+            if (ok) showToast("Protocolo reprovado.");
             render();
         }
 
@@ -1206,13 +1719,44 @@
             render();
         }
 
-        function openAdminModal() { document.getElementById('adminModal').classList.remove('hidden'); }
+        function openAdminModal() {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            let opts = "";
+            Object.keys(usersList).forEach(id => {
+                const u = usersList[id];
+                if (u.role === "Gestor Adm" && u.active !== false) {
+                    opts += `<option value="${id}">${u.name}</option>`;
+                }
+            });
+            document.getElementById('adminUserSelect').innerHTML = opts || `<option value="">Nenhum gestor cadastrado</option>`;
+            document.getElementById('adminModal').classList.remove('hidden');
+        }
         function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
 
         function loginAdmin(e) {
             e.preventDefault();
-            if (document.getElementById('adminPass').value === "admin123") {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const selectedId = document.getElementById('adminUserSelect').value;
+            const pass = document.getElementById('adminPass').value;
+            const user = usersList[selectedId];
+
+            if (!user || user.role !== "Gestor Adm") {
+                showToast("Selecione um gestor válido.", "error");
+                return;
+            }
+            if (user.active === false) {
+                showToast("Este usuário está inativo e não pode acessar o Modo Gestão.", "error");
+                return;
+            }
+            if (!user.password) {
+                showToast("Este gestor ainda não possui senha cadastrada.", "error");
+                return;
+            }
+            if (pass === user.password) {
                 isAdminLoggedIn = true;
+                currentAdminId = selectedId;
                 document.getElementById('adminPass').value = "";
                 closeAdminModal();
                 render();
@@ -1223,6 +1767,7 @@
 
         function logoutAdmin() {
             isAdminLoggedIn = false;
+            currentAdminId = null;
             render();
         }
 
