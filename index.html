@@ -280,6 +280,18 @@
                 </div>
             </div>
 
+            <!-- FEEDBACK DE MONITORAMENTO -->
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6 anim-fade-up">
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-1">
+                    <h3 class="text-md font-display font-bold text-white flex items-center gap-2"><i class="fa-solid fa-magnifying-glass-chart text-primary-400"></i> Feedback de Monitoramento</h3>
+                    <span class="text-[10px] text-secondary bg-surface2 border border-line px-2.5 py-1 rounded-full" id="monitoringFeedbackCount">0 avaliações</span>
+                </div>
+                <p class="text-xs text-secondary mb-4">Protocolos monitorados pela gestão no período selecionado, com a pontuação obtida em cada critério e a justificativa do avaliador.</p>
+                <div id="monitoringFeedbackList" class="space-y-3">
+                    <p class="text-xs text-secondary/60 italic">Nenhum monitoramento registrado neste período.</p>
+                </div>
+            </div>
+
             <!-- GRÁFICOS -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-surface border border-line rounded-2xl card-hover p-5">
@@ -1120,9 +1132,76 @@
                         <input type="checkbox" id="admSisSprint100" class="w-4 h-4 text-primary-500 rounded">
                         <label for="admSisSprint100" class="text-xs text-secondary">Concluiu 100% da Sprint (+100 pts)</label>
                     </div>
-                    <div>
-                        <label class="block text-xs text-secondary mb-1">Monitoramento / Qualidade (0 a 100 pts)</label>
-                        <input type="number" id="admSisMonitoramento" value="0" min="0" max="100" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    <!-- MONITORAMENTO / QUALIDADE DETALHADO -->
+                    <div class="md:col-span-3 bg-bg/40 border border-line rounded-xl p-4 mt-1">
+                        <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+                            <h4 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-magnifying-glass-chart text-primary-400"></i> Monitoramento / Qualidade</h4>
+                            <span class="text-xs bg-surface2 border border-line px-3 py-1 rounded-full text-accent font-bold num-mono" id="monTotalDisplay">0 / 100 pts</span>
+                        </div>
+                        <p class="text-[11px] text-secondary mb-3">Marque os itens que o analista cumpriu no atendimento monitorado. Itens desmarcados são zerados automaticamente.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-2">1️⃣ Tempo e Agilidade <span class="text-primary-400">(20 pts)</span></p>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monTPR" data-pts="10" onchange="updateMonitoramentoTotal()"> TPR – Tempo de resposta (10 pts)
+                                </label>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monTMA" data-pts="10" onchange="updateMonitoramentoTotal()"> TMA – Encerramento apropriado (10 pts)
+                                </label>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-2">2️⃣ Comunicação e Clareza <span class="text-primary-400">(20 pts)</span></p>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monCVC" data-pts="10" onchange="updateMonitoramentoTotal()"> CVC – Clareza, vocabulário e coesão (10 pts)
+                                </label>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monCEE" data-pts="10" onchange="updateMonitoramentoTotal()"> CEE – Cordialidade, empatia e engajamento (10 pts)
+                                </label>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-2">3️⃣ Qualidade da Resolução <span class="text-primary-400">(20 pts)</span></p>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monERS" data-pts="10" onchange="updateMonitoramentoTotal()"> ERS – Resolução sem reabertura (10 pts)
+                                </label>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monIPC" data-pts="10" onchange="updateMonitoramentoTotal()"> IPC – Informação precisa e completa (10 pts)
+                                </label>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-2">4️⃣ Experiência do Cliente <span class="text-primary-400">(20 pts)</span></p>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monPAC" data-pts="10" onchange="updateMonitoramentoTotal()"> PAC – Proatividade no atendimento (10 pts)
+                                </label>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monTCS" data-pts="10" onchange="updateMonitoramentoTotal()"> TCS – Satisfação nota 4 ou 5 (10 pts)
+                                </label>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-2">5️⃣ Encerramento e Feedback <span class="text-primary-400">(20 pts)</span></p>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monCRS" data-pts="5" onchange="updateMonitoramentoTotal()"> CRS – Confirmação de resolução (5 pts)
+                                </label>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monLAU" data-pts="5" onchange="updateMonitoramentoTotal()"> LAU – Laudo de atendimento (5 pts)
+                                </label>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monIRF" data-pts="5" onchange="updateMonitoramentoTotal()"> IRF – Incentivo ao retorno/feedback (5 pts)
+                                </label>
+                                <label class="flex items-center gap-2 text-[11px] text-secondary cursor-pointer">
+                                    <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monDPF" data-pts="5" onchange="updateMonitoramentoTotal()"> DPF – Despedida profissional (5 pts)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            <div class="md:col-span-1">
+                                <label class="block text-xs text-secondary mb-1">Nº do Protocolo Monitorado</label>
+                                <input type="text" id="monProtocolo" placeholder="Ex: 202608-1234" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs text-secondary mb-1">Feedback do Monitoramento (o que pontuou / o que não pontuou)</label>
+                                <textarea id="monFeedback" rows="2" placeholder="Ex: Boa clareza e cordialidade (CVC/CEE ok). Não confirmou a resolução com o cliente (CRS zerado)." class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line resize-none"></textarea>
+                            </div>
+                        </div>
                     </div>
                     <div class="md:col-span-3 pt-2">
                         <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 hover:brightness-110">
@@ -1561,6 +1640,16 @@
             return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
         }
 
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // --- Senhas: nunca ficam no navegador nem no JSON sincronizado ---
         // A partir daqui, cadastro/troca de senha e verificação de login rodam
         // dentro do banco (funções set_user_password / verify_login no Supabase).
@@ -1936,6 +2025,7 @@
                     prioridadesAprovadas: 0, prioridadesPts: 0, transferenciasAprovadas: 0, transferenciaPts: 0,
                     sprintTrabalhados: 0, sprintGanhos: 0, sprint100PctCount: 0,
                     tmaPts: 0, pecasPts: 0, monitoramentoPts: 0, penalidades: 0, penaltiesList: [],
+                    monitoringList: [],
                     resolvidosRankPts: 0, atendidosRankPts: 0, sprintRankPts: 0
                 };
             });
@@ -1956,6 +2046,18 @@
                     m.tmaPts += l.tmaPts || 0;
                     m.pecasPts += l.pecasPts || 0;
                     m.monitoramentoPts += l.monitoramentoPts || 0;
+                    if ((l.monitoramentoProtocolo && l.monitoramentoProtocolo.trim() !== '') ||
+                        (l.monitoramentoFeedback && l.monitoramentoFeedback.trim() !== '') ||
+                        (Array.isArray(l.monitoramentoDetalhes) && l.monitoramentoDetalhes.some(d => d.earned > 0))) {
+                        m.monitoringList.push({
+                            week: l.week,
+                            protocolo: l.monitoramentoProtocolo || '',
+                            feedback: l.monitoramentoFeedback || '',
+                            pts: l.monitoramentoPts || 0,
+                            detalhes: l.monitoramentoDetalhes || [],
+                            timestamp: l.timestamp || 0
+                        });
+                    }
                 } else if (l.type === "PENALTY") {
                     m.penalidades += l.value;
                     m.penaltiesList.push({ reason: l.reason, value: l.value });
@@ -2147,6 +2249,7 @@
                 renderHistoricalStats(currentActiveUser);
                 renderCharts(currentActiveUser);
                 renderMetricBreakdown(user, calc);
+                renderMonitoringFeedback(currentActiveUser, metrics);
                 renderMyPriorityRequests();
                 renderMyTransferRequests();
             }
@@ -2435,6 +2538,45 @@
             }
 
             document.getElementById('breakdownList').innerHTML = html || `<p class="text-xs text-secondary text-center py-6">Nenhuma pontuação registrada neste período ainda. Assim que houver lançamentos, o detalhamento aparece aqui.</p>`;
+        }
+
+        function renderMonitoringFeedback(userId, metrics) {
+            const listEl = document.getElementById('monitoringFeedbackList');
+            const countEl = document.getElementById('monitoringFeedbackCount');
+            if (!listEl) return;
+
+            const items = (metrics[userId] && metrics[userId].monitoringList)
+                ? [...metrics[userId].monitoringList].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+                : [];
+
+            if (countEl) countEl.innerText = `${items.length} avaliaç${items.length === 1 ? 'ão' : 'ões'}`;
+
+            if (items.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-secondary/60 italic">Nenhum monitoramento registrado neste período.</p>`;
+                return;
+            }
+
+            listEl.innerHTML = items.map(it => {
+                const colorClass = it.pts >= 80 ? 'text-emerald-400' : (it.pts >= 50 ? 'text-amber-400' : 'text-red-400');
+                const badges = (it.detalhes || []).map(d => `
+                    <span class="text-[10px] px-2 py-0.5 rounded-full border ${d.earned > 0 ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/5' : 'border-red-500/30 text-red-400/80 bg-red-500/5'}" title="${escapeHtml(d.label)}">
+                        ${escapeHtml(d.key)} ${d.earned > 0 ? '✓' : '✕'}
+                    </span>
+                `).join('');
+                return `
+                    <div class="bg-bg/60 border border-line rounded-xl p-4">
+                        <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-xs font-bold text-white">${escapeHtml(it.week || '-')}</span>
+                                ${it.protocolo ? `<span class="text-[11px] text-secondary">Protocolo: <strong class="text-primary-300">${escapeHtml(it.protocolo)}</strong></span>` : ''}
+                            </div>
+                            <span class="text-sm font-display font-extrabold num-mono ${colorClass}">${it.pts} / 100 pts</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 mb-2">${badges}</div>
+                        ${it.feedback ? `<p class="text-xs text-secondary leading-relaxed">${escapeHtml(it.feedback)}</p>` : `<p class="text-xs text-secondary/50 italic">Sem justificativa registrada.</p>`}
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderLeaderboard(metrics) {
@@ -3089,6 +3231,48 @@
             if (btn) btn.disabled = busy;
         }
 
+        const MONITORAMENTO_CRITERIOS = [
+            { id: 'monTPR', key: 'TPR', label: 'TPR – Tempo de resposta', pts: 10 },
+            { id: 'monTMA', key: 'TMA', label: 'TMA – Encerramento apropriado', pts: 10 },
+            { id: 'monCVC', key: 'CVC', label: 'CVC – Clareza, vocabulário e coesão', pts: 10 },
+            { id: 'monCEE', key: 'CEE', label: 'CEE – Cordialidade, empatia e engajamento', pts: 10 },
+            { id: 'monERS', key: 'ERS', label: 'ERS – Resolução sem reabertura', pts: 10 },
+            { id: 'monIPC', key: 'IPC', label: 'IPC – Informação precisa e completa', pts: 10 },
+            { id: 'monPAC', key: 'PAC', label: 'PAC – Proatividade no atendimento', pts: 10 },
+            { id: 'monTCS', key: 'TCS', label: 'TCS – Satisfação nota 4 ou 5', pts: 10 },
+            { id: 'monCRS', key: 'CRS', label: 'CRS – Confirmação de resolução', pts: 5 },
+            { id: 'monLAU', key: 'LAU', label: 'LAU – Laudo de atendimento', pts: 5 },
+            { id: 'monIRF', key: 'IRF', label: 'IRF – Incentivo ao retorno/feedback', pts: 5 },
+            { id: 'monDPF', key: 'DPF', label: 'DPF – Despedida profissional', pts: 5 }
+        ];
+
+        function updateMonitoramentoTotal() {
+            let total = 0;
+            MONITORAMENTO_CRITERIOS.forEach(c => {
+                const el = document.getElementById(c.id);
+                if (el && el.checked) total += c.pts;
+            });
+            const disp = document.getElementById('monTotalDisplay');
+            if (disp) disp.innerText = `${total} / 100 pts`;
+        }
+
+        function collectMonitoramentoDados() {
+            const detalhes = MONITORAMENTO_CRITERIOS.map(c => {
+                const el = document.getElementById(c.id);
+                const checked = el ? el.checked : false;
+                return { key: c.key, label: c.label, max: c.pts, earned: checked ? c.pts : 0 };
+            });
+            const pts = detalhes.reduce((sum, d) => sum + d.earned, 0);
+            const protocoloEl = document.getElementById('monProtocolo');
+            const feedbackEl = document.getElementById('monFeedback');
+            return {
+                monitoramentoPts: pts,
+                monitoramentoDetalhes: detalhes,
+                monitoramentoProtocolo: protocoloEl ? protocoloEl.value.trim() : '',
+                monitoramentoFeedback: feedbackEl ? feedbackEl.value.trim() : ''
+            };
+        }
+
         async function addSistemaScore(e) {
             e.preventDefault();
             setFormBusy(e.target, true);
@@ -3105,6 +3289,8 @@
                 return;
             }
 
+            const monDados = collectMonitoramentoDados();
+
             appStore.logs.push({
                 id: uid(),
                 type: "WEEKLY",
@@ -3117,7 +3303,10 @@
                 sprintTrabalhados: parseInt(document.getElementById('admSisSprintTrabalhados').value) || 0,
                 sprintGanhos: parseInt(document.getElementById('admSisSprintGanhos').value) || 0,
                 sprint100: document.getElementById('admSisSprint100').checked,
-                monitoramentoPts: parseInt(document.getElementById('admSisMonitoramento').value) || 0,
+                monitoramentoPts: monDados.monitoramentoPts,
+                monitoramentoDetalhes: monDados.monitoramentoDetalhes,
+                monitoramentoProtocolo: monDados.monitoramentoProtocolo,
+                monitoramentoFeedback: monDados.monitoramentoFeedback,
                 timestamp: Date.now()
             });
 
@@ -3127,6 +3316,7 @@
                 showToast(`Lançamento da ${week} registrado para ${usersList[user].name}!`);
                 e.target.reset();
                 document.getElementById('admSisSprint100').checked = false;
+                updateMonitoramentoTotal();
             }
             render();
         }
