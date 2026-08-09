@@ -1525,6 +1525,14 @@
         let activeAdminTab = "cadastros";
         let appStore = null;
 
+        // --- Controle de concorrência (evita que uma gravação apague a de outra pessoa) ---
+        // lastSyncedSnapshot = a última versão que SABEMOS que está no banco.
+        // A diferença entre appStore (com as mudanças locais) e lastSyncedSnapshot
+        // é o que este cliente realmente quer mudar. Ao salvar, buscamos o dado mais
+        // recente do banco e reaplicamos só essa diferença nele, em vez de sobrescrever tudo.
+        let lastSyncedSnapshot = null;
+        let currentVersion = 0;
+
         let chartVolInst = null;
         let chartNpsInst = null;
         let chartPrioritiesInst = null;
@@ -1537,6 +1545,45 @@
 
         function uid() {
             return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+        }
+
+        // --- Senhas: nunca guardamos nem trafegamos texto puro ---
+        // Formato salvo: "salt:hashHex". O hash é SHA-256(salt + ":" + senha).
+        // Isso não é bcrypt (não dá pra usar bcrypt só no navegador sem libs pesadas),
+        // mas já impede que qualquer um que abra o DevTools ou baixe o JSON veja a senha real.
+        async function sha256Hex(text) {
+            const enc = new TextEncoder().encode(text);
+            const buf = await crypto.subtle.digest('SHA-256', enc);
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function randomSaltHex() {
+            const arr = new Uint8Array(16);
+            crypto.getRandomValues(arr);
+            return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function hashPassword(plainPassword) {
+            const salt = randomSaltHex();
+            const hash = await sha256Hex(salt + ":" + plainPassword);
+            return `${salt}:${hash}`;
+        }
+
+        // Retorna true/false. Também aceita senhas antigas em texto puro (de antes desta correção)
+        // para não travar o acesso de ninguém — mas quem chama isso deve migrar o hash na hora.
+        async function verifyPassword(attemptPassword, storedValue) {
+            if (!storedValue) return false;
+            if (!storedValue.includes(':')) {
+                // Formato legado (texto puro). Funciona uma última vez e é migrado no login.
+                return attemptPassword === storedValue;
+            }
+            const [salt, hash] = storedValue.split(':');
+            const attemptHash = await sha256Hex(salt + ":" + attemptPassword);
+            return attemptHash === hash;
+        }
+
+        function isLegacyPlaintextPassword(storedValue) {
+            return !!storedValue && !storedValue.includes(':');
         }
 
         // Usuários com função Gestor Adm ou Envio/Coleta não entram no ranking (não são analistas avaliados)
@@ -1560,6 +1607,78 @@
             return `${meses[d.getMonth()]} / ${d.getFullYear()}`;
         }
 
+        // --- Helpers de diff/merge (base do controle de concorrência) ---
+        function deepClone(obj) {
+            return obj === undefined || obj === null ? obj : JSON.parse(JSON.stringify(obj));
+        }
+
+        // Compara duas coleções (arrays de objetos com campo "id") e descobre o que foi
+        // adicionado, removido e alterado entre "oldArr" (o que tínhamos) e "newArr" (o que temos agora).
+        function diffKeyedArray(oldArr, newArr) {
+            oldArr = oldArr || []; newArr = newArr || [];
+            const oldMap = new Map(oldArr.map(x => [x.id, x]));
+            const newMap = new Map(newArr.map(x => [x.id, x]));
+            const added = [], removed = [], updated = [];
+            newMap.forEach((item, id) => {
+                if (!oldMap.has(id)) added.push(item);
+                else if (JSON.stringify(oldMap.get(id)) !== JSON.stringify(item)) updated.push(item);
+            });
+            oldMap.forEach((item, id) => { if (!newMap.has(id)) removed.push(id); });
+            return { added, removed, updated };
+        }
+
+        // Reaplica esse diff em cima de uma versão base (ex: a mais recente vinda do banco).
+        function applyKeyedArrayDiff(baseArr, diff) {
+            const map = new Map((baseArr || []).map(x => [x.id, x]));
+            diff.removed.forEach(id => map.delete(id));
+            diff.added.forEach(item => map.set(item.id, item));
+            diff.updated.forEach(item => map.set(item.id, item));
+            return Array.from(map.values());
+        }
+
+        function diffUsers(oldUsers, newUsers) {
+            oldUsers = oldUsers || {}; newUsers = newUsers || {};
+            const added = {}, removed = [], updated = {};
+            Object.keys(newUsers).forEach(id => {
+                if (!(id in oldUsers)) added[id] = newUsers[id];
+                else if (JSON.stringify(oldUsers[id]) !== JSON.stringify(newUsers[id])) updated[id] = newUsers[id];
+            });
+            Object.keys(oldUsers).forEach(id => { if (!(id in newUsers)) removed.push(id); });
+            return { added, removed, updated };
+        }
+
+        function applyUsersDiff(baseUsers, diff) {
+            const result = Object.assign({}, baseUsers || {});
+            diff.removed.forEach(id => delete result[id]);
+            Object.assign(result, diff.added, diff.updated);
+            return result;
+        }
+
+        // Descobre tudo que ESTE cliente mudou localmente desde a última sincronização.
+        function computeStoreDiff(base, local) {
+            base = base || {};
+            return {
+                currentMonthNameChanged: base.currentMonthName !== local.currentMonthName ? local.currentMonthName : undefined,
+                users: diffUsers(base.users, local.users),
+                logs: diffKeyedArray(base.logs, local.logs),
+                history: diffKeyedArray(base.history, local.history),
+                priorityRequests: diffKeyedArray(base.priorityRequests, local.priorityRequests),
+                transferRequests: diffKeyedArray(base.transferRequests, local.transferRequests)
+            };
+        }
+
+        // Aplica o diff local em cima do dado mais recente do servidor (não do que tínhamos antes).
+        function applyStoreDiff(serverData, diff) {
+            const merged = deepClone(serverData) || {};
+            if (diff.currentMonthNameChanged !== undefined) merged.currentMonthName = diff.currentMonthNameChanged;
+            merged.users = applyUsersDiff(merged.users, diff.users);
+            merged.logs = applyKeyedArrayDiff(merged.logs, diff.logs);
+            merged.history = applyKeyedArrayDiff(merged.history, diff.history);
+            merged.priorityRequests = applyKeyedArrayDiff(merged.priorityRequests, diff.priorityRequests);
+            merged.transferRequests = applyKeyedArrayDiff(merged.transferRequests, diff.transferRequests);
+            return merged;
+        }
+
         async function initApp() {
             if (!supabaseClient) {
                 alert("Configure as chaves do Supabase no código para o funcionamento!");
@@ -1567,12 +1686,14 @@
                 try {
                     const { data, error } = await supabaseClient
                         .from('rankpro_store')
-                        .select('data')
+                        .select('data, version')
                         .eq('id', RECORD_ID)
                         .maybeSingle();
 
                     if (data && data.data) {
                         appStore = data.data;
+                        currentVersion = data.version || 0;
+                        lastSyncedSnapshot = deepClone(appStore);
                     }
                 } catch (e) {
                     console.error(e);
@@ -1588,6 +1709,15 @@
                     priorityRequests: [],
                     transferRequests: []
                 };
+                lastSyncedSnapshot = {}; // nada sincronizado ainda: tudo conta como novidade
+                // As senhas em defaultUsers são literais de texto puro só para existirem no
+                // código-fonte (inevitável num app 100% estático). Antes de gravar qualquer
+                // coisa no banco, já convertemos para hash — o banco nunca guarda texto puro.
+                for (const id of Object.keys(appStore.users)) {
+                    if (isLegacyPlaintextPassword(appStore.users[id].password)) {
+                        appStore.users[id].password = await hashPassword(appStore.users[id].password);
+                    }
+                }
                 await persistStore();
             } else {
                 if (!appStore.users) appStore.users = defaultUsers;
@@ -1597,21 +1727,32 @@
 
                 const hasMarcoNunes = Object.values(appStore.users).some(u => u.name === "Marco Nunes" && u.role === "Gestor Adm");
                 if (!hasMarcoNunes) {
-                    appStore.users['marco_nunes'] = { name: "Marco Nunes", team: "Sistema", role: "Gestor Adm", initial: "MN", active: true, password: "admin123" };
+                    appStore.users['marco_nunes'] = { name: "Marco Nunes", team: "Sistema", role: "Gestor Adm", initial: "MN", active: true, password: await hashPassword("admin123") };
                     await persistStore();
                 }
 
                 const hasAntonio = Object.values(appStore.users).some(u => u.name === "Antonio" && u.role === "Envio/Coleta");
                 if (!hasAntonio) {
-                    appStore.users['antonio_ec'] = { name: "Antonio", team: "Catraca", role: "Envio/Coleta", initial: "AN", active: true, password: "antonio123" };
+                    appStore.users['antonio_ec'] = { name: "Antonio", team: "Catraca", role: "Envio/Coleta", initial: "AN", active: true, password: await hashPassword("antonio123") };
                     await persistStore();
                 }
 
                 const hasJeremias = Object.values(appStore.users).some(u => u.name === "Jeremias" && u.role === "Envio/Coleta");
                 if (!hasJeremias) {
-                    appStore.users['jeremias_ec'] = { name: "Jeremias", team: "Catraca", role: "Envio/Coleta", initial: "JE", active: true, password: "jeremias123" };
+                    appStore.users['jeremias_ec'] = { name: "Jeremias", team: "Catraca", role: "Envio/Coleta", initial: "JE", active: true, password: await hashPassword("jeremias123") };
                     await persistStore();
                 }
+
+                // Migra qualquer senha antiga em texto puro que já esteja no banco (de antes desta correção),
+                // sem esperar a pessoa fazer login de novo.
+                let hadLegacyPassword = false;
+                for (const id of Object.keys(appStore.users)) {
+                    if (isLegacyPlaintextPassword(appStore.users[id].password)) {
+                        appStore.users[id].password = await hashPassword(appStore.users[id].password);
+                        hadLegacyPassword = true;
+                    }
+                }
+                if (hadLegacyPassword) await persistStore();
             }
 
             document.getElementById('loadingOverlay').classList.add('hidden');
@@ -1623,19 +1764,80 @@
             return appStore;
         }
 
+        // Salva as mudanças locais SEM apagar o que outras pessoas possam ter salvo
+        // enquanto este cliente estava com a página aberta.
+        //
+        // Como funciona: em vez de simplesmente sobrescrever a linha inteira no banco
+        // com o que está na memória (o que apagaria qualquer mudança feita por outra
+        // pessoa nesse meio tempo), a gente:
+        //   1. Calcula só a DIFERENÇA entre o que sabíamos (lastSyncedSnapshot) e o que
+        //      queremos agora (appStore) — ou seja, o que ESTE cliente realmente mudou.
+        //   2. Busca o dado mais atual do banco (pode já ter mudanças de outra pessoa).
+        //   3. Aplica essa diferença em cima do dado atual do banco (não por cima do que
+        //      tínhamos antes), preservando o que a outra pessoa salvou.
+        //   4. Só grava se, entre o passo 2 e agora, ninguém mais gravou por baixo do
+        //      nosso pé (checado pela coluna "version"). Se alguém gravou, repete o
+        //      processo do zero com o dado mais novo.
+        const PERSIST_MAX_RETRIES = 5;
+
         async function persistStore() {
             if (!supabaseClient) return true;
-            try {
-                const { error } = await supabaseClient
-                    .from('rankpro_store')
-                    .upsert({ id: RECORD_ID, data: appStore, updated_at: new Date() });
-                if (error) throw error;
-                return true;
-            } catch (e) {
-                console.error("Erro no Supabase:", e);
-                showToast("Erro ao sincronizar dados na nuvem.", "error");
-                return false;
+
+            const diff = computeStoreDiff(lastSyncedSnapshot, appStore);
+
+            for (let attempt = 0; attempt < PERSIST_MAX_RETRIES; attempt++) {
+                try {
+                    const { data: fresh, error: fetchErr } = await supabaseClient
+                        .from('rankpro_store')
+                        .select('data, version')
+                        .eq('id', RECORD_ID)
+                        .maybeSingle();
+                    if (fetchErr) throw fetchErr;
+
+                    if (!fresh) {
+                        // Linha ainda não existe no banco: cria já com a nossa mudança aplicada.
+                        const merged = applyStoreDiff({}, diff);
+                        const { error: insErr } = await supabaseClient
+                            .from('rankpro_store')
+                            .insert({ id: RECORD_ID, data: merged, version: 0, updated_at: new Date() });
+                        if (insErr) {
+                            // Alguém criou a linha ao mesmo tempo — tenta de novo lendo o que existe agora.
+                            continue;
+                        }
+                        appStore = merged;
+                        lastSyncedSnapshot = deepClone(merged);
+                        currentVersion = 0;
+                        return true;
+                    }
+
+                    const serverData = fresh.data || {};
+                    const serverVersion = fresh.version || 0;
+                    const merged = applyStoreDiff(serverData, diff);
+
+                    const { data: updRows, error: updErr } = await supabaseClient
+                        .from('rankpro_store')
+                        .update({ data: merged, version: serverVersion + 1, updated_at: new Date() })
+                        .eq('id', RECORD_ID)
+                        .eq('version', serverVersion) // só grava se a versão não mudou (compare-and-swap)
+                        .select('version');
+                    if (updErr) throw updErr;
+
+                    if (updRows && updRows.length > 0) {
+                        appStore = merged;
+                        lastSyncedSnapshot = deepClone(merged);
+                        currentVersion = serverVersion + 1;
+                        return true;
+                    }
+                    // Conflito: alguém gravou entre nossa leitura e nossa escrita. Tenta de novo.
+                } catch (e) {
+                    console.error("Erro no Supabase:", e);
+                    showToast("Erro ao sincronizar dados na nuvem.", "error");
+                    return false;
+                }
             }
+
+            showToast("Não foi possível salvar: muitas pessoas editando ao mesmo tempo. Tente novamente.", "error");
+            return false;
         }
 
         // --- BÔNUS DE RANKING SEMANAL (posição 1º/2º/3º dentro do próprio departamento, por semana) ---
@@ -2616,14 +2818,15 @@
                 appStore.users[editId].name = name;
                 appStore.users[editId].role = role;
                 appStore.users[editId].team = team;
-                if (password) appStore.users[editId].password = password;
+                if (password) appStore.users[editId].password = await hashPassword(password);
                 appStore.users[editId].photo = photoData || undefined;
                 showToast("Usuário atualizado com sucesso!");
             } else {
                 // Cadastra novo usuário
                 const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Math.random().toString(36).slice(2, 5);
                 const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-                appStore.users[newId] = { name, team, role, initial: initials, active: true, photo: photoData || undefined, password: (role === "Gestor Adm" || role === "Envio/Coleta") ? password : undefined };
+                const needsPassword = (role === "Gestor Adm" || role === "Envio/Coleta");
+                appStore.users[newId] = { name, team, role, initial: initials, active: true, photo: photoData || undefined, password: needsPassword ? await hashPassword(password) : undefined };
                 showToast("Novo usuário cadastrado com sucesso!");
             }
 
@@ -3428,7 +3631,7 @@
         }
         function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
 
-        function loginAdmin(e) {
+        async function loginAdmin(e) {
             e.preventDefault();
             const store = getStore();
             const usersList = store.users || defaultUsers;
@@ -3448,7 +3651,13 @@
                 showToast("Este gestor ainda não possui senha cadastrada.", "error");
                 return;
             }
-            if (pass === user.password) {
+            const valid = await verifyPassword(pass, user.password);
+            if (valid) {
+                if (isLegacyPlaintextPassword(user.password)) {
+                    // Migra silenciosamente a senha antiga (texto puro) para o formato com hash.
+                    appStore.users[selectedId].password = await hashPassword(pass);
+                    await persistStore();
+                }
                 isAdminLoggedIn = true;
                 currentAdminId = selectedId;
                 document.getElementById('adminPass').value = "";
@@ -3480,7 +3689,7 @@
         }
         function closePecaModal() { document.getElementById('pecaModal').classList.add('hidden'); }
 
-        function loginPeca(e) {
+        async function loginPeca(e) {
             e.preventDefault();
             const store = getStore();
             const usersList = store.users || defaultUsers;
@@ -3500,7 +3709,13 @@
                 showToast("Este usuário ainda não possui senha cadastrada.", "error");
                 return;
             }
-            if (pass === user.password) {
+            const valid = await verifyPassword(pass, user.password);
+            if (valid) {
+                if (isLegacyPlaintextPassword(user.password)) {
+                    // Migra silenciosamente a senha antiga (texto puro) para o formato com hash.
+                    appStore.users[selectedId].password = await hashPassword(pass);
+                    await persistStore();
+                }
                 isPecaLoggedIn = true;
                 currentPecaUserId = selectedId;
                 document.getElementById('pecaPass').value = "";
