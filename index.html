@@ -56,6 +56,17 @@
         ::-webkit-scrollbar-thumb { background: #2A2A38; border-radius: 8px; }
         ::-webkit-scrollbar-thumb:hover { background: #3A3A4C; }
         @keyframes fadeUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+        @keyframes faqPulse {
+            0% { box-shadow: 0 0 0 0 rgba(108,99,255,0.55); border-color: rgba(108,99,255,0.9); }
+            70% { box-shadow: 0 0 0 14px rgba(108,99,255,0); border-color: rgba(108,99,255,0.9); }
+            100% { box-shadow: 0 0 0 0 rgba(108,99,255,0); }
+        }
+        .faq-pulse-highlight { animation: faqPulse 1.1s ease-out 2; border-radius: 0.75rem; position: relative; z-index: 1; }
+        .glossary-term { border-bottom: 1px dotted rgba(155,155,173,0.7); cursor: help; }
+        .glossary-term:hover { color: #00E5C7; }
+        .you-are-here-track { position: relative; height: 8px; border-radius: 999px; background: #1B1B26; overflow: visible; }
+        .you-are-here-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 999px; background: linear-gradient(90deg,#6C63FF,#00E5C7); transition: width .6s ease; }
+        .you-are-here-marker { position: absolute; top: 50%; transform: translate(-50%, -50%); transition: left .6s ease; white-space: nowrap; }
         .anim-fade-up { animation: fadeUp .45s cubic-bezier(.16,1,.3,1) both; }
         @keyframes popIn { from { opacity:0; transform: scale(.92); } to { opacity:1; transform: scale(1); } }
         .anim-pop { animation: popIn .35s cubic-bezier(.16,1,.3,1) both; }
@@ -474,10 +485,25 @@
                     <div class="p-3 bg-primary-500/20 text-primary-400 rounded-xl">
                         <i class="fa-solid fa-book-open text-2xl"></i>
                     </div>
-                    <div>
+                    <div class="flex-1">
                         <h2 class="text-xl font-bold text-white">Manual Completo de Métricas & Premiação</h2>
                         <p class="text-xs text-secondary">Consulte os critérios de pontuação, faixas e penalidades de cada departamento.</p>
                     </div>
+                </div>
+
+                <!-- BUSCA INTELIGENTE NO MANUAL -->
+                <div class="relative mb-5">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none"></i>
+                        <input type="text" id="faqSearchInput" autocomplete="off"
+                            placeholder="Busque por uma dúvida, métrica ou termo... ex: 'TMA', 'penalidade', 'como funciona a sprint'"
+                            class="w-full bg-bg/80 border border-line focus:border-primary-400 rounded-xl pl-11 pr-11 py-3 text-sm text-white placeholder-secondary/60 outline-none transition-colors"
+                            oninput="filterFaqSearch(this.value)" onfocus="if(this.value) filterFaqSearch(this.value)">
+                        <button onclick="clearFaqSearch()" id="faqSearchClearBtn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-white w-6 h-6 flex items-center justify-center rounded-full hover:bg-surface2 transition">
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                        </button>
+                    </div>
+                    <div id="faqSearchResults" class="hidden absolute z-30 mt-2 w-full bg-surface2 border border-line rounded-xl shadow-2xl max-h-80 overflow-y-auto p-2 space-y-1"></div>
                 </div>
 
                 <div class="flex flex-wrap gap-2 mb-6">
@@ -489,6 +515,9 @@
                     </button>
                     <button onclick="toggleFaqDept('Catraca')" id="faqTabCatraca" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary">
                         Métricas Departamento Catraca
+                    </button>
+                    <button onclick="toggleFaqDept('Simulador')" id="faqTabSimulador" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary">
+                        🧮 Simulador "E se?"
                     </button>
                 </div>
 
@@ -531,7 +560,7 @@
                     </div>
 
                     <!-- FÓRMULA GERAL -->
-                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                    <div id="faq-formula-geral" class="bg-bg/60 p-4 rounded-lg border border-line">
                         <h4 class="font-bold text-primary-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-calculator"></i> ➕ Como a Pontuação Total é Calculada</h4>
                         <p class="text-[11px] text-secondary/80 mb-3">A pontuação final de cada analista, no período selecionado, é a <strong class="text-white">soma</strong> de todos os componentes abaixo. Nenhum componente tem peso percentual — cada um contribui em pontos absolutos.</p>
                         <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 text-[11px] text-secondary">
@@ -576,7 +605,7 @@
                     </div>
 
                     <!-- QUADRO COMPARATIVO -->
-                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                    <div id="faq-comparativo-geral" class="bg-bg/60 p-4 rounded-lg border border-line">
                         <h4 class="font-bold text-primary-300 mb-3 flex items-center gap-1.5"><i class="fa-solid fa-table-columns"></i> 📊 Quadro Comparativo: Software × Catraca</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-[11px] text-secondary">
@@ -607,7 +636,7 @@
                     </div>
 
                     <!-- GLOSSÁRIO -->
-                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                    <div id="faq-glossario-geral" class="bg-bg/60 p-4 rounded-lg border border-line">
                         <h4 class="font-bold text-primary-300 mb-3 flex items-center gap-1.5"><i class="fa-solid fa-spell-check"></i> 🔤 Glossário de Siglas (Bloco de Monitoramento)</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5 text-[11px] text-secondary">
                             <p><strong class="text-white">TMA</strong> — Tempo Médio de Atendimento</p>
@@ -632,7 +661,7 @@
 
                 <div id="faqContentSistema" class="hidden space-y-4 text-sm text-secondary">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <div id="faq-tma-sistema" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-primary-400 mb-2">🕐 Tempo Médio de Atendimento (TMA)</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Até 1h20 ➔ <strong>50 pts</strong></li>
@@ -641,8 +670,9 @@
                                 <li>• Acima de 2h00 ➔ <strong>0 pts</strong></li>
                             </ul>
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: considera o tempo total do atendimento, da abertura ao encerramento — quanto mais rápido, melhor o TMA.</p>
+                            <div id="gauge-tma-sistema"></div>
                         </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <div id="faq-resolvidos-rank-sistema" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-primary-400 mb-2">🏆 Ranking Semanal – Protocolos Resolvidos</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>🥇 Maior número resolvido ➔ <strong>100 pts</strong></li>
@@ -652,7 +682,7 @@
                             </ul>
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: baseado no volume de protocolos efetivamente resolvidos no período avaliado.</p>
                         </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <div id="faq-atendidos-sistema" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-primary-400 mb-2">📊 Protocolos Atendidos (Esforço)</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• 101 a 120 protocolos ➔ <strong>100 pts</strong> <span class="text-secondary/70">(+1 pt adicional por protocolo acima de 120)</span></li>
@@ -661,8 +691,9 @@
                                 <li>• Abaixo de 80 protocolos ➔ <strong>0 pts</strong></li>
                             </ul>
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: pontuação conforme o volume total de protocolos atendidos no período avaliado.</p>
+                            <div id="gauge-atendidos-sistema"></div>
                         </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <div id="faq-satisfacao-sistema" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-primary-400 mb-2">⭐ Avaliação de Satisfação</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Nota 4.90 a 5.00 ➔ <strong>100 pts</strong></li>
@@ -672,8 +703,9 @@
                                 <li>• Abaixo de 4.00 ➔ <strong>0 pts</strong></li>
                             </ul>
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: pontuação baseada na média das notas recebidas no período avaliado.</p>
+                            <div id="gauge-satisfacao-sistema"></div>
                         </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line md:col-span-2">
+                        <div id="faq-prioridades-sistema" class="bg-bg/60 p-4 rounded-lg border border-line md:col-span-2">
                             <h4 class="font-bold text-primary-400 mb-2">🚨 Atendimentos Prioritários da Gestão</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Cada demanda prioritária resolvida ➔ <strong>+50 pts cada</strong></li>
@@ -683,7 +715,7 @@
                     </div>
 
                     <!-- SPRINT SEMANAL DE CRESCIMENTO -->
-                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                    <div id="faq-sprint-sistema" class="bg-bg/60 p-4 rounded-lg border border-line">
                         <h4 class="font-bold text-primary-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-rocket"></i> 🚀 Sprint Semanal de Crescimento do Produto</h4>
                         <p class="text-[11px] text-secondary/80 mb-3">Objetivo: promover o crescimento da utilização do sistema por meio de ações proativas junto aos clientes definidos para cada Sprint.</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -734,7 +766,7 @@
                     </div>
 
                     <!-- MONITORAMENTO -->
-                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                    <div id="faq-monitoramento-sistema" class="bg-bg/60 p-4 rounded-lg border border-line">
                         <h4 class="font-bold text-primary-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-magnifying-glass-chart"></i> 🎯 Monitoramento (até 100 pts totais)</h4>
                         <p class="text-[11px] text-secondary/80 mb-3">Avaliação qualitativa do atendimento, dividida em 5 blocos de 20 pontos cada.</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
@@ -779,7 +811,7 @@
                     </div>
 
                     <!-- PENALIZAÇÕES -->
-                    <div class="bg-red-500/5 p-4 rounded-lg border border-red-500/20">
+                    <div id="faq-penalidades-sistema" class="bg-red-500/5 p-4 rounded-lg border border-red-500/20">
                         <h4 class="font-bold text-red-400 mb-2 flex items-center gap-1.5">⚠️ Penalizações e Perdas de Pontos</h4>
                         <p class="text-[11px] text-secondary/80 mb-3">Aplicadas conforme descumprimento de processos, conduta profissional e impacto na operação.</p>
                         <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-[11px] text-secondary">
@@ -811,7 +843,7 @@
 
                 <div id="faqContentCatraca" class="hidden space-y-4 text-sm text-secondary">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <div id="faq-satisfacao-catraca" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-emerald-400 mb-2">⭐ Avaliação de Satisfação</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Média 4,90 a 5,00 ➔ <strong>100 pts</strong></li>
@@ -821,15 +853,16 @@
                                 <li>• Abaixo de 4,00 ➔ <strong>0 pts</strong></li>
                             </ul>
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: calculada com base na média das avaliações recebidas no período (avaliação do cliente na plataforma de atendimento).</p>
+                            <div id="gauge-satisfacao-catraca"></div>
                         </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <div id="faq-resolvidos-catraca" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-emerald-400 mb-2">📑 Protocolos Resolvidos</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Cada protocolo efetivamente resolvido ➔ <strong>+2 pts</strong></li>
                             </ul>
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: será considerado apenas o protocolo encerrado com solução efetiva.</p>
                         </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <div id="faq-resolvidos-rank-catraca" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-emerald-400 mb-2">🏆 Ranking Semanal – Protocolos Resolvidos</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>🥇 1º Lugar ➔ <strong>100 pts</strong></li>
@@ -839,14 +872,14 @@
                             </ul>
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: ranking baseado no maior número de protocolos efetivamente resolvidos durante a semana.</p>
                         </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <div id="faq-atendidos-catraca" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-emerald-400 mb-2">📊 Protocolos Atendidos (Esforço Operacional)</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Cada protocolo atendido ➔ <strong>+0,5 pt</strong></li>
                             </ul>
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Objetivo: valorizar o esforço operacional realizado pelos analistas.</p>
                         </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <div id="faq-atendidos-rank-catraca" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-emerald-400 mb-2">🏆 Ranking Semanal – Protocolos Atendidos</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>🥇 1º Lugar ➔ <strong>100 pts</strong></li>
@@ -856,7 +889,7 @@
                             </ul>
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: ranking baseado no maior volume de protocolos atendidos durante a semana.</p>
                         </div>
-                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <div id="faq-prioridades-catraca" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-emerald-400 mb-2">🚨 Atendimentos Prioritários da Gestão</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Demanda prioritária concluída com sucesso ➔ <strong>+50 pts</strong></li>
@@ -873,7 +906,7 @@
                     </div>
 
                     <!-- SPRINT SEMANAL DE CRESCIMENTO -->
-                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                    <div id="faq-sprint-catraca" class="bg-bg/60 p-4 rounded-lg border border-line">
                         <h4 class="font-bold text-emerald-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-rocket"></i> 🚀 Sprint Semanal de Crescimento do Produto</h4>
                         <p class="text-[11px] text-secondary/80 mb-3">Objetivo: promover o crescimento da utilização do sistema por meio de ações proativas junto aos clientes definidos para cada Sprint.</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -924,7 +957,7 @@
                     </div>
 
                     <!-- PEÇAS E DESPACHOS -->
-                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                    <div id="faq-pecas-catraca" class="bg-bg/60 p-4 rounded-lg border border-line">
                         <h4 class="font-bold text-emerald-300 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-box"></i> 🔧 Pontuação – Peças e Despachos</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="bg-surface2/60 rounded-lg p-3 border border-line/60 flex items-center justify-between">
@@ -947,6 +980,90 @@
                             <div class="bg-bg/60 rounded-lg p-3 border border-line"><p class="text-lg">🥇</p><p class="text-[11px] text-secondary">Top 1</p><p class="font-extrabold text-emerald-400 text-sm">R$ 1.000,00</p></div>
                             <div class="bg-bg/60 rounded-lg p-3 border border-line"><p class="text-lg">🥈</p><p class="text-[11px] text-secondary">Top 2</p><p class="font-extrabold text-emerald-400 text-sm">R$ 500,00</p></div>
                             <div class="bg-bg/60 rounded-lg p-3 border border-line"><p class="text-lg">🥉</p><p class="text-[11px] text-secondary">Top 3</p><p class="font-extrabold text-emerald-400 text-sm">R$ 300,00</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SIMULADOR INTERATIVO "E SE?" -->
+                <div id="faqContentSimulador" class="hidden space-y-4 text-sm text-secondary">
+                    <div class="bg-gradient-to-br from-primary-500/10 via-surface to-surface p-5 rounded-2xl border border-primary-500/30">
+                        <div class="flex items-center gap-3 mb-1">
+                            <div class="w-9 h-9 rounded-lg bg-primary-500/20 text-primary-300 flex items-center justify-center"><i class="fa-solid fa-sliders"></i></div>
+                            <h4 class="font-bold text-white text-base">Simule sua pontuação antes de fechar a semana</h4>
+                        </div>
+                        <p class="text-xs text-secondary mb-1">Ajuste os controles abaixo com números hipotéticos e veja, em tempo real, quantos pontos cada métrica geraria — usando exatamente as mesmas faixas e fórmulas do manual.</p>
+                        <p class="text-[10px] text-amber-300/90 mb-5"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Isso é apenas uma simulação: não lança nem altera nenhum dado real da sua pontuação.</p>
+
+                        <div class="flex gap-2 mb-5">
+                            <button onclick="setSimTeam('Sistema')" id="simBtnSistema" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-gradient-to-r from-primary-500 to-primary-600 text-white">💻 Sou do Software</button>
+                            <button onclick="setSimTeam('Catraca')" id="simBtnCatraca" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary">🎫 Sou da Catraca</button>
+                        </div>
+
+                        <div id="simControlsSistema" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>📊 Protocolos atendidos no mês</span><span id="simAtendidosSistemaVal" class="text-primary-300 num-mono">0</span></label>
+                                <input type="range" min="0" max="200" value="0" id="simAtendidosSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>⭐ Nota média de satisfação</span><span id="simSatisfacaoSistemaVal" class="text-primary-300 num-mono">0.00</span></label>
+                                <input type="range" min="0" max="500" value="0" id="simSatisfacaoSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🕐 TMA médio do atendimento</span><span id="simTmaSistemaVal" class="text-primary-300 num-mono">0min</span></label>
+                                <input type="range" min="0" max="180" value="0" id="simTmaSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🏆 Colocação no ranking de resolvidos</span><span id="simRankSistemaVal" class="text-primary-300 num-mono">4º+</span></label>
+                                <input type="range" min="0" max="3" value="0" id="simRankSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🚨 Prioridades + 🔁 transferências aprovadas</span><span id="simPrioridadesSistemaVal" class="text-primary-300 num-mono">0</span></label>
+                                <input type="range" min="0" max="20" value="0" id="simPrioridadesSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🎯 Monitoramento de qualidade</span><span id="simMonitoramentoSistemaVal" class="text-primary-300 num-mono">0</span></label>
+                                <input type="range" min="0" max="100" value="0" id="simMonitoramentoSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
+                            </div>
+                            <div class="md:col-span-2 flex items-center gap-6 bg-bg/50 rounded-lg p-3 border border-line">
+                                <label class="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer"><input type="checkbox" id="simSprint100Sistema" class="accent-primary-500" onchange="renderSimulador()"> Concluiu 100% da Sprint</label>
+                                <label class="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer"><input type="checkbox" id="simSprintGanhoSistema" class="accent-primary-500" onchange="renderSimulador()"> Recuperou 1 cliente na Sprint</label>
+                            </div>
+                        </div>
+
+                        <div id="simControlsCatraca" class="hidden grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>📑 Protocolos resolvidos</span><span id="simResolvidosCatracaVal" class="text-primary-300 num-mono">0</span></label>
+                                <input type="range" min="0" max="200" value="0" id="simResolvidosCatraca" class="w-full accent-emerald-500" oninput="renderSimulador()">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>📊 Protocolos atendidos</span><span id="simAtendidosCatracaVal" class="text-primary-300 num-mono">0</span></label>
+                                <input type="range" min="0" max="200" value="0" id="simAtendidosCatraca" class="w-full accent-emerald-500" oninput="renderSimulador()">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>⭐ Nota média de satisfação</span><span id="simSatisfacaoCatracaVal" class="text-primary-300 num-mono">0.00</span></label>
+                                <input type="range" min="0" max="500" value="0" id="simSatisfacaoCatraca" class="w-full accent-emerald-500" oninput="renderSimulador()">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🏆 Colocação (resolvidos / atendidos)</span><span id="simRankCatracaVal" class="text-primary-300 num-mono">4º+</span></label>
+                                <input type="range" min="0" max="3" value="0" id="simRankCatraca" class="w-full accent-emerald-500" oninput="renderSimulador()">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🚨 Prioridades + 🔁 transferências + 🔧 peças</span><span id="simPrioridadesCatracaVal" class="text-primary-300 num-mono">0</span></label>
+                                <input type="range" min="0" max="20" value="0" id="simPrioridadesCatraca" class="w-full accent-emerald-500" oninput="renderSimulador()">
+                            </div>
+                            <div class="flex items-center gap-6 bg-bg/50 rounded-lg p-3 border border-line">
+                                <label class="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer"><input type="checkbox" id="simSprint100Catraca" class="accent-emerald-500" onchange="renderSimulador()"> Concluiu 100% da Sprint</label>
+                                <label class="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer"><input type="checkbox" id="simSprintGanhoCatraca" class="accent-emerald-500" onchange="renderSimulador()"> Recuperou 1 cliente</label>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-5 border-t border-line/60 flex flex-col md:flex-row items-center gap-5">
+                            <div class="shrink-0 text-center bg-bg/60 border border-primary-500/30 rounded-2xl px-8 py-4">
+                                <p class="text-[10px] text-secondary uppercase tracking-wide mb-1">Total Simulado</p>
+                                <p id="simTotalPts" class="text-4xl font-black text-white num-mono">0</p>
+                                <p class="text-[10px] text-secondary mt-1">pontos no período</p>
+                            </div>
+                            <div id="simBreakdown" class="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-2 w-full"></div>
                         </div>
                     </div>
                 </div>
@@ -2157,6 +2274,75 @@
             return team === "Sistema" ? "Software" : team;
         }
 
+        // ============ INDICADOR "VOCÊ ESTÁ AQUI" NO MANUAL (FAQ) ============
+        // Mostra, dentro das faixas de pontuação do manual, onde o analista logado
+        // realmente está com os dados reais do período selecionado no Dashboard.
+        function renderYouAreHereGauges(metricsParam) {
+            const gaugeIds = ['gauge-tma-sistema', 'gauge-atendidos-sistema', 'gauge-satisfacao-sistema', 'gauge-satisfacao-catraca'];
+            gaugeIds.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const user = usersList[currentActiveUser];
+            if (!user) return;
+
+            const metrics = metricsParam || getAggregatedMetrics(activeMonthKey, activePeriodFilter);
+            const m = metrics[currentActiveUser];
+            if (!m) return;
+
+            const avgSat = m.satisfacaoCount > 0 ? (m.satisfacaoSum / m.satisfacaoCount) : null;
+
+            const gaugeHtml = (labelHtml, pct) => `
+                <div class="mt-3 pt-3 border-t border-line/50">
+                    <p class="text-[10px] font-bold text-primary-300 mb-2 flex items-center gap-1"><i class="fa-solid fa-location-dot"></i> Você está aqui (período atual)</p>
+                    <div class="you-are-here-track"><div class="you-are-here-fill" style="width:${Math.max(3, pct)}%"></div></div>
+                    <p class="text-[10px] text-white mt-1.5 font-semibold leading-snug">${labelHtml}</p>
+                </div>`;
+            const emptyHtml = `<p class="text-[10px] text-secondary mt-3 pt-3 border-t border-line/50 italic">Ainda sem lançamentos suficientes no período selecionado para calcular sua posição aqui.</p>`;
+
+            if (user.team === "Sistema") {
+                const tmaEl = document.getElementById('gauge-tma-sistema');
+                if (tmaEl) {
+                    const pts = m.tmaPts || 0;
+                    tmaEl.innerHTML = (m.tmaPts !== undefined && (store.logs || []).some(l => l.userId === currentActiveUser))
+                        ? gaugeHtml(`Seu TMA está rendendo <strong class="text-primary-300 num-mono">${pts} pts</strong> no período selecionado.`, (pts / 50) * 100)
+                        : emptyHtml;
+                }
+                const atEl = document.getElementById('gauge-atendidos-sistema');
+                if (atEl) {
+                    const atend = m.atendidos || 0;
+                    atEl.innerHTML = atend > 0
+                        ? gaugeHtml(`Você atendeu <strong class="text-primary-300 num-mono">${atend}</strong> protocolo(s) até agora — faltam <strong class="text-primary-300">${Math.max(0, 101 - atend)}</strong> para a faixa de 100+ pts.`, (atend / 130) * 100)
+                        : emptyHtml;
+                }
+                const satEl = document.getElementById('gauge-satisfacao-sistema');
+                if (satEl) {
+                    satEl.innerHTML = avgSat !== null
+                        ? gaugeHtml(`Sua nota média atual é <strong class="text-primary-300 num-mono">${avgSat.toFixed(2)}</strong> (${satisfacaoPoints(avgSat)} pts).`, (avgSat / 5) * 100)
+                        : emptyHtml;
+                }
+            } else if (user.team === "Catraca") {
+                const satEl = document.getElementById('gauge-satisfacao-catraca');
+                if (satEl) {
+                    satEl.innerHTML = avgSat !== null
+                        ? gaugeHtml(`Sua nota média atual é <strong class="text-primary-300 num-mono">${avgSat.toFixed(2)}</strong> (${satisfacaoPoints(avgSat)} pts).`, (avgSat / 5) * 100)
+                        : emptyHtml;
+                }
+            }
+        }
+
+        // Mapa: chave do breakdown do Dashboard -> bloco correspondente no manual (FAQ), por departamento.
+        const BREAKDOWN_TO_FAQ = {
+            ptsRanking:    { Sistema: 'faq-resolvidos-rank-sistema', Catraca: 'faq-resolvidos-rank-catraca' },
+            ptsSprint:     { Sistema: 'faq-sprint-sistema',          Catraca: 'faq-sprint-catraca' },
+            ptsAtendidos:  { Sistema: 'faq-atendidos-sistema',       Catraca: 'faq-atendidos-catraca' },
+            ptsResolvidos: { Sistema: 'faq-resolvidos-rank-sistema', Catraca: 'faq-resolvidos-catraca' },
+            ptsSatisfacao: { Sistema: 'faq-satisfacao-sistema',      Catraca: 'faq-satisfacao-catraca' },
+            ptsPrioridades:{ Sistema: 'faq-prioridades-sistema',     Catraca: 'faq-prioridades-catraca' },
+            tmaPts:        { Sistema: 'faq-tma-sistema',             Catraca: 'faq-satisfacao-catraca' },
+            extraPts:      { Sistema: 'faq-monitoramento-sistema',   Catraca: 'faq-pecas-catraca' }
+        };
+
         function render() {
             const store = getStore();
             const usersList = store.users || defaultUsers;
@@ -2256,6 +2442,7 @@
 
             renderLeaderboard(metrics);
             renderTopDashboard(metrics);
+            renderYouAreHereGauges(metrics);
         }
 
         function renderHistoricalStats(userId) {
@@ -2498,16 +2685,22 @@
             document.getElementById('breakdownPeriodLabel').innerText = activePeriodFilter === 'ALL' ? 'Acumulado do Mês' : activePeriodFilter;
 
             const maxVal = Math.max(1, ...items.map(it => Math.abs(it.value)));
+            const teamKey = isSistema ? 'Sistema' : 'Catraca';
             let html = "";
             items.forEach(it => {
                 const pct = Math.min(100, (Math.abs(it.value) / maxVal) * 100);
                 const isNeg = it.value < 0;
+                const faqTarget = BREAKDOWN_TO_FAQ[it.key] && BREAKDOWN_TO_FAQ[it.key][teamKey];
+                const faqLink = faqTarget
+                    ? `<button onclick="goToFaq('${teamKey}','${faqTarget}')" title="Como isso é calculado? Ver no manual" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-secondary hover:text-primary-300 hover:bg-primary-500/15 transition-colors shrink-0"><i class="fa-solid fa-circle-question"></i></button>`
+                    : '';
                 html += `
                     <div class="group rounded-lg -mx-2 px-2 py-1.5 transition-colors duration-150 hover:bg-surface2/50">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-xs font-semibold text-white flex items-center gap-2">
                                 <span class="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] transition-transform duration-150 group-hover:scale-110" style="background:${it.color}22; color:${it.color}"><i class="fa-solid ${it.icon}"></i></span>
                                 ${it.label}
+                                ${faqLink}
                             </span>
                             <span class="text-xs font-extrabold ${isNeg ? 'text-red-400' : 'text-white'} num-mono">${isNeg ? '' : '+'}${it.value} pts</span>
                         </div>
@@ -2520,12 +2713,16 @@
             });
 
             if (penal < 0) {
+                const penalFaqLink = isSistema
+                    ? `<button onclick="goToFaq('Sistema','faq-penalidades-sistema')" title="Ver critérios de penalidade no manual" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-secondary hover:text-red-300 hover:bg-red-500/15 transition-colors shrink-0"><i class="fa-solid fa-circle-question"></i></button>`
+                    : '';
                 html += `
                     <div class="group pt-1 mt-1 border-t border-line/60">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-xs font-semibold text-red-300 flex items-center gap-2">
                                 <span class="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] bg-red-500/15 text-red-400"><i class="fa-solid fa-triangle-exclamation"></i></span>
                                 Penalidades
+                                ${penalFaqLink}
                             </span>
                             <span class="text-xs font-extrabold text-red-400 num-mono">${penal} pts</span>
                         </div>
@@ -3029,8 +3226,8 @@
         }
 
         function toggleFaqDept(dept) {
-            const contents = { Geral: 'faqContentGeral', Sistema: 'faqContentSistema', Catraca: 'faqContentCatraca' };
-            const tabs = { Geral: 'faqTabGeral', Sistema: 'faqTabSistema', Catraca: 'faqTabCatraca' };
+            const contents = { Geral: 'faqContentGeral', Sistema: 'faqContentSistema', Catraca: 'faqContentCatraca', Simulador: 'faqContentSimulador' };
+            const tabs = { Geral: 'faqTabGeral', Sistema: 'faqTabSistema', Catraca: 'faqTabCatraca', Simulador: 'faqTabSimulador' };
             const activeClass = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
             const inactiveClass = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-surface2 text-secondary hover:text-white";
             Object.keys(contents).forEach(key => {
@@ -3045,6 +3242,248 @@
                     tabEl.className = inactiveClass;
                 }
             });
+            if (dept === 'Simulador') {
+                // Pré-preenche o simulador com o time do analista logado, se houver.
+                const store = getStore();
+                const usersList = store.users || defaultUsers;
+                const u = usersList[currentActiveUser];
+                if (u) setSimTeam(u.team === 'Catraca' ? 'Catraca' : 'Sistema');
+                else renderSimulador();
+            }
+        }
+
+        // ============ BUSCA INTELIGENTE NO MANUAL (FAQ) ============
+        let faqSearchIndex = null;
+
+        function buildFaqSearchIndex() {
+            const deptMeta = {
+                Geral:    { containerId: 'faqContentGeral',    label: 'Regras Gerais',  icon: '📘' },
+                Sistema:  { containerId: 'faqContentSistema',  label: 'Software',       icon: '💻' },
+                Catraca:  { containerId: 'faqContentCatraca',  label: 'Catraca',        icon: '🎫' }
+            };
+            const index = [];
+            let autoIdCounter = 0;
+            Object.keys(deptMeta).forEach(dept => {
+                const container = document.getElementById(deptMeta[dept].containerId);
+                if (!container) return;
+                const heads = container.querySelectorAll('h4, h5');
+                const seen = new Set();
+                heads.forEach(h => {
+                    const block = h.closest('div');
+                    if (!block || seen.has(block)) return;
+                    seen.add(block);
+                    if (!block.id) block.id = 'faq-auto-' + (autoIdCounter++);
+                    const title = h.textContent.trim().replace(/\s+/g, ' ');
+                    const fullText = block.textContent.trim().replace(/\s+/g, ' ');
+                    index.push({
+                        dept, deptLabel: deptMeta[dept].label, deptIcon: deptMeta[dept].icon,
+                        title, fullText, elId: block.id
+                    });
+                });
+            });
+            faqSearchIndex = index;
+        }
+
+        function filterFaqSearch(rawQuery) {
+            const resultsEl = document.getElementById('faqSearchResults');
+            const clearBtn = document.getElementById('faqSearchClearBtn');
+            const query = rawQuery.trim().toLowerCase();
+            clearBtn.classList.toggle('hidden', query.length === 0);
+
+            if (!faqSearchIndex) buildFaqSearchIndex();
+
+            if (query.length < 2) {
+                resultsEl.classList.add('hidden');
+                resultsEl.innerHTML = '';
+                return;
+            }
+
+            const matches = faqSearchIndex
+                .map(item => {
+                    const titleHit = item.title.toLowerCase().includes(query);
+                    const bodyHit = item.fullText.toLowerCase().includes(query);
+                    return (titleHit || bodyHit) ? { ...item, titleHit } : null;
+                })
+                .filter(Boolean)
+                .sort((a, b) => (b.titleHit - a.titleHit))
+                .slice(0, 8);
+
+            if (matches.length === 0) {
+                resultsEl.innerHTML = `<div class="p-4 text-center text-xs text-secondary"><i class="fa-regular fa-face-frown mb-1 block text-lg"></i>Nenhum resultado para "<span class="text-white">${escapeHtml(rawQuery)}</span>". Tente outro termo.</div>`;
+                resultsEl.classList.remove('hidden');
+                return;
+            }
+
+            resultsEl.innerHTML = matches.map(m => {
+                const idx = m.fullText.toLowerCase().indexOf(query);
+                let snippet = m.fullText;
+                if (idx > -1) {
+                    const start = Math.max(0, idx - 40);
+                    snippet = (start > 0 ? '…' : '') + m.fullText.substring(start, idx + query.length + 60) + '…';
+                }
+                return `
+                    <button onclick="goToFaqResult('${m.elId}')" class="w-full text-left p-3 rounded-lg hover:bg-surface3 transition-colors border border-transparent hover:border-line group">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-500/15 text-primary-300">${m.deptIcon} ${m.deptLabel}</span>
+                            <span class="text-xs font-bold text-white group-hover:text-primary-300 transition-colors">${escapeHtml(m.title)}</span>
+                        </div>
+                        <p class="text-[11px] text-secondary leading-snug">${escapeHtml(snippet)}</p>
+                    </button>`;
+            }).join('');
+            resultsEl.classList.remove('hidden');
+        }
+
+        function clearFaqSearch() {
+            const input = document.getElementById('faqSearchInput');
+            input.value = '';
+            document.getElementById('faqSearchResults').classList.add('hidden');
+            document.getElementById('faqSearchClearBtn').classList.add('hidden');
+            input.focus();
+        }
+
+        function goToFaqResult(elId) {
+            if (!faqSearchIndex) return;
+            const item = faqSearchIndex.find(i => i.elId === elId);
+            if (item) toggleFaqDept(item.dept);
+            document.getElementById('faqSearchResults').classList.add('hidden');
+            highlightFaqBlock(elId);
+        }
+
+        // Leva o usuário de qualquer lugar do app até um bloco específico do FAQ, trocando de
+        // visão/aba se necessário, e pisca um destaque visual para guiar o olhar.
+        function goToFaq(dept, elId) {
+            switchPublicTab('faq');
+            toggleFaqDept(dept);
+            highlightFaqBlock(elId);
+        }
+
+        function highlightFaqBlock(elId) {
+            setTimeout(() => {
+                const el = document.getElementById(elId);
+                if (!el) return;
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('faq-pulse-highlight');
+                setTimeout(() => el.classList.remove('faq-pulse-highlight'), 2200);
+            }, 60);
+        }
+
+        // ============ SIMULADOR DE PONTUAÇÃO "E SE?" ============
+        let simActiveTeam = 'Sistema';
+
+        function setSimTeam(team) {
+            simActiveTeam = team;
+            document.getElementById('simControlsSistema').classList.toggle('hidden', team !== 'Sistema');
+            document.getElementById('simControlsCatraca').classList.toggle('hidden', team !== 'Catraca');
+            document.getElementById('simBtnSistema').className = team === 'Sistema'
+                ? "flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-gradient-to-r from-primary-500 to-primary-600 text-white"
+                : "flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary";
+            document.getElementById('simBtnCatraca').className = team === 'Catraca'
+                ? "flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
+                : "flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary";
+            renderSimulador();
+        }
+
+        function tmaPointsFromMinutes(min) {
+            if (min <= 80) return 50;
+            if (min <= 110) return 25;
+            if (min <= 120) return 10;
+            return 0;
+        }
+        function satisfacaoPoints(nota) {
+            if (nota >= 4.90) return 100;
+            if (nota >= 4.70) return 50;
+            if (nota >= 4.50) return 25;
+            if (nota >= 4.00) return 10;
+            return 0;
+        }
+        function rankPoints(position, table) {
+            // position: 0 = 4º em diante, 1 = 1º, 2 = 2º, 3 = 3º
+            if (position <= 0) return 0;
+            return table[position - 1] || 0;
+        }
+
+        function renderSimulador() {
+            const RESOLV_RANK = [100, 50, 10], ATEND_RANK = [100, 50, 10];
+            let breakdown = [], total = 0;
+
+            if (simActiveTeam === 'Sistema') {
+                const atendidos = parseInt(document.getElementById('simAtendidosSistema').value, 10);
+                const satisfacao = parseInt(document.getElementById('simSatisfacaoSistema').value, 10) / 100;
+                const tma = parseInt(document.getElementById('simTmaSistema').value, 10);
+                const rank = parseInt(document.getElementById('simRankSistema').value, 10);
+                const prioridades = parseInt(document.getElementById('simPrioridadesSistema').value, 10);
+                const monitoramento = parseInt(document.getElementById('simMonitoramentoSistema').value, 10);
+                const sprint100 = document.getElementById('simSprint100Sistema').checked;
+                const sprintGanho = document.getElementById('simSprintGanhoSistema').checked;
+
+                document.getElementById('simAtendidosSistemaVal').textContent = atendidos;
+                document.getElementById('simSatisfacaoSistemaVal').textContent = satisfacao.toFixed(2);
+                document.getElementById('simTmaSistemaVal').textContent = tma + 'min';
+                document.getElementById('simRankSistemaVal').textContent = rank === 0 ? '4º+' : ['', '1º 🥇', '2º 🥈', '3º 🥉'][rank];
+                document.getElementById('simPrioridadesSistemaVal').textContent = prioridades;
+                document.getElementById('simMonitoramentoSistemaVal').textContent = monitoramento;
+
+                let ptsAtendidos = 0;
+                if (atendidos >= 101) ptsAtendidos = 100 + Math.max(0, atendidos - 120);
+                else if (atendidos >= 91) ptsAtendidos = 50;
+                else if (atendidos >= 81) ptsAtendidos = 10;
+
+                const ptsSatisfacao = satisfacaoPoints(satisfacao);
+                const ptsTma = tmaPointsFromMinutes(tma);
+                const ptsRank = rankPoints(rank, RESOLV_RANK);
+                const ptsPrioridades = prioridades * 25; // média entre +50 (prioridade) e +1 (transferência), só ilustrativo
+                const ptsSprint = (sprint100 ? 100 : 0) + (sprintGanho ? 50 : 0);
+                const ptsMonitoramento = monitoramento;
+
+                breakdown = [
+                    { label: 'Protocolos Atendidos', value: ptsAtendidos, color: '#00C2FF' },
+                    { label: 'Satisfação (NPS)', value: ptsSatisfacao, color: '#FBBF24' },
+                    { label: 'TMA / Agilidade', value: ptsTma, color: '#8188FF' },
+                    { label: 'Ranking Semanal', value: ptsRank, color: '#00E5C7' },
+                    { label: 'Prioridades/Transf.', value: ptsPrioridades, color: '#A3AEFF' },
+                    { label: 'Sprint Crescimento', value: ptsSprint, color: '#6C63FF' },
+                    { label: 'Monitoramento', value: ptsMonitoramento, color: '#34D399' }
+                ];
+            } else {
+                const resolvidos = parseInt(document.getElementById('simResolvidosCatraca').value, 10);
+                const atendidos = parseInt(document.getElementById('simAtendidosCatraca').value, 10);
+                const satisfacao = parseInt(document.getElementById('simSatisfacaoCatraca').value, 10) / 100;
+                const rank = parseInt(document.getElementById('simRankCatraca').value, 10);
+                const prioridades = parseInt(document.getElementById('simPrioridadesCatraca').value, 10);
+                const sprint100 = document.getElementById('simSprint100Catraca').checked;
+                const sprintGanho = document.getElementById('simSprintGanhoCatraca').checked;
+
+                document.getElementById('simResolvidosCatracaVal').textContent = resolvidos;
+                document.getElementById('simAtendidosCatracaVal').textContent = atendidos;
+                document.getElementById('simSatisfacaoCatracaVal').textContent = satisfacao.toFixed(2);
+                document.getElementById('simRankCatracaVal').textContent = rank === 0 ? '4º+' : ['', '1º 🥇', '2º 🥈', '3º 🥉'][rank];
+                document.getElementById('simPrioridadesCatracaVal').textContent = prioridades;
+
+                const ptsResolvidos = resolvidos * 2;
+                const ptsAtendidos = atendidos * 0.5;
+                const ptsSatisfacao = satisfacaoPoints(satisfacao);
+                const ptsRank = rankPoints(rank, RESOLV_RANK) + rankPoints(rank, ATEND_RANK);
+                const ptsPrioridades = prioridades * 25;
+                const ptsSprint = (sprint100 ? 100 : 0) + (sprintGanho ? 50 : 0);
+
+                breakdown = [
+                    { label: 'Protocolos Resolvidos', value: ptsResolvidos, color: '#34D399' },
+                    { label: 'Protocolos Atendidos', value: ptsAtendidos, color: '#00C2FF' },
+                    { label: 'Satisfação (NPS)', value: ptsSatisfacao, color: '#FBBF24' },
+                    { label: 'Ranking Semanal', value: ptsRank, color: '#00E5C7' },
+                    { label: 'Prioridades/Transf/Peças', value: ptsPrioridades, color: '#A3AEFF' },
+                    { label: 'Sprint Crescimento', value: ptsSprint, color: '#6C63FF' }
+                ];
+            }
+
+            total = breakdown.reduce((s, b) => s + b.value, 0);
+            document.getElementById('simTotalPts').textContent = Math.round(total);
+            document.getElementById('simBreakdown').innerHTML = breakdown.map(b => `
+                <div class="bg-bg/50 border border-line rounded-lg px-3 py-2">
+                    <p class="text-[10px] text-secondary truncate">${b.label}</p>
+                    <p class="text-sm font-extrabold num-mono" style="color:${b.color}">+${Math.round(b.value * 10) / 10}</p>
+                </div>
+            `).join('');
         }
 
         function changePeriodView(val) {
@@ -3213,6 +3652,18 @@
             if (e.key === 'Escape') {
                 const overlay = document.getElementById('rankingPresentationOverlay');
                 if (overlay && !overlay.classList.contains('hidden')) closeRankingPresentation();
+                const searchResults = document.getElementById('faqSearchResults');
+                if (searchResults && !searchResults.classList.contains('hidden')) clearFaqSearch();
+            }
+        });
+
+        // Fecha o dropdown de resultados da busca do FAQ ao clicar fora dele.
+        document.addEventListener('click', (e) => {
+            const searchWrap = document.getElementById('faqSearchInput');
+            const resultsEl = document.getElementById('faqSearchResults');
+            if (!searchWrap || !resultsEl) return;
+            if (!searchWrap.contains(e.target) && !resultsEl.contains(e.target)) {
+                resultsEl.classList.add('hidden');
             }
         });
 
