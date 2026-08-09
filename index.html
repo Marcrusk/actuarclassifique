@@ -10,27 +10,63 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js para Gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Tipografia moderna -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Manrope', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
                     colors: {
-                        bg: '#08080A',
-                        surface: '#121216',
-                        surface2: '#1A1A20',
-                        surface3: '#26262E',
-                        line: '#22222A',
-                        secondary: '#A1A1AA',
-                        accent: '#00F0FF'
+                        bg: '#0A0A10',
+                        surface: '#14141C',
+                        surface2: '#1B1B26',
+                        surface3: '#262635',
+                        line: '#26262F',
+                        secondary: '#9B9BAD',
+                        accent: '#00E5C7',
+                        accent2: '#00C2FF',
+                        primary: {50:'#EEF1FF',100:'#E1E6FF',200:'#C6D0FF',300:'#A3AEFF',400:'#8188FF',500:'#6C63FF',600:'#5648EB',700:'#4636CC',800:'#392DA3',900:'#302981'}
+                    },
+                    boxShadow: {
+                        glow: '0 0 40px -10px rgba(108,99,255,0.45)',
+                        'glow-accent': '0 0 30px -6px rgba(0,229,199,0.4)'
+                    },
+                    backgroundImage: {
+                        'grid-fade': 'radial-gradient(ellipse at top, rgba(108,99,255,0.12), transparent 60%)'
                     }
                 }
             }
         }
     </script>
+    <style>
+        html { scroll-behavior: smooth; }
+        body { background-image: radial-gradient(ellipse 900px 500px at 50% -10%, rgba(108,99,255,0.14), transparent 60%); background-attachment: fixed; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0A0A10; }
+        ::-webkit-scrollbar-thumb { background: #2A2A38; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3A3A4C; }
+        @keyframes fadeUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+        .anim-fade-up { animation: fadeUp .45s cubic-bezier(.16,1,.3,1) both; }
+        @keyframes popIn { from { opacity:0; transform: scale(.92); } to { opacity:1; transform: scale(1); } }
+        .anim-pop { animation: popIn .35s cubic-bezier(.16,1,.3,1) both; }
+        .card-hover { transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s ease, border-color .25s ease; }
+        .card-hover:hover { transform: translateY(-3px); border-color: rgba(108,99,255,0.35); }
+        .num-mono { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+        .glass { background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)); backdrop-filter: blur(6px); }
+        .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
+    </style>
 </head>
-<body class="bg-bg text-white font-sans min-h-screen">
+<body class="bg-bg text-white font-sans min-h-screen antialiased">
 
     <!-- OVERLAY DE CARREGAMENTO INICIAL -->
     <div id="loadingOverlay" class="fixed inset-0 bg-bg flex flex-col items-center justify-center z-[100] gap-3">
@@ -42,29 +78,30 @@
     <div id="toast" class="hidden fixed bottom-6 right-6 z-[100] px-4 py-3 rounded-lg shadow-xl text-sm font-semibold transition-all"></div>
 
     <!-- BARRA DE NAVEGAÇÃO -->
-    <nav class="bg-surface border-b border-line px-6 py-4 flex flex-wrap justify-between items-center gap-4 sticky top-0 z-50">
+    <nav class="glass bg-surface/85 border-b border-line px-6 py-3.5 flex flex-wrap justify-between items-center gap-4 sticky top-0 z-50 backdrop-blur-xl">
         <div class="flex items-center gap-3">
-            <div class="bg-blue-500 text-white p-2 rounded-lg font-bold">
-                <i class="fa-solid fa-trophy me-1"></i> RankPro
+            <div class="bg-gradient-to-br from-primary-500 to-accent2 text-white p-2 px-3 rounded-xl font-display font-extrabold shadow-glow flex items-center gap-1.5 text-sm">
+                <i class="fa-solid fa-trophy"></i> RankPro
             </div>
-            <span class="text-xs bg-surface2 text-secondary px-2.5 py-1 rounded-full font-medium">ClickMassa Operational</span>
-            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Sincronizado via Supabase Cloud">
-                <i class="fa-solid fa-cloud"></i> Nuvem Conectada
+            <span class="hidden sm:inline text-xs bg-surface2 text-secondary px-2.5 py-1 rounded-full font-medium border border-line">ClickMassa Operational</span>
+            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full font-medium flex items-center gap-1.5" title="Sincronizado via Supabase Cloud">
+                <i class="fa-solid fa-cloud"></i> <span class="hidden md:inline">Nuvem Conectada</span>
+                <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span></span>
             </span>
         </div>
         
         <div class="flex flex-wrap items-center gap-2.5">
             <!-- SELETOR DE MÊS -->
-            <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-blue-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
-                <i class="fa-solid fa-calendar-days text-xs text-blue-400"></i>
+            <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
+                <i class="fa-solid fa-calendar-days text-xs text-primary-400"></i>
                 <label for="monthSelect" class="text-[11px] text-secondary font-medium">Mês:</label>
                 <select id="monthSelect" onchange="changeMonthView(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"></select>
                 <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             </div>
 
             <!-- SELETOR DE PERÍODO / SEMANA -->
-            <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-blue-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
-                <i class="fa-solid fa-filter text-xs text-blue-400"></i>
+            <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
+                <i class="fa-solid fa-filter text-xs text-primary-400"></i>
                 <label for="periodSelect" class="text-[11px] text-secondary font-medium">Visão:</label>
                 <select id="periodSelect" onchange="changePeriodView(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
                     <option value="ALL">Acumulado do Mês</option>
@@ -78,9 +115,9 @@
             </div>
 
             <!-- SELEÇÃO DEPARTAMENTO E ANALISTA -->
-            <div class="flex items-center bg-surface2/60 hover:bg-surface2 border border-line hover:border-blue-500/40 rounded-full transition-all duration-200 overflow-hidden">
+            <div class="flex items-center bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 rounded-full transition-all duration-200 overflow-hidden">
                 <div class="relative flex items-center gap-1.5 pl-3.5 pr-6 py-2">
-                    <i id="teamSelectIcon" class="fa-solid fa-desktop text-xs text-blue-400 transition-colors duration-200"></i>
+                    <i id="teamSelectIcon" class="fa-solid fa-desktop text-xs text-primary-400 transition-colors duration-200"></i>
                     <select id="teamSelect" onchange="onTeamSelectChange(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
                         <option value="Sistema">Dep. Sistema</option>
                         <option value="Catraca">Dep. Catraca</option>
@@ -105,7 +142,7 @@
             </button>
 
             <!-- BOTÃO MODO ADM -->
-            <button id="btnAdminAccess" onclick="openAdminModal()" class="bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5">
+            <button id="btnAdminAccess" onclick="openAdminModal()" class="bg-primary-500/10 border border-primary-500/30 text-primary-400 hover:bg-primary-500/20 hover:border-primary-500/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5">
                 <i class="fa-solid fa-lock"></i> Modo Gestão
             </button>
 
@@ -118,70 +155,100 @@
     <div class="max-w-7xl mx-auto px-6 py-8">
 
         <!-- ABAS DE NAVEGAÇÃO PÚBLICA -->
-        <div id="publicTabsContainer" class="flex gap-3 mb-6 border-b border-line pb-3 flex-wrap">
-            <button onclick="switchPublicTab('dashboard')" id="btnTabDashboard" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white">
+        <div id="publicTabsContainer" class="flex gap-2.5 mb-6 border-b border-line pb-3 flex-wrap">
+            <button onclick="switchPublicTab('dashboard')" id="btnTabDashboard" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow">
                 <i class="fa-solid fa-chart-line me-1"></i> Dashboard e Resultado Individual
             </button>
-            <button onclick="switchPublicTab('ranking')" id="btnTabRanking" class="px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line">
+            <button onclick="switchPublicTab('ranking')" id="btnTabRanking" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
                 <i class="fa-solid fa-ranking-star me-1"></i> Ranking Geral
             </button>
-            <button onclick="switchPublicTab('faq')" id="btnTabFaq" class="px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line">
+            <button onclick="switchPublicTab('faq')" id="btnTabFaq" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
                 <i class="fa-solid fa-circle-question me-1"></i> FAQ / Métricas & Regras
             </button>
         </div>
 
         <!-- VISÃO AGENTE / PÚBLICA -->
         <div id="viewAgent" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="md:col-span-2 bg-surface border border-line rounded-xl p-6 flex items-center justify-between flex-wrap gap-4">
-                    <div class="flex items-center gap-4">
-                        <div class="w-16 h-16 rounded-full bg-blue-500/20 border-2 border-blue-500 flex items-center justify-center text-2xl font-bold text-blue-500" id="agentInitials">AL</div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 anim-fade-up">
+                <div class="md:col-span-2 relative overflow-hidden bg-surface border border-line rounded-2xl card-hover p-6 flex items-center justify-between flex-wrap gap-4">
+                    <div class="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary-500/10 blur-2xl"></div>
+                    <div class="flex items-center gap-4 relative">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500/25 to-accent2/10 border-2 border-primary-500/60 flex items-center justify-center text-2xl font-display font-extrabold text-primary-300" id="agentInitials">AL</div>
                         <div>
-                            <h2 class="text-xl font-bold text-white" id="agentName">Alessandro</h2>
-                            <p class="text-sm text-secondary">Departamento: <span id="agentTeam" class="text-blue-500 font-semibold">Sistema</span></p>
+                            <h2 class="text-xl font-display font-extrabold text-white" id="agentName">Alessandro</h2>
+                            <p class="text-sm text-secondary">Departamento: <span id="agentTeam" class="text-primary-400 font-semibold">Sistema</span></p>
                             <p class="text-xs text-secondary mt-1">Função: <span id="agentRole" class="text-accent font-medium">Analista de sistema</span></p>
                             <div id="agentPenaltiesBox" class="hidden mt-2 text-[11px] text-red-400 max-w-xs"></div>
                         </div>
                     </div>
-                    <div class="border-l border-line pl-4 space-y-1 text-right">
+                    <div class="border-l border-line pl-4 space-y-1 text-right relative">
                         <span class="text-[10px] text-secondary uppercase font-bold block">Galeria de Títulos</span>
                         <p class="text-xs text-accent font-bold"><i class="fa-solid fa-crown me-1"></i> Top 1 da Semana: <span id="statTop1Count">0</span>x</p>
                         <p class="text-xs text-emerald-400 font-bold"><i class="fa-solid fa-trophy me-1"></i> Meses Vencidos: <span id="statMonthWins">0</span>x</p>
                     </div>
                 </div>
 
-                <div class="bg-surface border border-line rounded-xl p-6 text-center">
-                    <p class="text-xs text-secondary uppercase font-semibold">Pontuação (<span id="lblPeriodFilter">Acumulado</span>)</p>
-                    <h3 class="text-3xl font-extrabold text-accent mt-1" id="agentTotalPts">0 pts</h3>
-                    <p class="text-xs text-secondary mt-1" id="agentPos">Classificação: -</p>
+                <div class="relative overflow-hidden bg-surface border border-primary-500/25 rounded-2xl card-hover p-6 text-center">
+                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-accent/[0.07] to-transparent"></div>
+                    <p class="text-xs text-secondary uppercase font-semibold relative">Pontuação (<span id="lblPeriodFilter">Acumulado</span>)</p>
+                    <h3 class="text-3xl font-display font-extrabold text-accent mt-1 num-mono relative" id="agentTotalPts">0 pts</h3>
+                    <p class="text-xs text-secondary mt-1 relative" id="agentPos">Classificação: -</p>
                 </div>
 
-                <div class="bg-surface border border-line rounded-xl p-6 text-center">
-                    <p class="text-xs text-secondary uppercase font-semibold">Projeção de Premiação</p>
-                    <h3 class="text-2xl font-extrabold text-emerald-400 mt-2" id="agentPrize">R$ 0,00</h3>
-                    <span class="text-[10px] text-secondary" id="prizeSubtext">Top 3 do Departamento</span>
+                <div class="relative overflow-hidden bg-surface border border-emerald-500/25 rounded-2xl card-hover p-6 text-center">
+                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-emerald-500/[0.07] to-transparent"></div>
+                    <p class="text-xs text-secondary uppercase font-semibold relative">Projeção de Premiação</p>
+                    <h3 class="text-2xl font-display font-extrabold text-emerald-400 mt-2 num-mono relative" id="agentPrize">R$ 0,00</h3>
+                    <span class="text-[10px] text-secondary relative" id="prizeSubtext">Top 3 do Departamento</span>
+                </div>
+            </div>
+
+            <!-- BREAKDOWN DE PONTOS POR MÉTRICA -->
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6 anim-fade-up">
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-1">
+                    <h3 class="text-md font-display font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-pie text-accent"></i> De onde vêm meus pontos</h3>
+                    <span class="text-[10px] text-secondary bg-surface2 border border-line px-2.5 py-1 rounded-full" id="breakdownPeriodLabel">Acumulado do Mês</span>
+                </div>
+                <p class="text-xs text-secondary mb-5">Composição da sua pontuação por métrica no período selecionado — entenda exatamente o que está gerando (ou tirando) pontos.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-center">
+                    <div class="lg:col-span-2 flex flex-col items-center justify-center">
+                        <div class="relative w-48 h-48">
+                            <canvas id="chartBreakdown"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-[10px] text-secondary uppercase font-bold">Total</span>
+                                <span class="text-2xl font-display font-extrabold text-white num-mono" id="breakdownTotalCenter">0</span>
+                                <span class="text-[10px] text-secondary">pontos</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-3">
+                        <div id="breakdownList" class="space-y-3"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- GRÁFICOS -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-surface border border-line rounded-xl p-5">
-                    <h4 class="text-xs font-bold text-secondary mb-3 flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-blue-500"></i> Atendimentos & Resolvidos</h4>
+                <div class="bg-surface border border-line rounded-2xl card-hover p-5">
+                    <h4 class="text-xs font-bold text-secondary mb-3 flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-primary-300/80"></i> Atendimentos & Resolvidos</h4>
                     <div class="h-48"><canvas id="chartVol"></canvas></div>
                 </div>
-                <div class="bg-surface border border-line rounded-xl p-5">
-                    <h4 class="text-xs font-bold text-secondary mb-3 flex items-center gap-1.5"><i class="fa-solid fa-star text-secondary"></i> Evolução NPS Médio</h4>
+                <div class="bg-surface border border-line rounded-2xl card-hover p-5">
+                    <h4 class="text-xs font-bold text-secondary mb-3 flex items-center gap-1.5"><i class="fa-solid fa-star text-amber-400/70"></i> Evolução NPS Médio</h4>
                     <div class="h-48"><canvas id="chartNps"></canvas></div>
                 </div>
-                <div class="bg-surface border border-line rounded-xl p-5">
-                    <h4 class="text-xs font-bold text-secondary mb-3 flex items-center gap-1.5"><i class="fa-solid fa-list-check text-emerald-400"></i> Prioridades Concluídas</h4>
+                <div class="bg-surface border border-line rounded-2xl card-hover p-5">
+                    <div class="flex items-center justify-between mb-3 gap-2">
+                        <h4 class="text-xs font-bold text-secondary flex items-center gap-1.5"><i class="fa-solid fa-list-check text-emerald-400/70"></i> Prioridades Concluídas</h4>
+                        <span class="text-[10px] bg-surface2 border border-line text-secondary px-2 py-1 rounded-full font-semibold whitespace-nowrap" id="prioChartTotal">0 · +0 pts</span>
+                    </div>
                     <div class="h-48"><canvas id="chartPriorities"></canvas></div>
                 </div>
             </div>
 
             <!-- CADASTRO DE PRIORIDADE PELO ANALISTA -->
-            <div class="bg-surface border border-line rounded-xl p-6">
-                <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-star text-amber-400"></i> Registrar Protocolo de Prioridade</h3>
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
+                <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-star text-amber-400"></i> Registrar Prioridade</h3>
                 <p class="text-xs text-secondary mb-4">Envie o protocolo e a justificativa para validação da gestão. Após aprovado, <strong class="text-emerald-400">50 pontos</strong> são creditados automaticamente.</p>
                 <form onsubmit="submitPriorityRequest(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div class="md:col-span-1">
@@ -193,14 +260,14 @@
                         <input type="text" id="priorityJustificativa" placeholder="Explique o motivo da prioridade" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                     <div>
-                        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-2.5 rounded-lg text-sm transition">
+                        <button type="submit" class="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-black font-bold py-2.5 rounded-xl text-sm transition-all duration-200 shadow-[0_0_25px_-8px_rgba(245,158,11,0.5)]">
                             <i class="fa-solid fa-paper-plane me-1"></i> Enviar para Validação
                         </button>
                     </div>
                 </form>
 
                 <div class="mt-5">
-                    <h4 class="text-xs font-bold text-secondary uppercase mb-2">Meus Protocolos Enviados</h4>
+                    <h4 class="text-xs font-bold text-secondary uppercase mb-2">Meus Protocolos</h4>
                     <div class="overflow-x-auto max-h-44 overflow-y-auto">
                         <table class="w-full text-left text-xs text-secondary">
                             <thead class="bg-bg sticky top-0 uppercase text-[10px]">
@@ -217,8 +284,8 @@
             </div>
 
             <!-- CADASTRO DE TRANSFERÊNCIA PELO ANALISTA -->
-            <div class="bg-surface border border-line rounded-xl p-6">
-                <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-right-left text-blue-400"></i> Registrar Protocolo de Transferência</h3>
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
+                <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-right-left text-primary-400"></i> Registrar Transferência</h3>
                 <p class="text-xs text-secondary mb-4">Envie o protocolo e a justificativa para validação da gestão. Após aprovado, <strong class="text-emerald-400">1 ponto</strong> é creditado automaticamente.</p>
                 <form onsubmit="submitTransferRequest(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div class="md:col-span-1">
@@ -230,14 +297,14 @@
                         <input type="text" id="transferJustificativa" placeholder="Explique o motivo da transferência" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                     <div>
-                        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm transition">
+                        <button type="submit" class="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:brightness-110 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 shadow-glow">
                             <i class="fa-solid fa-paper-plane me-1"></i> Enviar para Validação
                         </button>
                     </div>
                 </form>
 
                 <div class="mt-5">
-                    <h4 class="text-xs font-bold text-secondary uppercase mb-2">Minhas Transferências Enviadas</h4>
+                    <h4 class="text-xs font-bold text-secondary uppercase mb-2">Minhas Transferências</h4>
                     <div class="overflow-x-auto max-h-44 overflow-y-auto">
                         <table class="w-full text-left text-xs text-secondary">
                             <thead class="bg-bg sticky top-0 uppercase text-[10px]">
@@ -259,19 +326,19 @@
             <!-- PÓDIO / DASH TOP 3 POR DEPARTAMENTO -->
             <div class="relative bg-surface border border-line rounded-2xl p-6 overflow-hidden">
                 <div class="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-accent/10 rounded-full blur-3xl"></div>
-                <div class="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+                <div class="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 bg-primary-500/10 rounded-full blur-3xl"></div>
                 <div class="relative flex items-center justify-between flex-wrap gap-2 mb-1">
                     <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-trophy text-accent"></i> Pódio Geral por Departamento
+                        <i class="fa-solid fa-trophy text-accent"></i> Pódio por Departamento
                     </h3>
                     <span class="text-[10px] bg-surface2 text-secondary px-2.5 py-1 rounded-full font-semibold border border-line flex items-center gap-1">
                         <i class="fa-solid fa-arrows-rotate"></i> Atualizado em tempo real
                     </span>
                 </div>
-                <p class="text-xs text-secondary mb-6 relative">Top 3 colocados de cada departamento com pontuação geral e valor de premiação.</p>
+                <p class="text-xs text-secondary mb-6 relative">Top 3 colocados de cada departamento com pontuação geral e valor de premiação. <span class="text-secondary/70">Clique em um analista para abrir o dashboard individual dele.</span></p>
                 <div class="relative grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div>
-                        <h4 class="text-xs font-bold text-blue-400 uppercase mb-4 flex items-center gap-1.5"><i class="fa-solid fa-desktop"></i> Dep. Sistema</h4>
+                        <h4 class="text-xs font-bold text-primary-400 uppercase mb-4 flex items-center gap-1.5"><i class="fa-solid fa-desktop"></i> Dep. Sistema</h4>
                         <div id="podiumSistema" class="grid grid-cols-3 gap-2 sm:gap-4 items-end"></div>
                     </div>
                     <div>
@@ -282,17 +349,17 @@
             </div>
 
             <!-- LEADERBOARD -->
-            <div class="bg-surface border border-line rounded-xl p-6">
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
                         <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-ranking-star text-accent"></i> Detalhamento do Ranking - Departamento <span id="rankingTitleTeam" class="text-blue-500">Sistema</span>
+                            <i class="fa-solid fa-ranking-star text-accent"></i> Ranking - Departamento <span id="rankingTitleTeam" class="text-primary-500">Sistema</span>
                         </h3>
-                        <p class="text-xs text-secondary">Pontuações calculadas item a item com base nas regras ativas do departamento</p>
+                        <p class="text-xs text-secondary">Pontuações calculadas item a item com base nas regras ativas do departamento — <span class="text-secondary/70">clique em uma linha para abrir o dashboard do analista.</span></p>
                     </div>
 
                     <div class="flex gap-2 bg-bg p-1.5 rounded-lg border border-line">
-                        <button onclick="switchRankingTab('Sistema')" id="tabSistema" class="px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white">
+                        <button onclick="switchRankingTab('Sistema')" id="tabSistema" class="px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white">
                             <i class="fa-solid fa-desktop me-1"></i> Dep. Sistema
                         </button>
                         <button onclick="switchRankingTab('Catraca')" id="tabCatraca" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
@@ -327,9 +394,9 @@
 
         <!-- VISÃO FAQ -->
         <div id="viewFaq" class="hidden space-y-6">
-            <div class="bg-surface border border-line rounded-xl p-6">
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
                 <div class="flex items-center gap-3 border-b border-line pb-4 mb-6">
-                    <div class="p-3 bg-blue-500/20 text-blue-400 rounded-xl">
+                    <div class="p-3 bg-primary-500/20 text-primary-400 rounded-xl">
                         <i class="fa-solid fa-book-open text-2xl"></i>
                     </div>
                     <div>
@@ -339,7 +406,7 @@
                 </div>
 
                 <div class="flex gap-2 mb-6">
-                    <button onclick="toggleFaqDept('Sistema')" id="faqTabSistema" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white">
+                    <button onclick="toggleFaqDept('Sistema')" id="faqTabSistema" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-primary-500 text-white">
                         Métricas Departamento Sistema
                     </button>
                     <button onclick="toggleFaqDept('Catraca')" id="faqTabCatraca" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary">
@@ -350,7 +417,7 @@
                 <div id="faqContentSistema" class="space-y-4 text-sm text-secondary">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-blue-400 mb-2">🕐 Tempo Médio de Atendimento (TMA)</h4>
+                            <h4 class="font-bold text-primary-400 mb-2">🕐 Tempo Médio de Atendimento (TMA)</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Até 1h20 ➔ <strong>50 pts</strong></li>
                                 <li>• 1h21 a 1h50 ➔ <strong>25 pts</strong></li>
@@ -360,7 +427,7 @@
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: considera o tempo total do atendimento, da abertura ao encerramento — quanto mais rápido, melhor o TMA.</p>
                         </div>
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-blue-400 mb-2">🏆 Ranking Semanal – Protocolos Resolvidos</h4>
+                            <h4 class="font-bold text-primary-400 mb-2">🏆 Ranking Semanal – Protocolos Resolvidos</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>🥇 Maior número resolvido ➔ <strong>100 pts</strong></li>
                                 <li>🥈 Segundo maior número ➔ <strong>50 pts</strong></li>
@@ -370,7 +437,7 @@
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: baseado no volume de protocolos efetivamente resolvidos no período avaliado.</p>
                         </div>
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-blue-400 mb-2">📊 Protocolos Atendidos (Esforço)</h4>
+                            <h4 class="font-bold text-primary-400 mb-2">📊 Protocolos Atendidos (Esforço)</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• 101 a 120 protocolos ➔ <strong>100 pts</strong> <span class="text-secondary/70">(+1 pt adicional por protocolo acima de 120)</span></li>
                                 <li>• 91 a 100 protocolos ➔ <strong>50 pts</strong></li>
@@ -380,7 +447,7 @@
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: pontuação conforme o volume total de protocolos atendidos no período avaliado.</p>
                         </div>
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-blue-400 mb-2">⭐ Avaliação de Satisfação</h4>
+                            <h4 class="font-bold text-primary-400 mb-2">⭐ Avaliação de Satisfação</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Nota 4.90 a 5.00 ➔ <strong>100 pts</strong></li>
                                 <li>• Nota 4.70 a 4.89 ➔ <strong>50 pts</strong></li>
@@ -391,7 +458,7 @@
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: pontuação baseada na média das notas recebidas no período avaliado.</p>
                         </div>
                         <div class="bg-bg/60 p-4 rounded-lg border border-line md:col-span-2">
-                            <h4 class="font-bold text-blue-400 mb-2">🚨 Atendimentos Prioritários da Gestão</h4>
+                            <h4 class="font-bold text-primary-400 mb-2">🚨 Atendimentos Prioritários da Gestão</h4>
                             <ul class="text-xs space-y-1 text-secondary">
                                 <li>• Cada demanda prioritária resolvida ➔ <strong>+50 pts cada</strong></li>
                             </ul>
@@ -401,7 +468,7 @@
 
                     <!-- SPRINT SEMANAL DE CRESCIMENTO -->
                     <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                        <h4 class="font-bold text-blue-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-rocket"></i> 🚀 Sprint Semanal de Crescimento do Produto</h4>
+                        <h4 class="font-bold text-primary-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-rocket"></i> 🚀 Sprint Semanal de Crescimento do Produto</h4>
                         <p class="text-[11px] text-secondary/80 mb-3">Objetivo: promover o crescimento da utilização do sistema por meio de ações proativas junto aos clientes definidos para cada Sprint.</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -422,7 +489,7 @@
                             </div>
                         </div>
                         <div class="mt-3 bg-surface2/70 border border-line rounded-lg px-3 py-2 text-[11px] text-secondary flex items-center gap-2">
-                            <i class="fa-solid fa-calculator text-blue-400"></i>
+                            <i class="fa-solid fa-calculator text-primary-400"></i>
                             <span>Fórmula: <strong class="text-white">Taxa de Recuperação (%) = (Clientes Recuperados ÷ Clientes Trabalhados na Sprint) × 100</strong></span>
                         </div>
                     </div>
@@ -439,7 +506,7 @@
                             </table>
                         </div>
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                            <h4 class="font-bold text-blue-400 mb-2">📋 Regras Gerais da Sprint</h4>
+                            <h4 class="font-bold text-primary-400 mb-2">📋 Regras Gerais da Sprint</h4>
                             <ul class="text-[11px] space-y-1 text-secondary list-disc list-inside">
                                 <li>Cada cliente recuperado contabiliza 50 pontos, independente da classificação de risco.</li>
                                 <li>Clientes sem retorno devem receber até 3 tentativas de contato durante a semana.</li>
@@ -452,39 +519,39 @@
 
                     <!-- MONITORAMENTO -->
                     <div class="bg-bg/60 p-4 rounded-lg border border-line">
-                        <h4 class="font-bold text-blue-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-magnifying-glass-chart"></i> 🎯 Monitoramento (até 100 pts totais)</h4>
+                        <h4 class="font-bold text-primary-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-magnifying-glass-chart"></i> 🎯 Monitoramento (até 100 pts totais)</h4>
                         <p class="text-[11px] text-secondary/80 mb-3">Avaliação qualitativa do atendimento, dividida em 5 blocos de 20 pontos cada.</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                             <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
-                                <p class="text-[11px] font-bold text-white mb-1">1️⃣ Tempo e Agilidade <span class="text-blue-400">(20 pts)</span></p>
+                                <p class="text-[11px] font-bold text-white mb-1">1️⃣ Tempo e Agilidade <span class="text-primary-400">(20 pts)</span></p>
                                 <ul class="text-[10px] text-secondary space-y-0.5">
                                     <li>TPR – Tempo de resposta ➔ 10 pts</li>
                                     <li>TMA – Encerramento apropriado ➔ 10 pts</li>
                                 </ul>
                             </div>
                             <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
-                                <p class="text-[11px] font-bold text-white mb-1">2️⃣ Comunicação e Clareza <span class="text-blue-400">(20 pts)</span></p>
+                                <p class="text-[11px] font-bold text-white mb-1">2️⃣ Comunicação e Clareza <span class="text-primary-400">(20 pts)</span></p>
                                 <ul class="text-[10px] text-secondary space-y-0.5">
                                     <li>CVC – Clareza, vocabulário e coesão ➔ 10 pts</li>
                                     <li>CEE – Cordialidade, empatia e engajamento ➔ 10 pts</li>
                                 </ul>
                             </div>
                             <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
-                                <p class="text-[11px] font-bold text-white mb-1">3️⃣ Qualidade da Resolução <span class="text-blue-400">(20 pts)</span></p>
+                                <p class="text-[11px] font-bold text-white mb-1">3️⃣ Qualidade da Resolução <span class="text-primary-400">(20 pts)</span></p>
                                 <ul class="text-[10px] text-secondary space-y-0.5">
                                     <li>ERS – Resolução sem reabertura ➔ 10 pts</li>
                                     <li>IPC – Informação precisa e completa ➔ 10 pts</li>
                                 </ul>
                             </div>
                             <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
-                                <p class="text-[11px] font-bold text-white mb-1">4️⃣ Experiência do Cliente <span class="text-blue-400">(20 pts)</span></p>
+                                <p class="text-[11px] font-bold text-white mb-1">4️⃣ Experiência do Cliente <span class="text-primary-400">(20 pts)</span></p>
                                 <ul class="text-[10px] text-secondary space-y-0.5">
                                     <li>PAC – Proatividade no atendimento ➔ 10 pts</li>
                                     <li>TCS – Satisfação nota 4 ou 5 ➔ 10 pts</li>
                                 </ul>
                             </div>
                             <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
-                                <p class="text-[11px] font-bold text-white mb-1">5️⃣ Encerramento e Feedback <span class="text-blue-400">(20 pts)</span></p>
+                                <p class="text-[11px] font-bold text-white mb-1">5️⃣ Encerramento e Feedback <span class="text-primary-400">(20 pts)</span></p>
                                 <ul class="text-[10px] text-secondary space-y-0.5">
                                     <li>CRS – Confirmação de resolução ➔ 5 pts</li>
                                     <li>LAU – Laudo de atendimento ➔ 5 pts</li>
@@ -665,12 +732,12 @@
 
         <!-- VISÃO ADMIN -->
         <div id="viewAdmin" class="hidden space-y-6">
-            <div class="bg-blue-500/10 border border-blue-500/30 p-4 rounded-xl flex flex-wrap justify-between items-center gap-4">
+            <div class="bg-primary-500/10 border border-primary-500/30 p-4 rounded-xl flex flex-wrap justify-between items-center gap-4">
                 <div class="flex items-center gap-3">
-                    <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><i class="fa-solid fa-user-shield text-xl"></i></div>
+                    <div class="p-2 bg-primary-500/20 text-primary-400 rounded-lg"><i class="fa-solid fa-user-shield text-xl"></i></div>
                     <div>
-                        <h3 class="font-bold text-blue-300">Painel do Gestor (<span id="loggedAdminName">Gestor</span>)</h3>
-                        <p class="text-xs text-blue-200/70">Lançamentos semanais, gestão de usuários e validação de prioridades.</p>
+                        <h3 class="font-bold text-primary-300">Painel do Gestor (<span id="loggedAdminName">Gestor</span>)</h3>
+                        <p class="text-xs text-primary-200/70">Lançamentos semanais, gestão de usuários e validação de prioridades.</p>
                     </div>
                 </div>
 
@@ -687,7 +754,7 @@
 
             <!-- ABAS DO MODO GESTÃO -->
             <div class="flex gap-2 flex-wrap bg-surface p-1.5 rounded-lg border border-line">
-                <button onclick="switchAdminTab('cadastros')" id="admTabBtnCadastros" class="px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white">
+                <button onclick="switchAdminTab('cadastros')" id="admTabBtnCadastros" class="px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white">
                     <i class="fa-solid fa-users-gear me-1"></i> Cadastros e usuários
                 </button>
                 <button onclick="switchAdminTab('lancamentos')" id="admTabBtnLancamentos" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
@@ -710,8 +777,8 @@
             <!-- PAINEL: CADASTROS E USUÁRIOS -->
             <div id="admPanelCadastros" class="space-y-6">
             <!-- CADASTRO / EDIÇÃO DE USUÁRIOS -->
-            <div class="bg-surface border border-line rounded-xl p-6">
-                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-user-plus text-blue-500"></i> Cadastrar Novo Usuário / Editar Cadastro</h3>
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
+                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-user-plus text-primary-500"></i> Cadastrar / Editar Usuário</h3>
                 <form onsubmit="saveUser(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <input type="hidden" id="editUserId" value="">
                     <div>
@@ -735,8 +802,8 @@
                         </select>
                     </div>
                     <div class="flex gap-2">
-                        <button type="submit" id="btnSaveUser" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Salvar Usuário</button>
-                        <button type="button" id="btnCancelEdit" onclick="cancelEditUser()" class="hidden bg-surface2 hover:bg-surface3 text-white px-3 py-2.5 rounded-lg text-sm transition"><i class="fa-solid fa-xmark"></i></button>
+                        <button type="submit" id="btnSaveUser" class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">Salvar Usuário</button>
+                        <button type="button" id="btnCancelEdit" onclick="cancelEditUser()" class="hidden bg-surface2 hover:bg-surface3 text-white px-3 py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                     <div id="inputUserPasswordWrap" class="hidden md:col-span-2">
                         <label class="block text-xs text-secondary mb-1">Senha de Acesso (obrigatória para Gestor Adm e Envio/Coleta)</label>
@@ -768,17 +835,17 @@
 
             <!-- PAINEL: LANÇAMENTOS -->
             <div id="admPanelLancamentos" class="hidden space-y-6">
-            <div class="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
+            <div class="bg-surface border border-line rounded-2xl card-hover p-4 flex items-center gap-3">
                 <span class="text-xs text-secondary">Departamento em edição:</span>
-                <select id="admDeptSelect" onchange="onAdminDeptChange(this.value)" class="bg-bg text-blue-400 font-bold text-xs focus:outline-none px-3 py-1.5 rounded-lg border border-line">
+                <select id="admDeptSelect" onchange="onAdminDeptChange(this.value)" class="bg-bg text-primary-400 font-bold text-xs focus:outline-none px-3 py-1.5 rounded-lg border border-line">
                     <option value="Sistema">Dep. Sistema</option>
                     <option value="Catraca">Dep. Catraca</option>
                 </select>
             </div>
 
             <!-- FORM SISTEMA -->
-            <div id="formDeptSistema" class="bg-surface border border-line rounded-xl p-6">
-                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-desktop text-blue-500"></i> Lançamento Semanal - Departamento Sistema</h3>
+            <div id="formDeptSistema" class="bg-surface border border-line rounded-2xl card-hover p-6">
+                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-desktop text-primary-500"></i> Lançamento Semanal - Sistema</h3>
                 <form onsubmit="addSistemaScore(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-xs text-secondary mb-1">Usuário (Sistema)</label>
@@ -824,7 +891,7 @@
                         <input type="number" id="admSisSprintGanhos" value="0" min="0" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                     <div class="flex items-center gap-2 pt-5">
-                        <input type="checkbox" id="admSisSprint100" class="w-4 h-4 text-blue-500 rounded">
+                        <input type="checkbox" id="admSisSprint100" class="w-4 h-4 text-primary-500 rounded">
                         <label for="admSisSprint100" class="text-xs text-secondary">Concluiu 100% da Sprint (+100 pts)</label>
                     </div>
                     <div>
@@ -832,7 +899,7 @@
                         <input type="number" id="admSisMonitoramento" value="0" min="0" max="100" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                     <div class="md:col-span-3 pt-2">
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-sm transition">
+                        <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 hover:brightness-110">
                             <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Lançamento (Sistema)
                         </button>
                     </div>
@@ -840,8 +907,8 @@
             </div>
 
             <!-- FORM CATRACA -->
-            <div id="formDeptCatraca" class="hidden bg-surface border border-line rounded-xl p-6">
-                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-turnstile text-emerald-400"></i> Lançamento Semanal - Departamento Catraca</h3>
+            <div id="formDeptCatraca" class="hidden bg-surface border border-line rounded-2xl card-hover p-6">
+                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-turnstile text-emerald-400"></i> Lançamento Semanal - Catraca</h3>
                 <form onsubmit="addCatracaScore(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-xs text-secondary mb-1">Usuário (Catraca)</label>
@@ -886,7 +953,7 @@
                         <label for="admCatSprint100" class="text-xs text-secondary">Concluiu 100% da Sprint (+100 pts)</label>
                     </div>
                     <div class="md:col-span-3 pt-2">
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-sm transition">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 hover:brightness-110">
                             <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Lançamento (Catraca)
                         </button>
                     </div>
@@ -894,8 +961,8 @@
             </div>
 
             <!-- PENALIDADES -->
-            <div class="bg-surface border border-line rounded-xl p-6">
-                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-red-500"></i> Aplicação de Penalidades Customizadas</h3>
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
+                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-red-500"></i> Aplicar Penalidade</h3>
                 <form onsubmit="applyCustomPenalty(event)" class="space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
@@ -911,7 +978,7 @@
                             <input type="text" id="penaltyReason" placeholder="Ex: Atraso no atendimento" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                         </div>
                     </div>
-                    <button type="submit" class="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition">
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">
                         <i class="fa-solid fa-gavel me-1"></i> Registrar Penalidade
                     </button>
                 </form>
@@ -921,7 +988,7 @@
 
             <!-- PAINEL: PRIORIDADES -->
             <div id="admPanelPrioridades" class="hidden space-y-6">
-                <div class="bg-surface border border-line rounded-xl p-6">
+                <div class="bg-surface border border-line rounded-2xl card-hover p-6">
                     <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-star text-amber-400"></i> Validação de Prioridades</h3>
                     <p class="text-xs text-secondary mb-4">Analise o protocolo e a justificativa enviada pelo analista. Ao aprovar, <strong class="text-emerald-400">50 pontos</strong> são creditados automaticamente na pontuação geral.</p>
                     <div class="overflow-x-auto">
@@ -945,8 +1012,8 @@
 
             <!-- PAINEL: TRANSFERÊNCIAS -->
             <div id="admPanelTransferencias" class="hidden space-y-6">
-                <div class="bg-surface border border-line rounded-xl p-6">
-                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-right-left text-blue-400"></i> Validação de Transferências</h3>
+                <div class="bg-surface border border-line rounded-2xl card-hover p-6">
+                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-right-left text-primary-400"></i> Validação de Transferências</h3>
                     <p class="text-xs text-secondary mb-4">Analise o protocolo e a justificativa enviada pelo analista. Ao aprovar, <strong class="text-emerald-400">1 ponto</strong> é creditado automaticamente na pontuação geral.</p>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-secondary">
@@ -969,8 +1036,8 @@
 
             <!-- PAINEL: PEÇAS CATRACA -->
             <div id="admPanelPecas" class="hidden space-y-6">
-                <div class="bg-surface border border-line rounded-xl p-6">
-                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-box text-emerald-400"></i> Registrar Pontuação de Peça (Envio/Coleta)</h3>
+                <div class="bg-surface border border-line rounded-2xl card-hover p-6">
+                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-box text-emerald-400"></i> Registrar Peça (Envio/Coleta)</h3>
                     <p class="text-xs text-secondary mb-4">Espaço restrito à gestão e aos usuários com função Envio/Coleta. Ao enviar, a pontuação é creditada automaticamente na pontuação geral do analista de catraca.</p>
                     <form onsubmit="addPecaScoreAdmin(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                         <div>
@@ -993,15 +1060,15 @@
                             <input type="number" id="admPecaPoints" min="0" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                         </div>
                         <div class="md:col-span-4 pt-2">
-                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-sm transition">
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 hover:brightness-110">
                                 <i class="fa-solid fa-paper-plane me-1"></i> Registrar e Atribuir Pontuação
                             </button>
                         </div>
                     </form>
                 </div>
 
-                <div class="bg-surface border border-line rounded-xl p-6">
-                    <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-secondary"></i> Histórico de Peças Registradas</h3>
+                <div class="bg-surface border border-line rounded-2xl card-hover p-6">
+                    <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-secondary"></i> Histórico de Peças</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-secondary">
                             <thead class="bg-bg text-secondary uppercase text-[10px]">
@@ -1025,7 +1092,7 @@
             <!-- PAINEL: HISTÓRICO -->
             <div id="admPanelHistorico" class="hidden space-y-6">
             <!-- LOGS -->
-            <div class="bg-surface border border-line rounded-xl p-6">
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
                 <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-secondary"></i> Histórico de Registros</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs text-secondary">
@@ -1058,7 +1125,7 @@
                 </div>
             </div>
 
-            <div class="bg-surface border border-line rounded-xl p-6">
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
                 <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-box-open text-emerald-400"></i> Registrar Peça</h3>
                 <form onsubmit="submitPecaScore(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
@@ -1081,15 +1148,15 @@
                         <input type="number" id="pecaPoints" min="0" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                     <div class="md:col-span-4">
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-lg text-sm transition">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">
                             <i class="fa-solid fa-paper-plane me-1"></i> Registrar e Atribuir Pontuação
                         </button>
                     </div>
                 </form>
             </div>
 
-            <div class="bg-surface border border-line rounded-xl p-6">
-                <h4 class="text-xs font-bold text-secondary uppercase mb-2">Peças Registradas por Mim</h4>
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
+                <h4 class="text-xs font-bold text-secondary uppercase mb-2">Minhas Peças</h4>
                 <div class="overflow-x-auto max-h-72 overflow-y-auto">
                     <table class="w-full text-left text-xs text-secondary">
                         <thead class="bg-bg sticky top-0 uppercase text-[10px]">
@@ -1110,24 +1177,24 @@
 
     <!-- MODAL ADM -->
     <div id="adminModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-surface border border-line rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div class="bg-surface border border-line rounded-2xl card-hover p-6 w-full max-w-md shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-lock text-blue-400"></i> Autenticação da Gestão</h3>
+                <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-lock text-primary-400"></i> Acesso à Gestão</h3>
                 <button onclick="closeAdminModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form onsubmit="loginAdmin(event)">
                 <label class="block text-xs text-secondary mb-1">Gestor</label>
-                <select id="adminUserSelect" required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-blue-500"></select>
+                <select id="adminUserSelect" required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-primary-500"></select>
                 <label class="block text-xs text-secondary mb-1">Senha cadastrada</label>
-                <input type="password" id="adminPass" placeholder="Digite a senha definida no cadastro..." required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-blue-500">
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Entrar no Modo ADM</button>
+                <input type="password" id="adminPass" placeholder="Digite a senha definida no cadastro..." required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-primary-500">
+                <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">Entrar no Modo ADM</button>
             </form>
         </div>
     </div>
 
     <!-- MODAL ENVIO/COLETA DE PEÇAS -->
     <div id="pecaModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-surface border border-line rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div class="bg-surface border border-line rounded-2xl card-hover p-6 w-full max-w-md shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-box text-emerald-400"></i> Acesso Envio/Coleta de Peças</h3>
                 <button onclick="closePecaModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
@@ -1138,14 +1205,14 @@
                 <select id="pecaUserSelect" required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-emerald-500"></select>
                 <label class="block text-xs text-secondary mb-1">Senha cadastrada</label>
                 <input type="password" id="pecaPass" placeholder="Digite sua senha..." required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-emerald-500">
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Entrar</button>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">Entrar</button>
             </form>
         </div>
     </div>
 
     <!-- MODAL JUSTIFICATIVA DE REPROVAÇÃO DE PRIORIDADE -->
     <div id="rejectReasonModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-surface border border-line rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div class="bg-surface border border-line rounded-2xl card-hover p-6 w-full max-w-md shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-400"></i> Reprovar Protocolo de Prioridade</h3>
                 <button onclick="closeRejectReasonModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
@@ -1154,14 +1221,14 @@
                 <input type="hidden" id="rejectReqId" value="">
                 <label class="block text-xs text-secondary mb-1">Justificativa da reprovação (visível para o analista)</label>
                 <textarea id="rejectReasonInput" rows="3" required placeholder="Explique o motivo da reprovação..." class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-red-500"></textarea>
-                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Confirmar Reprovação</button>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">Confirmar Reprovação</button>
             </form>
         </div>
     </div>
 
     <!-- MODAL JUSTIFICATIVA DE REPROVAÇÃO DE TRANSFERÊNCIA -->
     <div id="rejectTransferReasonModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-surface border border-line rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div class="bg-surface border border-line rounded-2xl card-hover p-6 w-full max-w-md shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-400"></i> Reprovar Protocolo de Transferência</h3>
                 <button onclick="closeRejectTransferReasonModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
@@ -1170,7 +1237,25 @@
                 <input type="hidden" id="rejectTransferReqId" value="">
                 <label class="block text-xs text-secondary mb-1">Justificativa da reprovação (visível para o analista)</label>
                 <textarea id="rejectTransferReasonInput" rows="3" required placeholder="Explique o motivo da reprovação..." class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-red-500"></textarea>
-                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Confirmar Reprovação</button>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">Confirmar Reprovação</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR PROTOCOLO DE PRIORIDADE -->
+    <div id="editPriorityModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-surface border border-line rounded-2xl card-hover p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-pen text-primary-400"></i> Editar Protocolo de Prioridade</h3>
+                <button onclick="closeEditPriorityModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="confirmEditPriorityRequest(event)">
+                <input type="hidden" id="editPriorityReqId" value="">
+                <label class="block text-xs text-secondary mb-1">Nº do Protocolo</label>
+                <input type="text" id="editPriorityProtocolo" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line mb-4 focus:outline-none focus:border-primary-400">
+                <label class="block text-xs text-secondary mb-1">Justificativa</label>
+                <textarea id="editPriorityJustificativa" rows="3" required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-primary-400"></textarea>
+                <button type="submit" class="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:brightness-110 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 shadow-glow">Salvar Alterações</button>
             </form>
         </div>
     </div>
@@ -1217,6 +1302,12 @@
         let chartVolInst = null;
         let chartNpsInst = null;
         let chartPrioritiesInst = null;
+        let chartBreakdownInst = null;
+        let countUpTimers = {};
+        if (window.ChartDataLabels) {
+            Chart.register(ChartDataLabels);
+            Chart.defaults.set('plugins.datalabels', { display: false });
+        }
 
         function uid() {
             return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
@@ -1598,7 +1689,7 @@
                 document.getElementById('lblPeriodFilter').innerText = activePeriodFilter === 'ALL' ? 'Acumulado' : activePeriodFilter;
 
                 const calc = calculatePoints(currentActiveUser, metrics);
-                document.getElementById('agentTotalPts').innerText = `${calc.total} pts`;
+                animateNumber('agentTotalPts', calc.total, ' pts');
 
                 const currentTeamList = Object.keys(usersList)
                     .filter(id => usersList[id].team === user.team && isRankableUser(usersList[id]) && usersList[id].active !== false)
@@ -1628,6 +1719,7 @@
 
                 renderHistoricalStats(currentActiveUser);
                 renderCharts(currentActiveUser);
+                renderMetricBreakdown(user, calc);
                 renderMyPriorityRequests();
                 renderMyTransferRequests();
             }
@@ -1678,7 +1770,7 @@
         function renderCharts(userId) {
             const weeks = ["Semana 1", "Semana 2", "Semana 3", "Semana 4", "Semana 5"];
             const labels = ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5"];
-            const dataVolRes = [], dataVolAtd = [], dataNps = [], dataPrio = [];
+            const dataVolRes = [], dataVolAtd = [], dataNps = [], dataPrio = [], dataPrioPts = [];
 
             weeks.forEach(w => {
                 const m = getAggregatedMetrics(activeMonthKey, w)[userId];
@@ -1686,7 +1778,13 @@
                 dataVolAtd.push(m ? m.atendidos : 0);
                 dataNps.push(m && m.satisfacaoCount > 0 ? (m.satisfacaoSum / m.satisfacaoCount) : 0);
                 dataPrio.push(m ? m.prioridadesAprovadas : 0);
+                dataPrioPts.push(m ? (m.prioridadesPts || 0) : 0);
             });
+
+            const totalPrioCount = dataPrio.reduce((a, v) => a + v, 0);
+            const totalPrioPts = dataPrioPts.reduce((a, v) => a + v, 0);
+            const prioTotalEl = document.getElementById('prioChartTotal');
+            if (prioTotalEl) prioTotalEl.innerText = `${totalPrioCount} protocolo${totalPrioCount === 1 ? '' : 's'} · +${totalPrioPts} pts`;
 
             if (chartVolInst) chartVolInst.destroy();
             if (chartNpsInst) chartNpsInst.destroy();
@@ -1694,46 +1792,52 @@
 
             const ctxVol = document.getElementById('chartVol').getContext('2d');
             const gradRes = ctxVol.createLinearGradient(0, 0, 0, 180);
-            gradRes.addColorStop(0, 'rgba(0,240,255,0.35)');
-            gradRes.addColorStop(1, 'rgba(0,240,255,0)');
+            gradRes.addColorStop(0, 'rgba(0,229,199,0.16)');
+            gradRes.addColorStop(1, 'rgba(0,229,199,0)');
             chartVolInst = new Chart(ctxVol, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Resolvidos', data: dataVolRes, borderColor: '#00F0FF', backgroundColor: gradRes, fill: true, tension: 0.45, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#00F0FF', pointBorderColor: '#08080A' },
-                        { label: 'Atendidos', data: dataVolAtd, borderColor: '#64748b', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0.45, borderWidth: 2, pointRadius: 2 }
+                        { label: 'Resolvidos', data: dataVolRes, borderColor: '#4DD6C4', backgroundColor: gradRes, fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#4DD6C4', pointHoverBorderColor: '#14141C', pointHoverBorderWidth: 2 },
+                        { label: 'Atendidos', data: dataVolAtd, borderColor: '#7178C7', backgroundColor: 'transparent', borderDash: [4, 4], tension: 0.4, borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#7178C7' }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     interaction: { intersect: false, mode: 'index' },
-                    plugins: { legend: { labels: { color: '#A1A1AA', font: { size: 10 }, usePointStyle: true } } },
+                    plugins: {
+                        legend: { labels: { color: '#8B8B9C', font: { size: 10 }, usePointStyle: true, boxWidth: 6, boxHeight: 6 } },
+                        tooltip: { backgroundColor: '#1B1B26', borderColor: '#26262F', borderWidth: 1, padding: 8, titleColor: '#fff', bodyColor: '#9B9BAD', displayColors: true, boxPadding: 4 }
+                    },
                     scales: {
-                        x: { grid: { color: '#22222A' }, ticks: { color: '#A1A1AA', font: { size: 10 } } },
-                        y: { grid: { color: '#22222A' }, ticks: { color: '#A1A1AA', font: { size: 10 } }, beginAtZero: true }
+                        x: { grid: { display: false }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.045)' }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 } }, beginAtZero: true }
                     }
                 }
             });
 
             const ctxNps = document.getElementById('chartNps').getContext('2d');
             const gradNps = ctxNps.createLinearGradient(0, 0, 0, 180);
-            gradNps.addColorStop(0, 'rgba(245,158,11,0.35)');
-            gradNps.addColorStop(1, 'rgba(245,158,11,0)');
+            gradNps.addColorStop(0, 'rgba(217,163,86,0.16)');
+            gradNps.addColorStop(1, 'rgba(217,163,86,0)');
             chartNpsInst = new Chart(ctxNps, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{ label: 'NPS Média', data: dataNps, borderColor: '#f59e0b', backgroundColor: gradNps, fill: true, tension: 0.45, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#f59e0b', pointBorderColor: '#08080A' }]
+                    datasets: [{ label: 'NPS Média', data: dataNps, borderColor: '#D9A356', backgroundColor: gradNps, fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#D9A356', pointHoverBorderColor: '#14141C', pointHoverBorderWidth: 2 }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     interaction: { intersect: false, mode: 'index' },
                     scales: {
-                        x: { grid: { color: '#22222A' }, ticks: { color: '#A1A1AA', font: { size: 10 } } },
-                        y: { min: 1, max: 5, grid: { color: '#22222A' }, ticks: { color: '#A1A1AA', font: { size: 10 } } }
+                        x: { grid: { display: false }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 } } },
+                        y: { min: 1, max: 5, grid: { color: 'rgba(255,255,255,0.045)' }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 } } }
                     },
-                    plugins: { legend: { labels: { color: '#A1A1AA', font: { size: 10 }, usePointStyle: true } } }
+                    plugins: {
+                        legend: { labels: { color: '#8B8B9C', font: { size: 10 }, usePointStyle: true, boxWidth: 6, boxHeight: 6 } },
+                        tooltip: { backgroundColor: '#1B1B26', borderColor: '#26262F', borderWidth: 1, padding: 8, titleColor: '#fff', bodyColor: '#9B9BAD' }
+                    }
                 }
             });
 
@@ -1742,17 +1846,168 @@
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{ label: 'Prioridades Validadas', data: dataPrio, backgroundColor: '#10b981', borderRadius: 8, maxBarThickness: 28, hoverBackgroundColor: '#34d399' }]
+                    datasets: [{
+                        label: 'Prioridades Validadas',
+                        data: dataPrio,
+                        backgroundColor: 'rgba(93,184,163,0.55)',
+                        hoverBackgroundColor: '#5DB8A3',
+                        borderRadius: 6,
+                        maxBarThickness: 26,
+                        pointsData: dataPrioPts
+                    }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 18 } },
                     scales: {
-                        x: { grid: { display: false }, ticks: { color: '#A1A1AA', font: { size: 10 } } },
-                        y: { grid: { color: '#22222A' }, ticks: { color: '#A1A1AA', font: { size: 10 }, stepSize: 1 }, beginAtZero: true }
+                        x: { grid: { display: false }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.045)' }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 }, stepSize: 1 }, beginAtZero: true }
                     },
-                    plugins: { legend: { labels: { color: '#A1A1AA', font: { size: 10 }, usePointStyle: true } } }
-                }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1B1B26', borderColor: '#26262F', borderWidth: 1, padding: 8,
+                            titleColor: '#fff', bodyColor: '#9B9BAD',
+                            callbacks: {
+                                label: (c) => ` ${c.raw} protocolo${c.raw === 1 ? '' : 's'}`,
+                                afterLabel: (c) => ` +${dataPrioPts[c.dataIndex]} pts na semana`
+                            }
+                        },
+                        datalabels: {
+                            display: (ctx) => dataPrioPts[ctx.dataIndex] > 0,
+                            anchor: 'end', align: 'top', offset: 2,
+                            color: '#D9A356',
+                            font: { size: 9, weight: '700' },
+                            formatter: (value, ctx) => `+${dataPrioPts[ctx.dataIndex]}`
+                        }
+                    }
+                },
+                plugins: window.ChartDataLabels ? [ChartDataLabels] : []
             });
+        }
+
+        function animateNumber(elId, target, suffix = "") {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            if (countUpTimers[elId]) cancelAnimationFrame(countUpTimers[elId]);
+            const startText = (el.innerText || "0").replace(/[^\d-]/g, '');
+            const start = parseInt(startText) || 0;
+            const duration = 550;
+            const startTime = performance.now();
+            function tick(now) {
+                const p = Math.min(1, (now - startTime) / duration);
+                const eased = 1 - Math.pow(1 - p, 3);
+                const val = Math.round(start + (target - start) * eased);
+                el.innerText = `${val}${suffix}`;
+                if (p < 1) countUpTimers[elId] = requestAnimationFrame(tick);
+            }
+            countUpTimers[elId] = requestAnimationFrame(tick);
+        }
+
+        function renderMetricBreakdown(user, calc) {
+            const canvas = document.getElementById('chartBreakdown');
+            if (!canvas) return;
+            const b = calc.breakdown;
+            const isSistema = user.team === "Sistema";
+
+            // Cada métrica: rótulo, valor em pontos, ícone, cor e dica contextual
+            // Paleta alinhada aos design tokens do site (accent, accent2, primary, amber, emerald)
+            // em vez de tons avulsos — mantém a mesma tonalidade do restante da UI e evita poluição visual.
+            const items = [
+                { key: 'ptsRanking', label: 'Bônus Ranking Semanal', icon: 'fa-medal', color: '#00E5C7', value: b.ptsRanking, hint: '1º/2º/3º lugar nas semanas do período' },
+                { key: 'ptsSprint', label: 'Sprint de Crescimento', icon: 'fa-rocket', color: '#6C63FF', value: b.ptsSprint, hint: 'Clientes recuperados + conclusão 100%' },
+                { key: isSistema ? 'ptsAtendidos' : 'ptsResolvidos', label: isSistema ? 'Volume de Atendimentos' : 'Protocolos Resolvidos', icon: 'fa-headset', color: '#00C2FF', value: isSistema ? b.ptsAtendidos : b.ptsResolvidos, hint: isSistema ? 'Faixas de volume mensal atingidas' : '+2 pts por protocolo resolvido' },
+                { key: 'ptsSatisfacao', label: 'Satisfação (NPS)', icon: 'fa-star', color: '#FBBF24', value: b.ptsSatisfacao, hint: `Média atual: ${calc.avgSatisfacao}★` },
+                { key: 'ptsPrioridades', label: 'Prioridades & Transferências', icon: 'fa-bolt', color: '#A3AEFF', value: b.ptsPrioridades, hint: 'Protocolos validados pela gestão' },
+                { key: 'tmaPts', label: 'TMA / Agilidade', icon: 'fa-stopwatch', color: '#8188FF', value: b.tmaPts, hint: 'Tempo médio de atendimento' },
+                { key: 'extraPts', label: 'Monitoramento & Peças', icon: 'fa-clipboard-check', color: '#34D399', value: b.extraPts, hint: 'Avaliação de qualidade + envio/coleta' }
+            ].filter(it => it.value !== 0);
+
+            const penal = b.penalidades || 0;
+
+            if (chartBreakdownInst) chartBreakdownInst.destroy();
+            const positiveItems = items.filter(it => it.value > 0);
+            const ctx = canvas.getContext('2d');
+
+            if (positiveItems.length === 0) {
+                chartBreakdownInst = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: ['Sem pontos ainda'], datasets: [{ data: [1], backgroundColor: ['#26262F'], borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+                });
+            } else {
+                chartBreakdownInst = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: positiveItems.map(it => it.label),
+                        datasets: [{
+                            data: positiveItems.map(it => it.value),
+                            backgroundColor: positiveItems.map(it => it.color),
+                            borderColor: '#14141C',
+                            borderWidth: 2,
+                            hoverOffset: 3,
+                            hoverBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, cutout: '76%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1B1B26', borderColor: '#26262F', borderWidth: 1, padding: 10,
+                                titleColor: '#fff', bodyColor: '#9B9BAD',
+                                callbacks: { label: (c) => ` ${c.label}: +${c.raw} pts` }
+                            }
+                        },
+                        animation: { animateRotate: true, duration: 600, easing: 'easeOutQuart' }
+                    }
+                });
+            }
+
+            document.getElementById('breakdownTotalCenter').innerText = calc.total;
+            document.getElementById('breakdownPeriodLabel').innerText = activePeriodFilter === 'ALL' ? 'Acumulado do Mês' : activePeriodFilter;
+
+            const maxVal = Math.max(1, ...items.map(it => Math.abs(it.value)));
+            let html = "";
+            items.forEach(it => {
+                const pct = Math.min(100, (Math.abs(it.value) / maxVal) * 100);
+                const isNeg = it.value < 0;
+                html += `
+                    <div class="group rounded-lg -mx-2 px-2 py-1.5 transition-colors duration-150 hover:bg-surface2/50">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-white flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] transition-transform duration-150 group-hover:scale-110" style="background:${it.color}22; color:${it.color}"><i class="fa-solid ${it.icon}"></i></span>
+                                ${it.label}
+                            </span>
+                            <span class="text-xs font-extrabold ${isNeg ? 'text-red-400' : 'text-white'} num-mono">${isNeg ? '' : '+'}${it.value} pts</span>
+                        </div>
+                        <div class="h-1.5 bg-surface3 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full bar-fill" style="width:${pct}%; background:${it.color};"></div>
+                        </div>
+                        <p class="text-[10px] text-secondary mt-1">${it.hint}</p>
+                    </div>
+                `;
+            });
+
+            if (penal < 0) {
+                html += `
+                    <div class="group pt-1 mt-1 border-t border-line/60">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-red-300 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] bg-red-500/15 text-red-400"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                                Penalidades
+                            </span>
+                            <span class="text-xs font-extrabold text-red-400 num-mono">${penal} pts</span>
+                        </div>
+                        <div class="h-1.5 bg-surface3 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full bar-fill bg-red-500" style="width:100%;"></div>
+                        </div>
+                        <p class="text-[10px] text-secondary mt-1">Ocorrências registradas no período — veja detalhes acima.</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('breakdownList').innerHTML = html || `<p class="text-xs text-secondary text-center py-6">Nenhuma pontuação registrada neste período ainda. Assim que houver lançamentos, o detalhamento aparece aqui.</p>`;
         }
 
         function renderLeaderboard(metrics) {
@@ -1777,11 +2032,27 @@
                 if (index === 2) posBadge = `<span class="text-secondary font-extrabold">🥉 3º</span>`;
 
                 const b = item.calc.breakdown;
+                const isSelf = item.id === currentActiveUser && !isAdminLoggedIn;
+                let rowTint = '';
+                if (isSelf) rowTint = 'bg-accent/10 border-l-2 border-accent font-bold';
+                else if (index === 0) rowTint = 'bg-gradient-to-r from-accent/[0.07] to-transparent border-l-2 border-accent/40';
+                else if (index === 1) rowTint = 'bg-gradient-to-r from-slate-300/[0.05] to-transparent border-l-2 border-slate-300/30';
+                else if (index === 2) rowTint = 'bg-gradient-to-r from-amber-600/[0.06] to-transparent border-l-2 border-amber-600/30';
+                else rowTint = 'border-l-2 border-transparent';
 
                 html += `
-                    <tr class="${item.id === currentActiveUser && !isAdminLoggedIn ? 'bg-accent/10 border-l-2 border-accent font-bold' : ''}">
+                    <tr class="group cursor-pointer transition-colors duration-150 hover:bg-surface2/70 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-accent/50 ${rowTint}"
+                        onclick="viewAnalystFromPodium('${item.id}','${activeRankingTab}')"
+                        role="button" tabindex="0"
+                        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewAnalystFromPodium('${item.id}','${activeRankingTab}')}"
+                        title="Ver dashboard de ${item.name}">
                         <td class="p-3">${posBadge}</td>
-                        <td class="p-3 font-semibold text-white">${item.name}</td>
+                        <td class="p-3 font-semibold text-white">
+                            <span class="inline-flex items-center gap-2">
+                                ${item.name}
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-secondary/0 group-hover:text-accent transition-colors duration-150"></i>
+                            </span>
+                        </td>
                         <td class="p-3 text-center text-secondary">+${b.tmaPts}</td>
                         <td class="p-3 text-center">+${b.ptsResolvidos} <span class="text-[10px] text-secondary">(${item.metrics?.resolvidos || 0})</span></td>
                         <td class="p-3 text-center">+${b.ptsAtendidos} <span class="text-[10px] text-secondary">(${item.metrics?.atendidos || 0})</span></td>
@@ -1798,20 +2069,38 @@
             document.getElementById('leaderboardBody').innerHTML = html || `<tr><td colspan="12" class="p-4 text-center text-secondary">Nenhum lançamento neste período.</td></tr>`;
         }
 
+        function viewAnalystFromPodium(id, team) {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            if (!usersList[id]) return;
+            if (isAdminLoggedIn || isPecaLoggedIn) return;
+
+            const teamSelectEl = document.getElementById('teamSelect');
+            if (teamSelectEl) teamSelectEl.value = team;
+            activeRankingTab = team;
+            populateAnalystDropdown(team);
+            const userSelectEl = document.getElementById('userSelect');
+            if (userSelectEl) userSelectEl.value = id;
+            currentActiveUser = id;
+            switchPublicTab('dashboard');
+            render();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast(`Exibindo o dashboard de ${usersList[id].name}`);
+        }
+
         function renderTopDashboard(metrics) {
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const prizes = ["R$ 1.000,00", "R$ 500,00", "R$ 300,00"];
             const medals = ["🥇", "🥈", "🥉"];
-
             // Estilo visual por posição: [1º, 2º, 3º] -- ordem de exibição no grid: 2º / 1º / 3º
             const podiumStyle = [
                 { // 1º lugar
                     order: "order-2",
                     lift: "-translate-y-3",
-                    height: "min-h-[168px]",
-                    card: "bg-gradient-to-b from-accent/20 via-surface2 to-surface2 border-accent/60 ring-2 ring-accent/40 shadow-[0_0_30px_-8px_rgba(0,240,255,0.45)]",
-                    avatar: "bg-gradient-to-br from-accent to-blue-500 text-bg w-16 h-16 text-lg",
+                    height: "min-h-[178px]",
+                    card: "bg-gradient-to-b from-accent/20 via-surface2 to-surface2 border-accent/60 ring-2 ring-accent/40 shadow-[0_0_30px_-8px_rgba(0,229,199,0.45)]",
+                    avatar: "bg-gradient-to-br from-accent to-primary-500 text-bg w-16 h-16 text-lg",
                     posBadge: "bg-accent text-bg",
                     nameColor: "text-white",
                     ptsColor: "text-accent",
@@ -1821,7 +2110,7 @@
                 { // 2º lugar
                     order: "order-1",
                     lift: "",
-                    height: "min-h-[140px]",
+                    height: "min-h-[150px]",
                     card: "bg-gradient-to-b from-slate-300/10 via-surface2 to-surface2 border-slate-300/30",
                     avatar: "bg-gradient-to-br from-slate-300 to-slate-500 text-bg w-12 h-12 text-sm",
                     posBadge: "bg-slate-300 text-bg",
@@ -1833,7 +2122,7 @@
                 { // 3º lugar
                     order: "order-3",
                     lift: "",
-                    height: "min-h-[124px]",
+                    height: "min-h-[134px]",
                     card: "bg-gradient-to-b from-amber-600/10 via-surface2 to-surface2 border-amber-600/30",
                     avatar: "bg-gradient-to-br from-amber-500 to-amber-700 text-bg w-11 h-11 text-sm",
                     posBadge: "bg-amber-500 text-bg",
@@ -1847,7 +2136,10 @@
             ["Sistema", "Catraca"].forEach(team => {
                 const list = Object.keys(usersList)
                     .filter(id => usersList[id].team === team && isRankableUser(usersList[id]) && usersList[id].active !== false)
-                    .map(id => ({ id, name: usersList[id].name, initial: usersList[id].initial || usersList[id].name.slice(0, 2).toUpperCase(), total: calculatePoints(id, metrics).total }))
+                    .map(id => {
+                        const c = calculatePoints(id, metrics);
+                        return { id, name: usersList[id].name, initial: usersList[id].initial || usersList[id].name.slice(0, 2).toUpperCase(), total: c.total };
+                    })
                     .sort((a, b) => b.total - a.total)
                     .slice(0, 3);
 
@@ -1857,15 +2149,22 @@
                     const s = podiumStyle[i];
                     if (item) {
                         html += `
-                            <div class="${s.order} ${s.scale} relative ${s.lift} ${s.height} ${s.card} border rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center transition-transform hover:-translate-y-1">
+                            <div class="${s.order} ${s.scale} group relative ${s.lift} ${s.height} ${s.card} border rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center transition-all duration-200 hover:-translate-y-1.5 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/50"
+                                 onclick="viewAnalystFromPodium('${item.id}','${team}')"
+                                 role="button" tabindex="0"
+                                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewAnalystFromPodium('${item.id}','${team}')}"
+                                 title="Ver dashboard de ${item.name}">
                                 ${s.crown ? `<i class="fa-solid fa-crown text-accent text-lg absolute -top-3 left-1/2 -translate-x-1/2 animate-bounce [animation-duration:2.2s]"></i>` : ''}
                                 <span class="absolute top-2 left-2 w-5 h-5 rounded-full ${s.posBadge} text-[10px] font-extrabold flex items-center justify-center">${i + 1}</span>
+                                <span class="absolute top-2 right-2 text-[9px] text-secondary/0 group-hover:text-secondary transition-colors duration-200 flex items-center gap-0.5">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </span>
                                 <div class="relative mb-2">
-                                    <div class="${s.avatar} rounded-full flex items-center justify-center font-extrabold border-2 border-bg shadow-lg">${item.initial}</div>
+                                    <div class="${s.avatar} rounded-full flex items-center justify-center font-extrabold border-2 border-bg shadow-lg transition-transform duration-200 group-hover:scale-105">${item.initial}</div>
                                     <span class="absolute -bottom-1 -right-1 text-base">${medals[i]}</span>
                                 </div>
                                 <p class="text-xs sm:text-sm font-bold ${s.nameColor} truncate max-w-[100px] sm:max-w-[120px]" title="${item.name}">${item.name}</p>
-                                <p class="text-base sm:text-lg font-extrabold ${s.ptsColor} mt-0.5 leading-none">${item.total}<span class="text-[10px] font-semibold ml-0.5">pts</span></p>
+                                <p class="text-base sm:text-lg font-extrabold ${s.ptsColor} mt-0.5 leading-none num-mono">${item.total}<span class="text-[10px] font-semibold ml-0.5">pts</span></p>
                                 <p class="text-[10px] text-emerald-400 font-semibold mt-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">${prizes[i]}</p>
                             </div>
                         `;
@@ -1904,7 +2203,7 @@
                         <tr>
                             <td class="p-3 text-secondary">${d}</td>
                             <td class="p-3 font-semibold text-white">${user.name}</td>
-                            <td class="p-3 text-blue-400 font-bold">${l.week}</td>
+                            <td class="p-3 text-primary-400 font-bold">${l.week}</td>
                             <td class="p-3">${l.resolvidos} res / ${l.atendidos} atd</td>
                             <td class="p-3">${l.nps} ★</td>
                             <td class="p-3 text-emerald-400 text-[10px] uppercase font-bold">Lançamento Semanal</td>
@@ -1956,7 +2255,7 @@
                         <td class="p-2">${u.team}</td>
                         <td class="p-2 text-center">${statusBadge}</td>
                         <td class="p-2 text-right whitespace-nowrap">
-                            <button onclick="startEditUser('${id}')" class="text-blue-400 hover:text-blue-300 text-xs font-semibold mr-3"><i class="fa-solid fa-pen me-1"></i>Editar</button>
+                            <button onclick="startEditUser('${id}')" class="text-primary-400 hover:text-primary-300 text-xs font-semibold mr-3"><i class="fa-solid fa-pen me-1"></i>Editar</button>
                             <button onclick="toggleUserActive('${id}')" class="text-amber-400 hover:text-amber-300 text-xs font-semibold mr-3"><i class="fa-solid fa-power-off me-1"></i>${active ? 'Inativar' : 'Ativar'}</button>
                             <button onclick="deleteUser('${id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>
                         </td>
@@ -2074,8 +2373,8 @@
         function switchPublicTab(tab) {
             const views = { dashboard: 'viewAgent', ranking: 'viewRanking', faq: 'viewFaq' };
             const btns = { dashboard: 'btnTabDashboard', ranking: 'btnTabRanking', faq: 'btnTabFaq' };
-            const activeClass = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
-            const inactiveClass = "px-4 py-2 rounded-lg text-xs font-bold transition text-secondary hover:text-white bg-surface border border-line";
+            const activeClass = "px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
+            const inactiveClass = "px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line";
 
             Object.keys(views).forEach(key => {
                 document.getElementById(views[key]).classList.toggle('hidden', key !== tab);
@@ -2089,13 +2388,13 @@
             if (dept === "Sistema") {
                 document.getElementById('faqContentSistema').classList.remove('hidden');
                 document.getElementById('faqContentCatraca').classList.add('hidden');
-                document.getElementById('faqTabSistema').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
-                document.getElementById('faqTabCatraca').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary";
+                document.getElementById('faqTabSistema').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
+                document.getElementById('faqTabCatraca').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-surface2 text-secondary hover:text-white";
             } else {
                 document.getElementById('faqContentSistema').classList.add('hidden');
                 document.getElementById('faqContentCatraca').classList.remove('hidden');
-                document.getElementById('faqTabCatraca').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-500 text-white";
-                document.getElementById('faqTabSistema').className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary";
+                document.getElementById('faqTabCatraca').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
+                document.getElementById('faqTabSistema').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-surface2 text-secondary hover:text-white";
             }
         }
 
@@ -2128,7 +2427,7 @@
             activeAdminTab = tab;
             const panels = { cadastros: 'admPanelCadastros', lancamentos: 'admPanelLancamentos', prioridades: 'admPanelPrioridades', transferencias: 'admPanelTransferencias', pecas: 'admPanelPecas', historico: 'admPanelHistorico' };
             const btns = { cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'admTabBtnPrioridades', transferencias: 'admTabBtnTransferencias', pecas: 'admTabBtnPecas', historico: 'admTabBtnHistorico' };
-            const activeClass = "px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white";
+            const activeClass = "px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white";
             const inactiveClass = "px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white";
 
             Object.keys(panels).forEach(key => {
@@ -2195,15 +2494,15 @@
             const teamIcon = document.getElementById('teamSelectIcon');
             if (teamIcon) {
                 teamIcon.className = team === 'Sistema'
-                    ? "fa-solid fa-desktop text-xs text-blue-400 transition-colors duration-200"
+                    ? "fa-solid fa-desktop text-xs text-primary-400 transition-colors duration-200"
                     : "fa-solid fa-gear text-xs text-emerald-400 transition-colors duration-200";
             }
             document.getElementById('tabSistema').className = team === 'Sistema' 
-                ? "px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white" 
+                ? "px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white" 
                 : "px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white";
             
             document.getElementById('tabCatraca').className = team === 'Catraca' 
-                ? "px-4 py-2 rounded-md text-xs font-bold transition bg-blue-500 text-white" 
+                ? "px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white" 
                 : "px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white";
 
             render();
@@ -2424,7 +2723,15 @@
                         <td class="p-3">${r.protocolo}</td>
                         <td class="p-3">${r.justificativa}</td>
                         <td class="p-3 text-center">${statusCell}</td>
-                        <td class="p-3 text-right whitespace-nowrap">${actionsCell}</td>
+                        <td class="p-3 text-right whitespace-nowrap">
+                            <span class="inline-flex items-center gap-3">
+                                ${actionsCell}
+                                <span class="inline-flex items-center gap-2 border-l border-line pl-3 ml-1">
+                                    <button onclick="openEditPriorityModal('${r.id}')" title="Editar protocolo" class="text-secondary hover:text-primary-400 text-xs"><i class="fa-solid fa-pen"></i></button>
+                                    <button onclick="deletePriorityRequest('${r.id}')" title="Excluir protocolo" class="text-secondary hover:text-red-400 text-xs"><i class="fa-solid fa-trash"></i></button>
+                                </span>
+                            </span>
+                        </td>
                     </tr>
                 `;
             });
@@ -2491,6 +2798,62 @@
             const ok = await persistStore();
             closeRejectReasonModal();
             if (ok) showToast("Protocolo reprovado e justificativa registrada.");
+            render();
+        }
+
+        function openEditPriorityModal(id) {
+            const req = (appStore.priorityRequests || []).find(r => r.id === id);
+            if (!req) return;
+            document.getElementById('editPriorityReqId').value = id;
+            document.getElementById('editPriorityProtocolo').value = req.protocolo;
+            document.getElementById('editPriorityJustificativa').value = req.justificativa;
+            document.getElementById('editPriorityModal').classList.remove('hidden');
+        }
+
+        function closeEditPriorityModal() {
+            document.getElementById('editPriorityModal').classList.add('hidden');
+        }
+
+        async function confirmEditPriorityRequest(e) {
+            e.preventDefault();
+            const id = document.getElementById('editPriorityReqId').value;
+            const protocolo = document.getElementById('editPriorityProtocolo').value.trim();
+            const justificativa = document.getElementById('editPriorityJustificativa').value.trim();
+            const req = (appStore.priorityRequests || []).find(r => r.id === id);
+            if (!req || !protocolo || !justificativa) return;
+
+            req.protocolo = protocolo;
+            req.justificativa = justificativa;
+
+            // Mantém o log de pontuação (se já aprovado) sincronizado com o novo nº de protocolo
+            const relatedLog = (appStore.logs || []).find(l => l.relatedRequestId === id);
+            if (relatedLog) relatedLog.protocolo = protocolo;
+
+            const ok = await persistStore();
+            closeEditPriorityModal();
+            if (ok) showToast("Protocolo de prioridade atualizado.");
+            render();
+        }
+
+        async function deletePriorityRequest(id) {
+            const req = (appStore.priorityRequests || []).find(r => r.id === id);
+            if (!req) return;
+
+            const wasApproved = req.status === "aprovado";
+            const confirmMsg = wasApproved
+                ? `Excluir este protocolo aprovado também removerá os 50 pontos já creditados. Deseja continuar?`
+                : `Tem certeza que deseja excluir este protocolo de prioridade?`;
+            if (!confirm(confirmMsg)) return;
+
+            appStore.priorityRequests = (appStore.priorityRequests || []).filter(r => r.id !== id);
+
+            // Se estava aprovado, remove também o lançamento de pontos correspondente
+            if (wasApproved) {
+                appStore.logs = (appStore.logs || []).filter(l => l.relatedRequestId !== id);
+            }
+
+            const ok = await persistStore();
+            if (ok) showToast("Protocolo de prioridade excluído.");
             render();
         }
 
