@@ -99,6 +99,14 @@
                 </div>
             </div>
 
+            <!-- PÓDIO DO DEPARTAMENTO ATIVO (MODO APRESENTAÇÃO) -->
+            <div class="mb-8">
+                <h3 class="text-sm md:text-base font-bold text-secondary uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-accent"></i> Pódio — <span id="presentationPodiumTeamLabel" class="text-primary-400">Software</span>
+                </h3>
+                <div id="podiumPresentation" class="grid grid-cols-3 gap-3 sm:gap-6 items-end max-w-3xl"></div>
+            </div>
+
             <div class="bg-surface border border-line rounded-2xl p-4 md:p-8 overflow-x-auto">
                 <table class="w-full text-left text-sm md:text-base text-secondary border-collapse">
                     <thead class="bg-bg/80 text-secondary uppercase text-[10px] md:text-xs border-b border-line">
@@ -460,8 +468,11 @@
                     </div>
                 </div>
 
-                <div class="flex gap-2 mb-6">
-                    <button onclick="toggleFaqDept('Sistema')" id="faqTabSistema" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-primary-500 text-white">
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <button onclick="toggleFaqDept('Geral')" id="faqTabGeral" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-primary-500 text-white">
+                        📘 Regras de Negócio da Plataforma
+                    </button>
+                    <button onclick="toggleFaqDept('Sistema')" id="faqTabSistema" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary">
                         Métricas Departamento Software
                     </button>
                     <button onclick="toggleFaqDept('Catraca')" id="faqTabCatraca" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary">
@@ -469,7 +480,145 @@
                     </button>
                 </div>
 
-                <div id="faqContentSistema" class="space-y-4 text-sm text-secondary">
+                <!-- NOVO MÓDULO: REGRAS DE NEGÓCIO DA PLATAFORMA -->
+                <div id="faqContentGeral" class="space-y-4 text-sm text-secondary">
+
+                    <!-- VISÃO GERAL -->
+                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <h4 class="font-bold text-primary-400 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-circle-info"></i> 🧭 Visão Geral do Programa</h4>
+                        <p class="text-xs text-secondary mb-2">A plataforma é um sistema de gamificação e avaliação de desempenho voltado a dois departamentos operacionais: <strong class="text-white">Software</strong> (identificado internamente como "Sistema") e <strong class="text-white">Catraca</strong>. Cada analista acumula pontos ao longo do período avaliado, a partir de métricas quantitativas (volume de atendimento, tempo de resposta), qualitativas (satisfação do cliente, monitoramento de qualidade) e de campanhas específicas (Sprint Semanal de Crescimento).</p>
+                        <p class="text-xs text-secondary">A soma de todos os pontos gera o placar do analista, que define sua posição no ranking do próprio departamento e sua elegibilidade a premiação em dinheiro (Top 3 de cada departamento).</p>
+                        <ul class="text-xs space-y-1 text-secondary mt-3 list-disc list-inside">
+                            <li><strong class="text-white">Dashboard do Analista</strong> — mostra o detalhamento (breakdown) da pontuação pessoal por métrica, no período selecionado.</li>
+                            <li><strong class="text-white">Ranking / Pódio por Departamento</strong> — mostra o Top 3 (e a lista completa) de cada departamento, com pontuação geral e valor de premiação.</li>
+                            <li><strong class="text-white">FAQ / Métricas & Regras</strong> — este manual de consulta, com os critérios de pontuação, faixas e penalidades vigentes.</li>
+                            <li><strong class="text-white">Painel Admin</strong> (restrito à gestão) — onde são feitos os lançamentos semanais, aprovações de solicitações (prioridades e transferências), registro de peças/despachos e aplicação de penalidades manuais.</li>
+                        </ul>
+                        <p class="text-[10px] text-secondary/70 mt-3 italic">Usuários com a função "Gestor Adm" ou "Envio/Coleta" não são analistas avaliados: eles são excluídos de qualquer ranking, bônus de colocação e premiação.</p>
+                    </div>
+
+                    <!-- ESTRUTURA E PERÍODOS -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                            <h4 class="font-bold text-primary-400 mb-2">🏢 Departamentos</h4>
+                            <ul class="text-xs space-y-1.5 text-secondary">
+                                <li>• <strong class="text-white">Software</strong> ("Sistema") — analistas de suporte a sistema.</li>
+                                <li>• <strong class="text-white">Catraca</strong> — analistas de suporte de catraca/controle de acesso, incluindo a rotina de Peças e Despachos.</li>
+                            </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">As regras de pontuação são específicas por departamento: pesos, fórmulas e a existência de determinadas métricas mudam de um para o outro — veja as abas "Métricas Departamento Software" e "Métricas Departamento Catraca".</p>
+                        </div>
+                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                            <h4 class="font-bold text-primary-400 mb-2">🗓️ Períodos de Apuração</h4>
+                            <ul class="text-xs space-y-1.5 text-secondary">
+                                <li>• <strong class="text-white">Semana de Referência</strong> — lançamentos feitos por semana (Semana 1 a 5 dentro do mês).</li>
+                                <li>• <strong class="text-white">Mês</strong> — mês corrente ("atual") + histórico de meses fechados.</li>
+                                <li>• <strong class="text-white">Filtro de Período</strong> — "Acumulado" (soma de todas as semanas) ou uma semana específica.</li>
+                            </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Os bônus de ranking semanal são sempre recalculados semana a semana — no "Acumulado", o sistema soma os bônus obtidos em cada semana individualmente.</p>
+                        </div>
+                    </div>
+
+                    <!-- FÓRMULA GERAL -->
+                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <h4 class="font-bold text-primary-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-calculator"></i> ➕ Como a Pontuação Total é Calculada</h4>
+                        <p class="text-[11px] text-secondary/80 mb-3">A pontuação final de cada analista, no período selecionado, é a <strong class="text-white">soma</strong> de todos os componentes abaixo. Nenhum componente tem peso percentual — cada um contribui em pontos absolutos.</p>
+                        <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 text-[11px] text-secondary">
+                            <strong class="text-amber-300">Fórmula:</strong> <span class="text-white">Pontuação Total = Pts. Protocolos Resolvidos + Pts. Protocolos Atendidos + Pts. Satisfação + Pts. Prioridades/Transferências + Pts. Sprint (recuperação + conclusão 100%) + Pts. Ranking Semanal (resolvidos + atendidos + sprint) + Pts. TMA + Pts. Peças/Monitoramento + Penalidades</span>
+                        </div>
+                        <ul class="text-xs space-y-1 text-secondary mt-3 list-disc list-inside">
+                            <li>Cada componente segue as regras específicas do departamento do analista (abas Software / Catraca).</li>
+                            <li>Penalidades entram como valores negativos e reduzem o total diretamente.</li>
+                            <li>O resultado final é arredondado ao número inteiro mais próximo.</li>
+                        </ul>
+                    </div>
+
+                    <!-- REGRAS TRANSVERSAIS -->
+                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <h4 class="font-bold text-primary-300 mb-3 flex items-center gap-1.5"><i class="fa-solid fa-scale-balanced"></i> ⚖️ Regras Transversais (valem para os dois departamentos)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">👤 Quem entra no ranking</p>
+                                <p class="text-[11px] text-secondary">Usuários com função <strong class="text-white">"Gestor Adm"</strong> ou <strong class="text-white">"Envio/Coleta"</strong> nunca entram em ranking, bônus de colocação ou premiação — eles operam a plataforma, mas não competem.</p>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">🏁 Ranking por competição (empate)</p>
+                                <p class="text-[11px] text-secondary">Analistas empatados em valor recebem a <strong class="text-white">mesma pontuação de colocação</strong>, e o próximo colocado "pula" a posição. Ex.: dois empatados em 1º ganham 100 pts cada; o próximo vai para 3º.</p>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">✅ Fluxo de Prioridades</p>
+                                <p class="text-[11px] text-secondary">Analista registra protocolo + justificativa → gestão avalia e aprova → <strong class="text-emerald-400">+50 pts</strong> creditados automaticamente.</p>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">🔁 Fluxo de Transferências</p>
+                                <p class="text-[11px] text-secondary">Mesmo fluxo de aprovação da gestão → ao aprovar, <strong class="text-emerald-400">+1 pt</strong> creditado automaticamente.</p>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">📦 Peças (somente Catraca)</p>
+                                <p class="text-[11px] text-secondary">Lançamento direto pela gestão ou usuário Envio/Coleta, com crédito automático e imediato na pontuação do analista de Catraca vinculado.</p>
+                            </div>
+                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                                <p class="text-[11px] font-bold text-white mb-1">🔢 Arredondamento</p>
+                                <p class="text-[11px] text-secondary">O total de pontos de cada analista é sempre arredondado ao número inteiro mais próximo na exibição do Dashboard e do Ranking.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QUADRO COMPARATIVO -->
+                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <h4 class="font-bold text-primary-300 mb-3 flex items-center gap-1.5"><i class="fa-solid fa-table-columns"></i> 📊 Quadro Comparativo: Software × Catraca</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-[11px] text-secondary">
+                                <thead class="bg-surface2 text-secondary uppercase text-[10px]">
+                                    <tr>
+                                        <th class="p-2">Métrica</th>
+                                        <th class="p-2">Software</th>
+                                        <th class="p-2">Catraca</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line/40">
+                                    <tr><td class="py-1.5 pr-2">TMA (tempo de atendimento)</td><td class="py-1.5 pr-2">Sim — faixas de 0 a 50 pts</td><td class="py-1.5 text-emerald-400 font-semibold">Não se aplica</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Protocolos Resolvidos (pontuação direta)</td><td class="py-1.5 pr-2">Não pontua por unidade</td><td class="py-1.5 text-emerald-400 font-semibold">+2 pts / protocolo</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Ranking Semanal – Resolvidos</td><td class="py-1.5 pr-2">100 / 50 / 10 / 0</td><td class="py-1.5 text-emerald-400 font-semibold">100 / 50 / 10 / 0</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Protocolos Atendidos (pontuação direta)</td><td class="py-1.5 pr-2">Faixas (0 a 100+ pts)</td><td class="py-1.5 text-emerald-400 font-semibold">+0,5 pt / protocolo (linear)</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Ranking Semanal – Atendidos</td><td class="py-1.5 pr-2">Não se aplica</td><td class="py-1.5 text-emerald-400 font-semibold">100 / 50 / 10 / 0</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Satisfação (NPS)</td><td class="py-1.5 pr-2">Faixas 0 a 100 pts</td><td class="py-1.5 text-emerald-400 font-semibold">Faixas 0 a 100 pts (idêntico)</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Prioridades da Gestão</td><td class="py-1.5 pr-2">+50 pts / demanda</td><td class="py-1.5 text-emerald-400 font-semibold">+50 pts / demanda</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Transferências Validadas</td><td class="py-1.5 pr-2">+1 pt / transferência</td><td class="py-1.5 text-emerald-400 font-semibold">+1 pt / transferência</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Sprint de Crescimento</td><td class="py-1.5 pr-2">+50 / +100 / ranking 100-50-25-0</td><td class="py-1.5 text-emerald-400 font-semibold">Idêntico (+50 / +100 / ranking 100-50-25-0)</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Monitoramento de Qualidade</td><td class="py-1.5 pr-2">Até 100 pts (5 blocos)</td><td class="py-1.5 text-emerald-400 font-semibold">Não descrito na FAQ</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Peças e Despachos</td><td class="py-1.5 pr-2">Não se aplica</td><td class="py-1.5 text-emerald-400 font-semibold">Coleta: 4 etapas / Envio: 3 etapas</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Penalizações operacionais gerais</td><td class="py-1.5 pr-2">Lista extensa (11 itens)</td><td class="py-1.5 text-emerald-400 font-semibold">Mesmos critérios de validação/auditoria</td></tr>
+                                    <tr><td class="py-1.5 pr-2">Premiação Top 1 / 2 / 3</td><td class="py-1.5 pr-2">R$ 1.000 / R$ 500 / R$ 300</td><td class="py-1.5 text-emerald-400 font-semibold">R$ 1.000 / R$ 500 / R$ 300</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- GLOSSÁRIO -->
+                    <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                        <h4 class="font-bold text-primary-300 mb-3 flex items-center gap-1.5"><i class="fa-solid fa-spell-check"></i> 🔤 Glossário de Siglas (Bloco de Monitoramento)</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5 text-[11px] text-secondary">
+                            <p><strong class="text-white">TMA</strong> — Tempo Médio de Atendimento</p>
+                            <p><strong class="text-white">TPR</strong> — Tempo de Resposta</p>
+                            <p><strong class="text-white">CVC</strong> — Clareza, Vocabulário e Coesão</p>
+                            <p><strong class="text-white">CEE</strong> — Cordialidade, Empatia e Engajamento</p>
+                            <p><strong class="text-white">ERS</strong> — Resolução sem Reabertura</p>
+                            <p><strong class="text-white">IPC</strong> — Informação Precisa e Completa</p>
+                            <p><strong class="text-white">PAC</strong> — Proatividade no Atendimento</p>
+                            <p><strong class="text-white">TCS</strong> — Satisfação nota 4 ou 5</p>
+                            <p><strong class="text-white">CRS</strong> — Confirmação de Resolução</p>
+                            <p><strong class="text-white">LAU</strong> — Laudo de Atendimento</p>
+                            <p><strong class="text-white">IRF</strong> — Incentivo ao Retorno/Feedback</p>
+                            <p><strong class="text-white">DPF</strong> — Despedida Profissional</p>
+                            <p><strong class="text-white">NPS</strong> — Nota de satisfação do cliente (0 a 5)</p>
+                        </div>
+                    </div>
+
+                    <p class="text-[10px] text-secondary/60 italic border-t border-line pt-3">Este módulo consolida a visão geral das regras. Para o detalhamento ponto a ponto de cada métrica, consulte as abas "Métricas Departamento Software" e "Métricas Departamento Catraca" ao lado.</p>
+                </div>
+                <!-- FIM NOVO MÓDULO -->
+
+                <div id="faqContentSistema" class="hidden space-y-4 text-sm text-secondary">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-primary-400 mb-2">🕐 Tempo Médio de Atendimento (TMA)</h4>
@@ -701,6 +850,13 @@
                                 <li>• Demanda prioritária concluída com sucesso ➔ <strong>+50 pts</strong></li>
                             </ul>
                             <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: a demanda deve ser atribuída pela gestão, concluída e validada.</p>
+                        </div>
+                        <div class="bg-bg/60 p-4 rounded-lg border border-line">
+                            <h4 class="font-bold text-emerald-400 mb-2">🔁 Transferências Validadas</h4>
+                            <ul class="text-xs space-y-1 text-secondary">
+                                <li>• Cada transferência aprovada pela gestão ➔ <strong>+1 pt</strong></li>
+                            </ul>
+                            <p class="text-[10px] text-secondary/70 mt-2 italic">Critério: o analista registra o protocolo e a justificativa; após a aprovação da gestão, o ponto é creditado automaticamente. Regra igual à do Departamento Software.</p>
                         </div>
                     </div>
 
@@ -2264,6 +2420,14 @@
                     }
                 }
                 document.getElementById(team === "Sistema" ? "podiumSistema" : "podiumCatraca").innerHTML = html;
+
+                // Espelha o pódio do departamento ativo dentro do modo apresentação (tela cheia)
+                if (team === activeRankingTab) {
+                    const presPodium = document.getElementById('podiumPresentation');
+                    if (presPodium) presPodium.innerHTML = html;
+                    const presPodiumLabel = document.getElementById('presentationPodiumTeamLabel');
+                    if (presPodiumLabel) presPodiumLabel.innerText = teamLabel(team);
+                }
             });
         }
 
@@ -2519,17 +2683,22 @@
         }
 
         function toggleFaqDept(dept) {
-            if (dept === "Sistema") {
-                document.getElementById('faqContentSistema').classList.remove('hidden');
-                document.getElementById('faqContentCatraca').classList.add('hidden');
-                document.getElementById('faqTabSistema').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
-                document.getElementById('faqTabCatraca').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-surface2 text-secondary hover:text-white";
-            } else {
-                document.getElementById('faqContentSistema').classList.add('hidden');
-                document.getElementById('faqContentCatraca').classList.remove('hidden');
-                document.getElementById('faqTabCatraca').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
-                document.getElementById('faqTabSistema').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-surface2 text-secondary hover:text-white";
-            }
+            const contents = { Geral: 'faqContentGeral', Sistema: 'faqContentSistema', Catraca: 'faqContentCatraca' };
+            const tabs = { Geral: 'faqTabGeral', Sistema: 'faqTabSistema', Catraca: 'faqTabCatraca' };
+            const activeClass = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
+            const inactiveClass = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-surface2 text-secondary hover:text-white";
+            Object.keys(contents).forEach(key => {
+                const contentEl = document.getElementById(contents[key]);
+                const tabEl = document.getElementById(tabs[key]);
+                if (!contentEl || !tabEl) return;
+                if (key === dept) {
+                    contentEl.classList.remove('hidden');
+                    tabEl.className = activeClass;
+                } else {
+                    contentEl.classList.add('hidden');
+                    tabEl.className = inactiveClass;
+                }
+            });
         }
 
         function changePeriodView(val) {
