@@ -64,7 +64,7 @@
         .faq-pulse-highlight { animation: faqPulse 1.1s ease-out 2; border-radius: 0.75rem; position: relative; z-index: 1; }
         .glossary-term { border-bottom: 1px dotted rgba(155,155,173,0.7); cursor: help; }
         .glossary-term:hover { color: #00E5C7; }
-        .you-are-here-track { position: relative; height: 8px; border-radius: 999px; background: #1B1B26; overflow: visible; }
+        .you-are-here-track { position: relative; height: 8px; border-radius: 999px; background: #1B1B26; overflow: hidden; }
         .you-are-here-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 999px; background: linear-gradient(90deg,#6C63FF,#00E5C7); transition: width .6s ease; }
         .you-are-here-marker { position: absolute; top: 50%; transform: translate(-50%, -50%); transition: left .6s ease; white-space: nowrap; }
         .anim-fade-up { animation: fadeUp .45s cubic-bezier(.16,1,.3,1) both; }
@@ -154,67 +154,98 @@
             </span>
         </div>
         
-        <div class="flex flex-wrap items-center gap-2.5">
-            <!-- SELETOR DE MÊS -->
-            <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
-                <i class="fa-solid fa-calendar-days text-xs text-primary-400"></i>
-                <label for="monthSelect" class="text-[11px] text-secondary font-medium">Mês:</label>
-                <select id="monthSelect" onchange="changeMonthView(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"></select>
-                <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-            </div>
+        <div class="flex flex-wrap items-end gap-4">
+            <!-- GRUPO: PERÍODO -->
+            <div class="flex flex-col gap-1">
+                <span class="text-[9px] uppercase tracking-wider text-secondary/60 font-bold pl-1">Período</span>
+                <div class="flex items-center gap-2">
+                    <!-- SELETOR DE MÊS -->
+                    <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
+                        <i class="fa-solid fa-calendar-days text-xs text-primary-400"></i>
+                        <label for="monthSelect" class="text-[11px] text-secondary font-medium">Mês:</label>
+                        <select id="monthSelect" onchange="changeMonthView(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"></select>
+                        <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    </div>
 
-            <!-- SELETOR DE PERÍODO / SEMANA -->
-            <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
-                <i class="fa-solid fa-filter text-xs text-primary-400"></i>
-                <label for="periodSelect" class="text-[11px] text-secondary font-medium">Visão:</label>
-                <select id="periodSelect" onchange="changePeriodView(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
-                    <option value="ALL">Acumulado do Mês</option>
-                    <option value="Semana 1">Semana 1</option>
-                    <option value="Semana 2">Semana 2</option>
-                    <option value="Semana 3">Semana 3</option>
-                    <option value="Semana 4">Semana 4</option>
-                    <option value="Semana 5">Semana 5</option>
-                </select>
-                <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-            </div>
-
-            <!-- SELEÇÃO DEPARTAMENTO E ANALISTA -->
-            <div class="flex items-center bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 rounded-full transition-all duration-200 overflow-hidden">
-                <div class="relative flex items-center gap-1.5 pl-3.5 pr-6 py-2">
-                    <i id="teamSelectIcon" class="fa-solid fa-desktop text-xs text-primary-400 transition-colors duration-200"></i>
-                    <select id="teamSelect" onchange="onTeamSelectChange(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
-                        <option value="Sistema">Dep. Software</option>
-                        <option value="Catraca">Dep. Catraca</option>
-                    </select>
-                    <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                </div>
-
-                <div class="relative flex items-center gap-1.5 pl-3.5 pr-6 py-2 border-l border-line">
-                    <label for="userSelect" class="text-[11px] text-secondary font-medium">Usuário:</label>
-                    <select id="userSelect" onchange="switchAgent(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"></select>
-                    <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    <!-- SELETOR DE PERÍODO / SEMANA -->
+                    <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
+                        <i class="fa-solid fa-filter text-xs text-primary-400"></i>
+                        <label for="periodSelect" class="text-[11px] text-secondary font-medium">Visão:</label>
+                        <select id="periodSelect" onchange="changePeriodView(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
+                            <option value="ALL">Acumulado do Mês</option>
+                            <option value="Semana 1">Semana 1</option>
+                            <option value="Semana 2">Semana 2</option>
+                            <option value="Semana 3">Semana 3</option>
+                            <option value="Semana 4">Semana 4</option>
+                            <option value="Semana 5">Semana 5</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    </div>
                 </div>
             </div>
 
-            <!-- BOTÃO ENVIO/COLETA DE PEÇAS -->
-            <button id="btnPecaAccess" onclick="openPecaModal()" class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5">
-                <i class="fa-solid fa-box"></i> Envio/Coleta
-            </button>
+            <!-- GRUPO: ANALISTA -->
+            <div class="flex flex-col gap-1">
+                <span class="text-[9px] uppercase tracking-wider text-secondary/60 font-bold pl-1">Analista</span>
+                <div class="flex items-center bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 rounded-full transition-all duration-200 overflow-hidden">
+                    <div class="relative flex items-center gap-1.5 pl-3.5 pr-6 py-2">
+                        <i id="teamSelectIcon" class="fa-solid fa-desktop text-xs text-primary-400 transition-colors duration-200"></i>
+                        <select id="teamSelect" onchange="onTeamSelectChange(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
+                            <option value="Sistema">Dep. Software</option>
+                            <option value="Catraca">Dep. Catraca</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    </div>
 
-            <button id="btnPecaLogout" onclick="logoutPeca()" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5">
-                <i class="fa-solid fa-right-from-bracket me-1"></i> Sair Envio/Coleta
-            </button>
+                    <div class="relative flex items-center gap-1.5 pl-3.5 pr-6 py-2 border-l border-line">
+                        <label for="userSelect" class="text-[11px] text-secondary font-medium">Usuário:</label>
+                        <select id="userSelect" onchange="switchAgent(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"></select>
+                        <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    </div>
+                </div>
+            </div>
 
-            <!-- BOTÃO MODO ADM -->
-            <button id="btnAdminAccess" onclick="openAdminModal()" class="bg-primary-500/10 border border-primary-500/30 text-primary-400 hover:bg-primary-500/20 hover:border-primary-500/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5">
-                <i class="fa-solid fa-lock"></i> Modo Gestão
-            </button>
+            <!-- GRUPO: ACESSOS -->
+            <div class="flex flex-col gap-1">
+                <span class="text-[9px] uppercase tracking-wider text-secondary/60 font-bold pl-1">Acesso</span>
+                <div class="flex items-center gap-2">
+                    <!-- BOTÃO ENVIO/COLETA DE PEÇAS -->
+                    <button id="btnPecaAccess" onclick="openPecaModal()" class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5">
+                        <i class="fa-solid fa-box"></i> Envio/Coleta
+                    </button>
 
-            <button id="btnAdminLogout" onclick="logoutAdmin()" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5">
-                <i class="fa-solid fa-right-from-bracket me-1"></i> Sair do Modo ADM
-            </button>
+                    <button id="btnPecaLogout" onclick="logoutPeca()" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Sair Envio/Coleta
+                    </button>
+
+                    <!-- BOTÃO MODO ADM -->
+                    <button id="btnAdminAccess" onclick="openAdminModal()" class="bg-primary-500/10 border border-primary-500/30 text-primary-400 hover:bg-primary-500/20 hover:border-primary-500/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5">
+                        <i class="fa-solid fa-lock"></i> Modo Gestão
+                    </button>
+
+                    <button id="btnAdminLogout" onclick="logoutAdmin()" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Sair do Modo ADM
+                    </button>
+                </div>
+            </div>
         </div>
     </nav>
+
+    <!-- FAIXA DE CONTEXTO "VOCÊ ESTÁ VENDO" -->
+    <div id="contextStrip" class="sticky top-[65px] z-40 bg-surface/95 border-b border-primary-500/20 backdrop-blur-xl">
+        <div class="max-w-7xl mx-auto px-6 py-2 flex items-center gap-2 text-[11px] overflow-x-auto">
+            <i class="fa-solid fa-location-crosshairs text-primary-400 shrink-0"></i>
+            <span class="text-secondary shrink-0">Você está vendo:</span>
+            <span id="ctxUser" class="font-bold text-white shrink-0">-</span>
+            <span class="text-secondary/40 shrink-0">•</span>
+            <span id="ctxTeam" class="font-semibold text-primary-300 shrink-0">-</span>
+            <span class="text-secondary/40 shrink-0">•</span>
+            <span id="ctxMonth" class="font-semibold text-secondary shrink-0">-</span>
+            <span class="text-secondary/40 shrink-0">•</span>
+            <span id="ctxPeriod" class="font-semibold text-accent shrink-0">-</span>
+            <span id="ctxAdminBadge" class="hidden ml-1 shrink-0 text-[10px] bg-primary-500/20 text-primary-300 border border-primary-500/40 px-2 py-0.5 rounded-full font-bold"><i class="fa-solid fa-lock text-[9px] mr-1"></i>Modo Gestão</span>
+        </div>
+    </div>
 
     <div class="max-w-7xl mx-auto px-6 py-8">
 
@@ -516,11 +547,16 @@
                     <button onclick="toggleFaqDept('Catraca')" id="faqTabCatraca" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary">
                         Métricas Departamento Catraca
                     </button>
-                    <button onclick="toggleFaqDept('Simulador')" id="faqTabSimulador" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary">
-                        🧮 Simulador "E se?"
-                    </button>
                 </div>
 
+                <div class="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6 items-start">
+                    <!-- ÍNDICE / "VOCÊ ESTÁ AQUI" -->
+                    <aside id="faqTocWrap" class="lg:sticky lg:top-[150px] z-10">
+                        <p class="text-[10px] uppercase tracking-wider text-secondary/60 font-bold mb-2 px-1 hidden lg:block">Nesta página</p>
+                        <nav id="faqToc" class="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 lg:border-l lg:border-line lg:pl-0"></nav>
+                    </aside>
+
+                    <div class="min-w-0">
                 <!-- NOVO MÓDULO: REGRAS DE NEGÓCIO DA PLATAFORMA -->
                 <div id="faqContentGeral" class="space-y-4 text-sm text-secondary">
 
@@ -660,7 +696,7 @@
                 <!-- FIM NOVO MÓDULO -->
 
                 <div id="faqContentSistema" class="hidden space-y-4 text-sm text-secondary">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
                         <div id="faq-tma-sistema" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-primary-400 mb-2">🕐 Tempo Médio de Atendimento (TMA)</h4>
                             <ul class="text-xs space-y-1 text-secondary">
@@ -842,7 +878,7 @@
                 </div>
 
                 <div id="faqContentCatraca" class="hidden space-y-4 text-sm text-secondary">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
                         <div id="faq-satisfacao-catraca" class="bg-bg/60 p-4 rounded-lg border border-line">
                             <h4 class="font-bold text-emerald-400 mb-2">⭐ Avaliação de Satisfação</h4>
                             <ul class="text-xs space-y-1 text-secondary">
@@ -984,87 +1020,6 @@
                     </div>
                 </div>
 
-                <!-- SIMULADOR INTERATIVO "E SE?" -->
-                <div id="faqContentSimulador" class="hidden space-y-4 text-sm text-secondary">
-                    <div class="bg-gradient-to-br from-primary-500/10 via-surface to-surface p-5 rounded-2xl border border-primary-500/30">
-                        <div class="flex items-center gap-3 mb-1">
-                            <div class="w-9 h-9 rounded-lg bg-primary-500/20 text-primary-300 flex items-center justify-center"><i class="fa-solid fa-sliders"></i></div>
-                            <h4 class="font-bold text-white text-base">Simule sua pontuação antes de fechar a semana</h4>
-                        </div>
-                        <p class="text-xs text-secondary mb-1">Ajuste os controles abaixo com números hipotéticos e veja, em tempo real, quantos pontos cada métrica geraria — usando exatamente as mesmas faixas e fórmulas do manual.</p>
-                        <p class="text-[10px] text-amber-300/90 mb-5"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Isso é apenas uma simulação: não lança nem altera nenhum dado real da sua pontuação.</p>
-
-                        <div class="flex gap-2 mb-5">
-                            <button onclick="setSimTeam('Sistema')" id="simBtnSistema" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-gradient-to-r from-primary-500 to-primary-600 text-white">💻 Sou do Software</button>
-                            <button onclick="setSimTeam('Catraca')" id="simBtnCatraca" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary">🎫 Sou da Catraca</button>
-                        </div>
-
-                        <div id="simControlsSistema" class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>📊 Protocolos atendidos no mês</span><span id="simAtendidosSistemaVal" class="text-primary-300 num-mono">0</span></label>
-                                <input type="range" min="0" max="200" value="0" id="simAtendidosSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
-                            </div>
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>⭐ Nota média de satisfação</span><span id="simSatisfacaoSistemaVal" class="text-primary-300 num-mono">0.00</span></label>
-                                <input type="range" min="0" max="500" value="0" id="simSatisfacaoSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
-                            </div>
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🕐 TMA médio do atendimento</span><span id="simTmaSistemaVal" class="text-primary-300 num-mono">0min</span></label>
-                                <input type="range" min="0" max="180" value="0" id="simTmaSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
-                            </div>
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🏆 Colocação no ranking de resolvidos</span><span id="simRankSistemaVal" class="text-primary-300 num-mono">4º+</span></label>
-                                <input type="range" min="0" max="3" value="0" id="simRankSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
-                            </div>
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🚨 Prioridades + 🔁 transferências aprovadas</span><span id="simPrioridadesSistemaVal" class="text-primary-300 num-mono">0</span></label>
-                                <input type="range" min="0" max="20" value="0" id="simPrioridadesSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
-                            </div>
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🎯 Monitoramento de qualidade</span><span id="simMonitoramentoSistemaVal" class="text-primary-300 num-mono">0</span></label>
-                                <input type="range" min="0" max="100" value="0" id="simMonitoramentoSistema" class="w-full accent-primary-500" oninput="renderSimulador()">
-                            </div>
-                            <div class="md:col-span-2 flex items-center gap-6 bg-bg/50 rounded-lg p-3 border border-line">
-                                <label class="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer"><input type="checkbox" id="simSprint100Sistema" class="accent-primary-500" onchange="renderSimulador()"> Concluiu 100% da Sprint</label>
-                                <label class="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer"><input type="checkbox" id="simSprintGanhoSistema" class="accent-primary-500" onchange="renderSimulador()"> Recuperou 1 cliente na Sprint</label>
-                            </div>
-                        </div>
-
-                        <div id="simControlsCatraca" class="hidden grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>📑 Protocolos resolvidos</span><span id="simResolvidosCatracaVal" class="text-primary-300 num-mono">0</span></label>
-                                <input type="range" min="0" max="200" value="0" id="simResolvidosCatraca" class="w-full accent-emerald-500" oninput="renderSimulador()">
-                            </div>
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>📊 Protocolos atendidos</span><span id="simAtendidosCatracaVal" class="text-primary-300 num-mono">0</span></label>
-                                <input type="range" min="0" max="200" value="0" id="simAtendidosCatraca" class="w-full accent-emerald-500" oninput="renderSimulador()">
-                            </div>
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>⭐ Nota média de satisfação</span><span id="simSatisfacaoCatracaVal" class="text-primary-300 num-mono">0.00</span></label>
-                                <input type="range" min="0" max="500" value="0" id="simSatisfacaoCatraca" class="w-full accent-emerald-500" oninput="renderSimulador()">
-                            </div>
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🏆 Colocação (resolvidos / atendidos)</span><span id="simRankCatracaVal" class="text-primary-300 num-mono">4º+</span></label>
-                                <input type="range" min="0" max="3" value="0" id="simRankCatraca" class="w-full accent-emerald-500" oninput="renderSimulador()">
-                            </div>
-                            <div>
-                                <label class="flex justify-between text-xs font-semibold text-white mb-1"><span>🚨 Prioridades + 🔁 transferências + 🔧 peças</span><span id="simPrioridadesCatracaVal" class="text-primary-300 num-mono">0</span></label>
-                                <input type="range" min="0" max="20" value="0" id="simPrioridadesCatraca" class="w-full accent-emerald-500" oninput="renderSimulador()">
-                            </div>
-                            <div class="flex items-center gap-6 bg-bg/50 rounded-lg p-3 border border-line">
-                                <label class="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer"><input type="checkbox" id="simSprint100Catraca" class="accent-emerald-500" onchange="renderSimulador()"> Concluiu 100% da Sprint</label>
-                                <label class="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer"><input type="checkbox" id="simSprintGanhoCatraca" class="accent-emerald-500" onchange="renderSimulador()"> Recuperou 1 cliente</label>
-                            </div>
-                        </div>
-
-                        <div class="mt-6 pt-5 border-t border-line/60 flex flex-col md:flex-row items-center gap-5">
-                            <div class="shrink-0 text-center bg-bg/60 border border-primary-500/30 rounded-2xl px-8 py-4">
-                                <p class="text-[10px] text-secondary uppercase tracking-wide mb-1">Total Simulado</p>
-                                <p id="simTotalPts" class="text-4xl font-black text-white num-mono">0</p>
-                                <p class="text-[10px] text-secondary mt-1">pontos no período</p>
-                            </div>
-                            <div id="simBreakdown" class="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-2 w-full"></div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -2293,9 +2248,9 @@
             const avgSat = m.satisfacaoCount > 0 ? (m.satisfacaoSum / m.satisfacaoCount) : null;
 
             const gaugeHtml = (labelHtml, pct) => `
-                <div class="mt-3 pt-3 border-t border-line/50">
+                <div class="mt-3 bg-primary-500/[0.06] border border-primary-500/20 rounded-lg p-2.5">
                     <p class="text-[10px] font-bold text-primary-300 mb-2 flex items-center gap-1"><i class="fa-solid fa-location-dot"></i> Você está aqui (período atual)</p>
-                    <div class="you-are-here-track"><div class="you-are-here-fill" style="width:${Math.max(3, pct)}%"></div></div>
+                    <div class="you-are-here-track"><div class="you-are-here-fill" style="width:${Math.min(100, Math.max(3, pct))}%"></div></div>
                     <p class="text-[10px] text-white mt-1.5 font-semibold leading-snug">${labelHtml}</p>
                 </div>`;
             const emptyHtml = `<p class="text-[10px] text-secondary mt-3 pt-3 border-t border-line/50 italic">Ainda sem lançamentos suficientes no período selecionado para calcular sua posição aqui.</p>`;
@@ -2343,11 +2298,40 @@
             extraPts:      { Sistema: 'faq-monitoramento-sistema',   Catraca: 'faq-pecas-catraca' }
         };
 
+        // Atualiza a faixa "Você está vendo" no topo, para o analista se localizar
+        // rapidamente entre os 4 seletores (mês, período, departamento, usuário) sem
+        // precisar ler cada um individualmente.
+        function updateContextStrip(usersList) {
+            const strip = document.getElementById('contextStrip');
+            if (!strip) return;
+
+            if (isAdminLoggedIn || isPecaLoggedIn) {
+                strip.classList.add('hidden');
+                return;
+            }
+            strip.classList.remove('hidden');
+
+            const list = usersList || (getStore().users || defaultUsers);
+            const user = list[currentActiveUser];
+            const monthSelect = document.getElementById('monthSelect');
+            const monthLabel = monthSelect && monthSelect.selectedOptions.length
+                ? monthSelect.selectedOptions[0].text
+                : '-';
+
+            document.getElementById('ctxUser').innerText = user ? user.name : '-';
+            document.getElementById('ctxTeam').innerText = user ? teamLabel(user.team) : '-';
+            document.getElementById('ctxMonth').innerText = monthLabel;
+            document.getElementById('ctxPeriod').innerText = activePeriodFilter === 'ALL' ? 'Acumulado do Mês' : activePeriodFilter;
+
+            document.getElementById('ctxAdminBadge').classList.toggle('hidden', !isAdminLoggedIn);
+        }
+
         function render() {
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const metrics = getAggregatedMetrics(activeMonthKey, activePeriodFilter);
-            
+            updateContextStrip(usersList);
+
             if (!usersList[currentActiveUser]) {
                 const firstKey = Object.keys(usersList)[0];
                 if (firstKey) currentActiveUser = firstKey;
@@ -3223,11 +3207,18 @@
             });
 
             if (tab === 'dashboard') { renderMyPriorityRequests(); renderMyTransferRequests(); }
+            if (tab === 'faq') {
+                const activeDept = ['Geral', 'Sistema', 'Catraca'].find(d => {
+                    const btn = document.getElementById('faqTab' + d);
+                    return btn && btn.className.includes('shadow-glow');
+                }) || 'Geral';
+                renderFaqToc(activeDept);
+            }
         }
 
         function toggleFaqDept(dept) {
-            const contents = { Geral: 'faqContentGeral', Sistema: 'faqContentSistema', Catraca: 'faqContentCatraca', Simulador: 'faqContentSimulador' };
-            const tabs = { Geral: 'faqTabGeral', Sistema: 'faqTabSistema', Catraca: 'faqTabCatraca', Simulador: 'faqTabSimulador' };
+            const contents = { Geral: 'faqContentGeral', Sistema: 'faqContentSistema', Catraca: 'faqContentCatraca' };
+            const tabs = { Geral: 'faqTabGeral', Sistema: 'faqTabSistema', Catraca: 'faqTabCatraca' };
             const activeClass = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
             const inactiveClass = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-surface2 text-secondary hover:text-white";
             Object.keys(contents).forEach(key => {
@@ -3242,14 +3233,43 @@
                     tabEl.className = inactiveClass;
                 }
             });
-            if (dept === 'Simulador') {
-                // Pré-preenche o simulador com o time do analista logado, se houver.
-                const store = getStore();
-                const usersList = store.users || defaultUsers;
-                const u = usersList[currentActiveUser];
-                if (u) setSimTeam(u.team === 'Catraca' ? 'Catraca' : 'Sistema');
-                else renderSimulador();
-            }
+            renderFaqToc(dept);
+        }
+
+        // ============ ÍNDICE / "VOCÊ ESTÁ AQUI" DO MANUAL (FAQ) ============
+        let faqTocObserver = null;
+
+        function renderFaqToc(dept) {
+            const tocEl = document.getElementById('faqToc');
+            if (!tocEl) return;
+
+            document.getElementById('faqTocWrap').classList.remove('hidden');
+
+            if (!faqSearchIndex) buildFaqSearchIndex();
+            const items = faqSearchIndex.filter(i => i.dept === dept && i.tag === 'h4');
+
+            tocEl.innerHTML = items.map((item, idx) => `
+                <button type="button" onclick="highlightFaqBlock('${item.elId}')" data-faq-toc-target="${item.elId}"
+                    class="faq-toc-link text-left shrink-0 lg:shrink text-[11px] font-semibold px-3 py-2 rounded-lg lg:rounded-none lg:border-l-2 lg:pl-3 border-transparent text-secondary hover:text-white hover:bg-surface2 lg:hover:bg-transparent transition-colors whitespace-nowrap lg:whitespace-normal">
+                    ${escapeHtml(item.title)}
+                </button>`).join('');
+
+            // Scrollspy: destaca no índice a seção que está visível na tela agora.
+            if (faqTocObserver) faqTocObserver.disconnect();
+            faqTocObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const link = tocEl.querySelector(`[data-faq-toc-target="${entry.target.id}"]`);
+                    if (!link) return;
+                    link.classList.toggle('bg-primary-500/15', entry.isIntersecting);
+                    link.classList.toggle('text-primary-300', entry.isIntersecting);
+                    link.classList.toggle('lg:border-primary-400', entry.isIntersecting);
+                    link.classList.toggle('text-secondary', !entry.isIntersecting);
+                });
+            }, { rootMargin: '-120px 0px -70% 0px', threshold: 0 });
+            items.forEach(item => {
+                const el = document.getElementById(item.elId);
+                if (el) faqTocObserver.observe(el);
+            });
         }
 
         // ============ BUSCA INTELIGENTE NO MANUAL (FAQ) ============
@@ -3277,7 +3297,7 @@
                     const fullText = block.textContent.trim().replace(/\s+/g, ' ');
                     index.push({
                         dept, deptLabel: deptMeta[dept].label, deptIcon: deptMeta[dept].icon,
-                        title, fullText, elId: block.id
+                        title, fullText, elId: block.id, tag: h.tagName.toLowerCase()
                     });
                 });
             });
@@ -3367,28 +3387,6 @@
             }, 60);
         }
 
-        // ============ SIMULADOR DE PONTUAÇÃO "E SE?" ============
-        let simActiveTeam = 'Sistema';
-
-        function setSimTeam(team) {
-            simActiveTeam = team;
-            document.getElementById('simControlsSistema').classList.toggle('hidden', team !== 'Sistema');
-            document.getElementById('simControlsCatraca').classList.toggle('hidden', team !== 'Catraca');
-            document.getElementById('simBtnSistema').className = team === 'Sistema'
-                ? "flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-gradient-to-r from-primary-500 to-primary-600 text-white"
-                : "flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary";
-            document.getElementById('simBtnCatraca').className = team === 'Catraca'
-                ? "flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
-                : "flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary";
-            renderSimulador();
-        }
-
-        function tmaPointsFromMinutes(min) {
-            if (min <= 80) return 50;
-            if (min <= 110) return 25;
-            if (min <= 120) return 10;
-            return 0;
-        }
         function satisfacaoPoints(nota) {
             if (nota >= 4.90) return 100;
             if (nota >= 4.70) return 50;
@@ -3396,95 +3394,7 @@
             if (nota >= 4.00) return 10;
             return 0;
         }
-        function rankPoints(position, table) {
-            // position: 0 = 4º em diante, 1 = 1º, 2 = 2º, 3 = 3º
-            if (position <= 0) return 0;
-            return table[position - 1] || 0;
-        }
 
-        function renderSimulador() {
-            const RESOLV_RANK = [100, 50, 10], ATEND_RANK = [100, 50, 10];
-            let breakdown = [], total = 0;
-
-            if (simActiveTeam === 'Sistema') {
-                const atendidos = parseInt(document.getElementById('simAtendidosSistema').value, 10);
-                const satisfacao = parseInt(document.getElementById('simSatisfacaoSistema').value, 10) / 100;
-                const tma = parseInt(document.getElementById('simTmaSistema').value, 10);
-                const rank = parseInt(document.getElementById('simRankSistema').value, 10);
-                const prioridades = parseInt(document.getElementById('simPrioridadesSistema').value, 10);
-                const monitoramento = parseInt(document.getElementById('simMonitoramentoSistema').value, 10);
-                const sprint100 = document.getElementById('simSprint100Sistema').checked;
-                const sprintGanho = document.getElementById('simSprintGanhoSistema').checked;
-
-                document.getElementById('simAtendidosSistemaVal').textContent = atendidos;
-                document.getElementById('simSatisfacaoSistemaVal').textContent = satisfacao.toFixed(2);
-                document.getElementById('simTmaSistemaVal').textContent = tma + 'min';
-                document.getElementById('simRankSistemaVal').textContent = rank === 0 ? '4º+' : ['', '1º 🥇', '2º 🥈', '3º 🥉'][rank];
-                document.getElementById('simPrioridadesSistemaVal').textContent = prioridades;
-                document.getElementById('simMonitoramentoSistemaVal').textContent = monitoramento;
-
-                let ptsAtendidos = 0;
-                if (atendidos >= 101) ptsAtendidos = 100 + Math.max(0, atendidos - 120);
-                else if (atendidos >= 91) ptsAtendidos = 50;
-                else if (atendidos >= 81) ptsAtendidos = 10;
-
-                const ptsSatisfacao = satisfacaoPoints(satisfacao);
-                const ptsTma = tmaPointsFromMinutes(tma);
-                const ptsRank = rankPoints(rank, RESOLV_RANK);
-                const ptsPrioridades = prioridades * 25; // média entre +50 (prioridade) e +1 (transferência), só ilustrativo
-                const ptsSprint = (sprint100 ? 100 : 0) + (sprintGanho ? 50 : 0);
-                const ptsMonitoramento = monitoramento;
-
-                breakdown = [
-                    { label: 'Protocolos Atendidos', value: ptsAtendidos, color: '#00C2FF' },
-                    { label: 'Satisfação (NPS)', value: ptsSatisfacao, color: '#FBBF24' },
-                    { label: 'TMA / Agilidade', value: ptsTma, color: '#8188FF' },
-                    { label: 'Ranking Semanal', value: ptsRank, color: '#00E5C7' },
-                    { label: 'Prioridades/Transf.', value: ptsPrioridades, color: '#A3AEFF' },
-                    { label: 'Sprint Crescimento', value: ptsSprint, color: '#6C63FF' },
-                    { label: 'Monitoramento', value: ptsMonitoramento, color: '#34D399' }
-                ];
-            } else {
-                const resolvidos = parseInt(document.getElementById('simResolvidosCatraca').value, 10);
-                const atendidos = parseInt(document.getElementById('simAtendidosCatraca').value, 10);
-                const satisfacao = parseInt(document.getElementById('simSatisfacaoCatraca').value, 10) / 100;
-                const rank = parseInt(document.getElementById('simRankCatraca').value, 10);
-                const prioridades = parseInt(document.getElementById('simPrioridadesCatraca').value, 10);
-                const sprint100 = document.getElementById('simSprint100Catraca').checked;
-                const sprintGanho = document.getElementById('simSprintGanhoCatraca').checked;
-
-                document.getElementById('simResolvidosCatracaVal').textContent = resolvidos;
-                document.getElementById('simAtendidosCatracaVal').textContent = atendidos;
-                document.getElementById('simSatisfacaoCatracaVal').textContent = satisfacao.toFixed(2);
-                document.getElementById('simRankCatracaVal').textContent = rank === 0 ? '4º+' : ['', '1º 🥇', '2º 🥈', '3º 🥉'][rank];
-                document.getElementById('simPrioridadesCatracaVal').textContent = prioridades;
-
-                const ptsResolvidos = resolvidos * 2;
-                const ptsAtendidos = atendidos * 0.5;
-                const ptsSatisfacao = satisfacaoPoints(satisfacao);
-                const ptsRank = rankPoints(rank, RESOLV_RANK) + rankPoints(rank, ATEND_RANK);
-                const ptsPrioridades = prioridades * 25;
-                const ptsSprint = (sprint100 ? 100 : 0) + (sprintGanho ? 50 : 0);
-
-                breakdown = [
-                    { label: 'Protocolos Resolvidos', value: ptsResolvidos, color: '#34D399' },
-                    { label: 'Protocolos Atendidos', value: ptsAtendidos, color: '#00C2FF' },
-                    { label: 'Satisfação (NPS)', value: ptsSatisfacao, color: '#FBBF24' },
-                    { label: 'Ranking Semanal', value: ptsRank, color: '#00E5C7' },
-                    { label: 'Prioridades/Transf/Peças', value: ptsPrioridades, color: '#A3AEFF' },
-                    { label: 'Sprint Crescimento', value: ptsSprint, color: '#6C63FF' }
-                ];
-            }
-
-            total = breakdown.reduce((s, b) => s + b.value, 0);
-            document.getElementById('simTotalPts').textContent = Math.round(total);
-            document.getElementById('simBreakdown').innerHTML = breakdown.map(b => `
-                <div class="bg-bg/50 border border-line rounded-lg px-3 py-2">
-                    <p class="text-[10px] text-secondary truncate">${b.label}</p>
-                    <p class="text-sm font-extrabold num-mono" style="color:${b.color}">+${Math.round(b.value * 10) / 10}</p>
-                </div>
-            `).join('');
-        }
 
         function changePeriodView(val) {
             activePeriodFilter = val;
