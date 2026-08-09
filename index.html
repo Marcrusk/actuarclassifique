@@ -403,13 +403,23 @@
                         <p class="text-xs text-secondary">Pontuações calculadas item a item com base nas regras ativas do departamento — <span class="text-secondary/70">clique em uma linha para abrir o dashboard do analista.</span></p>
                     </div>
 
-                    <div class="flex gap-2 bg-bg p-1.5 rounded-lg border border-line">
-                        <button onclick="switchRankingTab('Sistema')" id="tabSistema" class="px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white">
-                            <i class="fa-solid fa-desktop me-1"></i> Dep. Software
-                        </button>
-                        <button onclick="switchRankingTab('Catraca')" id="tabCatraca" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
-                            <i class="fa-solid fa-turnstile me-1"></i> Dep. Catraca
-                        </button>
+                    <div class="flex items-center gap-2">
+                        <div class="flex gap-2 bg-bg p-1.5 rounded-lg border border-line">
+                            <button onclick="switchRankingTab('Sistema')" id="tabSistema" class="px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white">
+                                <i class="fa-solid fa-desktop me-1"></i> Dep. Software
+                            </button>
+                            <button onclick="switchRankingTab('Catraca')" id="tabCatraca" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
+                                <i class="fa-solid fa-turnstile me-1"></i> Dep. Catraca
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-1.5 pl-1.5 border-l border-line">
+                            <button onclick="toggleAutoRotateRanking()" id="btnAutoRotate" title="Ativar/desativar alternância automática (Software/Catraca a cada 5s)" class="w-7 h-7 flex items-center justify-center rounded-full bg-bg/60 border border-line text-secondary hover:text-white hover:border-primary-500/40 transition-all duration-200">
+                                <i class="fa-solid fa-play text-[10px]" id="autoRotateIcon"></i>
+                            </button>
+                            <button onclick="openRankingPresentation()" title="Expandir ranking em modo de apresentação" class="w-7 h-7 flex items-center justify-center rounded-full bg-bg/60 border border-line text-secondary hover:text-white hover:border-primary-500/40 transition-all duration-200">
+                                <i class="fa-solid fa-expand text-[10px]"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -787,16 +797,6 @@
                 </div>
 
                 <div class="flex items-center gap-3 flex-wrap">
-                    <div id="rankingAutomationAdminControls" class="hidden flex items-center gap-2 bg-surface2/60 border border-line rounded-lg px-3 py-2">
-                        <span class="text-[10px] text-secondary font-semibold uppercase hidden sm:inline"><i class="fa-solid fa-tv me-1"></i> Ranking ao vivo</span>
-                        <button onclick="toggleAutoRotateRanking()" id="btnAutoRotate" title="Ativar/desativar alternância automática (Software/Catraca a cada 5s)" class="w-8 h-8 flex items-center justify-center rounded-full bg-bg/60 border border-line text-secondary hover:text-white hover:border-primary-500/40 transition-all duration-200">
-                            <i class="fa-solid fa-play text-xs" id="autoRotateIcon"></i>
-                        </button>
-                        <button onclick="openRankingPresentation()" title="Expandir ranking em modo de apresentação" class="w-8 h-8 flex items-center justify-center rounded-full bg-bg/60 border border-line text-secondary hover:text-white hover:border-primary-500/40 transition-all duration-200">
-                            <i class="fa-solid fa-expand text-xs"></i>
-                        </button>
-                    </div>
-
                     <button onclick="exportBackup()" class="bg-surface2 hover:bg-surface3 text-white text-xs font-bold px-3 py-2 rounded-lg shadow flex items-center gap-1.5 transition">
                         <i class="fa-solid fa-download"></i> Exportar Backup (JSON)
                     </button>
@@ -1727,8 +1727,6 @@
                 document.getElementById('btnPecaAccess').classList.add('hidden');
                 document.getElementById('btnPecaLogout').classList.add('hidden');
                 document.getElementById('loggedAdminName').innerText = (usersList[currentAdminId] && usersList[currentAdminId].name) || "Gestor";
-                const rankingAdminCtrl = document.getElementById('rankingAutomationAdminControls');
-                if (rankingAdminCtrl) rankingAdminCtrl.classList.toggle('hidden', currentAdminId !== 'marco_adm');
                 renderAdminLogs();
                 renderUsersManagementTable();
                 renderAdminPriorityRequests();
@@ -2649,7 +2647,6 @@
         let rankingAutoRotateActive = false;
 
         function toggleAutoRotateRanking() {
-            if (!(isAdminLoggedIn && currentAdminId === 'marco_adm')) return;
             rankingAutoRotateActive = !rankingAutoRotateActive;
 
             if (rankingAutoRotateActive) {
@@ -2679,7 +2676,7 @@
                 b.classList.toggle('text-primary-300', rankingAutoRotateActive);
                 b.classList.toggle('text-secondary', !rankingAutoRotateActive);
             });
-            if (icon) icon.className = rankingAutoRotateActive ? 'fa-solid fa-pause text-xs' : 'fa-solid fa-play text-xs';
+            if (icon) icon.className = rankingAutoRotateActive ? 'fa-solid fa-pause text-[10px]' : 'fa-solid fa-play text-[10px]';
             if (iconP) iconP.className = rankingAutoRotateActive ? 'fa-solid fa-pause' : 'fa-solid fa-play';
             if (btn) btn.title = rankingAutoRotateActive ? "Desativar alternância automática" : "Ativar alternância automática (Software/Catraca a cada 5s)";
             if (badgeP) badgeP.classList.toggle('hidden', !rankingAutoRotateActive);
@@ -2687,7 +2684,6 @@
 
         // --- MODO DE APRESENTAÇÃO (RANKING EXPANDIDO) ---
         function openRankingPresentation() {
-            if (!(isAdminLoggedIn && currentAdminId === 'marco_adm')) return;
             document.getElementById('rankingPresentationOverlay').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
             render();
@@ -3297,13 +3293,6 @@
         function logoutAdmin() {
             isAdminLoggedIn = false;
             currentAdminId = null;
-            if (rankingAutoRotateActive) {
-                rankingAutoRotateActive = false;
-                if (rankingAutoRotateTimer) clearInterval(rankingAutoRotateTimer);
-                rankingAutoRotateTimer = null;
-                updateAutoRotateButtons();
-            }
-            closeRankingPresentation();
             render();
         }
 
