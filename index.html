@@ -77,13 +77,58 @@
     <!-- TOAST DE FEEDBACK -->
     <div id="toast" class="hidden fixed bottom-6 right-6 z-[100] px-4 py-3 rounded-lg shadow-xl text-sm font-semibold transition-all"></div>
 
+    <!-- OVERLAY DE APRESENTAÇÃO DO RANKING (MODO TV) -->
+    <div id="rankingPresentationOverlay" class="hidden fixed inset-0 bg-bg z-[95] overflow-y-auto">
+        <div class="pointer-events-none fixed -top-24 -right-24 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
+        <div class="pointer-events-none fixed -bottom-24 -left-24 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl"></div>
+        <div class="relative p-6 md:p-10 max-w-7xl mx-auto">
+            <div class="flex items-center justify-between flex-wrap gap-4 mb-8">
+                <h2 class="text-2xl md:text-4xl font-display font-extrabold text-white flex items-center gap-3">
+                    <i class="fa-solid fa-ranking-star text-accent"></i> Ranking <span id="presentationTeamLabel" class="text-primary-500">Software</span>
+                </h2>
+                <div class="flex items-center gap-3">
+                    <span id="presentationAutoRotateBadge" class="hidden text-xs md:text-sm bg-surface2 border border-line px-3.5 py-2 rounded-full text-secondary flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-rotate animate-spin [animation-duration:2.5s]"></i> Alternando automaticamente a cada 5s
+                    </span>
+                    <button onclick="toggleAutoRotateRanking()" id="btnAutoRotatePresentation" title="Ativar/desativar alternância automática" class="flex items-center gap-1.5 bg-surface2 hover:bg-surface3 border border-line text-secondary hover:text-white px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200">
+                        <i class="fa-solid fa-play" id="autoRotateIconPresentation"></i>
+                    </button>
+                    <button onclick="closeRankingPresentation()" title="Fechar apresentação (Esc)" class="bg-surface2 hover:bg-surface3 text-white w-10 h-10 rounded-full flex items-center justify-center border border-line transition-all duration-200">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-surface border border-line rounded-2xl p-4 md:p-8 overflow-x-auto">
+                <table class="w-full text-left text-sm md:text-base text-secondary border-collapse">
+                    <thead class="bg-bg/80 text-secondary uppercase text-[10px] md:text-xs border-b border-line">
+                        <tr>
+                            <th class="p-3">Pos</th>
+                            <th class="p-3">Usuário</th>
+                            <th class="p-3 text-center">TMA</th>
+                            <th class="p-3 text-center">Resolvidos</th>
+                            <th class="p-3 text-center">Atendidos</th>
+                            <th class="p-3 text-center">NPS</th>
+                            <th class="p-3 text-center">Prior./Transf.</th>
+                            <th class="p-3 text-center">Sprint</th>
+                            <th class="p-3 text-center">Rank. Semanal</th>
+                            <th class="p-3 text-center" id="thExtraColPresentation">Monit. / Peças</th>
+                            <th class="p-3 text-center text-red-400">Penal.</th>
+                            <th class="p-3 text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBodyPresentation" class="divide-y divide-line/50"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- BARRA DE NAVEGAÇÃO -->
     <nav class="glass bg-surface/85 border-b border-line px-6 py-3.5 flex flex-wrap justify-between items-center gap-4 sticky top-0 z-50 backdrop-blur-xl">
         <div class="flex items-center gap-3">
             <div class="bg-gradient-to-br from-primary-500 to-accent2 text-white p-2 px-3 rounded-xl font-display font-extrabold shadow-glow flex items-center gap-1.5 text-sm">
                 <i class="fa-solid fa-trophy"></i> RankPro
             </div>
-            <span class="hidden sm:inline text-xs bg-surface2 text-secondary px-2.5 py-1 rounded-full font-medium border border-line">ClickMassa Operational</span>
             <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full font-medium flex items-center gap-1.5" title="Sincronizado via Supabase Cloud">
                 <i class="fa-solid fa-cloud"></i> <span class="hidden md:inline">Nuvem Conectada</span>
                 <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span></span>
@@ -119,7 +164,7 @@
                 <div class="relative flex items-center gap-1.5 pl-3.5 pr-6 py-2">
                     <i id="teamSelectIcon" class="fa-solid fa-desktop text-xs text-primary-400 transition-colors duration-200"></i>
                     <select id="teamSelect" onchange="onTeamSelectChange(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
-                        <option value="Sistema">Dep. Sistema</option>
+                        <option value="Sistema">Dep. Software</option>
                         <option value="Catraca">Dep. Catraca</option>
                     </select>
                     <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
@@ -173,10 +218,10 @@
                 <div class="md:col-span-2 relative overflow-hidden bg-surface border border-line rounded-2xl card-hover p-6 flex items-center justify-between flex-wrap gap-4">
                     <div class="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary-500/10 blur-2xl"></div>
                     <div class="flex items-center gap-4 relative">
-                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500/25 to-accent2/10 border-2 border-primary-500/60 flex items-center justify-center text-2xl font-display font-extrabold text-primary-300" id="agentInitials">AL</div>
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500/25 to-accent2/10 border-2 border-primary-500/60 flex items-center justify-center text-2xl font-display font-extrabold text-primary-300 overflow-hidden" id="agentInitials">AL</div>
                         <div>
                             <h2 class="text-xl font-display font-extrabold text-white" id="agentName">Alessandro</h2>
-                            <p class="text-sm text-secondary">Departamento: <span id="agentTeam" class="text-primary-400 font-semibold">Sistema</span></p>
+                            <p class="text-sm text-secondary">Departamento: <span id="agentTeam" class="text-primary-400 font-semibold">Software</span></p>
                             <p class="text-xs text-secondary mt-1">Função: <span id="agentRole" class="text-accent font-medium">Analista de sistema</span></p>
                             <div id="agentPenaltiesBox" class="hidden mt-2 text-[11px] text-red-400 max-w-xs"></div>
                         </div>
@@ -338,7 +383,7 @@
                 <p class="text-xs text-secondary mb-6 relative">Top 3 colocados de cada departamento com pontuação geral e valor de premiação. <span class="text-secondary/70">Clique em um analista para abrir o dashboard individual dele.</span></p>
                 <div class="relative grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div>
-                        <h4 class="text-xs font-bold text-primary-400 uppercase mb-4 flex items-center gap-1.5"><i class="fa-solid fa-desktop"></i> Dep. Sistema</h4>
+                        <h4 class="text-xs font-bold text-primary-400 uppercase mb-4 flex items-center gap-1.5"><i class="fa-solid fa-desktop"></i> Dep. Software</h4>
                         <div id="podiumSistema" class="grid grid-cols-3 gap-2 sm:gap-4 items-end"></div>
                     </div>
                     <div>
@@ -353,14 +398,14 @@
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
                         <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-ranking-star text-accent"></i> Ranking - Departamento <span id="rankingTitleTeam" class="text-primary-500">Sistema</span>
+                            <i class="fa-solid fa-ranking-star text-accent"></i> Ranking <span id="rankingTitleTeam" class="text-primary-500">Software</span>
                         </h3>
                         <p class="text-xs text-secondary">Pontuações calculadas item a item com base nas regras ativas do departamento — <span class="text-secondary/70">clique em uma linha para abrir o dashboard do analista.</span></p>
                     </div>
 
                     <div class="flex gap-2 bg-bg p-1.5 rounded-lg border border-line">
                         <button onclick="switchRankingTab('Sistema')" id="tabSistema" class="px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white">
-                            <i class="fa-solid fa-desktop me-1"></i> Dep. Sistema
+                            <i class="fa-solid fa-desktop me-1"></i> Dep. Software
                         </button>
                         <button onclick="switchRankingTab('Catraca')" id="tabCatraca" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
                             <i class="fa-solid fa-turnstile me-1"></i> Dep. Catraca
@@ -407,7 +452,7 @@
 
                 <div class="flex gap-2 mb-6">
                     <button onclick="toggleFaqDept('Sistema')" id="faqTabSistema" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-primary-500 text-white">
-                        Métricas Departamento Sistema
+                        Métricas Departamento Software
                     </button>
                     <button onclick="toggleFaqDept('Catraca')" id="faqTabCatraca" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-surface2 text-secondary">
                         Métricas Departamento Catraca
@@ -742,6 +787,16 @@
                 </div>
 
                 <div class="flex items-center gap-3 flex-wrap">
+                    <div id="rankingAutomationAdminControls" class="hidden flex items-center gap-2 bg-surface2/60 border border-line rounded-lg px-3 py-2">
+                        <span class="text-[10px] text-secondary font-semibold uppercase hidden sm:inline"><i class="fa-solid fa-tv me-1"></i> Ranking ao vivo</span>
+                        <button onclick="toggleAutoRotateRanking()" id="btnAutoRotate" title="Ativar/desativar alternância automática (Software/Catraca a cada 5s)" class="w-8 h-8 flex items-center justify-center rounded-full bg-bg/60 border border-line text-secondary hover:text-white hover:border-primary-500/40 transition-all duration-200">
+                            <i class="fa-solid fa-play text-xs" id="autoRotateIcon"></i>
+                        </button>
+                        <button onclick="openRankingPresentation()" title="Expandir ranking em modo de apresentação" class="w-8 h-8 flex items-center justify-center rounded-full bg-bg/60 border border-line text-secondary hover:text-white hover:border-primary-500/40 transition-all duration-200">
+                            <i class="fa-solid fa-expand text-xs"></i>
+                        </button>
+                    </div>
+
                     <button onclick="exportBackup()" class="bg-surface2 hover:bg-surface3 text-white text-xs font-bold px-3 py-2 rounded-lg shadow flex items-center gap-1.5 transition">
                         <i class="fa-solid fa-download"></i> Exportar Backup (JSON)
                     </button>
@@ -797,7 +852,7 @@
                     <div>
                         <label class="block text-xs text-secondary mb-1">Departamento</label>
                         <select id="inputUserTeam" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
-                            <option value="Sistema">Sistema</option>
+                            <option value="Sistema">Software</option>
                             <option value="Catraca">Catraca</option>
                         </select>
                     </div>
@@ -805,11 +860,26 @@
                         <button type="submit" id="btnSaveUser" class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">Salvar Usuário</button>
                         <button type="button" id="btnCancelEdit" onclick="cancelEditUser()" class="hidden bg-surface2 hover:bg-surface3 text-white px-3 py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110"><i class="fa-solid fa-xmark"></i></button>
                     </div>
+                    <div>
+                        <label class="block text-xs text-secondary mb-1">Foto do Analista</label>
+                        <div class="flex items-center gap-3">
+                            <div id="userPhotoPreview" class="w-11 h-11 rounded-full bg-surface2 border border-line flex items-center justify-center text-secondary overflow-hidden shrink-0">
+                                <i class="fa-solid fa-user text-sm"></i>
+                            </div>
+                            <label class="flex-1 cursor-pointer bg-surface2 hover:bg-surface3 border border-line text-[11px] text-secondary hover:text-white px-3 py-2.5 rounded-lg text-center transition-all duration-200 truncate">
+                                <i class="fa-solid fa-camera me-1"></i> Escolher foto
+                                <input type="file" id="inputUserPhoto" accept="image/*" onchange="onUserPhotoSelected(event)" class="hidden">
+                            </label>
+                            <button type="button" id="btnRemoveUserPhoto" onclick="removeUserPhoto()" class="hidden text-red-400 hover:text-red-300 text-xs shrink-0" title="Remover foto"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                        <input type="hidden" id="inputUserPhotoData" value="">
+                    </div>
                     <div id="inputUserPasswordWrap" class="hidden md:col-span-2">
                         <label class="block text-xs text-secondary mb-1">Senha de Acesso (obrigatória para Gestor Adm e Envio/Coleta)</label>
                         <input type="password" id="inputUserPassword" placeholder="Defina a senha deste gestor" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                 </form>
+                <p class="text-[10px] text-secondary mt-2"><i class="fa-solid fa-circle-info me-1"></i> A foto é exibida apenas no Dashboard/Resultado Individual do próprio analista e no Pódio por Departamento.</p>
 
                 <!-- LISTA DE USUÁRIOS CADASTRADOS PARA EDIÇÃO -->
                 <div class="mt-6">
@@ -838,17 +908,17 @@
             <div class="bg-surface border border-line rounded-2xl card-hover p-4 flex items-center gap-3">
                 <span class="text-xs text-secondary">Departamento em edição:</span>
                 <select id="admDeptSelect" onchange="onAdminDeptChange(this.value)" class="bg-bg text-primary-400 font-bold text-xs focus:outline-none px-3 py-1.5 rounded-lg border border-line">
-                    <option value="Sistema">Dep. Sistema</option>
+                    <option value="Sistema">Dep. Software</option>
                     <option value="Catraca">Dep. Catraca</option>
                 </select>
             </div>
 
             <!-- FORM SISTEMA -->
             <div id="formDeptSistema" class="bg-surface border border-line rounded-2xl card-hover p-6">
-                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-desktop text-primary-500"></i> Lançamento Semanal - Sistema</h3>
+                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-desktop text-primary-500"></i> Lançamento Semanal - Software</h3>
                 <form onsubmit="addSistemaScore(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-xs text-secondary mb-1">Usuário (Sistema)</label>
+                        <label class="block text-xs text-secondary mb-1">Usuário (Software)</label>
                         <select id="admUserSistema" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
                     </div>
                     <div>
@@ -900,7 +970,7 @@
                     </div>
                     <div class="md:col-span-3 pt-2">
                         <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 hover:brightness-110">
-                            <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Lançamento (Sistema)
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Lançamento (Software)
                         </button>
                     </div>
                 </form>
@@ -1630,6 +1700,10 @@
             };
         }
 
+        function teamLabel(team) {
+            return team === "Sistema" ? "Software" : team;
+        }
+
         function render() {
             const store = getStore();
             const usersList = store.users || defaultUsers;
@@ -1653,6 +1727,8 @@
                 document.getElementById('btnPecaAccess').classList.add('hidden');
                 document.getElementById('btnPecaLogout').classList.add('hidden');
                 document.getElementById('loggedAdminName').innerText = (usersList[currentAdminId] && usersList[currentAdminId].name) || "Gestor";
+                const rankingAdminCtrl = document.getElementById('rankingAutomationAdminControls');
+                if (rankingAdminCtrl) rankingAdminCtrl.classList.toggle('hidden', currentAdminId !== 'marco_adm');
                 renderAdminLogs();
                 renderUsersManagementTable();
                 renderAdminPriorityRequests();
@@ -1683,9 +1759,11 @@
                 document.getElementById('btnPecaLogout').classList.add('hidden');
 
                 document.getElementById('agentName').innerText = user.name;
-                document.getElementById('agentTeam').innerText = user.team;
+                document.getElementById('agentTeam').innerText = teamLabel(user.team);
                 document.getElementById('agentRole').innerText = user.role;
-                document.getElementById('agentInitials').innerText = user.initial || user.name.slice(0, 2).toUpperCase();
+                document.getElementById('agentInitials').innerHTML = user.photo
+                    ? `<img src="${user.photo}" class="w-full h-full object-cover">`
+                    : (user.initial || user.name.slice(0, 2).toUpperCase());
                 document.getElementById('lblPeriodFilter').innerText = activePeriodFilter === 'ALL' ? 'Acumulado' : activePeriodFilter;
 
                 const calc = calculatePoints(currentActiveUser, metrics);
@@ -2013,8 +2091,12 @@
         function renderLeaderboard(metrics) {
             const store = getStore();
             const usersList = store.users || defaultUsers;
-            document.getElementById('rankingTitleTeam').innerText = activeRankingTab;
+            document.getElementById('rankingTitleTeam').innerText = teamLabel(activeRankingTab);
             document.getElementById('thExtraCol').innerText = activeRankingTab === "Sistema" ? "Monit. Qualidade" : "Peças & Despachos";
+            const presTitle = document.getElementById('presentationTeamLabel');
+            const presTh = document.getElementById('thExtraColPresentation');
+            if (presTitle) presTitle.innerText = teamLabel(activeRankingTab);
+            if (presTh) presTh.innerText = activeRankingTab === "Sistema" ? "Monit. Qualidade" : "Peças & Despachos";
 
             const list = Object.keys(usersList)
                 .filter(id => usersList[id].team === activeRankingTab && isRankableUser(usersList[id]) && usersList[id].active !== false)
@@ -2066,7 +2148,10 @@
                     </tr>
                 `;
             });
-            document.getElementById('leaderboardBody').innerHTML = html || `<tr><td colspan="12" class="p-4 text-center text-secondary">Nenhum lançamento neste período.</td></tr>`;
+            const finalHtml = html || `<tr><td colspan="12" class="p-4 text-center text-secondary">Nenhum lançamento neste período.</td></tr>`;
+            document.getElementById('leaderboardBody').innerHTML = finalHtml;
+            const presBody = document.getElementById('leaderboardBodyPresentation');
+            if (presBody) presBody.innerHTML = finalHtml;
         }
 
         function viewAnalystFromPodium(id, team) {
@@ -2138,7 +2223,7 @@
                     .filter(id => usersList[id].team === team && isRankableUser(usersList[id]) && usersList[id].active !== false)
                     .map(id => {
                         const c = calculatePoints(id, metrics);
-                        return { id, name: usersList[id].name, initial: usersList[id].initial || usersList[id].name.slice(0, 2).toUpperCase(), total: c.total };
+                        return { id, name: usersList[id].name, initial: usersList[id].initial || usersList[id].name.slice(0, 2).toUpperCase(), photo: usersList[id].photo, total: c.total };
                     })
                     .sort((a, b) => b.total - a.total)
                     .slice(0, 3);
@@ -2148,6 +2233,7 @@
                     const item = list[i];
                     const s = podiumStyle[i];
                     if (item) {
+                        const avatarContent = item.photo ? `<img src="${item.photo}" class="w-full h-full object-cover rounded-full">` : item.initial;
                         html += `
                             <div class="${s.order} ${s.scale} group relative ${s.lift} ${s.height} ${s.card} border rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center transition-all duration-200 hover:-translate-y-1.5 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/50"
                                  onclick="viewAnalystFromPodium('${item.id}','${team}')"
@@ -2160,7 +2246,7 @@
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                 </span>
                                 <div class="relative mb-2">
-                                    <div class="${s.avatar} rounded-full flex items-center justify-center font-extrabold border-2 border-bg shadow-lg transition-transform duration-200 group-hover:scale-105">${item.initial}</div>
+                                    <div class="${s.avatar} rounded-full flex items-center justify-center font-extrabold border-2 border-bg shadow-lg transition-transform duration-200 group-hover:scale-105 overflow-hidden">${avatarContent}</div>
                                     <span class="absolute -bottom-1 -right-1 text-base">${medals[i]}</span>
                                 </div>
                                 <p class="text-xs sm:text-sm font-bold ${s.nameColor} truncate max-w-[100px] sm:max-w-[120px]" title="${item.name}">${item.name}</p>
@@ -2252,7 +2338,7 @@
                     <tr class="border-b border-line/40 ${active ? '' : 'opacity-60'}">
                         <td class="p-2 font-semibold text-white">${u.name}</td>
                         <td class="p-2">${u.role}</td>
-                        <td class="p-2">${u.team}</td>
+                        <td class="p-2">${teamLabel(u.team)}</td>
                         <td class="p-2 text-center">${statusBadge}</td>
                         <td class="p-2 text-right whitespace-nowrap">
                             <button onclick="startEditUser('${id}')" class="text-primary-400 hover:text-primary-300 text-xs font-semibold mr-3"><i class="fa-solid fa-pen me-1"></i>Editar</button>
@@ -2263,6 +2349,44 @@
                 `;
             });
             document.getElementById('usersManagementTable').innerHTML = html || `<tr><td colspan="5" class="p-4 text-center text-secondary">Nenhum usuário cadastrado.</td></tr>`;
+        }
+
+        function onUserPhotoSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast("Selecione um arquivo de imagem válido.", "error");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const img = new Image();
+                img.onload = function() {
+                    const size = 200;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    const minSide = Math.min(img.width, img.height);
+                    const sx = (img.width - minSide) / 2;
+                    const sy = (img.height - minSide) / 2;
+                    ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    document.getElementById('inputUserPhotoData').value = dataUrl;
+                    document.getElementById('userPhotoPreview').innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover">`;
+                    document.getElementById('btnRemoveUserPhoto').classList.remove('hidden');
+                };
+                img.onerror = function() { showToast("Não foi possível ler a imagem selecionada.", "error"); };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeUserPhoto() {
+            document.getElementById('inputUserPhotoData').value = "";
+            document.getElementById('inputUserPhoto').value = "";
+            document.getElementById('userPhotoPreview').innerHTML = '<i class="fa-solid fa-user text-sm"></i>';
+            document.getElementById('btnRemoveUserPhoto').classList.add('hidden');
         }
 
         function onUserRoleChange(role) {
@@ -2281,6 +2405,15 @@
             document.getElementById('inputUserRole').value = u.role;
             document.getElementById('inputUserTeam').value = u.team;
             document.getElementById('inputUserPassword').value = "";
+            document.getElementById('inputUserPhoto').value = "";
+            document.getElementById('inputUserPhotoData').value = u.photo || "";
+            if (u.photo) {
+                document.getElementById('userPhotoPreview').innerHTML = `<img src="${u.photo}" class="w-full h-full object-cover">`;
+                document.getElementById('btnRemoveUserPhoto').classList.remove('hidden');
+            } else {
+                document.getElementById('userPhotoPreview').innerHTML = '<i class="fa-solid fa-user text-sm"></i>';
+                document.getElementById('btnRemoveUserPhoto').classList.add('hidden');
+            }
             document.getElementById('btnSaveUser').innerText = "Atualizar Usuário";
             document.getElementById('btnCancelEdit').classList.remove('hidden');
             onUserRoleChange(u.role);
@@ -2292,6 +2425,7 @@
             document.getElementById('inputUserRole').value = "Analista de sistema";
             document.getElementById('inputUserTeam').value = "Sistema";
             document.getElementById('inputUserPassword').value = "";
+            removeUserPhoto();
             document.getElementById('btnSaveUser').innerText = "Salvar Usuário";
             document.getElementById('btnCancelEdit').classList.add('hidden');
             onUserRoleChange("Analista de sistema");
@@ -2304,6 +2438,7 @@
             const role = document.getElementById('inputUserRole').value;
             const team = document.getElementById('inputUserTeam').value;
             const password = document.getElementById('inputUserPassword').value;
+            const photoData = document.getElementById('inputUserPhotoData').value;
 
             if (!name) return;
 
@@ -2320,12 +2455,13 @@
                 appStore.users[editId].role = role;
                 appStore.users[editId].team = team;
                 if (password) appStore.users[editId].password = password;
+                appStore.users[editId].photo = photoData || undefined;
                 showToast("Usuário atualizado com sucesso!");
             } else {
                 // Cadastra novo usuário
                 const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Math.random().toString(36).slice(2, 5);
                 const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-                appStore.users[newId] = { name, team, role, initial: initials, active: true, password: (role === "Gestor Adm" || role === "Envio/Coleta") ? password : undefined };
+                appStore.users[newId] = { name, team, role, initial: initials, active: true, photo: photoData || undefined, password: (role === "Gestor Adm" || role === "Envio/Coleta") ? password : undefined };
                 showToast("Novo usuário cadastrado com sucesso!");
             }
 
@@ -2458,7 +2594,7 @@
             let sisOpt = "", catOpt = "", admOpt = "";
             Object.keys(usersList).forEach(id => {
                 if (usersList[id].active === false || !isRankableUser(usersList[id])) return;
-                admOpt += `<option value="${id}">${usersList[id].name} (${usersList[id].team})</option>`;
+                admOpt += `<option value="${id}">${usersList[id].name} (${teamLabel(usersList[id].team)})</option>`;
                 if (usersList[id].team === "Sistema") sisOpt += `<option value="${id}">${usersList[id].name}</option>`;
                 else catOpt += `<option value="${id}">${usersList[id].name}</option>`;
             });
@@ -2507,6 +2643,67 @@
 
             render();
         }
+
+        // --- AUTOMAÇÃO: ALTERNÂNCIA AUTOMÁTICA DO RANKING (SISTEMA <-> CATRACA) ---
+        let rankingAutoRotateTimer = null;
+        let rankingAutoRotateActive = false;
+
+        function toggleAutoRotateRanking() {
+            if (!(isAdminLoggedIn && currentAdminId === 'marco_adm')) return;
+            rankingAutoRotateActive = !rankingAutoRotateActive;
+
+            if (rankingAutoRotateActive) {
+                rankingAutoRotateTimer = setInterval(() => {
+                    switchRankingTab(activeRankingTab === 'Sistema' ? 'Catraca' : 'Sistema');
+                }, 5000);
+                showToast("Auto-alternância do ranking ativada (a cada 5s).");
+            } else {
+                if (rankingAutoRotateTimer) clearInterval(rankingAutoRotateTimer);
+                rankingAutoRotateTimer = null;
+                showToast("Auto-alternância do ranking desativada.");
+            }
+            updateAutoRotateButtons();
+        }
+
+        function updateAutoRotateButtons() {
+            const btn = document.getElementById('btnAutoRotate');
+            const icon = document.getElementById('autoRotateIcon');
+            const btnP = document.getElementById('btnAutoRotatePresentation');
+            const iconP = document.getElementById('autoRotateIconPresentation');
+            const badgeP = document.getElementById('presentationAutoRotateBadge');
+
+            [btn, btnP].forEach(b => {
+                if (!b) return;
+                b.classList.toggle('bg-primary-500/15', rankingAutoRotateActive);
+                b.classList.toggle('border-primary-500/50', rankingAutoRotateActive);
+                b.classList.toggle('text-primary-300', rankingAutoRotateActive);
+                b.classList.toggle('text-secondary', !rankingAutoRotateActive);
+            });
+            if (icon) icon.className = rankingAutoRotateActive ? 'fa-solid fa-pause text-xs' : 'fa-solid fa-play text-xs';
+            if (iconP) iconP.className = rankingAutoRotateActive ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+            if (btn) btn.title = rankingAutoRotateActive ? "Desativar alternância automática" : "Ativar alternância automática (Software/Catraca a cada 5s)";
+            if (badgeP) badgeP.classList.toggle('hidden', !rankingAutoRotateActive);
+        }
+
+        // --- MODO DE APRESENTAÇÃO (RANKING EXPANDIDO) ---
+        function openRankingPresentation() {
+            if (!(isAdminLoggedIn && currentAdminId === 'marco_adm')) return;
+            document.getElementById('rankingPresentationOverlay').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            render();
+        }
+
+        function closeRankingPresentation() {
+            document.getElementById('rankingPresentationOverlay').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('rankingPresentationOverlay');
+                if (overlay && !overlay.classList.contains('hidden')) closeRankingPresentation();
+            }
+        });
 
         function switchAgent(val) {
             currentActiveUser = val;
@@ -3100,6 +3297,13 @@
         function logoutAdmin() {
             isAdminLoggedIn = false;
             currentAdminId = null;
+            if (rankingAutoRotateActive) {
+                rankingAutoRotateActive = false;
+                if (rankingAutoRotateTimer) clearInterval(rankingAutoRotateTimer);
+                rankingAutoRotateTimer = null;
+                updateAutoRotateButtons();
+            }
+            closeRankingPresentation();
             render();
         }
 
