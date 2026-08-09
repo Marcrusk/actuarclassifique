@@ -1496,8 +1496,12 @@
             supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         }
 
+        // NOTA: nenhuma senha real fica aqui. "hasPassword" só indica que o usuário
+        // precisa de senha — o valor real é definido no primeiro carregamento via
+        // setUserPasswordRemote() (função set_user_password dentro do banco) e nunca
+        // é gravado no JSON sincronizado.
         const defaultUsers = {
-            marco_adm: { name: "Marco Nunes", team: "Sistema", role: "Gestor Adm", initial: "MN", active: true, password: "admin123" },
+            marco_adm: { name: "Marco Nunes", team: "Sistema", role: "Gestor Adm", initial: "MN", active: true, hasPassword: true },
             alessandro: { name: "Alessandro", team: "Sistema", role: "Analista de sistema", initial: "AL", active: true },
             arthur: { name: "Arthur", team: "Sistema", role: "Analista de sistema", initial: "AR" },
             pedro_g: { name: "Pedro Gustavo", team: "Sistema", role: "Analista de sistema", initial: "PG" },
@@ -1509,8 +1513,18 @@
             marcos: { name: "Marcos", team: "Catraca", role: "Analista de catraca", initial: "MA" },
             dyego: { name: "Dyego", team: "Catraca", role: "Analista de catraca", initial: "DY" },
             vitor: { name: "Vitor", team: "Catraca", role: "Analista de catraca", initial: "VI" },
-            antonio_ec: { name: "Antonio", team: "Catraca", role: "Envio/Coleta", initial: "AN", active: true, password: "antonio123" },
-            jeremias_ec: { name: "Jeremias", team: "Catraca", role: "Envio/Coleta", initial: "JE", active: true, password: "jeremias123" }
+            antonio_ec: { name: "Antonio", team: "Catraca", role: "Envio/Coleta", initial: "AN", active: true, hasPassword: true },
+            jeremias_ec: { name: "Jeremias", team: "Catraca", role: "Envio/Coleta", initial: "JE", active: true, hasPassword: true }
+        };
+
+        // Senhas iniciais usadas SOMENTE na primeira vez que o app roda (banco vazio) ou
+        // ao criar automaticamente os usuários padrão que faltarem. Depois de gravadas via
+        // set_user_password, nunca mais existem no navegador. Troque-as depois do primeiro
+        // login pelo painel de gestão.
+        const SEED_PASSWORDS = {
+            marco_adm: "admin123",
+            antonio_ec: "antonio123",
+            jeremias_ec: "jeremias123"
         };
 
         const RECORD_ID = "global_store";
@@ -1547,43 +1561,34 @@
             return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
         }
 
-        // --- Senhas: nunca guardamos nem trafegamos texto puro ---
-        // Formato salvo: "salt:hashHex". O hash é SHA-256(salt + ":" + senha).
-        // Isso não é bcrypt (não dá pra usar bcrypt só no navegador sem libs pesadas),
-        // mas já impede que qualquer um que abra o DevTools ou baixe o JSON veja a senha real.
-        async function sha256Hex(text) {
-            const enc = new TextEncoder().encode(text);
-            const buf = await crypto.subtle.digest('SHA-256', enc);
-            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        function randomSaltHex() {
-            const arr = new Uint8Array(16);
-            crypto.getRandomValues(arr);
-            return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        async function hashPassword(plainPassword) {
-            const salt = randomSaltHex();
-            const hash = await sha256Hex(salt + ":" + plainPassword);
-            return `${salt}:${hash}`;
-        }
-
-        // Retorna true/false. Também aceita senhas antigas em texto puro (de antes desta correção)
-        // para não travar o acesso de ninguém — mas quem chama isso deve migrar o hash na hora.
-        async function verifyPassword(attemptPassword, storedValue) {
-            if (!storedValue) return false;
-            if (!storedValue.includes(':')) {
-                // Formato legado (texto puro). Funciona uma última vez e é migrado no login.
-                return attemptPassword === storedValue;
+        // --- Senhas: nunca ficam no navegador nem no JSON sincronizado ---
+        // A partir daqui, cadastro/troca de senha e verificação de login rodam
+        // dentro do banco (funções set_user_password / verify_login no Supabase).
+        // O JSON público só guarda um booleano "hasPassword" (sem hash nenhum).
+        async function setUserPasswordRemote(userId, plainPassword) {
+            const { error } = await supabaseClient.rpc('set_user_password', {
+                p_user_id: userId,
+                p_password: plainPassword
+            });
+            if (error) {
+                console.error("Erro ao definir senha:", error);
+                showToast("Erro ao salvar a senha no banco.", "error");
+                return false;
             }
-            const [salt, hash] = storedValue.split(':');
-            const attemptHash = await sha256Hex(salt + ":" + attemptPassword);
-            return attemptHash === hash;
+            return true;
         }
 
-        function isLegacyPlaintextPassword(storedValue) {
-            return !!storedValue && !storedValue.includes(':');
+        async function verifyLoginRemote(userId, plainPassword) {
+            const { data, error } = await supabaseClient.rpc('verify_login', {
+                p_user_id: userId,
+                p_password: plainPassword
+            });
+            if (error) {
+                console.error("Erro ao verificar login:", error);
+                showToast("Erro ao verificar login no banco.", "error");
+                return false;
+            }
+            return data === true;
         }
 
         // Usuários com função Gestor Adm ou Envio/Coleta não entram no ranking (não são analistas avaliados)
@@ -1710,13 +1715,9 @@
                     transferRequests: []
                 };
                 lastSyncedSnapshot = {}; // nada sincronizado ainda: tudo conta como novidade
-                // As senhas em defaultUsers são literais de texto puro só para existirem no
-                // código-fonte (inevitável num app 100% estático). Antes de gravar qualquer
-                // coisa no banco, já convertemos para hash — o banco nunca guarda texto puro.
-                for (const id of Object.keys(appStore.users)) {
-                    if (isLegacyPlaintextPassword(appStore.users[id].password)) {
-                        appStore.users[id].password = await hashPassword(appStore.users[id].password);
-                    }
+                // Grava as senhas iniciais dentro do banco (nunca no JSON) antes do primeiro save.
+                for (const id of Object.keys(SEED_PASSWORDS)) {
+                    if (appStore.users[id]) await setUserPasswordRemote(id, SEED_PASSWORDS[id]);
                 }
                 await persistStore();
             } else {
@@ -1727,32 +1728,24 @@
 
                 const hasMarcoNunes = Object.values(appStore.users).some(u => u.name === "Marco Nunes" && u.role === "Gestor Adm");
                 if (!hasMarcoNunes) {
-                    appStore.users['marco_nunes'] = { name: "Marco Nunes", team: "Sistema", role: "Gestor Adm", initial: "MN", active: true, password: await hashPassword("admin123") };
+                    appStore.users['marco_nunes'] = { name: "Marco Nunes", team: "Sistema", role: "Gestor Adm", initial: "MN", active: true, hasPassword: true };
+                    await setUserPasswordRemote('marco_nunes', "admin123");
                     await persistStore();
                 }
 
                 const hasAntonio = Object.values(appStore.users).some(u => u.name === "Antonio" && u.role === "Envio/Coleta");
                 if (!hasAntonio) {
-                    appStore.users['antonio_ec'] = { name: "Antonio", team: "Catraca", role: "Envio/Coleta", initial: "AN", active: true, password: await hashPassword("antonio123") };
+                    appStore.users['antonio_ec'] = { name: "Antonio", team: "Catraca", role: "Envio/Coleta", initial: "AN", active: true, hasPassword: true };
+                    await setUserPasswordRemote('antonio_ec', "antonio123");
                     await persistStore();
                 }
 
                 const hasJeremias = Object.values(appStore.users).some(u => u.name === "Jeremias" && u.role === "Envio/Coleta");
                 if (!hasJeremias) {
-                    appStore.users['jeremias_ec'] = { name: "Jeremias", team: "Catraca", role: "Envio/Coleta", initial: "JE", active: true, password: await hashPassword("jeremias123") };
+                    appStore.users['jeremias_ec'] = { name: "Jeremias", team: "Catraca", role: "Envio/Coleta", initial: "JE", active: true, hasPassword: true };
+                    await setUserPasswordRemote('jeremias_ec', "jeremias123");
                     await persistStore();
                 }
-
-                // Migra qualquer senha antiga em texto puro que já esteja no banco (de antes desta correção),
-                // sem esperar a pessoa fazer login de novo.
-                let hadLegacyPassword = false;
-                for (const id of Object.keys(appStore.users)) {
-                    if (isLegacyPlaintextPassword(appStore.users[id].password)) {
-                        appStore.users[id].password = await hashPassword(appStore.users[id].password);
-                        hadLegacyPassword = true;
-                    }
-                }
-                if (hadLegacyPassword) await persistStore();
             }
 
             document.getElementById('loadingOverlay').classList.add('hidden');
@@ -2806,7 +2799,7 @@
 
             if (!name) return;
 
-            if ((role === "Gestor Adm" || role === "Envio/Coleta") && !password && !(editId && appStore.users[editId] && appStore.users[editId].password)) {
+            if ((role === "Gestor Adm" || role === "Envio/Coleta") && !password && !(editId && appStore.users[editId] && appStore.users[editId].hasPassword)) {
                 showToast("Defina uma senha de acesso para este perfil.", "error");
                 return;
             }
@@ -2818,7 +2811,11 @@
                 appStore.users[editId].name = name;
                 appStore.users[editId].role = role;
                 appStore.users[editId].team = team;
-                if (password) appStore.users[editId].password = await hashPassword(password);
+                if (password) {
+                    const saved = await setUserPasswordRemote(editId, password);
+                    if (!saved) return;
+                    appStore.users[editId].hasPassword = true;
+                }
                 appStore.users[editId].photo = photoData || undefined;
                 showToast("Usuário atualizado com sucesso!");
             } else {
@@ -2826,7 +2823,11 @@
                 const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Math.random().toString(36).slice(2, 5);
                 const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
                 const needsPassword = (role === "Gestor Adm" || role === "Envio/Coleta");
-                appStore.users[newId] = { name, team, role, initial: initials, active: true, photo: photoData || undefined, password: needsPassword ? await hashPassword(password) : undefined };
+                if (needsPassword) {
+                    const saved = await setUserPasswordRemote(newId, password);
+                    if (!saved) return;
+                }
+                appStore.users[newId] = { name, team, role, initial: initials, active: true, photo: photoData || undefined, hasPassword: needsPassword || undefined };
                 showToast("Novo usuário cadastrado com sucesso!");
             }
 
@@ -3647,17 +3648,12 @@
                 showToast("Este usuário está inativo e não pode acessar o Modo Gestão.", "error");
                 return;
             }
-            if (!user.password) {
+            if (!user.hasPassword) {
                 showToast("Este gestor ainda não possui senha cadastrada.", "error");
                 return;
             }
-            const valid = await verifyPassword(pass, user.password);
+            const valid = await verifyLoginRemote(selectedId, pass);
             if (valid) {
-                if (isLegacyPlaintextPassword(user.password)) {
-                    // Migra silenciosamente a senha antiga (texto puro) para o formato com hash.
-                    appStore.users[selectedId].password = await hashPassword(pass);
-                    await persistStore();
-                }
                 isAdminLoggedIn = true;
                 currentAdminId = selectedId;
                 document.getElementById('adminPass').value = "";
@@ -3705,17 +3701,12 @@
                 showToast("Este usuário está inativo e não pode acessar este espaço.", "error");
                 return;
             }
-            if (!user.password) {
+            if (!user.hasPassword) {
                 showToast("Este usuário ainda não possui senha cadastrada.", "error");
                 return;
             }
-            const valid = await verifyPassword(pass, user.password);
+            const valid = await verifyLoginRemote(selectedId, pass);
             if (valid) {
-                if (isLegacyPlaintextPassword(user.password)) {
-                    // Migra silenciosamente a senha antiga (texto puro) para o formato com hash.
-                    appStore.users[selectedId].password = await hashPassword(pass);
-                    await persistStore();
-                }
                 isPecaLoggedIn = true;
                 currentPecaUserId = selectedId;
                 document.getElementById('pecaPass').value = "";
