@@ -3,46 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma de Ranking & Performance</title>
+    <title>Actuar | Performance do Atendimento</title>
+    <script>
+        try {
+            const savedTheme = localStorage.getItem('actuar-classifique-theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.classList.toggle('dark', savedTheme ? savedTheme === 'dark' : prefersDark);
+        } catch (_) { /* preferência visual é opcional */ }
+    </script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Flaticon UIcons Regular Rounded — padrão funcional do Design System Actuar -->
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css">
+    <!-- Variante sólida para símbolos decorativos preenchidos -->
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css">
     <!-- Chart.js para Gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Tipografia moderna -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Manrope', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace']
+                        sans: ['Open Sans', 'sans-serif'],
+                        display: ['Open Sans', 'sans-serif'],
+                        mono: ['Geist', 'Open Sans', 'sans-serif']
                     },
                     colors: {
-                        bg: '#0A0A10',
-                        surface: '#14141C',
-                        surface2: '#1B1B26',
-                        surface3: '#262635',
-                        line: '#26262F',
-                        secondary: '#9B9BAD',
-                        accent: '#00E5C7',
-                        accent2: '#00C2FF',
-                        primary: {50:'#EEF1FF',100:'#E1E6FF',200:'#C6D0FF',300:'#A3AEFF',400:'#8188FF',500:'#6C63FF',600:'#5648EB',700:'#4636CC',800:'#392DA3',900:'#302981'}
+                        bg: '#F6F6F7',
+                        surface: '#FFFFFF',
+                        surface2: '#F1F2F4',
+                        surface3: '#E7E8EA',
+                        line: '#E1E1E1',
+                        secondary: '#5F6570',
+                        accent: '#4043DD',
+                        accent2: '#266ED9',
+                        primary: {50:'#EEEEFC',100:'#E1E2FA',200:'#C9CAFA',300:'#9A9CF1',400:'#696CE7',500:'#4043DD',600:'#3336C5',700:'#292CA8',800:'#23258A',900:'#202272'}
                     },
                     boxShadow: {
-                        glow: '0 0 40px -10px rgba(108,99,255,0.45)',
-                        'glow-accent': '0 0 30px -6px rgba(0,229,199,0.4)'
-                    },
-                    backgroundImage: {
-                        'grid-fade': 'radial-gradient(ellipse at top, rgba(108,99,255,0.12), transparent 60%)'
+                        glow: '0 1px 2px rgba(22,29,43,0.06)',
+                        'glow-accent': '0 1px 2px rgba(22,29,43,0.06)'
                     }
                 }
             }
@@ -50,7 +52,7 @@
     </script>
     <style>
         html { scroll-behavior: smooth; }
-        body { background-image: radial-gradient(ellipse 900px 500px at 50% -10%, rgba(108,99,255,0.14), transparent 60%); background-attachment: fixed; }
+        body { background-image: none; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #0A0A10; }
         ::-webkit-scrollbar-thumb { background: #2A2A38; border-radius: 8px; }
@@ -65,7 +67,7 @@
         .glossary-term { border-bottom: 1px dotted rgba(155,155,173,0.7); cursor: help; }
         .glossary-term:hover { color: #00E5C7; }
         .you-are-here-track { position: relative; height: 8px; border-radius: 999px; background: #1B1B26; overflow: hidden; }
-        .you-are-here-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 999px; background: linear-gradient(90deg,#6C63FF,#00E5C7); transition: width .6s ease; }
+        .you-are-here-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 999px; background: #4043DD; transition: width .2s ease; }
         .you-are-here-marker { position: absolute; top: 50%; transform: translate(-50%, -50%); transition: left .6s ease; white-space: nowrap; }
         .anim-fade-up { animation: fadeUp .45s cubic-bezier(.16,1,.3,1) both; }
         @keyframes popIn { from { opacity:0; transform: scale(.92); } to { opacity:1; transform: scale(1); } }
@@ -73,20 +75,21 @@
         .card-hover { transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s ease, border-color .25s ease; }
         .card-hover:hover { transform: translateY(-3px); border-color: rgba(108,99,255,0.35); }
         .num-mono { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
-        .glass { background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)); backdrop-filter: blur(6px); }
+        .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
+    <link rel="stylesheet" href="styles/actuar-design-system.css">
 </head>
-<body class="bg-bg text-white font-sans min-h-screen antialiased">
+<body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
     <!-- OVERLAY DE CARREGAMENTO INICIAL -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-bg flex flex-col items-center justify-center z-[100] gap-3">
-        <i class="fa-solid fa-trophy text-4xl text-accent animate-pulse"></i>
+    <div id="loadingOverlay" class="actuar-loading fixed inset-0 bg-bg flex flex-col items-center justify-center z-[100] gap-3" role="status" aria-live="polite">
+        <i class="fi fi-rr-trophy text-4xl text-accent"></i>
         <p class="text-sm text-secondary">Carregando dados do ranking via Supabase...</p>
     </div>
 
     <!-- TOAST DE FEEDBACK -->
-    <div id="toast" class="hidden fixed bottom-6 right-6 z-[100] px-4 py-3 rounded-lg shadow-xl text-sm font-semibold transition-all"></div>
+    <div id="toast" class="hidden fixed bottom-6 right-6 z-[100] px-4 py-3 rounded-lg shadow-xl text-sm font-semibold transition-all" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <!-- OVERLAY DE APRESENTAÇÃO DO RANKING (MODO TV) -->
     <div id="rankingPresentationOverlay" class="hidden fixed inset-0 bg-bg z-[95] overflow-y-auto">
@@ -94,15 +97,22 @@
         <div class="pointer-events-none fixed -bottom-24 -left-24 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl"></div>
         <div class="relative p-6 md:p-10 max-w-7xl mx-auto">
             <div class="flex items-center justify-between flex-wrap gap-4 mb-8">
-                <h2 class="text-2xl md:text-4xl font-display font-extrabold text-white flex items-center gap-3">
-                    <i class="fa-solid fa-ranking-star text-accent"></i> Ranking <span id="presentationTeamLabel" class="text-primary-500">Software</span>
-                </h2>
-                <div class="flex items-center gap-3">
-                    <span id="presentationAutoRotateBadge" class="hidden text-xs md:text-sm bg-surface2 border border-line px-3.5 py-2 rounded-full text-secondary flex items-center gap-2">
-                        <i class="fa-solid fa-arrows-rotate animate-spin [animation-duration:2.5s]"></i> Alternando automaticamente a cada 5s
+                <div class="ranking-presentation-heading">
+                    <span class="ranking-presentation-brand">
+                        <img src="assets/actuar/logos/actuar-group.svg" alt="Actuar Group">
                     </span>
+                    <span class="ranking-presentation-divider" aria-hidden="true"></span>
+                    <h2 class="text-2xl md:text-4xl font-display font-extrabold text-white flex items-center gap-2">
+                        Ranking Performance <span id="presentationTeamLabel" class="text-primary-500">Software</span>
+                    </h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="themeTogglePresentationButton" type="button" onclick="toggleTheme()" aria-pressed="false" title="Ativar tema escuro" class="bg-surface2 hover:bg-surface3 text-secondary hover:text-white w-10 h-10 rounded-full flex items-center justify-center border border-line transition-colors duration-200">
+                        <i id="themeTogglePresentationIcon" class="fi fi-rr-moon" aria-hidden="true"></i>
+                        <span class="sr-only">Alternar tema do modo TV</span>
+                    </button>
                     <button onclick="toggleAutoRotateRanking()" id="btnAutoRotatePresentation" title="Ativar/desativar alternância automática" class="flex items-center gap-1.5 bg-surface2 hover:bg-surface3 border border-line text-secondary hover:text-white px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200">
-                        <i class="fa-solid fa-play" id="autoRotateIconPresentation"></i>
+                        <i class="fi fi-rr-refresh" id="autoRotateIconPresentation" aria-hidden="true"></i>
                     </button>
                     <button onclick="closeRankingPresentation()" title="Fechar apresentação (Esc)" class="bg-surface2 hover:bg-surface3 text-white w-10 h-10 rounded-full flex items-center justify-center border border-line transition-all duration-200">
                         <i class="fa-solid fa-xmark text-lg"></i>
@@ -110,17 +120,28 @@
                 </div>
             </div>
 
+            <div class="ranking-view-selector ranking-view-selector--presentation mb-6">
+                <i id="rankingViewSelectPresentationIcon" class="fi fi-rr-computer" aria-hidden="true"></i>
+                <label class="sr-only" for="rankingViewSelectPresentation">Visualização do ranking no modo TV</label>
+                <select id="rankingViewSelectPresentation" onchange="switchRankingTab(this.value)">
+                    <option value="Sistema">Software</option>
+                    <option value="Catraca">Catraca</option>
+                    <option value="Todos">Software + Catraca</option>
+                </select>
+                <i class="fi fi-rr-angle-small-down ranking-view-selector-arrow" aria-hidden="true"></i>
+            </div>
+
             <!-- PÓDIO DO DEPARTAMENTO ATIVO (MODO APRESENTAÇÃO) -->
             <div class="mb-8">
-                <h3 class="text-sm md:text-base font-bold text-secondary uppercase tracking-wide mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-trophy text-accent"></i> Pódio — <span id="presentationPodiumTeamLabel" class="text-primary-400">Software</span>
+                <h3 class="text-lg md:text-2xl font-display font-extrabold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-accent"></i> Pódio
                 </h3>
                 <div id="podiumPresentation" class="grid grid-cols-3 gap-3 sm:gap-6 items-end max-w-3xl"></div>
             </div>
 
-            <div class="bg-surface border border-line rounded-2xl p-4 md:p-8 overflow-x-auto">
-                <table class="w-full text-left text-sm md:text-base text-secondary border-collapse">
-                    <thead class="bg-bg/80 text-secondary uppercase text-[10px] md:text-xs border-b border-line">
+            <div class="ranking-table-shell overflow-x-auto">
+                <table class="ranking-data-table w-full text-left text-xs text-secondary border-collapse">
+                    <thead class="bg-bg/80 text-secondary uppercase text-[10px] border-b border-line">
                         <tr>
                             <th class="p-3">Pos</th>
                             <th class="p-3">Usuário</th>
@@ -130,7 +151,7 @@
                             <th class="p-3 text-center">NPS</th>
                             <th class="p-3 text-center">Prior./Transf.</th>
                             <th class="p-3 text-center">Sprint</th>
-                            <th class="p-3 text-center">Rank. Semanal</th>
+                            <th class="p-3 text-center" title="Bônus por 1º/2º/3º lugar na semana (resolvidos, atendidos e taxa de recuperação)">Rank. Semanal</th>
                             <th class="p-3 text-center" id="thExtraColPresentation">Monit. / Peças</th>
                             <th class="p-3 text-center text-red-400">Penal.</th>
                             <th class="p-3 text-right">Total</th>
@@ -139,115 +160,124 @@
                     <tbody id="leaderboardBodyPresentation" class="divide-y divide-line/50"></tbody>
                 </table>
             </div>
+
+
         </div>
     </div>
 
-    <!-- BARRA DE NAVEGAÇÃO -->
-    <nav class="glass bg-surface/85 border-b border-line px-6 py-3.5 flex flex-wrap justify-between items-center gap-4 sticky top-0 z-50 backdrop-blur-xl">
-        <div class="flex items-center gap-3">
-            <div class="bg-gradient-to-br from-primary-500 to-accent2 text-white p-2 px-3 rounded-xl font-display font-extrabold shadow-glow flex items-center gap-1.5 text-sm">
-                <i class="fa-solid fa-trophy"></i> RankPro
-            </div>
-            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full font-medium flex items-center gap-1.5" title="Sincronizado via Supabase Cloud">
-                <i class="fa-solid fa-cloud"></i> <span class="hidden md:inline">Nuvem Conectada</span>
-                <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span></span>
+    <!-- SHELL GLOBAL ACTUAR -->
+    <header id="globalHeader" class="actuar-global-header">
+        <a class="actuar-brand" href="#/dashboard" onclick="navigateTo('dashboard'); return false;" aria-label="Ir para o início do módulo Performance do Atendimento">
+            <img class="actuar-group-logo" src="assets/actuar/logos/actuar-group.svg" alt="Actuar Group">
+        </a>
+        <div id="headerContext" class="actuar-header-context" aria-live="polite">Performance do Atendimento / <strong>Dashboard</strong></div>
+        <div class="actuar-header-actions">
+            <span class="actuar-cloud-status" title="Dados sincronizados via Supabase">
+                <i class="fi fi-rr-cloud-check" aria-hidden="true"></i><span>Nuvem conectada</span>
             </span>
-        </div>
-        
-        <div class="flex flex-wrap items-end gap-4">
-            <!-- GRUPO: PERÍODO -->
-            <div class="flex flex-col gap-1">
-                <span class="text-[9px] uppercase tracking-wider text-secondary/60 font-bold pl-1">Período</span>
-                <div class="flex items-center gap-2">
-                    <!-- SELETOR DE MÊS -->
-                    <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
-                        <i class="fa-solid fa-calendar-days text-xs text-primary-400"></i>
-                        <label for="monthSelect" class="text-[11px] text-secondary font-medium">Mês:</label>
-                        <select id="monthSelect" onchange="changeMonthView(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"></select>
-                        <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                    </div>
-
-                    <!-- SELETOR DE PERÍODO / SEMANA -->
-                    <div class="relative flex items-center gap-2 bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 pl-3.5 pr-7 py-2 rounded-full transition-all duration-200">
-                        <i class="fa-solid fa-filter text-xs text-primary-400"></i>
-                        <label for="periodSelect" class="text-[11px] text-secondary font-medium">Visão:</label>
-                        <select id="periodSelect" onchange="changePeriodView(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
-                            <option value="ALL">Acumulado do Mês</option>
-                            <option value="Semana 1">Semana 1</option>
-                            <option value="Semana 2">Semana 2</option>
-                            <option value="Semana 3">Semana 3</option>
-                            <option value="Semana 4">Semana 4</option>
-                            <option value="Semana 5">Semana 5</option>
-                        </select>
-                        <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <button id="themeToggleButton" class="actuar-theme-toggle" type="button" onclick="toggleTheme()" aria-pressed="false" title="Ativar tema escuro">
+                <i id="themeToggleIcon" class="fi fi-rr-moon" aria-hidden="true"></i>
+                <span class="sr-only">Alternar tema</span>
+            </button>
+            <button id="profileMenuButton" class="actuar-avatar-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profileMenu" onclick="toggleProfileMenu(event)">
+                <span id="headerProfileAvatar" class="actuar-avatar" aria-hidden="true"><i class="fi fi-rr-user"></i></span>
+                <span class="sr-only">Abrir menu do perfil</span>
+            </button>
+            <section id="profileMenu" class="actuar-profile-menu" role="menu" aria-label="Menu do perfil" hidden>
+                <div class="actuar-profile-summary">
+                    <span id="menuProfileAvatar" class="actuar-avatar" aria-hidden="true"><i class="fi fi-rr-user"></i></span>
+                    <div class="actuar-profile-copy">
+                        <strong id="menuProfileName">Usuário</strong>
+                        <span id="menuProfileIdentifier">Identificação não informada</span>
+                        <span id="menuProfileRole" class="actuar-profile-role actuar-badge actuar-badge-primary">Perfil</span>
                     </div>
                 </div>
-            </div>
+                <nav aria-label="Ações do perfil">
+                    <button class="actuar-menu-item" type="button" role="menuitem" onclick="openProfileScreen('overview')"><i class="fi fi-rr-user"></i>Meu perfil</button>
+                    <button class="actuar-menu-item" type="button" role="menuitem" onclick="openProfileScreen('edit')"><i class="fi fi-rr-user-pen"></i>Editar perfil</button>
+                    <button class="actuar-menu-item" type="button" role="menuitem" onclick="openProfileScreen('password')"><i class="fi fi-rr-key"></i>Alterar senha</button>
+                    <button id="profileSignOutButton" class="actuar-menu-item actuar-menu-item-danger" type="button" role="menuitem" onclick="signOutProfile()"><i class="fi fi-rr-sign-out-alt"></i>Sair</button>
+                </nav>
+            </section>
+        </div>
+    </header>
 
-            <!-- GRUPO: ANALISTA -->
-            <div class="flex flex-col gap-1">
-                <span class="text-[9px] uppercase tracking-wider text-secondary/60 font-bold pl-1">Analista</span>
-                <div class="flex items-center bg-surface2/60 hover:bg-surface2 border border-line hover:border-primary-500/40 rounded-full transition-all duration-200 overflow-hidden">
-                    <div class="relative flex items-center gap-1.5 pl-3.5 pr-6 py-2">
-                        <i id="teamSelectIcon" class="fa-solid fa-desktop text-xs text-primary-400 transition-colors duration-200"></i>
-                        <select id="teamSelect" onchange="onTeamSelectChange(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
-                            <option value="Sistema">Dep. Software</option>
-                            <option value="Catraca">Dep. Catraca</option>
-                        </select>
-                        <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+    <section class="actuar-toolbar" aria-label="Filtros e acessos globais">
+        <div class="actuar-toolbar-inner">
+            <div class="actuar-filter-groups">
+                <section class="actuar-filter-group" aria-labelledby="filterPeriodTitle">
+                    <span id="filterPeriodTitle" class="actuar-filter-group-title">Período</span>
+                    <div class="actuar-filter-row">
+                        <div class="actuar-filter-field actuar-filter-field--month">
+                            <label for="monthSelect">Mês de referência</label>
+                            <div class="actuar-filter-select">
+                                <i class="fi fi-rr-calendar-days" aria-hidden="true"></i>
+                                <select id="monthSelect" onchange="changeMonthView(this.value)"></select>
+                                <i class="fi fi-rr-angle-small-down actuar-filter-arrow" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                        <div class="actuar-filter-field actuar-filter-field--period">
+                            <label for="periodSelect">Visão do período</label>
+                            <div class="actuar-filter-select">
+                                <i class="fi fi-rr-filter" aria-hidden="true"></i>
+                                <select id="periodSelect" onchange="changePeriodView(this.value)">
+                                    <option value="ALL">Acumulado do mês</option>
+                                    <option value="Semana 1">Semana 1</option>
+                                    <option value="Semana 2">Semana 2</option>
+                                    <option value="Semana 3">Semana 3</option>
+                                    <option value="Semana 4">Semana 4</option>
+                                    <option value="Semana 5">Semana 5</option>
+                                </select>
+                                <i class="fi fi-rr-angle-small-down actuar-filter-arrow" aria-hidden="true"></i>
+                            </div>
+                        </div>
                     </div>
-
-                    <div class="relative flex items-center gap-1.5 pl-3.5 pr-6 py-2 border-l border-line">
-                        <label for="userSelect" class="text-[11px] text-secondary font-medium">Usuário:</label>
-                        <select id="userSelect" onchange="switchAgent(this.value)" class="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"></select>
-                        <i class="fa-solid fa-chevron-down text-[8px] text-secondary/70 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                </section>
+                <section class="actuar-filter-group" aria-labelledby="filterContextTitle">
+                    <span id="filterContextTitle" class="actuar-filter-group-title">Contexto</span>
+                    <div class="actuar-filter-row">
+                        <div class="actuar-filter-field actuar-filter-field--team">
+                            <label for="teamSelect">Departamento</label>
+                            <div class="actuar-filter-select">
+                                <i id="teamSelectIcon" class="fi fi-rr-computer" aria-hidden="true"></i>
+                                <select id="teamSelect" onchange="onTeamSelectChange(this.value)">
+                                    <option value="Sistema">Software</option>
+                                    <option value="Catraca">Catraca</option>
+                                </select>
+                                <i class="fi fi-rr-angle-small-down actuar-filter-arrow" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                        <div class="actuar-filter-field actuar-filter-field--analyst">
+                            <label for="userSelect">Analista</label>
+                            <div class="actuar-filter-select">
+                                <i class="fi fi-rr-user" aria-hidden="true"></i>
+                                <select id="userSelect" onchange="switchAgent(this.value)"></select>
+                                <i class="fi fi-rr-angle-small-down actuar-filter-arrow" aria-hidden="true"></i>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
             </div>
-
-            <!-- GRUPO: ACESSOS -->
-            <div class="flex flex-col gap-1">
-                <span class="text-[9px] uppercase tracking-wider text-secondary/60 font-bold pl-1">Acesso</span>
-                <div class="flex items-center gap-2">
-                    <!-- BOTÃO ENVIO/COLETA DE PEÇAS -->
-                    <button id="btnPecaAccess" onclick="openPecaModal()" class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5">
-                        <i class="fa-solid fa-box"></i> Envio/Coleta
-                    </button>
-
-                    <button id="btnPecaLogout" onclick="logoutPeca()" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5">
-                        <i class="fa-solid fa-right-from-bracket me-1"></i> Sair Envio/Coleta
-                    </button>
-
-                    <!-- BOTÃO MODO ADM -->
-                    <button id="btnAdminAccess" onclick="openAdminModal()" class="bg-primary-500/10 border border-primary-500/30 text-primary-400 hover:bg-primary-500/20 hover:border-primary-500/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5">
-                        <i class="fa-solid fa-lock"></i> Modo Gestão
-                    </button>
-
-                    <button id="btnAdminLogout" onclick="logoutAdmin()" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5">
-                        <i class="fa-solid fa-right-from-bracket me-1"></i> Sair do Modo ADM
-                    </button>
-                </div>
+            <div class="actuar-access-actions">
+                <button id="btnPecaAccess" onclick="openPecaModal()" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-box"></i>Envio/Coleta</button>
+                <button id="btnPecaLogout" onclick="logoutPeca()" class="hidden actuar-btn actuar-btn-secondary"><i class="fi fi-rr-sign-out-alt"></i>Sair Envio/Coleta</button>
+                <button id="btnAdminAccess" onclick="openAdminModal()" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-lock"></i>Modo Gestão</button>
+                <button id="btnAdminLogout" onclick="logoutAdmin()" class="hidden actuar-btn actuar-btn-secondary"><i class="fi fi-rr-sign-out-alt"></i>Sair da Gestão</button>
             </div>
         </div>
-    </nav>
+    </section>
 
-    <!-- FAIXA DE CONTEXTO "VOCÊ ESTÁ VENDO" -->
-    <div id="contextStrip" class="sticky top-[65px] z-40 bg-surface/95 border-b border-primary-500/20 backdrop-blur-xl">
-        <div class="max-w-7xl mx-auto px-6 py-2 flex items-center gap-2 text-[11px] overflow-x-auto">
-            <i class="fa-solid fa-location-crosshairs text-primary-400 shrink-0"></i>
-            <span class="text-secondary shrink-0">Você está vendo:</span>
-            <span id="ctxUser" class="font-bold text-white shrink-0">-</span>
-            <span class="text-secondary/40 shrink-0">•</span>
-            <span id="ctxTeam" class="font-semibold text-primary-300 shrink-0">-</span>
-            <span class="text-secondary/40 shrink-0">•</span>
-            <span id="ctxMonth" class="font-semibold text-secondary shrink-0">-</span>
-            <span class="text-secondary/40 shrink-0">•</span>
-            <span id="ctxPeriod" class="font-semibold text-accent shrink-0">-</span>
-            <span id="ctxAdminBadge" class="hidden ml-1 shrink-0 text-[10px] bg-primary-500/20 text-primary-300 border border-primary-500/40 px-2 py-0.5 rounded-full font-bold"><i class="fa-solid fa-lock text-[9px] mr-1"></i>Modo Gestão</span>
-        </div>
-    </div>
-
-    <div class="max-w-7xl mx-auto px-6 py-8">
+    <main id="appContent" class="actuar-main">
+        <header id="pageHeader" class="actuar-page-header">
+            <button id="pageBackButton" class="actuar-page-back" type="button" onclick="navigateBack()" hidden>
+                <i class="fi fi-rr-arrow-left" aria-hidden="true"></i>Voltar
+            </button>
+            <div>
+                <h1 id="pageTitle" class="actuar-page-title">Dashboard individual</h1>
+                <p id="pageDescription" class="actuar-page-description">Acompanhe indicadores, pontuação e solicitações do analista selecionado.</p>
+            </div>
+            <div id="pageActions" class="actuar-page-actions"></div>
+        </header>
 
         <!-- ABAS DE NAVEGAÇÃO PÚBLICA -->
         <div id="publicTabsContainer" class="flex gap-2.5 mb-6 border-b border-line pb-3 flex-wrap">
@@ -268,7 +298,7 @@
                 <div class="md:col-span-2 relative overflow-hidden bg-surface border border-line rounded-2xl card-hover p-6 flex items-center justify-between flex-wrap gap-4">
                     <div class="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary-500/10 blur-2xl"></div>
                     <div class="flex items-center gap-4 relative">
-                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500/25 to-accent2/10 border-2 border-primary-500/60 flex items-center justify-center text-2xl font-display font-extrabold text-primary-300 overflow-hidden" id="agentInitials">AL</div>
+                        <div class="agent-dashboard-avatar w-16 h-16 flex items-center justify-center text-2xl font-display font-extrabold overflow-hidden" id="agentInitials">AL</div>
                         <div>
                             <h2 class="text-xl font-display font-extrabold text-white" id="agentName">Alessandro</h2>
                             <p class="text-sm text-secondary">Departamento: <span id="agentTeam" class="text-primary-400 font-semibold">Software</span></p>
@@ -276,25 +306,34 @@
                             <div id="agentPenaltiesBox" class="hidden mt-2 text-[11px] text-red-400 max-w-xs"></div>
                         </div>
                     </div>
-                    <div class="border-l border-line pl-4 space-y-1 text-right relative">
+                    <div class="agent-achievements border-l border-line pl-4 space-y-1 text-right relative">
                         <span class="text-[10px] text-secondary uppercase font-bold block">Galeria de Títulos</span>
-                        <p class="text-xs text-accent font-bold"><i class="fa-solid fa-crown me-1"></i> Top 1 da Semana: <span id="statTop1Count">0</span>x</p>
-                        <p class="text-xs text-emerald-400 font-bold"><i class="fa-solid fa-trophy me-1"></i> Meses Vencidos: <span id="statMonthWins">0</span>x</p>
+                        <p class="agent-achievement agent-achievement--rank"><i class="fi fi-rr-ranking-podium" aria-hidden="true"></i><span>Posição no mês</span><strong id="statMonthRank">-</strong></p>
+                        <p class="agent-achievement"><i class="fi fi-rr-ranking-star" aria-hidden="true"></i><span>Top 1 da semana</span><strong><span id="statTop1Count">0</span>x</strong></p>
+                        <p class="agent-achievement agent-achievement--success"><i class="fi fi-rr-trophy" aria-hidden="true"></i><span>Meses vencidos</span><strong><span id="statMonthWins">0</span>x</strong></p>
                     </div>
                 </div>
 
-                <div class="relative overflow-hidden bg-surface border border-primary-500/25 rounded-2xl card-hover p-6 text-center">
-                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-accent/[0.07] to-transparent"></div>
-                    <p class="text-xs text-secondary uppercase font-semibold relative">Pontuação (<span id="lblPeriodFilter">Acumulado</span>)</p>
-                    <h3 class="text-3xl font-display font-extrabold text-accent mt-1 num-mono relative" id="agentTotalPts">0 pts</h3>
-                    <p class="text-xs text-secondary mt-1 relative" id="agentPos">Classificação: -</p>
+                <div class="performance-kpi-card performance-kpi-card--score bg-surface border rounded-2xl card-hover">
+                    <div class="performance-kpi-header">
+                        <span class="performance-kpi-icon" aria-hidden="true"><i class="fi fi-rr-chart-histogram"></i></span>
+                        <div><p>Pontuação</p><span id="lblPeriodFilter">Acumulado</span></div>
+                    </div>
+                    <div class="performance-kpi-content">
+                        <h3 class="num-mono" id="agentTotalPts">0 pts</h3>
+                        <p id="agentPos">Classificação: -</p>
+                    </div>
                 </div>
 
-                <div class="relative overflow-hidden bg-surface border border-emerald-500/25 rounded-2xl card-hover p-6 text-center">
-                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-emerald-500/[0.07] to-transparent"></div>
-                    <p class="text-xs text-secondary uppercase font-semibold relative">Projeção de Premiação</p>
-                    <h3 class="text-2xl font-display font-extrabold text-emerald-400 mt-2 num-mono relative" id="agentPrize">R$ 0,00</h3>
-                    <span class="text-[10px] text-secondary relative" id="prizeSubtext">Top 3 do Departamento</span>
+                <div class="performance-kpi-card performance-kpi-card--prize bg-surface border rounded-2xl card-hover">
+                    <div class="performance-kpi-header">
+                        <span class="performance-kpi-icon" aria-hidden="true"><i class="fi fi-rr-trophy"></i></span>
+                        <div><p>Projeção de premiação</p><span>Resultado do período</span></div>
+                    </div>
+                    <div class="performance-kpi-content">
+                        <h3 class="num-mono" id="agentPrize">R$ 0,00</h3>
+                        <p id="prizeSubtext">Top 3 do Departamento</p>
+                    </div>
                 </div>
             </div>
 
@@ -355,7 +394,7 @@
 
             <!-- CADASTRO DE PRIORIDADE PELO ANALISTA -->
             <div class="bg-surface border border-line rounded-2xl card-hover p-6">
-                <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-star text-amber-400"></i> Registrar Prioridade</h3>
+                <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><span class="priority-heading-icon" aria-hidden="true"><i class="fi fi-sr-star"></i></span> Registrar Prioridade</h3>
                 <p class="text-xs text-secondary mb-4">Envie o protocolo e a justificativa para validação da gestão. Após aprovado, <strong class="text-emerald-400">50 pontos</strong> são creditados automaticamente.</p>
                 <form onsubmit="submitPriorityRequest(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div class="md:col-span-1">
@@ -438,9 +477,6 @@
                     <h3 class="text-lg font-bold text-white flex items-center gap-2">
                         <i class="fa-solid fa-trophy text-accent"></i> Pódio por Departamento
                     </h3>
-                    <span class="text-[10px] bg-surface2 text-secondary px-2.5 py-1 rounded-full font-semibold border border-line flex items-center gap-1">
-                        <i class="fa-solid fa-arrows-rotate"></i> Atualizado em tempo real
-                    </span>
                 </div>
                 <p class="text-xs text-secondary mb-6 relative">Top 3 colocados de cada departamento com pontuação geral e valor de premiação. <span class="text-secondary/70">Clique em um analista para abrir o dashboard individual dele.</span></p>
                 <div class="relative grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -449,7 +485,7 @@
                         <div id="podiumSistema" class="grid grid-cols-3 gap-2 sm:gap-4 items-end"></div>
                     </div>
                     <div>
-                        <h4 class="text-xs font-bold text-emerald-400 uppercase mb-4 flex items-center gap-1.5"><i class="fa-solid fa-turnstile"></i> Dep. Catraca</h4>
+                        <h4 class="text-xs font-bold text-emerald-400 uppercase mb-4 flex items-center gap-1.5"><i class="fi fi-rr-settings" aria-hidden="true"></i> Dep. Catraca</h4>
                         <div id="podiumCatraca" class="grid grid-cols-3 gap-2 sm:gap-4 items-end"></div>
                     </div>
                 </div>
@@ -459,34 +495,36 @@
             <div class="bg-surface border border-line rounded-2xl card-hover p-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
-                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-ranking-star text-accent"></i> Ranking <span id="rankingTitleTeam" class="text-primary-500">Software</span>
+                        <h3 class="text-lg font-bold text-white flex items-center gap-1.5">
+                            Ranking Performance <span id="rankingTitleTeam" class="text-primary-500">Software</span>
                         </h3>
                         <p class="text-xs text-secondary">Pontuações calculadas item a item com base nas regras ativas do departamento — <span class="text-secondary/70">clique em uma linha para abrir o dashboard do analista.</span></p>
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <div class="flex gap-2 bg-bg p-1.5 rounded-lg border border-line">
-                            <button onclick="switchRankingTab('Sistema')" id="tabSistema" class="px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white">
-                                <i class="fa-solid fa-desktop me-1"></i> Dep. Software
-                            </button>
-                            <button onclick="switchRankingTab('Catraca')" id="tabCatraca" class="px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white">
-                                <i class="fa-solid fa-turnstile me-1"></i> Dep. Catraca
-                            </button>
+                        <div class="ranking-view-selector">
+                            <i id="rankingViewSelectIcon" class="fi fi-rr-computer" aria-hidden="true"></i>
+                            <label class="sr-only" for="rankingViewSelect">Escolher visualização do ranking</label>
+                            <select id="rankingViewSelect" onchange="switchRankingTab(this.value)">
+                                <option value="Sistema">Software</option>
+                                <option value="Catraca">Catraca</option>
+                                <option value="Todos">Software + Catraca</option>
+                            </select>
+                            <i class="fi fi-rr-angle-small-down ranking-view-selector-arrow" aria-hidden="true"></i>
                         </div>
                         <div class="flex items-center gap-1.5 pl-1.5 border-l border-line">
-                            <button onclick="toggleAutoRotateRanking()" id="btnAutoRotate" title="Ativar/desativar alternância automática (Software/Catraca a cada 5s)" class="w-7 h-7 flex items-center justify-center rounded-full bg-bg/60 border border-line text-secondary hover:text-white hover:border-primary-500/40 transition-all duration-200">
-                                <i class="fa-solid fa-play text-[10px]" id="autoRotateIcon"></i>
+                            <button onclick="toggleAutoRotateRanking()" id="btnAutoRotate" type="button" title="Ativar alternância automática entre departamentos" aria-label="Ativar alternância automática entre departamentos" aria-pressed="false" class="ranking-action-button">
+                                <i class="fi fi-rr-refresh" id="autoRotateIcon" aria-hidden="true"></i>
                             </button>
-                            <button onclick="openRankingPresentation()" title="Expandir ranking em modo de apresentação" class="w-7 h-7 flex items-center justify-center rounded-full bg-bg/60 border border-line text-secondary hover:text-white hover:border-primary-500/40 transition-all duration-200">
-                                <i class="fa-solid fa-expand text-[10px]"></i>
+                            <button onclick="openRankingPresentation()" id="btnOpenRankingPresentation" type="button" title="Abrir ranking no modo TV" aria-label="Abrir ranking no modo TV" class="ranking-action-button">
+                                <i class="fi fi-rr-tv-retro" aria-hidden="true"></i>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-secondary border-collapse">
+                <div class="ranking-table-shell overflow-x-auto">
+                    <table class="ranking-data-table w-full text-left text-xs text-secondary border-collapse">
                         <thead class="bg-bg/80 text-secondary uppercase text-[10px] border-b border-line">
                             <tr>
                                 <th class="p-3">Pos</th>
@@ -523,15 +561,16 @@
                 </div>
 
                 <!-- BUSCA INTELIGENTE NO MANUAL -->
-                <div class="relative mb-5">
-                    <div class="relative">
-                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none"></i>
+                <div class="faq-search mb-5">
+                    <div class="faq-search-control">
+                        <i class="fi fi-rr-search faq-search-icon" aria-hidden="true"></i>
                         <input type="text" id="faqSearchInput" autocomplete="off"
                             placeholder="Busque por uma dúvida, métrica ou termo... ex: 'TMA', 'penalidade', 'como funciona a sprint'"
-                            class="w-full bg-bg/80 border border-line focus:border-primary-400 rounded-xl pl-11 pr-11 py-3 text-sm text-white placeholder-secondary/60 outline-none transition-colors"
+                            aria-label="Buscar nas dúvidas e regras"
+                            class="faq-search-input"
                             oninput="filterFaqSearch(this.value)" onfocus="if(this.value) filterFaqSearch(this.value)">
-                        <button onclick="clearFaqSearch()" id="faqSearchClearBtn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-white w-6 h-6 flex items-center justify-center rounded-full hover:bg-surface2 transition">
-                            <i class="fa-solid fa-xmark text-xs"></i>
+                        <button type="button" onclick="clearFaqSearch()" id="faqSearchClearBtn" class="faq-search-clear hidden" aria-label="Limpar busca">
+                            <i class="fi fi-rr-cross-small" aria-hidden="true"></i>
                         </button>
                     </div>
                     <div id="faqSearchResults" class="hidden absolute z-30 mt-2 w-full bg-surface2 border border-line rounded-xl shadow-2xl max-h-80 overflow-y-auto p-2 space-y-1"></div>
@@ -1081,6 +1120,10 @@
                         <input type="text" id="inputUserName" placeholder="Ex: João Silva" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
                     <div>
+                        <label class="block text-xs text-secondary mb-1">E-mail</label>
+                        <input type="email" id="inputUserEmail" autocomplete="email" placeholder="nome@actuar.com" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    </div>
+                    <div>
                         <label class="block text-xs text-secondary mb-1">Função</label>
                         <select id="inputUserRole" onchange="onUserRoleChange(this.value)" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                             <option value="Analista de sistema">Analista de sistema</option>
@@ -1129,6 +1172,7 @@
                             <thead class="bg-bg sticky top-0 uppercase text-[10px]">
                                 <tr>
                                     <th class="p-2">Nome</th>
+                                    <th class="p-2">E-mail</th>
                                     <th class="p-2">Função</th>
                                     <th class="p-2">Departamento</th>
                                     <th class="p-2 text-center">Status</th>
@@ -1149,7 +1193,7 @@
                 <span class="text-xs text-secondary">Departamento em edição:</span>
                 <select id="admDeptSelect" onchange="onAdminDeptChange(this.value)" class="bg-bg text-primary-400 font-bold text-xs focus:outline-none px-3 py-1.5 rounded-lg border border-line">
                     <option value="Sistema">Dep. Software</option>
-                    <option value="Catraca">Dep. Catraca</option>
+                    <option value="Catraca">⚙️ Dep. Catraca</option>
                 </select>
             </div>
 
@@ -1205,14 +1249,14 @@
                         <label for="admSisSprint100" class="text-xs text-secondary">Concluiu 100% da Sprint (+100 pts)</label>
                     </div>
                     <!-- MONITORAMENTO / QUALIDADE DETALHADO -->
-                    <div class="md:col-span-3 bg-bg/40 border border-line rounded-xl p-4 mt-1">
+                    <div class="monitor-quality-panel md:col-span-3 border rounded-xl p-4 mt-1">
                         <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
                             <h4 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-magnifying-glass-chart text-primary-400"></i> Monitoramento / Qualidade</h4>
-                            <span class="text-xs bg-surface2 border border-line px-3 py-1 rounded-full text-accent font-bold num-mono" id="monTotalDisplay">0 / 100 pts</span>
+                            <span class="monitor-quality-total text-xs border px-3 py-1 rounded-full font-bold num-mono" id="monTotalDisplay">0 / 100 pts</span>
                         </div>
                         <p class="text-[11px] text-secondary mb-3">Marque os itens que o analista cumpriu no atendimento monitorado. Itens desmarcados são zerados automaticamente.</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                            <div class="monitor-quality-card rounded-lg p-3 border">
                                 <p class="text-[11px] font-bold text-white mb-2">1️⃣ Tempo e Agilidade <span class="text-primary-400">(20 pts)</span></p>
                                 <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
                                     <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monTPR" data-pts="10" onchange="updateMonitoramentoTotal()"> TPR – Tempo de resposta (10 pts)
@@ -1221,7 +1265,7 @@
                                     <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monTMA" data-pts="10" onchange="updateMonitoramentoTotal()"> TMA – Encerramento apropriado (10 pts)
                                 </label>
                             </div>
-                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                            <div class="monitor-quality-card rounded-lg p-3 border">
                                 <p class="text-[11px] font-bold text-white mb-2">2️⃣ Comunicação e Clareza <span class="text-primary-400">(20 pts)</span></p>
                                 <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
                                     <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monCVC" data-pts="10" onchange="updateMonitoramentoTotal()"> CVC – Clareza, vocabulário e coesão (10 pts)
@@ -1230,7 +1274,7 @@
                                     <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monCEE" data-pts="10" onchange="updateMonitoramentoTotal()"> CEE – Cordialidade, empatia e engajamento (10 pts)
                                 </label>
                             </div>
-                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                            <div class="monitor-quality-card rounded-lg p-3 border">
                                 <p class="text-[11px] font-bold text-white mb-2">3️⃣ Qualidade da Resolução <span class="text-primary-400">(20 pts)</span></p>
                                 <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
                                     <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monERS" data-pts="10" onchange="updateMonitoramentoTotal()"> ERS – Resolução sem reabertura (10 pts)
@@ -1239,7 +1283,7 @@
                                     <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monIPC" data-pts="10" onchange="updateMonitoramentoTotal()"> IPC – Informação precisa e completa (10 pts)
                                 </label>
                             </div>
-                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                            <div class="monitor-quality-card rounded-lg p-3 border">
                                 <p class="text-[11px] font-bold text-white mb-2">4️⃣ Experiência do Cliente <span class="text-primary-400">(20 pts)</span></p>
                                 <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
                                     <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monPAC" data-pts="10" onchange="updateMonitoramentoTotal()"> PAC – Proatividade no atendimento (10 pts)
@@ -1248,7 +1292,7 @@
                                     <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monTCS" data-pts="10" onchange="updateMonitoramentoTotal()"> TCS – Satisfação nota 4 ou 5 (10 pts)
                                 </label>
                             </div>
-                            <div class="bg-surface2/60 rounded-lg p-3 border border-line/60">
+                            <div class="monitor-quality-card rounded-lg p-3 border">
                                 <p class="text-[11px] font-bold text-white mb-2">5️⃣ Encerramento e Feedback <span class="text-primary-400">(20 pts)</span></p>
                                 <label class="flex items-center gap-2 text-[11px] text-secondary mb-1.5 cursor-pointer">
                                     <input type="checkbox" class="monCriterio w-3.5 h-3.5 accent-primary-500" id="monCRS" data-pts="5" onchange="updateMonitoramentoTotal()"> CRS – Confirmação de resolução (5 pts)
@@ -1267,11 +1311,11 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                             <div class="md:col-span-1">
                                 <label class="block text-xs text-secondary mb-1">Nº do Protocolo Monitorado</label>
-                                <input type="text" id="monProtocolo" placeholder="Ex: 202608-1234" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                                <input type="text" id="monProtocolo" placeholder="Ex: 202608-1234" class="monitor-quality-input w-full text-sm rounded p-2.5 border">
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-xs text-secondary mb-1">Feedback do Monitoramento (o que pontuou / o que não pontuou)</label>
-                                <textarea id="monFeedback" rows="2" placeholder="Ex: Boa clareza e cordialidade (CVC/CEE ok). Não confirmou a resolução com o cliente (CRS zerado)." class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line resize-none"></textarea>
+                                <textarea id="monFeedback" rows="2" placeholder="Ex: Boa clareza e cordialidade (CVC/CEE ok). Não confirmou a resolução com o cliente (CRS zerado)." class="monitor-quality-input w-full text-sm rounded p-2.5 border resize-none"></textarea>
                             </div>
                         </div>
                     </div>
@@ -1550,39 +1594,166 @@
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- TELA DE PERFIL — usa o mesmo appStore dos demais cadastros -->
+        <section id="viewProfile" class="hidden actuar-profile-screen" aria-labelledby="pageTitle">
+            <div class="actuar-profile-identification">
+                <span id="profileAvatarLarge" class="actuar-avatar" aria-hidden="true"><i class="fi fi-rr-user"></i></span>
+                <div>
+                    <h3 id="profileIdentityName">Usuário</h3>
+                    <p id="profileIdentityMeta">Perfil do usuário</p>
+                    <div class="actuar-photo-actions">
+                        <label for="profilePhotoInput" class="actuar-btn actuar-btn-secondary actuar-btn-sm" role="button"><i class="fi fi-rr-camera"></i>Alterar foto</label>
+                        <input id="profilePhotoInput" class="hidden" type="file" accept="image/*" onchange="onProfilePhotoSelected(event)">
+                        <button id="profilePhotoRemove" class="actuar-btn actuar-btn-ghost actuar-btn-sm" type="button" onclick="removeProfilePhoto()"><i class="fi fi-rr-cross-small"></i>Remover</button>
+                    </div>
+                </div>
+            </div>
+
+            <form id="profileForm" onsubmit="saveProfileChanges(event)" novalidate>
+                <div class="actuar-profile-grid">
+                    <section class="actuar-card" aria-labelledby="profilePersonalTitle">
+                        <div class="actuar-card-header">
+                            <h2 id="profilePersonalTitle" class="actuar-card-title">Dados pessoais</h2>
+                            <p class="actuar-card-description">Atualize suas informações de identificação e contato.</p>
+                        </div>
+                        <input id="profilePhotoData" type="hidden">
+                        <div class="actuar-form-grid">
+                            <div class="actuar-field">
+                                <label for="profileFirstName">Nome</label>
+                                <input id="profileFirstName" name="firstName" autocomplete="given-name" required>
+                                <p id="profileFirstNameError" class="actuar-field-error hidden">Informe seu nome.</p>
+                            </div>
+                            <div class="actuar-field">
+                                <label for="profileLastName">Sobrenome</label>
+                                <input id="profileLastName" name="lastName" autocomplete="family-name">
+                            </div>
+                            <div class="actuar-field actuar-field-full">
+                                <label for="profileEmail">E-mail</label>
+                                <input id="profileEmail" name="email" type="email" autocomplete="email" placeholder="nome@actuar.com" aria-describedby="profileEmailNotice profileEmailError">
+                                <div id="profileEmailNotice" class="actuar-feedback actuar-feedback-error" role="note">
+                                    <i class="fi fi-rr-lock" aria-hidden="true"></i><span>Entre pelo Modo Gestão para alterar o e-mail.</span>
+                                </div>
+                                <p id="profileEmailError" class="actuar-field-error hidden">Informe um e-mail válido.</p>
+                            </div>
+                            <div class="actuar-field actuar-field-full">
+                                <label for="profileIdentifier">Identificação exibida</label>
+                                <input id="profileIdentifier" name="identifier" type="text" maxlength="40" autocomplete="username" placeholder="Ex: joao_gabriel">
+                                <p class="actuar-field-help">Usada no menu do perfil. A chave interna dos rankings e lançamentos não será alterada.</p>
+                                <p id="profileIdentifierError" class="actuar-field-error hidden">Informe uma identificação com pelo menos 3 caracteres.</p>
+                            </div>
+                            <div class="actuar-field">
+                                <label for="profilePhone">Telefone</label>
+                                <input id="profilePhone" name="phone" type="tel" autocomplete="tel" placeholder="(00) 00000-0000">
+                            </div>
+                            <div class="actuar-field">
+                                <label for="profileStatus">Status</label>
+                                <input id="profileStatus" readonly aria-readonly="true">
+                                <p class="actuar-field-help">Alterado somente pela gestão.</p>
+                            </div>
+                            <div class="actuar-field">
+                                <label for="profileRole">Função</label>
+                                <input id="profileRole" readonly aria-readonly="true">
+                                <div id="profileRoleNotice" class="actuar-feedback actuar-feedback-error" role="note">
+                                    <i class="fi fi-rr-lock" aria-hidden="true"></i><span>Entre pelo Modo Gestão para alterar permissões.</span>
+                                </div>
+                            </div>
+                            <div class="actuar-field">
+                                <label for="profileTeam">Departamento</label>
+                                <input id="profileTeam" readonly aria-readonly="true">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="profilePasswordCard" class="actuar-card" aria-labelledby="profilePasswordTitle">
+                        <div class="actuar-card-header">
+                            <h2 id="profilePasswordTitle" class="actuar-card-title">Alteração de senha</h2>
+                            <p class="actuar-card-description">Use ao menos 8 caracteres e não reutilize sua senha atual.</p>
+                        </div>
+                        <div id="profilePasswordNotice" class="actuar-feedback actuar-feedback-info mb-4" role="note">
+                            <i class="fi fi-rr-info" aria-hidden="true"></i><span>A senha é alterada pelo serviço seguro já usado no acesso à plataforma.</span>
+                        </div>
+                        <div class="actuar-field mb-4">
+                            <label for="profileCurrentPassword">Senha atual</label>
+                            <div class="actuar-field-with-action">
+                                <input id="profileCurrentPassword" type="password" autocomplete="current-password">
+                                <button class="actuar-input-action" type="button" aria-label="Mostrar senhas" aria-pressed="false" onclick="toggleProfilePasswords(this)"><i class="fi fi-rr-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="actuar-field mb-4">
+                            <label for="profileNewPassword">Nova senha</label>
+                            <input id="profileNewPassword" type="password" autocomplete="new-password" minlength="8">
+                            <p class="actuar-field-help">Mínimo de 8 caracteres.</p>
+                        </div>
+                        <div class="actuar-field">
+                            <label for="profileConfirmPassword">Confirmar nova senha</label>
+                            <input id="profileConfirmPassword" type="password" autocomplete="new-password" minlength="8">
+                            <p id="profilePasswordError" class="actuar-field-error hidden"></p>
+                        </div>
+                    </section>
+                </div>
+                <div class="actuar-profile-actions">
+                    <button class="actuar-btn actuar-btn-secondary actuar-btn-lg" type="button" onclick="navigateBack()">Cancelar</button>
+                    <button class="actuar-btn actuar-btn-primary actuar-btn-lg" type="submit"><i class="fi fi-rr-disk"></i>Salvar alterações</button>
+                </div>
+            </form>
+        </section>
+    </main>
 
     <!-- MODAL ADM -->
-    <div id="adminModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-surface border border-line rounded-2xl card-hover p-6 w-full max-w-md shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-lock text-primary-400"></i> Acesso à Gestão</h3>
-                <button onclick="closeAdminModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form onsubmit="loginAdmin(event)">
-                <label class="block text-xs text-secondary mb-1">Gestor</label>
-                <select id="adminUserSelect" required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-primary-500"></select>
-                <label class="block text-xs text-secondary mb-1">Senha cadastrada</label>
-                <input type="password" id="adminPass" placeholder="Digite a senha definida no cadastro..." required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-primary-500">
-                <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">Entrar no Modo ADM</button>
+    <div id="adminModal" class="actuar-access-modal hidden fixed inset-0 flex items-center justify-center z-50 p-4" aria-labelledby="adminModalTitle">
+        <div class="actuar-access-dialog w-full max-w-md">
+            <header class="actuar-access-dialog-header">
+                <span class="actuar-access-dialog-icon" aria-hidden="true"><i class="fi fi-rr-user-shield"></i></span>
+                <div>
+                    <h3 id="adminModalTitle">Acesso à Gestão</h3>
+                    <p>Entre com um perfil autorizado para gerenciar a operação.</p>
+                </div>
+                <button type="button" onclick="closeAdminModal()" class="actuar-modal-close" aria-label="Fechar acesso à Gestão"><i class="fi fi-rr-cross-small"></i></button>
+            </header>
+            <form onsubmit="loginAdmin(event)" class="actuar-access-form">
+                <div class="actuar-field">
+                    <label for="adminUserSelect">Gestor</label>
+                    <select id="adminUserSelect" required></select>
+                </div>
+                <div class="actuar-field">
+                    <label for="adminPass">Senha cadastrada</label>
+                    <input type="password" id="adminPass" placeholder="Digite sua senha" autocomplete="current-password" required>
+                </div>
+                <div class="actuar-access-note" role="note"><i class="fi fi-rr-lock" aria-hidden="true"></i><span>Área restrita a perfis de gestão.</span></div>
+                <div class="actuar-access-form-actions">
+                    <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-lg" onclick="closeAdminModal()">Cancelar</button>
+                    <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg"><i class="fi fi-rr-sign-in-alt"></i>Entrar na Gestão</button>
+                </div>
             </form>
         </div>
     </div>
 
     <!-- MODAL ENVIO/COLETA DE PEÇAS -->
-    <div id="pecaModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-surface border border-line rounded-2xl card-hover p-6 w-full max-w-md shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-md font-bold text-white flex items-center gap-2"><i class="fa-solid fa-box text-emerald-400"></i> Acesso Envio/Coleta de Peças</h3>
-                <button onclick="closePecaModal()" class="text-secondary hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <p class="text-xs text-secondary mb-4">Espaço restrito à gestão e aos usuários com função Envio/Coleta.</p>
-            <form onsubmit="loginPeca(event)">
-                <label class="block text-xs text-secondary mb-1">Usuário</label>
-                <select id="pecaUserSelect" required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-emerald-500"></select>
-                <label class="block text-xs text-secondary mb-1">Senha cadastrada</label>
-                <input type="password" id="pecaPass" placeholder="Digite sua senha..." required class="w-full bg-surface2 text-white text-sm rounded p-3 border border-line mb-4 focus:outline-none focus:border-emerald-500">
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">Entrar</button>
+    <div id="pecaModal" class="actuar-access-modal actuar-access-modal--operations hidden fixed inset-0 flex items-center justify-center z-50 p-4" aria-labelledby="pecaModalTitle">
+        <div class="actuar-access-dialog w-full max-w-md">
+            <header class="actuar-access-dialog-header">
+                <span class="actuar-access-dialog-icon" aria-hidden="true"><i class="fi fi-rr-box"></i></span>
+                <div>
+                    <h3 id="pecaModalTitle">Envio e Coleta</h3>
+                    <p>Acesse o fluxo operacional de peças e despachos.</p>
+                </div>
+                <button type="button" onclick="closePecaModal()" class="actuar-modal-close" aria-label="Fechar acesso a Envio e Coleta"><i class="fi fi-rr-cross-small"></i></button>
+            </header>
+            <form onsubmit="loginPeca(event)" class="actuar-access-form">
+                <div class="actuar-field">
+                    <label for="pecaUserSelect">Usuário</label>
+                    <select id="pecaUserSelect" required></select>
+                </div>
+                <div class="actuar-field">
+                    <label for="pecaPass">Senha cadastrada</label>
+                    <input type="password" id="pecaPass" placeholder="Digite sua senha" autocomplete="current-password" required>
+                </div>
+                <div class="actuar-access-note" role="note"><i class="fi fi-rr-info" aria-hidden="true"></i><span>Disponível para Gestão e usuários com função Envio/Coleta.</span></div>
+                <div class="actuar-access-form-actions">
+                    <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-lg" onclick="closePecaModal()">Cancelar</button>
+                    <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg"><i class="fi fi-rr-sign-in-alt"></i>Entrar</button>
+                </div>
             </form>
         </div>
     </div>
@@ -1689,6 +1860,593 @@
         let currentPecaUserId = null;
         let activeAdminTab = "cadastros";
         let appStore = null;
+        let currentRoute = { name: 'dashboard' };
+        let profileReturnFocus = null;
+        let pendingProfilePhoto = '';
+        const VIEW_CONTEXT_STORAGE_KEY = 'actuar-classifique-view-context-v1';
+
+        function persistViewContext() {
+            const context = {
+                userId: currentActiveUser,
+                rankingTeam: activeRankingTab,
+                monthKey: activeMonthKey,
+                period: activePeriodFilter
+            };
+            try {
+                sessionStorage.setItem(VIEW_CONTEXT_STORAGE_KEY, JSON.stringify(context));
+            } catch (_) { /* sessionStorage pode estar indisponível */ }
+
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('analyst', context.userId);
+                url.searchParams.set('ranking', context.rankingTeam);
+                url.searchParams.set('month', context.monthKey);
+                url.searchParams.set('period', context.period);
+                window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+            } catch (_) { /* a URL continua funcional mesmo sem sincronização */ }
+        }
+
+        function restoreViewContext() {
+            let saved = null;
+            try { saved = JSON.parse(sessionStorage.getItem(VIEW_CONTEXT_STORAGE_KEY) || 'null'); } catch (_) { saved = null; }
+            let query = null;
+            try { query = new URLSearchParams(window.location.search); } catch (_) { query = new URLSearchParams(); }
+            const restored = {
+                userId: query.get('analyst') || saved?.userId,
+                rankingTeam: query.get('ranking') || saved?.rankingTeam,
+                monthKey: query.get('month') || saved?.monthKey,
+                period: query.get('period') || saved?.period
+            };
+            if (!appStore) return;
+
+            const users = appStore.users || defaultUsers;
+            const validAnalystIds = Object.keys(users).filter(id => users[id].active !== false && isRankableUser(users[id]));
+            if (validAnalystIds.includes(restored.userId)) currentActiveUser = restored.userId;
+            else if (!validAnalystIds.includes(currentActiveUser) && validAnalystIds.length) currentActiveUser = validAnalystIds[0];
+
+            if (['Sistema', 'Catraca', 'Todos'].includes(restored.rankingTeam)) activeRankingTab = restored.rankingTeam;
+
+            const validMonthKeys = new Set(['atual', ...(appStore.history || []).map(month => month.id)]);
+            activeMonthKey = validMonthKeys.has(restored.monthKey) ? restored.monthKey : 'atual';
+
+            const validPeriods = ['ALL', 'Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5'];
+            activePeriodFilter = validPeriods.includes(restored.period) ? restored.period : 'ALL';
+        }
+
+        // ============ SHELL, ROTAS INTERNAS E HISTÓRICO ============
+        const ROUTE_META = {
+            dashboard: { title: 'Dashboard individual', description: 'Acompanhe indicadores, pontuação e solicitações do analista selecionado.' },
+            ranking: { title: 'Ranking geral', description: 'Compare o desempenho das equipes e consulte a classificação consolidada.' },
+            faq: { title: 'Métricas e regras', description: 'Consulte critérios, fórmulas e regras operacionais da classificação.' },
+            admin: { title: 'Modo Gestão', description: 'Gerencie usuários, lançamentos, validações e o histórico da operação.' },
+            pecas: { title: 'Envio e coleta', description: 'Registre peças e atribua a pontuação ao analista responsável.' },
+            profile: { title: 'Meu perfil', description: 'Consulte e atualize seus dados pessoais e credenciais de acesso.' }
+        };
+
+        function updateThemeControl() {
+            const dark = document.documentElement.classList.contains('dark');
+            [
+                ['themeToggleButton', 'themeToggleIcon'],
+                ['themeTogglePresentationButton', 'themeTogglePresentationIcon']
+            ].forEach(([buttonId, iconId]) => {
+                const button = document.getElementById(buttonId);
+                const icon = document.getElementById(iconId);
+                if (!button || !icon) return;
+                button.setAttribute('aria-pressed', String(dark));
+                button.title = dark ? 'Ativar tema claro' : 'Ativar tema escuro';
+                icon.className = `fi ${dark ? 'fi-rr-brightness' : 'fi-rr-moon'}`;
+            });
+        }
+
+        function applyTheme(theme, persist = true) {
+            const dark = theme === 'dark';
+            document.documentElement.classList.toggle('dark', dark);
+            if (persist) {
+                try { localStorage.setItem('actuar-classifique-theme', dark ? 'dark' : 'light'); } catch (_) { /* opcional */ }
+            }
+            updateThemeControl();
+        }
+
+        function toggleTheme() {
+            const next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(next);
+            render();
+            showToast(`Tema ${next === 'dark' ? 'escuro' : 'claro'} ativado.`);
+        }
+
+        function sanitizeRoute(route) {
+            const candidate = typeof route === 'string' ? { name: route } : (route || {});
+            const name = ROUTE_META[candidate.name] ? candidate.name : 'dashboard';
+            return { name, section: candidate.section || null };
+        }
+
+        function routeFromLocation() {
+            const raw = window.location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+            return sanitizeRoute({ name: raw[0] || 'dashboard', section: raw[1] || null });
+        }
+
+        function routeUrl(route) {
+            const clean = sanitizeRoute(route);
+            return `#/${clean.name}${clean.section ? '/' + clean.section : ''}`;
+        }
+
+        function initializeNavigation() {
+            const initialRoute = routeFromLocation();
+            const existing = window.history.state && window.history.state.actuarRoute;
+            const existingRoute = existing ? sanitizeRoute(existing) : null;
+            const sameRoute = existingRoute && existingRoute.name === initialRoute.name && existingRoute.section === initialRoute.section;
+            const state = {
+                ...(window.history.state || {}),
+                actuarRoute: initialRoute,
+                actuarBackRoute: sameRoute ? (window.history.state.actuarBackRoute || null) : null,
+                actuarDepth: sameRoute ? (window.history.state.actuarDepth || 0) : 0
+            };
+            window.history.replaceState(state, '', routeUrl(initialRoute));
+            applyRoute(initialRoute, { fromHistory: true });
+        }
+
+        function navigateTo(route, options = {}) {
+            const next = sanitizeRoute(route);
+            const sameRoute = currentRoute.name === next.name && currentRoute.section === next.section;
+            closeProfileMenu(false);
+            if (sameRoute && !options.replace) {
+                applyRoute(next, { fromHistory: true });
+                return;
+            }
+
+            const previous = sanitizeRoute(currentRoute);
+            const currentState = window.history.state || {};
+            const nextState = {
+                actuarRoute: next,
+                actuarBackRoute: options.root ? null : previous,
+                actuarDepth: options.root ? 0 : ((currentState.actuarDepth || 0) + (options.replace ? 0 : 1))
+            };
+            if (options.replace) window.history.replaceState(nextState, '', routeUrl(next));
+            else window.history.pushState(nextState, '', routeUrl(next));
+            applyRoute(next, { fromHistory: true });
+        }
+
+        function navigateBack() {
+            closeProfileMenu(false);
+            const state = window.history.state || {};
+            if (state.actuarBackRoute && (state.actuarDepth || 0) > 0) {
+                window.history.back();
+                return;
+            }
+            applyRoute(sanitizeRoute(state.actuarBackRoute || { name: 'dashboard' }), { fromHistory: true });
+        }
+
+        function applyRoute(route, options = {}) {
+            const next = sanitizeRoute(route);
+            let protectedRouteRejected = false;
+            if (next.name === 'admin' && !isAdminLoggedIn) {
+                currentRoute = { name: 'dashboard' };
+                protectedRouteRejected = true;
+            } else if (next.name === 'pecas' && !isPecaLoggedIn) {
+                currentRoute = { name: 'dashboard' };
+                protectedRouteRejected = true;
+            } else {
+                currentRoute = next;
+            }
+
+            if (protectedRouteRejected) {
+                const state = window.history.state || {};
+                window.history.replaceState({ ...state, actuarRoute: currentRoute, actuarBackRoute: null, actuarDepth: 0 }, '', routeUrl(currentRoute));
+            }
+
+            render();
+            if (currentRoute.name === 'dashboard' || currentRoute.name === 'ranking' || currentRoute.name === 'faq') {
+                switchPublicTabView(currentRoute.name);
+            }
+            if (currentRoute.name === 'admin' && currentRoute.section) switchAdminTabView(currentRoute.section);
+            if (currentRoute.name === 'profile') renderProfileScreen(currentRoute.section);
+            updateShell();
+            if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.addEventListener('popstate', event => {
+            closeProfileMenu(false);
+            const route = event.state && event.state.actuarRoute ? event.state.actuarRoute : routeFromLocation();
+            applyRoute(route, { fromHistory: true });
+        });
+
+        function updateShell() {
+            const meta = ROUTE_META[currentRoute.name] || ROUTE_META.dashboard;
+            const state = window.history.state || {};
+            const pageTitle = document.getElementById('pageTitle');
+            const pageDescription = document.getElementById('pageDescription');
+            const pageBackButton = document.getElementById('pageBackButton');
+            const headerContext = document.getElementById('headerContext');
+            if (pageTitle) pageTitle.textContent = meta.title;
+            if (pageDescription) pageDescription.textContent = meta.description;
+            if (headerContext) headerContext.innerHTML = `Performance do Atendimento / <strong>${escapeHtml(meta.title)}</strong>`;
+            if (pageBackButton) pageBackButton.hidden = !(state.actuarBackRoute && (state.actuarDepth || 0) > 0);
+            updatePageActions();
+            updateProfileUI();
+            document.title = `${meta.title} | Performance do Atendimento | Actuar`;
+        }
+
+        function updatePageActions() {
+            const actions = document.getElementById('pageActions');
+            if (!actions) return;
+            if (currentRoute.name === 'admin') {
+                actions.innerHTML = `
+                    <button class="actuar-btn actuar-btn-secondary" type="button" onclick="exportBackup()"><i class="fi fi-rr-download"></i>Exportar backup</button>
+                    <button class="actuar-btn actuar-btn-primary" type="button" onclick="closeCurrentMonth()"><i class="fi fi-rr-calendar-check"></i>Fechar mês</button>`;
+            } else {
+                actions.innerHTML = '';
+            }
+        }
+
+        function getCurrentProfileUserId() {
+            if (isAdminLoggedIn && currentAdminId) return currentAdminId;
+            if (isPecaLoggedIn && currentPecaUserId) return currentPecaUserId;
+            return currentActiveUser;
+        }
+
+        function getCurrentProfileUser() {
+            const users = (appStore && appStore.users) || defaultUsers;
+            return users[getCurrentProfileUserId()] || null;
+        }
+
+        function canManageUserEmail() {
+            const users = (appStore && appStore.users) || defaultUsers;
+            const manager = currentAdminId ? users[currentAdminId] : null;
+            return Boolean(isAdminLoggedIn && manager && manager.role === 'Gestor Adm' && manager.active !== false);
+        }
+
+        function profileAvatarMarkup(user) {
+            if (user && user.photo) return `<img src="${escapeHtml(user.photo)}" alt="">`;
+            const initials = user && (user.initial || user.name)
+                ? (user.initial || user.name.split(/\s+/).map(part => part[0]).join('').slice(0, 2)).toUpperCase()
+                : '';
+            return initials ? escapeHtml(initials) : '<i class="fi fi-rr-user"></i>';
+        }
+
+        function updateProfileUI() {
+            const user = getCurrentProfileUser();
+            if (!user) return;
+            ['headerProfileAvatar', 'menuProfileAvatar'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = profileAvatarMarkup(user);
+            });
+            const name = document.getElementById('menuProfileName');
+            const identifier = document.getElementById('menuProfileIdentifier');
+            const role = document.getElementById('menuProfileRole');
+            const signOut = document.getElementById('profileSignOutButton');
+            if (name) name.textContent = user.name || 'Usuário';
+            if (identifier) identifier.textContent = user.email || `ID: ${user.identifier || getCurrentProfileUserId()}`;
+            if (role) role.textContent = user.role || 'Perfil';
+            if (signOut) {
+                const authenticated = isAdminLoggedIn || isPecaLoggedIn;
+                signOut.disabled = !authenticated;
+                signOut.title = authenticated ? 'Encerrar sessão' : 'Não há uma sessão autenticada ativa';
+            }
+        }
+
+        function toggleProfileMenu(event) {
+            if (event) event.stopPropagation();
+            const menu = document.getElementById('profileMenu');
+            const button = document.getElementById('profileMenuButton');
+            const willOpen = menu.hidden;
+            menu.hidden = !willOpen;
+            button.setAttribute('aria-expanded', String(willOpen));
+            if (willOpen) {
+                profileReturnFocus = button;
+                updateProfileUI();
+                requestAnimationFrame(() => menu.querySelector('[role="menuitem"]:not(:disabled)')?.focus());
+            }
+        }
+
+        function closeProfileMenu(restoreFocus = true) {
+            const menu = document.getElementById('profileMenu');
+            const button = document.getElementById('profileMenuButton');
+            if (!menu || menu.hidden) return;
+            menu.hidden = true;
+            button.setAttribute('aria-expanded', 'false');
+            if (restoreFocus && profileReturnFocus) profileReturnFocus.focus();
+        }
+
+        document.addEventListener('click', event => {
+            const menu = document.getElementById('profileMenu');
+            const button = document.getElementById('profileMenuButton');
+            if (menu && !menu.hidden && !menu.contains(event.target) && !button.contains(event.target)) closeProfileMenu(false);
+        });
+
+        document.addEventListener('keydown', event => {
+            const menu = document.getElementById('profileMenu');
+            if (!menu || menu.hidden) return;
+            const items = [...menu.querySelectorAll('[role="menuitem"]:not(:disabled)')];
+            const index = items.indexOf(document.activeElement);
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeProfileMenu(true);
+            } else if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                items[(index + 1 + items.length) % items.length]?.focus();
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                items[(index - 1 + items.length) % items.length]?.focus();
+            } else if (event.key === 'Home') {
+                event.preventDefault();
+                items[0]?.focus();
+            } else if (event.key === 'End') {
+                event.preventDefault();
+                items[items.length - 1]?.focus();
+            }
+        });
+
+        function openProfileScreen(section = 'overview') {
+            closeProfileMenu(false);
+            navigateTo({ name: 'profile', section });
+            requestAnimationFrame(() => {
+                if (section === 'edit') document.getElementById('profileFirstName')?.focus();
+                if (section === 'password') document.getElementById('profileCurrentPassword')?.focus();
+            });
+        }
+
+        function signOutProfile() {
+            if (isAdminLoggedIn) logoutAdmin();
+            else if (isPecaLoggedIn) logoutPeca();
+            closeProfileMenu(false);
+        }
+
+        // ============ PERFIL — MESMA FONTE DE ESTADO DO CADASTRO ============
+        function renderProfileScreen(section) {
+            const user = getCurrentProfileUser();
+            if (!user) return;
+            const nameParts = String(user.name || '').trim().split(/\s+/).filter(Boolean);
+            const firstName = nameParts.shift() || '';
+            const lastName = nameParts.join(' ');
+            pendingProfilePhoto = user.photo || '';
+            document.getElementById('profileAvatarLarge').innerHTML = profileAvatarMarkup(user);
+            document.getElementById('profileIdentityName').textContent = user.name || 'Usuário';
+            document.getElementById('profileIdentityMeta').textContent = `${user.role || 'Perfil'} · ${teamLabel(user.team)}`;
+            document.getElementById('profileFirstName').value = firstName;
+            document.getElementById('profileLastName').value = lastName;
+            const profileEmail = document.getElementById('profileEmail');
+            const emailAllowed = canManageUserEmail();
+            profileEmail.value = user.email || '';
+            profileEmail.disabled = !emailAllowed;
+            profileEmail.title = emailAllowed ? 'E-mail editável pelo Modo Gestão' : 'Entre no Modo Gestão para alterar o e-mail';
+            const emailNotice = document.getElementById('profileEmailNotice');
+            emailNotice.className = `actuar-feedback ${emailAllowed ? 'actuar-feedback-info' : 'actuar-feedback-error'}`;
+            emailNotice.innerHTML = emailAllowed
+                ? '<i class="fi fi-rr-user-shield" aria-hidden="true"></i><span>Alteração de e-mail autorizada pela sessão do Modo Gestão.</span>'
+                : '<i class="fi fi-rr-lock" aria-hidden="true"></i><span>Entre pelo Modo Gestão para alterar o e-mail.</span>';
+            const roleNotice = document.getElementById('profileRoleNotice');
+            roleNotice.className = `actuar-feedback ${emailAllowed ? 'actuar-feedback-info' : 'actuar-feedback-error'}`;
+            roleNotice.innerHTML = emailAllowed
+                ? '<i class="fi fi-rr-info" aria-hidden="true"></i><span>Altere função e permissões em Modo Gestão, na área Cadastros e Usuários.</span>'
+                : '<i class="fi fi-rr-lock" aria-hidden="true"></i><span>Entre pelo Modo Gestão para alterar permissões.</span>';
+            document.getElementById('profileIdentifier').value = user.identifier || getCurrentProfileUserId();
+            document.getElementById('profilePhone').value = user.phone || '';
+            document.getElementById('profileRole').value = user.role || '';
+            document.getElementById('profileTeam').value = teamLabel(user.team);
+            document.getElementById('profileStatus').value = user.active === false ? 'Inativo' : 'Ativo';
+            document.getElementById('profilePhotoData').value = pendingProfilePhoto;
+            document.getElementById('profilePhotoRemove').classList.toggle('hidden', !pendingProfilePhoto);
+            ['profileCurrentPassword', 'profileNewPassword', 'profileConfirmPassword'].forEach(id => {
+                const el = document.getElementById(id);
+                el.value = '';
+                el.type = 'password';
+            });
+            document.getElementById('profilePasswordError').classList.add('hidden');
+            document.getElementById('profileFirstNameError').classList.add('hidden');
+            document.getElementById('profileEmailError').classList.add('hidden');
+            document.getElementById('profileIdentifierError').classList.add('hidden');
+
+            const authenticated = (isAdminLoggedIn && currentAdminId === getCurrentProfileUserId()) || (isPecaLoggedIn && currentPecaUserId === getCurrentProfileUserId());
+            const passwordInputs = ['profileCurrentPassword', 'profileNewPassword', 'profileConfirmPassword'];
+            passwordInputs.forEach(id => document.getElementById(id).disabled = !authenticated);
+            const notice = document.getElementById('profilePasswordNotice');
+            notice.className = `actuar-feedback ${authenticated ? 'actuar-feedback-info' : 'actuar-feedback-error'} mb-4`;
+            notice.innerHTML = authenticated
+                ? '<i class="fi fi-rr-info" aria-hidden="true"></i><span>A senha é alterada pelo serviço seguro já usado no acesso à plataforma.</span>'
+                : '<i class="fi fi-rr-lock" aria-hidden="true"></i><span>Entre pelo Modo Gestão ou Envio/Coleta para alterar a senha. A visualização pública não autentica o analista.</span>';
+        }
+
+        function toggleProfilePasswords(button) {
+            const fields = ['profileCurrentPassword', 'profileNewPassword', 'profileConfirmPassword'].map(id => document.getElementById(id));
+            const show = fields[0].type === 'password';
+            fields.forEach(field => field.type = show ? 'text' : 'password');
+            button.setAttribute('aria-pressed', String(show));
+            button.setAttribute('aria-label', show ? 'Ocultar senhas' : 'Mostrar senhas');
+            button.innerHTML = `<i class="fi ${show ? 'fi-rr-eye-crossed' : 'fi-rr-eye'}"></i>`;
+        }
+
+        function compressProfilePhoto(file, callback) {
+            if (!file || !file.type.startsWith('image/')) {
+                showToast('Selecione um arquivo de imagem válido.', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = event => {
+                const image = new Image();
+                image.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const size = 240;
+                    canvas.width = size;
+                    canvas.height = size;
+                    const side = Math.min(image.width, image.height);
+                    const sx = (image.width - side) / 2;
+                    const sy = (image.height - side) / 2;
+                    canvas.getContext('2d').drawImage(image, sx, sy, side, side, 0, 0, size, size);
+                    callback(canvas.toDataURL('image/jpeg', .84));
+                };
+                image.onerror = () => showToast('Não foi possível ler a imagem.', 'error');
+                image.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function onProfilePhotoSelected(event) {
+            compressProfilePhoto(event.target.files[0], dataUrl => {
+                pendingProfilePhoto = dataUrl;
+                document.getElementById('profilePhotoData').value = dataUrl;
+                document.getElementById('profileAvatarLarge').innerHTML = `<img src="${dataUrl}" alt="">`;
+                document.getElementById('profilePhotoRemove').classList.remove('hidden');
+            });
+        }
+
+        function removeProfilePhoto() {
+            pendingProfilePhoto = '';
+            document.getElementById('profilePhotoData').value = '';
+            document.getElementById('profilePhotoInput').value = '';
+            const user = getCurrentProfileUser();
+            document.getElementById('profileAvatarLarge').innerHTML = profileAvatarMarkup({ ...user, photo: '' });
+            document.getElementById('profilePhotoRemove').classList.add('hidden');
+        }
+
+        async function saveProfileChanges(event) {
+            event.preventDefault();
+            const userId = getCurrentProfileUserId();
+            const user = appStore.users[userId];
+            if (!user) return;
+            const firstName = document.getElementById('profileFirstName').value.trim();
+            const lastName = document.getElementById('profileLastName').value.trim();
+            const email = document.getElementById('profileEmail').value.trim();
+            const emailAllowed = canManageUserEmail();
+            const identifier = document.getElementById('profileIdentifier').value.trim();
+            const phone = document.getElementById('profilePhone').value.trim();
+            const firstNameError = document.getElementById('profileFirstNameError');
+            const emailError = document.getElementById('profileEmailError');
+            const identifierError = document.getElementById('profileIdentifierError');
+            firstNameError.classList.toggle('hidden', !!firstName);
+            const emailInvalid = emailAllowed && !!email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            emailError.classList.toggle('hidden', !emailInvalid);
+            const identifierInvalid = identifier.length < 3;
+            identifierError.classList.toggle('hidden', !identifierInvalid);
+            if (!firstName || emailInvalid || identifierInvalid) return;
+
+            const currentPassword = document.getElementById('profileCurrentPassword').value;
+            const newPassword = document.getElementById('profileNewPassword').value;
+            const confirmPassword = document.getElementById('profileConfirmPassword').value;
+            const passwordError = document.getElementById('profilePasswordError');
+            passwordError.classList.add('hidden');
+
+            if (currentPassword || newPassword || confirmPassword) {
+                const authenticated = (isAdminLoggedIn && currentAdminId === userId) || (isPecaLoggedIn && currentPecaUserId === userId);
+                let error = '';
+                if (!authenticated) error = 'É necessário entrar em uma área autenticada para alterar a senha.';
+                else if (!currentPassword) error = 'Informe a senha atual.';
+                else if (newPassword.length < 8) error = 'A nova senha deve ter ao menos 8 caracteres.';
+                else if (newPassword !== confirmPassword) error = 'A confirmação não corresponde à nova senha.';
+                else if (currentPassword === newPassword) error = 'A nova senha deve ser diferente da senha atual.';
+                if (error) {
+                    passwordError.textContent = error;
+                    passwordError.classList.remove('hidden');
+                    return;
+                }
+                const valid = await verifyLoginRemote(userId, currentPassword);
+                if (!valid) {
+                    passwordError.textContent = 'A senha atual está incorreta.';
+                    passwordError.classList.remove('hidden');
+                    return;
+                }
+                const saved = await setUserPasswordRemote(userId, newPassword);
+                if (!saved) return;
+                user.hasPassword = true;
+            }
+
+            user.name = [firstName, lastName].filter(Boolean).join(' ');
+            user.initial = user.name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+            if (emailAllowed) user.email = email || undefined;
+            user.identifier = identifier;
+            user.phone = phone || undefined;
+            user.photo = pendingProfilePhoto || undefined;
+
+            setFormBusy(event.target, true);
+            const persisted = await persistStore();
+            setFormBusy(event.target, false);
+            if (!persisted) return;
+            populateDropdowns();
+            renderProfileScreen('overview');
+            updateShell();
+            showToast('Perfil atualizado com sucesso.');
+        }
+
+        // Converte os ícones legados no DOM para a família oficial Regular Rounded.
+        // O mapeamento também cobre HTML gerado dinamicamente pelas funções de renderização.
+        const ACTUAR_ICON_MAP = {
+            'trophy': 'trophy', 'ranking-star': 'trophy', 'crown': 'crown', 'medal': 'medal',
+            'chart-line': 'chart-histogram', 'chart-pie': 'chart-pie', 'chart-simple': 'chart-simple',
+            'circle-question': 'interrogation', 'book-open': 'book-alt', 'magnifying-glass': 'search',
+            'xmark': 'cross-small', 'circle-xmark': 'cross-circle', 'check': 'check', 'circle-check': 'check-circle',
+            'cloud': 'cloud-check', 'calendar-days': 'calendar-days', 'calendar-check': 'calendar-check',
+            'filter': 'filter', 'chevron-down': 'angle-down', 'location-crosshairs': 'marker',
+            'desktop': 'computer', 'laptop-code': 'laptop-code', 'gear': 'settings', 'sliders': 'settings-sliders',
+            'box': 'box', 'box-open': 'box-open', 'archive': 'archive', 'paper-plane': 'paper-plane',
+            'lock': 'lock', 'user-shield': 'user-shield', 'shield-halved': 'shield-check',
+            'right-from-bracket': 'sign-out-alt', 'user': 'user', 'users': 'users', 'user-plus': 'user-add',
+            'user-pen': 'user-pen', 'pen': 'pencil', 'floppy-disk': 'disk', 'download': 'download',
+            'trash-can': 'trash', 'camera': 'camera', 'power-off': 'power', 'key': 'key', 'eye': 'eye',
+            'eye-slash': 'eye-crossed', 'clock': 'clock', 'clock-rotate-left': 'time-past',
+            'rotate': 'refresh', 'arrows-rotate': 'refresh', 'play': 'play', 'pause': 'pause',
+            'arrow-left': 'arrow-left', 'arrow-right': 'arrow-right', 'arrow-up-right-from-square': 'arrow-up-right',
+            'right-left': 'exchange', 'triangle-exclamation': 'triangle-warning', 'circle-info': 'info',
+            'info': 'info', 'plus': 'plus', 'minus': 'minus', 'comment': 'comment', 'comments': 'comments',
+            'star': 'star', 'face-frown': 'sad', 'clipboard-check': 'clipboard-check', 'list-check': 'list-check',
+            'file-export': 'file-export', 'database': 'database', 'envelope': 'envelope', 'phone': 'phone-call',
+            'bars': 'menu-burger', 'ellipsis': 'menu-dots', 'wand-magic-sparkles': 'magic-wand',
+            'magnifying-glass-chart': 'chart-user', 'turnstile': 'torii-gate', 'expand': 'expand',
+            'calculator': 'calculator', 'scale-balanced': 'scale', 'table-columns': 'table-columns',
+            'spell-check': 'text-check', 'rocket': 'rocket', 'box-archive': 'archive',
+            'users-gear': 'users-gear', 'file-pen': 'file-edit', 'gavel': 'gavel',
+            'location-dot': 'marker', 'headset': 'headset', 'bolt': 'bolt', 'stopwatch': 'stopwatch',
+            'comment-dots': 'comment-dots', 'trash': 'trash'
+        };
+
+        function normalizeActuarIcons(root = document) {
+            root.querySelectorAll('i[class*="fa-"]').forEach(icon => {
+                const legacy = [...icon.classList].find(name => name.startsWith('fa-') && !['fa-solid', 'fa-regular', 'fa-brands', 'fa-spin'].includes(name));
+                if (!legacy) return;
+                const legacyName = legacy.slice(3);
+                const nextName = ACTUAR_ICON_MAP[legacyName] || 'circle';
+                [...icon.classList].filter(name => name.startsWith('fa-') || name === 'fa').forEach(name => icon.classList.remove(name));
+                icon.classList.add('fi', `fi-rr-${nextName}`);
+            });
+        }
+
+        function removeDecorativeEmoji(root = document.body) {
+            if (!root || !window.NodeFilter) return;
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+                acceptNode(node) {
+                    return node.parentElement && !['SCRIPT', 'STYLE'].includes(node.parentElement.tagName)
+                        ? NodeFilter.FILTER_ACCEPT
+                        : NodeFilter.FILTER_REJECT;
+                }
+            });
+            const nodes = [];
+            while (walker.nextNode()) nodes.push(walker.currentNode);
+            nodes.forEach(node => {
+                node.nodeValue = node.nodeValue.replace(/\p{Extended_Pictographic}|\uFE0F/gu, '').replace(/\s{2,}/g, ' ');
+            });
+        }
+
+        function enhanceReusableComponents(root = document) {
+            root.querySelectorAll('input[type="checkbox"]').forEach(input => input.classList.add('actuar-checkbox'));
+            root.querySelectorAll('[id$="Modal"]').forEach(modal => {
+                modal.classList.add('actuar-modal');
+                modal.setAttribute('role', 'dialog');
+                modal.setAttribute('aria-modal', 'true');
+                const title = modal.querySelector('h2, h3');
+                if (title && !modal.hasAttribute('aria-label')) modal.setAttribute('aria-label', title.textContent.trim());
+                if (modal.firstElementChild) modal.firstElementChild.classList.add('actuar-modal-panel');
+            });
+            root.querySelectorAll('table td').forEach(cell => {
+                if (/^(Nenhum|Nenhuma)/.test(cell.textContent.trim())) cell.classList.add('actuar-empty-state-cell');
+            });
+        }
+
+        function finalizeActuarUi() {
+            normalizeActuarIcons();
+            removeDecorativeEmoji();
+            enhanceReusableComponents();
+            updateProfileUI();
+            updateThemeControl();
+            updateShell();
+        }
 
         // --- Controle de concorrência (evita que uma gravação apague a de outra pessoa) ---
         // lastSyncedSnapshot = a última versão que SABEMOS que está no banco.
@@ -1910,8 +2668,9 @@
             }
 
             document.getElementById('loadingOverlay').classList.add('hidden');
+            restoreViewContext();
             populateDropdowns();
-            render();
+            initializeNavigation();
         }
 
         function getStore() {
@@ -2226,6 +2985,7 @@
         }
 
         function teamLabel(team) {
+            if (team === "Todos") return "Software + Catraca";
             return team === "Sistema" ? "Software" : team;
         }
 
@@ -2298,47 +3058,34 @@
             extraPts:      { Sistema: 'faq-monitoramento-sistema',   Catraca: 'faq-pecas-catraca' }
         };
 
-        // Atualiza a faixa "Você está vendo" no topo, para o analista se localizar
-        // rapidamente entre os 4 seletores (mês, período, departamento, usuário) sem
-        // precisar ler cada um individualmente.
-        function updateContextStrip(usersList) {
-            const strip = document.getElementById('contextStrip');
-            if (!strip) return;
-
-            if (isAdminLoggedIn || isPecaLoggedIn) {
-                strip.classList.add('hidden');
-                return;
-            }
-            strip.classList.remove('hidden');
-
-            const list = usersList || (getStore().users || defaultUsers);
-            const user = list[currentActiveUser];
-            const monthSelect = document.getElementById('monthSelect');
-            const monthLabel = monthSelect && monthSelect.selectedOptions.length
-                ? monthSelect.selectedOptions[0].text
-                : '-';
-
-            document.getElementById('ctxUser').innerText = user ? user.name : '-';
-            document.getElementById('ctxTeam').innerText = user ? teamLabel(user.team) : '-';
-            document.getElementById('ctxMonth').innerText = monthLabel;
-            document.getElementById('ctxPeriod').innerText = activePeriodFilter === 'ALL' ? 'Acumulado do Mês' : activePeriodFilter;
-
-            document.getElementById('ctxAdminBadge').classList.toggle('hidden', !isAdminLoggedIn);
-        }
-
         function render() {
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const metrics = getAggregatedMetrics(activeMonthKey, activePeriodFilter);
-            updateContextStrip(usersList);
 
-            if (!usersList[currentActiveUser]) {
-                const firstKey = Object.keys(usersList)[0];
+            if (!usersList[currentActiveUser] || usersList[currentActiveUser].active === false || !isRankableUser(usersList[currentActiveUser])) {
+                const firstKey = Object.keys(usersList).find(id => usersList[id].active !== false && isRankableUser(usersList[id]));
                 if (firstKey) currentActiveUser = firstKey;
             }
             const user = usersList[currentActiveUser] || { name: "-", team: "Sistema", role: "Analista de sistema", initial: "-" };
+            persistViewContext();
 
-            if (isAdminLoggedIn) {
+            const profileView = document.getElementById('viewProfile');
+            if (currentRoute.name === 'profile') {
+                ['viewAgent', 'viewRanking', 'viewFaq', 'viewPecas', 'viewAdmin'].forEach(id => document.getElementById(id).classList.add('hidden'));
+                profileView.classList.remove('hidden');
+                document.getElementById('publicTabsContainer').classList.add('hidden');
+                document.getElementById('btnAdminAccess').classList.toggle('hidden', isAdminLoggedIn || isPecaLoggedIn);
+                document.getElementById('btnAdminLogout').classList.toggle('hidden', !isAdminLoggedIn);
+                document.getElementById('btnPecaAccess').classList.toggle('hidden', isAdminLoggedIn || isPecaLoggedIn);
+                document.getElementById('btnPecaLogout').classList.toggle('hidden', !isPecaLoggedIn);
+                renderProfileScreen(currentRoute.section);
+                finalizeActuarUi();
+                return;
+            }
+            profileView.classList.add('hidden');
+
+            if (currentRoute.name === 'admin' && isAdminLoggedIn) {
                 document.getElementById('viewAgent').classList.add('hidden');
                 document.getElementById('viewRanking').classList.add('hidden');
                 document.getElementById('viewFaq').classList.add('hidden');
@@ -2356,7 +3103,7 @@
                 renderAdminTransferRequests();
                 populateCatracaAnalystOptions('admPecaTargetUser');
                 renderAdminPecaLogs();
-            } else if (isPecaLoggedIn) {
+            } else if (currentRoute.name === 'pecas' && isPecaLoggedIn) {
                 document.getElementById('viewAgent').classList.add('hidden');
                 document.getElementById('viewRanking').classList.add('hidden');
                 document.getElementById('viewFaq').classList.add('hidden');
@@ -2374,16 +3121,16 @@
                 document.getElementById('viewAdmin').classList.add('hidden');
                 document.getElementById('viewPecas').classList.add('hidden');
                 document.getElementById('publicTabsContainer').classList.remove('hidden');
-                document.getElementById('btnAdminAccess').classList.remove('hidden');
-                document.getElementById('btnAdminLogout').classList.add('hidden');
-                document.getElementById('btnPecaAccess').classList.remove('hidden');
-                document.getElementById('btnPecaLogout').classList.add('hidden');
+                document.getElementById('btnAdminAccess').classList.toggle('hidden', isAdminLoggedIn || isPecaLoggedIn);
+                document.getElementById('btnAdminLogout').classList.toggle('hidden', !isAdminLoggedIn);
+                document.getElementById('btnPecaAccess').classList.toggle('hidden', isAdminLoggedIn || isPecaLoggedIn);
+                document.getElementById('btnPecaLogout').classList.toggle('hidden', !isPecaLoggedIn);
 
                 document.getElementById('agentName').innerText = user.name;
                 document.getElementById('agentTeam').innerText = teamLabel(user.team);
                 document.getElementById('agentRole').innerText = user.role;
                 document.getElementById('agentInitials').innerHTML = user.photo
-                    ? `<img src="${user.photo}" class="w-full h-full object-cover">`
+                    ? `<img src="${user.photo}" alt="Foto de ${user.name}" class="agent-dashboard-avatar-image">`
                     : (user.initial || user.name.slice(0, 2).toUpperCase());
                 document.getElementById('lblPeriodFilter').innerText = activePeriodFilter === 'ALL' ? 'Acumulado' : activePeriodFilter;
 
@@ -2400,16 +3147,16 @@
 
                 const prizeElem = document.getElementById('agentPrize');
                 const prizeSub = document.getElementById('prizeSubtext');
-                if (myRank === 1) { prizeElem.innerText = "R$ 1.000,00"; prizeSub.innerText = "🥇 1º Colocado no Ranking"; }
-                else if (myRank === 2) { prizeElem.innerText = "R$ 500,00"; prizeSub.innerText = "🥈 2º Colocado no Ranking"; }
-                else if (myRank === 3) { prizeElem.innerText = "R$ 300,00"; prizeSub.innerText = "🥉 3º Colocado no Ranking"; }
+                if (myRank === 1) { prizeElem.innerText = "R$ 1.000,00"; prizeSub.innerText = "1º colocado no ranking"; }
+                else if (myRank === 2) { prizeElem.innerText = "R$ 500,00"; prizeSub.innerText = "2º colocado no ranking"; }
+                else if (myRank === 3) { prizeElem.innerText = "R$ 300,00"; prizeSub.innerText = "3º colocado no ranking"; }
                 else { prizeElem.innerText = "R$ 0,00"; prizeSub.innerText = "Fora da Zona de Premiação"; }
 
                 const penBox = document.getElementById('agentPenaltiesBox');
                 const myPenalties = metrics[currentActiveUser] ? metrics[currentActiveUser].penaltiesList : [];
                 if (myPenalties.length > 0) {
                     penBox.classList.remove('hidden');
-                    penBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>' +
+                    penBox.innerHTML = '<i class="fi fi-rr-triangle-warning me-1"></i>' +
                         myPenalties.map(p => `${p.reason} (${p.value} pts)`).join(' · ');
                 } else {
                     penBox.classList.add('hidden');
@@ -2427,6 +3174,7 @@
             renderLeaderboard(metrics);
             renderTopDashboard(metrics);
             renderYouAreHereGauges(metrics);
+            finalizeActuarUi();
         }
 
         function renderHistoricalStats(userId) {
@@ -2434,6 +3182,33 @@
             const usersList = store.users || defaultUsers;
             const userTeam = usersList[userId] ? usersList[userId].team : "Sistema";
             let top1Count = 0, monthWins = 0;
+
+            const selectedMonthMetrics = getAggregatedMetrics(activeMonthKey, 'ALL');
+            const selectedMonthRanking = Object.keys(usersList)
+                .filter(id => usersList[id].team === userTeam && isRankableUser(usersList[id]) && usersList[id].active !== false)
+                .map(id => ({ id, total: calculatePoints(id, selectedMonthMetrics).total }))
+                .sort((a, b) => b.total - a.total);
+            const selectedMonthRanks = competitionRanks(selectedMonthRanking.map(item => ({ id: item.id, value: item.total })));
+            const selectedMonthRank = selectedMonthRanks[userId] || 0;
+            const avatar = document.getElementById('agentInitials');
+            const rankLabel = document.getElementById('statMonthRank');
+            const rankTone = selectedMonthRank === 1 ? 'gold' : selectedMonthRank === 2 ? 'silver' : selectedMonthRank === 3 ? 'bronze' : null;
+            ['gold', 'silver', 'bronze'].forEach(tone => {
+                if (avatar) avatar.classList.remove(`agent-avatar--${tone}`);
+                if (rankLabel) rankLabel.classList.remove(`agent-rank-text--${tone}`);
+            });
+            if (avatar) {
+                avatar.removeAttribute('data-current-rank');
+                avatar.removeAttribute('data-month-rank');
+            }
+            if (rankTone) {
+                avatar?.classList.add(`agent-avatar--${rankTone}`);
+                rankLabel?.classList.add(`agent-rank-text--${rankTone}`);
+                avatar?.setAttribute('data-month-rank', String(selectedMonthRank));
+                avatar?.setAttribute('title', `${selectedMonthRank}º lugar no ranking do mês selecionado`);
+            } else if (avatar) {
+                avatar.title = 'Foto do analista';
+            }
 
             const monthsToScan = [{ id: "atual" }, ...store.history.map(h => ({ id: h.id }))];
             const weeks = ["Semana 1", "Semana 2", "Semana 3", "Semana 4", "Semana 5"];
@@ -2466,12 +3241,22 @@
 
             document.getElementById('statTop1Count').innerText = top1Count;
             document.getElementById('statMonthWins').innerText = monthWins;
+            document.getElementById('statMonthRank').innerText = selectedMonthRank > 0 ? `${selectedMonthRank}º lugar` : '-';
         }
 
         function renderCharts(userId) {
             const weeks = ["Semana 1", "Semana 2", "Semana 3", "Semana 4", "Semana 5"];
             const labels = ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5"];
             const dataVolRes = [], dataVolAtd = [], dataNps = [], dataPrio = [], dataPrioPts = [];
+            const darkTheme = document.documentElement.classList.contains('dark');
+            const chartUi = {
+                text: darkTheme ? '#B4B7BD' : '#5F6570',
+                grid: darkTheme ? '#303740' : '#E1E1E1',
+                tooltip: darkTheme ? '#303740' : '#1D1E1F',
+                tooltipBorder: darkTheme ? '#48515D' : '#303234',
+                tooltipText: darkTheme ? '#E6E8EB' : '#D5D7DA',
+                pointBorder: darkTheme ? '#1D1E1F' : '#FFFFFF'
+            };
 
             weeks.forEach(w => {
                 const m = getAggregatedMetrics(activeMonthKey, w)[userId];
@@ -2492,52 +3277,48 @@
             if (chartPrioritiesInst) chartPrioritiesInst.destroy();
 
             const ctxVol = document.getElementById('chartVol').getContext('2d');
-            const gradRes = ctxVol.createLinearGradient(0, 0, 0, 180);
-            gradRes.addColorStop(0, 'rgba(0,229,199,0.16)');
-            gradRes.addColorStop(1, 'rgba(0,229,199,0)');
+            const gradRes = 'rgba(64,67,221,0.10)';
             chartVolInst = new Chart(ctxVol, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Resolvidos', data: dataVolRes, borderColor: '#4DD6C4', backgroundColor: gradRes, fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#4DD6C4', pointHoverBorderColor: '#14141C', pointHoverBorderWidth: 2 },
-                        { label: 'Atendidos', data: dataVolAtd, borderColor: '#7178C7', backgroundColor: 'transparent', borderDash: [4, 4], tension: 0.4, borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#7178C7' }
+                        { label: 'Resolvidos', data: dataVolRes, borderColor: darkTheme ? '#4F51E9' : '#4043DD', backgroundColor: gradRes, fill: true, tension: 0.25, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: darkTheme ? '#4F51E9' : '#4043DD', pointHoverBorderColor: chartUi.pointBorder, pointHoverBorderWidth: 2 },
+                        { label: 'Atendidos', data: dataVolAtd, borderColor: darkTheme ? '#6396E3' : '#266ED9', backgroundColor: 'transparent', borderDash: [4, 4], tension: 0.25, borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: darkTheme ? '#6396E3' : '#266ED9' }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     interaction: { intersect: false, mode: 'index' },
                     plugins: {
-                        legend: { labels: { color: '#8B8B9C', font: { size: 10 }, usePointStyle: true, boxWidth: 6, boxHeight: 6 } },
-                        tooltip: { backgroundColor: '#1B1B26', borderColor: '#26262F', borderWidth: 1, padding: 8, titleColor: '#fff', bodyColor: '#9B9BAD', displayColors: true, boxPadding: 4 }
+                        legend: { labels: { color: chartUi.text, font: { size: 10 }, usePointStyle: true, boxWidth: 6, boxHeight: 6 } },
+                        tooltip: { backgroundColor: chartUi.tooltip, borderColor: chartUi.tooltipBorder, borderWidth: 1, padding: 8, titleColor: '#fff', bodyColor: chartUi.tooltipText, displayColors: true, boxPadding: 4 }
                     },
                     scales: {
-                        x: { grid: { display: false }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 } } },
-                        y: { grid: { color: 'rgba(255,255,255,0.045)' }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 } }, beginAtZero: true }
+                        x: { grid: { display: false }, border: { display: false }, ticks: { color: chartUi.text, font: { size: 10 } } },
+                        y: { grid: { color: chartUi.grid }, border: { display: false }, ticks: { color: chartUi.text, font: { size: 10 } }, beginAtZero: true }
                     }
                 }
             });
 
             const ctxNps = document.getElementById('chartNps').getContext('2d');
-            const gradNps = ctxNps.createLinearGradient(0, 0, 0, 180);
-            gradNps.addColorStop(0, 'rgba(217,163,86,0.16)');
-            gradNps.addColorStop(1, 'rgba(217,163,86,0)');
+            const gradNps = 'rgba(194,125,28,0.10)';
             chartNpsInst = new Chart(ctxNps, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{ label: 'NPS Média', data: dataNps, borderColor: '#D9A356', backgroundColor: gradNps, fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#D9A356', pointHoverBorderColor: '#14141C', pointHoverBorderWidth: 2 }]
+                    datasets: [{ label: 'NPS Média', data: dataNps, borderColor: '#C27D1C', backgroundColor: gradNps, fill: true, tension: 0.25, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#C27D1C', pointHoverBorderColor: chartUi.pointBorder, pointHoverBorderWidth: 2 }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     interaction: { intersect: false, mode: 'index' },
                     scales: {
-                        x: { grid: { display: false }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 } } },
-                        y: { min: 1, max: 5, grid: { color: 'rgba(255,255,255,0.045)' }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 } } }
+                        x: { grid: { display: false }, border: { display: false }, ticks: { color: chartUi.text, font: { size: 10 } } },
+                        y: { min: 1, max: 5, grid: { color: chartUi.grid }, border: { display: false }, ticks: { color: chartUi.text, font: { size: 10 } } }
                     },
                     plugins: {
-                        legend: { labels: { color: '#8B8B9C', font: { size: 10 }, usePointStyle: true, boxWidth: 6, boxHeight: 6 } },
-                        tooltip: { backgroundColor: '#1B1B26', borderColor: '#26262F', borderWidth: 1, padding: 8, titleColor: '#fff', bodyColor: '#9B9BAD' }
+                        legend: { labels: { color: chartUi.text, font: { size: 10 }, usePointStyle: true, boxWidth: 6, boxHeight: 6 } },
+                        tooltip: { backgroundColor: chartUi.tooltip, borderColor: chartUi.tooltipBorder, borderWidth: 1, padding: 8, titleColor: '#fff', bodyColor: chartUi.tooltipText }
                     }
                 }
             });
@@ -2550,8 +3331,8 @@
                     datasets: [{
                         label: 'Prioridades Validadas',
                         data: dataPrio,
-                        backgroundColor: 'rgba(93,184,163,0.55)',
-                        hoverBackgroundColor: '#5DB8A3',
+                        backgroundColor: darkTheme ? 'rgba(49,180,102,0.55)' : 'rgba(35,128,72,0.55)',
+                        hoverBackgroundColor: darkTheme ? '#31B466' : '#238048',
                         borderRadius: 6,
                         maxBarThickness: 26,
                         pointsData: dataPrioPts
@@ -2561,14 +3342,14 @@
                     responsive: true, maintainAspectRatio: false,
                     layout: { padding: { top: 18 } },
                     scales: {
-                        x: { grid: { display: false }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 } } },
-                        y: { grid: { color: 'rgba(255,255,255,0.045)' }, border: { display: false }, ticks: { color: '#75758A', font: { size: 10 }, stepSize: 1 }, beginAtZero: true }
+                        x: { grid: { display: false }, border: { display: false }, ticks: { color: chartUi.text, font: { size: 10 } } },
+                        y: { grid: { color: chartUi.grid }, border: { display: false }, ticks: { color: chartUi.text, font: { size: 10 }, stepSize: 1 }, beginAtZero: true }
                     },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: '#1B1B26', borderColor: '#26262F', borderWidth: 1, padding: 8,
-                            titleColor: '#fff', bodyColor: '#9B9BAD',
+                            backgroundColor: chartUi.tooltip, borderColor: chartUi.tooltipBorder, borderWidth: 1, padding: 8,
+                            titleColor: '#fff', bodyColor: chartUi.tooltipText,
                             callbacks: {
                                 label: (c) => ` ${c.raw} protocolo${c.raw === 1 ? '' : 's'}`,
                                 afterLabel: (c) => ` +${dataPrioPts[c.dataIndex]} pts na semana`
@@ -2577,7 +3358,7 @@
                         datalabels: {
                             display: (ctx) => dataPrioPts[ctx.dataIndex] > 0,
                             anchor: 'end', align: 'top', offset: 2,
-                            color: '#D9A356',
+                            color: '#C27D1C',
                             font: { size: 9, weight: '700' },
                             formatter: (value, ctx) => `+${dataPrioPts[ctx.dataIndex]}`
                         }
@@ -2610,18 +3391,19 @@
             if (!canvas) return;
             const b = calc.breakdown;
             const isSistema = user.team === "Sistema";
+            const darkTheme = document.documentElement.classList.contains('dark');
 
             // Cada métrica: rótulo, valor em pontos, ícone, cor e dica contextual
             // Paleta alinhada aos design tokens do site (accent, accent2, primary, amber, emerald)
             // em vez de tons avulsos — mantém a mesma tonalidade do restante da UI e evita poluição visual.
             const items = [
-                { key: 'ptsRanking', label: 'Bônus Ranking Semanal', icon: 'fa-medal', color: '#00E5C7', value: b.ptsRanking, hint: '1º/2º/3º lugar nas semanas do período' },
-                { key: 'ptsSprint', label: 'Sprint de Crescimento', icon: 'fa-rocket', color: '#6C63FF', value: b.ptsSprint, hint: 'Clientes recuperados + conclusão 100%' },
-                { key: isSistema ? 'ptsAtendidos' : 'ptsResolvidos', label: isSistema ? 'Volume de Atendimentos' : 'Protocolos Resolvidos', icon: 'fa-headset', color: '#00C2FF', value: isSistema ? b.ptsAtendidos : b.ptsResolvidos, hint: isSistema ? 'Faixas de volume mensal atingidas' : '+2 pts por protocolo resolvido' },
-                { key: 'ptsSatisfacao', label: 'Satisfação (NPS)', icon: 'fa-star', color: '#FBBF24', value: b.ptsSatisfacao, hint: `Média atual: ${calc.avgSatisfacao}★` },
-                { key: 'ptsPrioridades', label: 'Prioridades & Transferências', icon: 'fa-bolt', color: '#A3AEFF', value: b.ptsPrioridades, hint: 'Protocolos validados pela gestão' },
-                { key: 'tmaPts', label: 'TMA / Agilidade', icon: 'fa-stopwatch', color: '#8188FF', value: b.tmaPts, hint: 'Tempo médio de atendimento' },
-                { key: 'extraPts', label: 'Monitoramento & Peças', icon: 'fa-clipboard-check', color: '#34D399', value: b.extraPts, hint: 'Avaliação de qualidade + envio/coleta' }
+                { key: 'ptsRanking', label: 'Bônus Ranking Semanal', icon: 'fa-medal', color: darkTheme ? '#4F51E9' : '#4043DD', value: b.ptsRanking, hint: '1º/2º/3º lugar nas semanas do período' },
+                { key: 'ptsSprint', label: 'Sprint de Crescimento', icon: 'fa-rocket', color: darkTheme ? '#6396E3' : '#266ED9', value: b.ptsSprint, hint: 'Clientes recuperados + conclusão 100%' },
+                { key: isSistema ? 'ptsAtendidos' : 'ptsResolvidos', label: isSistema ? 'Volume de Atendimentos' : 'Protocolos Resolvidos', icon: 'fa-headset', color: darkTheme ? '#31B466' : '#238048', value: isSistema ? b.ptsAtendidos : b.ptsResolvidos, hint: isSistema ? 'Faixas de volume mensal atingidas' : '+2 pts por protocolo resolvido' },
+                { key: 'ptsSatisfacao', label: 'Satisfação (NPS)', icon: 'fa-star', color: darkTheme ? '#E7B008' : '#C27D1C', value: b.ptsSatisfacao, hint: `Média atual: ${calc.avgSatisfacao}` },
+                { key: 'ptsPrioridades', label: 'Prioridades & Transferências', icon: 'fa-bolt', color: darkTheme ? '#9C5EE4' : '#924CE1', value: b.ptsPrioridades, hint: 'Protocolos validados pela gestão' },
+                { key: 'tmaPts', label: 'TMA / Agilidade', icon: 'fa-stopwatch', color: darkTheme ? '#7D80F1' : '#696CE7', value: b.tmaPts, hint: 'Tempo médio de atendimento' },
+                { key: 'extraPts', label: 'Monitoramento & Peças', icon: 'fa-clipboard-check', color: darkTheme ? '#23AA80' : '#10B981', value: b.extraPts, hint: 'Avaliação de qualidade + envio/coleta' }
             ].filter(it => it.value !== 0);
 
             const penal = b.penalidades || 0;
@@ -2633,7 +3415,7 @@
             if (positiveItems.length === 0) {
                 chartBreakdownInst = new Chart(ctx, {
                     type: 'doughnut',
-                    data: { labels: ['Sem pontos ainda'], datasets: [{ data: [1], backgroundColor: ['#26262F'], borderWidth: 0 }] },
+                    data: { labels: ['Sem pontos ainda'], datasets: [{ data: [1], backgroundColor: [darkTheme ? '#303740' : '#E1E1E1'], borderWidth: 0 }] },
                     options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
                 });
             } else {
@@ -2644,7 +3426,7 @@
                         datasets: [{
                             data: positiveItems.map(it => it.value),
                             backgroundColor: positiveItems.map(it => it.color),
-                            borderColor: '#14141C',
+                            borderColor: darkTheme ? '#1D1E1F' : '#FFFFFF',
                             borderWidth: 2,
                             hoverOffset: 3,
                             hoverBorderWidth: 2
@@ -2655,8 +3437,8 @@
                         plugins: {
                             legend: { display: false },
                             tooltip: {
-                                backgroundColor: '#1B1B26', borderColor: '#26262F', borderWidth: 1, padding: 10,
-                                titleColor: '#fff', bodyColor: '#9B9BAD',
+                                backgroundColor: darkTheme ? '#303740' : '#1D1E1F', borderColor: darkTheme ? '#48515D' : '#303234', borderWidth: 1, padding: 10,
+                                titleColor: '#fff', bodyColor: darkTheme ? '#E6E8EB' : '#D5D7DA',
                                 callbacks: { label: (c) => ` ${c.label}: +${c.raw} pts` }
                             }
                         },
@@ -2764,62 +3546,83 @@
             const store = getStore();
             const usersList = store.users || defaultUsers;
             document.getElementById('rankingTitleTeam').innerText = teamLabel(activeRankingTab);
-            document.getElementById('thExtraCol').innerText = activeRankingTab === "Sistema" ? "Monit. Qualidade" : "Peças & Despachos";
+            const extraColumnLabel = activeRankingTab === "Sistema"
+                ? "Monit. Qualidade"
+                : activeRankingTab === "Catraca" ? "Peças & Despachos" : "Monit. / Peças";
+            document.getElementById('thExtraCol').innerText = extraColumnLabel;
             const presTitle = document.getElementById('presentationTeamLabel');
             const presTh = document.getElementById('thExtraColPresentation');
             if (presTitle) presTitle.innerText = teamLabel(activeRankingTab);
-            if (presTh) presTh.innerText = activeRankingTab === "Sistema" ? "Monit. Qualidade" : "Peças & Despachos";
+            if (presTh) presTh.innerText = extraColumnLabel;
 
-            const list = Object.keys(usersList)
-                .filter(id => usersList[id].team === activeRankingTab && isRankableUser(usersList[id]) && usersList[id].active !== false)
-                .map(id => {
-                    const c = calculatePoints(id, metrics);
-                    return { id, name: usersList[id].name, total: c.total, calc: c, metrics: metrics[id] };
-                })
-                .sort((a, b) => b.total - a.total);
+            const visibleTeams = activeRankingTab === 'Todos' ? ['Sistema', 'Catraca'] : [activeRankingTab];
+            const rankingGroups = visibleTeams.map(team => ({
+                team,
+                list: Object.keys(usersList)
+                    .filter(id => usersList[id].team === team && isRankableUser(usersList[id]) && usersList[id].active !== false)
+                    .map(id => {
+                        const user = usersList[id];
+                        const c = calculatePoints(id, metrics);
+                        return {
+                            id,
+                            team,
+                            name: user.name,
+                            initial: user.initial || user.name.slice(0, 2).toUpperCase(),
+                            photo: user.photo,
+                            total: c.total,
+                            calc: c,
+                            metrics: metrics[id]
+                        };
+                    })
+                    .sort((a, b) => b.total - a.total)
+            }));
 
             let html = "";
-            list.forEach((item, index) => {
-                let posBadge = `<span class="font-bold text-secondary">${index + 1}º</span>`;
-                if (index === 0) posBadge = `<span class="text-accent font-extrabold">🥇 1º</span>`;
-                if (index === 1) posBadge = `<span class="text-secondary font-extrabold">🥈 2º</span>`;
-                if (index === 2) posBadge = `<span class="text-secondary font-extrabold">🥉 3º</span>`;
+            rankingGroups.forEach(group => {
+                if (activeRankingTab === 'Todos') {
+                    html += `<tr class="ranking-team-divider"><td colspan="12"><span>${teamLabel(group.team)}</span></td></tr>`;
+                }
+                group.list.forEach((item, index) => {
+                const rankingTone = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'standard';
+                const posBadge = `<span class="ranking-position ranking-position--${rankingTone} font-extrabold">${index + 1}º</span>`;
+                const listAvatar = item.photo
+                    ? `<img src="${item.photo}" alt="Foto de ${item.name}" class="ranking-list-avatar-image">`
+                    : `<span aria-hidden="true">${item.initial}</span>`;
 
                 const b = item.calc.breakdown;
                 const isSelf = item.id === currentActiveUser && !isAdminLoggedIn;
-                let rowTint = '';
-                if (isSelf) rowTint = 'bg-accent/10 border-l-2 border-accent font-bold';
-                else if (index === 0) rowTint = 'bg-gradient-to-r from-accent/[0.07] to-transparent border-l-2 border-accent/40';
-                else if (index === 1) rowTint = 'bg-gradient-to-r from-slate-300/[0.05] to-transparent border-l-2 border-slate-300/30';
-                else if (index === 2) rowTint = 'bg-gradient-to-r from-amber-600/[0.06] to-transparent border-l-2 border-amber-600/30';
-                else rowTint = 'border-l-2 border-transparent';
+                const rowTint = `ranking-row ranking-row--${rankingTone}${isSelf ? ' ranking-row--self font-bold' : ''}`;
 
                 html += `
                     <tr class="group cursor-pointer transition-colors duration-150 hover:bg-surface2/70 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-accent/50 ${rowTint}"
-                        onclick="viewAnalystFromPodium('${item.id}','${activeRankingTab}')"
+                        onclick="viewAnalystFromPodium('${item.id}','${item.team}')"
                         role="button" tabindex="0"
-                        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewAnalystFromPodium('${item.id}','${activeRankingTab}')}"
+                        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewAnalystFromPodium('${item.id}','${item.team}')}"
                         title="Ver dashboard de ${item.name}">
                         <td class="p-3">${posBadge}</td>
                         <td class="p-3 font-semibold text-white">
                             <span class="inline-flex items-center gap-2">
-                                ${item.name}
+                                <span class="ranking-list-avatar" aria-hidden="${item.photo ? 'false' : 'true'}">${listAvatar}</span>
+                                <span>${item.name}</span>
+                                ${activeRankingTab === 'Todos' ? `<span class="ranking-team-badge">${teamLabel(item.team)}</span>` : ''}
                                 <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-secondary/0 group-hover:text-accent transition-colors duration-150"></i>
                             </span>
                         </td>
                         <td class="p-3 text-center text-secondary">+${b.tmaPts}</td>
                         <td class="p-3 text-center">+${b.ptsResolvidos} <span class="text-[10px] text-secondary">(${item.metrics?.resolvidos || 0})</span></td>
                         <td class="p-3 text-center">+${b.ptsAtendidos} <span class="text-[10px] text-secondary">(${item.metrics?.atendidos || 0})</span></td>
-                        <td class="p-3 text-center">+${b.ptsSatisfacao} <span class="text-[10px] text-secondary">(${item.calc.avgSatisfacao}★)</span></td>
+                        <td class="p-3 text-center">+${b.ptsSatisfacao} <span class="text-[10px] text-secondary">(${item.calc.avgSatisfacao})</span></td>
                         <td class="p-3 text-center">+${b.ptsPrioridades}</td>
                         <td class="p-3 text-center">+${b.ptsSprint}</td>
                         <td class="p-3 text-center text-accent font-semibold">+${b.ptsRanking}</td>
                         <td class="p-3 text-center">+${b.extraPts}</td>
                         <td class="p-3 text-center text-red-400 font-bold">${b.penalidades}</td>
-                        <td class="p-3 text-right font-extrabold text-accent text-sm">${item.total} pts</td>
+                        <td class="ranking-total p-3 text-right font-extrabold text-accent text-sm">${item.total} pts</td>
                     </tr>
                 `;
+                });
             });
+
             const finalHtml = html || `<tr><td colspan="12" class="p-4 text-center text-secondary">Nenhum lançamento neste período.</td></tr>`;
             document.getElementById('leaderboardBody').innerHTML = finalHtml;
             const presBody = document.getElementById('leaderboardBodyPresentation');
@@ -2849,53 +3652,35 @@
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const prizes = ["R$ 1.000,00", "R$ 500,00", "R$ 300,00"];
-            const medals = ["🥇", "🥈", "🥉"];
             // Estilo visual por posição: [1º, 2º, 3º] -- ordem de exibição no grid: 2º / 1º / 3º
             const podiumStyle = [
                 { // 1º lugar
                     order: "order-2",
-                    lift: "-translate-y-3",
                     height: "min-h-[178px]",
-                    card: "bg-gradient-to-b from-accent/20 via-surface2 to-surface2 border-accent/60 ring-2 ring-accent/40 shadow-[0_0_30px_-8px_rgba(0,229,199,0.45)]",
-                    avatar: "bg-gradient-to-br from-accent to-primary-500 text-bg w-16 h-16 text-lg",
-                    posBadge: "bg-accent text-bg",
-                    nameColor: "text-white",
-                    ptsColor: "text-accent",
-                    crown: true,
-                    scale: "scale-[1.04] z-10"
+                    tone: "podium-card--gold",
+                    avatarSize: "w-16 h-16 text-lg"
                 },
                 { // 2º lugar
                     order: "order-1",
-                    lift: "",
                     height: "min-h-[150px]",
-                    card: "bg-gradient-to-b from-slate-300/10 via-surface2 to-surface2 border-slate-300/30",
-                    avatar: "bg-gradient-to-br from-slate-300 to-slate-500 text-bg w-12 h-12 text-sm",
-                    posBadge: "bg-slate-300 text-bg",
-                    nameColor: "text-white",
-                    ptsColor: "text-slate-200",
-                    crown: false,
-                    scale: ""
+                    tone: "podium-card--silver",
+                    avatarSize: "w-12 h-12 text-sm"
                 },
                 { // 3º lugar
                     order: "order-3",
-                    lift: "",
-                    height: "min-h-[134px]",
-                    card: "bg-gradient-to-b from-amber-600/10 via-surface2 to-surface2 border-amber-600/30",
-                    avatar: "bg-gradient-to-br from-amber-500 to-amber-700 text-bg w-11 h-11 text-sm",
-                    posBadge: "bg-amber-500 text-bg",
-                    nameColor: "text-white",
-                    ptsColor: "text-amber-400",
-                    crown: false,
-                    scale: ""
+                    height: "min-h-[142px]",
+                    tone: "podium-card--bronze",
+                    avatarSize: "w-11 h-11 text-sm"
                 }
             ];
 
-            ["Sistema", "Catraca"].forEach(team => {
+            const buildPodium = team => {
                 const list = Object.keys(usersList)
-                    .filter(id => usersList[id].team === team && isRankableUser(usersList[id]) && usersList[id].active !== false)
+                    .filter(id => (team === 'Todos' || usersList[id].team === team) && isRankableUser(usersList[id]) && usersList[id].active !== false)
                     .map(id => {
+                        const user = usersList[id];
                         const c = calculatePoints(id, metrics);
-                        return { id, name: usersList[id].name, initial: usersList[id].initial || usersList[id].name.slice(0, 2).toUpperCase(), photo: usersList[id].photo, total: c.total };
+                        return { id, team: user.team, name: user.name, initial: user.initial || user.name.slice(0, 2).toUpperCase(), photo: user.photo, total: c.total };
                     })
                     .sort((a, b) => b.total - a.total)
                     .slice(0, 3);
@@ -2905,48 +3690,68 @@
                     const item = list[i];
                     const s = podiumStyle[i];
                     if (item) {
-                        const avatarContent = item.photo ? `<img src="${item.photo}" class="w-full h-full object-cover rounded-full">` : item.initial;
+                        const hasPhoto = Boolean(item.photo);
+                        const avatarContent = hasPhoto
+                            ? `<img src="${item.photo}" alt="Foto de ${item.name}" class="podium-avatar-image">`
+                            : item.initial;
                         html += `
-                            <div class="${s.order} ${s.scale} group relative ${s.lift} ${s.height} ${s.card} border rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center transition-all duration-200 hover:-translate-y-1.5 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/50"
-                                 onclick="viewAnalystFromPodium('${item.id}','${team}')"
+                            <div class="${s.order} ${s.height} ${s.tone} podium-card group relative border rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center cursor-pointer"
+                                 onclick="viewAnalystFromPodium('${item.id}','${item.team}')"
                                  role="button" tabindex="0"
-                                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewAnalystFromPodium('${item.id}','${team}')}"
+                                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewAnalystFromPodium('${item.id}','${item.team}')}"
                                  title="Ver dashboard de ${item.name}">
-                                ${s.crown ? `<i class="fa-solid fa-crown text-accent text-lg absolute -top-3 left-1/2 -translate-x-1/2 animate-bounce [animation-duration:2.2s]"></i>` : ''}
-                                <span class="absolute top-2 left-2 w-5 h-5 rounded-full ${s.posBadge} text-[10px] font-extrabold flex items-center justify-center">${i + 1}</span>
-                                <span class="absolute top-2 right-2 text-[9px] text-secondary/0 group-hover:text-secondary transition-colors duration-200 flex items-center gap-0.5">
+                                <span class="podium-open-icon absolute top-2 right-2 text-[9px] flex items-center gap-0.5" aria-hidden="true">
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                 </span>
                                 <div class="relative mb-2">
-                                    <div class="${s.avatar} rounded-full flex items-center justify-center font-extrabold border-2 border-bg shadow-lg transition-transform duration-200 group-hover:scale-105 overflow-hidden">${avatarContent}</div>
-                                    <span class="absolute -bottom-1 -right-1 text-base">${medals[i]}</span>
+                                    <div class="podium-avatar ${hasPhoto ? 'podium-avatar--photo' : 'podium-avatar--initials'} ${s.avatarSize} flex items-center justify-center font-extrabold border overflow-hidden">${avatarContent}</div>
+                                    <span class="podium-place-marker absolute -bottom-1 -right-1 w-5 h-5 rounded-full text-[10px] font-extrabold flex items-center justify-center">${i + 1}</span>
                                 </div>
-                                <p class="text-xs sm:text-sm font-bold ${s.nameColor} truncate max-w-[100px] sm:max-w-[120px]" title="${item.name}">${item.name}</p>
-                                <p class="text-base sm:text-lg font-extrabold ${s.ptsColor} mt-0.5 leading-none num-mono">${item.total}<span class="text-[10px] font-semibold ml-0.5">pts</span></p>
-                                <p class="text-[10px] text-emerald-400 font-semibold mt-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">${prizes[i]}</p>
+                                <p class="podium-name text-xs sm:text-sm font-bold truncate max-w-[100px] sm:max-w-[120px]" title="${item.name}">${item.name}</p>
+                                <p class="podium-points text-base sm:text-lg font-extrabold mt-0.5 leading-none num-mono">${item.total}<span class="text-[10px] font-semibold ml-0.5">pts</span></p>
+                                <p class="podium-prize text-[10px] font-semibold mt-1.5 rounded-full px-2 py-0.5">${prizes[i]}</p>
                             </div>
                         `;
                     } else {
                         html += `
-                            <div class="${s.order} ${s.height} bg-surface2/40 border border-line border-dashed rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center opacity-50">
-                                <div class="w-11 h-11 rounded-full bg-surface3 flex items-center justify-center text-secondary mb-2"><i class="fa-solid fa-user text-xs"></i></div>
-                                <p class="text-xs font-bold text-secondary">Vago</p>
-                                <p class="text-base font-extrabold text-secondary mt-0.5">0<span class="text-[10px] font-semibold ml-0.5">pts</span></p>
-                                <p class="text-[10px] text-secondary font-semibold mt-1.5">${prizes[i]}</p>
+                            <div class="${s.order} ${s.height} ${s.tone} podium-card podium-card--vacant border border-dashed rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center">
+                                <div class="podium-avatar ${s.avatarSize} rounded-full flex items-center justify-center mb-2"><i class="fa-solid fa-user text-xs"></i></div>
+                                <p class="podium-name text-xs font-bold">Vago</p>
+                                <p class="podium-points text-base font-extrabold mt-0.5 num-mono">0<span class="text-[10px] font-semibold ml-0.5">pts</span></p>
+                                <p class="podium-prize text-[10px] font-semibold mt-1.5 rounded-full px-2 py-0.5">${prizes[i]}</p>
                             </div>
                         `;
                     }
                 }
-                document.getElementById(team === "Sistema" ? "podiumSistema" : "podiumCatraca").innerHTML = html;
+                return html;
+            };
 
-                // Espelha o pódio do departamento ativo dentro do modo apresentação (tela cheia)
-                if (team === activeRankingTab) {
-                    const presPodium = document.getElementById('podiumPresentation');
-                    if (presPodium) presPodium.innerHTML = html;
-                    const presPodiumLabel = document.getElementById('presentationPodiumTeamLabel');
-                    if (presPodiumLabel) presPodiumLabel.innerText = teamLabel(team);
+            const podiumHtml = {
+                Sistema: buildPodium('Sistema'),
+                Catraca: buildPodium('Catraca')
+            };
+            document.getElementById('podiumSistema').innerHTML = podiumHtml.Sistema;
+            document.getElementById('podiumCatraca').innerHTML = podiumHtml.Catraca;
+
+            const presPodium = document.getElementById('podiumPresentation');
+            if (presPodium) {
+                const combined = activeRankingTab === 'Todos';
+                presPodium.classList.toggle('podium-presentation--combined', combined);
+                if (combined) {
+                    presPodium.innerHTML = `
+                        <section class="podium-combined-group" aria-labelledby="podiumCombinedSistemaTitle">
+                            <h4 id="podiumCombinedSistemaTitle"><i class="fi fi-rr-computer" aria-hidden="true"></i> Software</h4>
+                            <div class="podium-combined-grid">${podiumHtml.Sistema}</div>
+                        </section>
+                        <section class="podium-combined-group" aria-labelledby="podiumCombinedCatracaTitle">
+                            <h4 id="podiumCombinedCatracaTitle"><i class="fi fi-rr-settings" aria-hidden="true"></i> Catraca</h4>
+                            <div class="podium-combined-grid">${podiumHtml.Catraca}</div>
+                        </section>
+                    `;
+                } else {
+                    presPodium.innerHTML = podiumHtml[activeRankingTab] || podiumHtml.Sistema;
                 }
-            });
+            }
         }
 
         function renderAdminLogs() {
@@ -2971,7 +3776,7 @@
                             <td class="p-3 font-semibold text-white">${user.name}</td>
                             <td class="p-3 text-primary-400 font-bold">${l.week}</td>
                             <td class="p-3">${l.resolvidos} res / ${l.atendidos} atd</td>
-                            <td class="p-3">${l.nps} ★</td>
+                            <td class="p-3">${l.nps}</td>
                             <td class="p-3 text-emerald-400 text-[10px] uppercase font-bold">Lançamento Semanal</td>
                             <td class="p-3">${deleteBtn}</td>
                         </tr>
@@ -3017,6 +3822,7 @@
                 html += `
                     <tr class="border-b border-line/40 ${active ? '' : 'opacity-60'}">
                         <td class="p-2 font-semibold text-white">${u.name}</td>
+                        <td class="p-2">${u.email ? escapeHtml(u.email) : '<span class="text-secondary">Não informado</span>'}</td>
                         <td class="p-2">${u.role}</td>
                         <td class="p-2">${teamLabel(u.team)}</td>
                         <td class="p-2 text-center">${statusBadge}</td>
@@ -3028,7 +3834,7 @@
                     </tr>
                 `;
             });
-            document.getElementById('usersManagementTable').innerHTML = html || `<tr><td colspan="5" class="p-4 text-center text-secondary">Nenhum usuário cadastrado.</td></tr>`;
+            document.getElementById('usersManagementTable').innerHTML = html || `<tr><td colspan="6" class="p-4 text-center text-secondary">Nenhum usuário cadastrado.</td></tr>`;
         }
 
         function onUserPhotoSelected(event) {
@@ -3065,7 +3871,7 @@
         function removeUserPhoto() {
             document.getElementById('inputUserPhotoData').value = "";
             document.getElementById('inputUserPhoto').value = "";
-            document.getElementById('userPhotoPreview').innerHTML = '<i class="fa-solid fa-user text-sm"></i>';
+            document.getElementById('userPhotoPreview').innerHTML = '<i class="fi fi-rr-user text-sm"></i>';
             document.getElementById('btnRemoveUserPhoto').classList.add('hidden');
         }
 
@@ -3082,6 +3888,7 @@
             if (!u) return;
             document.getElementById('editUserId').value = id;
             document.getElementById('inputUserName').value = u.name;
+            document.getElementById('inputUserEmail').value = u.email || '';
             document.getElementById('inputUserRole').value = u.role;
             document.getElementById('inputUserTeam').value = u.team;
             document.getElementById('inputUserPassword').value = "";
@@ -3091,7 +3898,7 @@
                 document.getElementById('userPhotoPreview').innerHTML = `<img src="${u.photo}" class="w-full h-full object-cover">`;
                 document.getElementById('btnRemoveUserPhoto').classList.remove('hidden');
             } else {
-                document.getElementById('userPhotoPreview').innerHTML = '<i class="fa-solid fa-user text-sm"></i>';
+                document.getElementById('userPhotoPreview').innerHTML = '<i class="fi fi-rr-user text-sm"></i>';
                 document.getElementById('btnRemoveUserPhoto').classList.add('hidden');
             }
             document.getElementById('btnSaveUser').innerText = "Atualizar Usuário";
@@ -3102,6 +3909,7 @@
         function cancelEditUser() {
             document.getElementById('editUserId').value = "";
             document.getElementById('inputUserName').value = "";
+            document.getElementById('inputUserEmail').value = "";
             document.getElementById('inputUserRole').value = "Analista de sistema";
             document.getElementById('inputUserTeam').value = "Sistema";
             document.getElementById('inputUserPassword').value = "";
@@ -3113,14 +3921,23 @@
 
         async function saveUser(e) {
             e.preventDefault();
+            if (!canManageUserEmail()) {
+                showToast("Entre no Modo Gestão para alterar dados de usuários.", "error");
+                return;
+            }
             const editId = document.getElementById('editUserId').value;
             const name = document.getElementById('inputUserName').value.trim();
+            const email = document.getElementById('inputUserEmail').value.trim();
             const role = document.getElementById('inputUserRole').value;
             const team = document.getElementById('inputUserTeam').value;
             const password = document.getElementById('inputUserPassword').value;
             const photoData = document.getElementById('inputUserPhotoData').value;
 
             if (!name) return;
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showToast("Informe um e-mail válido.", "error");
+                return;
+            }
 
             if ((role === "Gestor Adm" || role === "Envio/Coleta") && !password && !(editId && appStore.users[editId] && appStore.users[editId].hasPassword)) {
                 showToast("Defina uma senha de acesso para este perfil.", "error");
@@ -3132,6 +3949,7 @@
             if (editId && appStore.users[editId]) {
                 // Atualiza o usuário existente (Permite editar o nome e demais campos)
                 appStore.users[editId].name = name;
+                appStore.users[editId].email = email || undefined;
                 appStore.users[editId].role = role;
                 appStore.users[editId].team = team;
                 if (password) {
@@ -3150,7 +3968,7 @@
                     const saved = await setUserPasswordRemote(newId, password);
                     if (!saved) return;
                 }
-                appStore.users[newId] = { name, team, role, initial: initials, active: true, photo: photoData || undefined, hasPassword: needsPassword || undefined };
+                appStore.users[newId] = { name, email: email || undefined, team, role, initial: initials, active: true, photo: photoData || undefined, hasPassword: needsPassword || undefined };
                 showToast("Novo usuário cadastrado com sucesso!");
             }
 
@@ -3196,6 +4014,14 @@
         }
 
         function switchPublicTab(tab) {
+            if (currentRoute.name !== tab) {
+                navigateTo(tab);
+                return;
+            }
+            switchPublicTabView(tab);
+        }
+
+        function switchPublicTabView(tab) {
             const views = { dashboard: 'viewAgent', ranking: 'viewRanking', faq: 'viewFaq' };
             const btns = { dashboard: 'btnTabDashboard', ranking: 'btnTabRanking', faq: 'btnTabFaq' };
             const activeClass = "px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
@@ -3277,9 +4103,9 @@
 
         function buildFaqSearchIndex() {
             const deptMeta = {
-                Geral:    { containerId: 'faqContentGeral',    label: 'Regras Gerais',  icon: '📘' },
-                Sistema:  { containerId: 'faqContentSistema',  label: 'Software',       icon: '💻' },
-                Catraca:  { containerId: 'faqContentCatraca',  label: 'Catraca',        icon: '🎫' }
+                Geral:    { containerId: 'faqContentGeral',    label: 'Regras Gerais',  icon: '' },
+                Sistema:  { containerId: 'faqContentSistema',  label: 'Software',       icon: '' },
+                Catraca:  { containerId: 'faqContentCatraca',  label: 'Catraca',        icon: '' }
             };
             const index = [];
             let autoIdCounter = 0;
@@ -3329,7 +4155,7 @@
                 .slice(0, 8);
 
             if (matches.length === 0) {
-                resultsEl.innerHTML = `<div class="p-4 text-center text-xs text-secondary"><i class="fa-regular fa-face-frown mb-1 block text-lg"></i>Nenhum resultado para "<span class="text-white">${escapeHtml(rawQuery)}</span>". Tente outro termo.</div>`;
+                resultsEl.innerHTML = `<div class="p-4 text-center text-xs text-secondary"><i class="fi fi-rr-sad mb-1 block text-lg"></i>Nenhum resultado para "<span class="text-white">${escapeHtml(rawQuery)}</span>". Tente outro termo.</div>`;
                 resultsEl.classList.remove('hidden');
                 return;
             }
@@ -3403,6 +4229,7 @@
 
         function onTeamSelectChange(team) {
             activeRankingTab = team;
+            syncAnalystTeamControl(team);
             populateAnalystDropdown(team);
             switchRankingTab(team);
         }
@@ -3418,10 +4245,22 @@
             });
             const select = document.getElementById('userSelect');
             select.innerHTML = options;
-            if (select.options.length > 0) switchAgent(select.value);
+            if (select.options.length > 0) {
+                const preferredExists = [...select.options].some(option => option.value === currentActiveUser);
+                select.value = preferredExists ? currentActiveUser : select.options[0].value;
+                currentActiveUser = select.value;
+            }
         }
 
         function switchAdminTab(tab) {
+            if (currentRoute.name === 'admin' && currentRoute.section !== tab) {
+                navigateTo({ name: 'admin', section: tab });
+                return;
+            }
+            switchAdminTabView(tab);
+        }
+
+        function switchAdminTabView(tab) {
             activeAdminTab = tab;
             const panels = { cadastros: 'admPanelCadastros', lancamentos: 'admPanelLancamentos', prioridades: 'admPanelPrioridades', transferencias: 'admPanelTransferencias', pecas: 'admPanelPecas', historico: 'admPanelHistorico' };
             const btns = { cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'admTabBtnPrioridades', transferencias: 'admTabBtnTransferencias', pecas: 'admTabBtnPecas', historico: 'admTabBtnHistorico' };
@@ -3451,7 +4290,14 @@
             store.history.forEach(h => {
                 mOptions += `<option value="${h.id}">${h.name}</option>`;
             });
-            document.getElementById('monthSelect').innerHTML = mOptions;
+            const monthSelect = document.getElementById('monthSelect');
+            monthSelect.innerHTML = mOptions;
+            if (![...monthSelect.options].some(option => option.value === activeMonthKey)) activeMonthKey = 'atual';
+            monthSelect.value = activeMonthKey;
+
+            const periodSelect = document.getElementById('periodSelect');
+            if (![...periodSelect.options].some(option => option.value === activePeriodFilter)) activePeriodFilter = 'ALL';
+            periodSelect.value = activePeriodFilter;
 
             let sisOpt = "", catOpt = "", admOpt = "";
             Object.keys(usersList).forEach(id => {
@@ -3468,7 +4314,14 @@
             populateCatracaAnalystOptions('admPecaTargetUser');
             populateCatracaAnalystOptions('pecaTargetUser');
 
-            onTeamSelectChange("Sistema");
+            const selectedUser = usersList[currentActiveUser];
+            const analystTeam = selectedUser && selectedUser.active !== false && isRankableUser(selectedUser)
+                ? selectedUser.team
+                : (activeRankingTab === 'Catraca' ? 'Catraca' : 'Sistema');
+            syncAnalystTeamControl(analystTeam);
+            populateAnalystDropdown(analystTeam);
+            syncRankingViewControls(activeRankingTab);
+            persistViewContext();
         }
 
         function populateCatracaAnalystOptions(selectId) {
@@ -3486,27 +4339,39 @@
             el.innerHTML = opts || `<option value="">Nenhum analista disponível</option>`;
         }
 
-        function switchRankingTab(team) {
-            activeRankingTab = team;
-            document.getElementById('teamSelect').value = team;
+        function syncAnalystTeamControl(team) {
+            if (!['Sistema', 'Catraca'].includes(team)) team = 'Sistema';
+            const select = document.getElementById('teamSelect');
+            if (select) select.value = team;
             const teamIcon = document.getElementById('teamSelectIcon');
             if (teamIcon) {
                 teamIcon.className = team === 'Sistema'
-                    ? "fa-solid fa-desktop text-xs text-primary-400 transition-colors duration-200"
-                    : "fa-solid fa-gear text-xs text-emerald-400 transition-colors duration-200";
+                    ? "fi fi-rr-computer text-xs text-primary-400 transition-colors duration-200"
+                    : "fi fi-rr-settings text-xs text-emerald-400 transition-colors duration-200";
             }
-            document.getElementById('tabSistema').className = team === 'Sistema' 
-                ? "px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white" 
-                : "px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white";
-            
-            document.getElementById('tabCatraca').className = team === 'Catraca' 
-                ? "px-4 py-2 rounded-md text-xs font-bold transition bg-primary-500 text-white" 
-                : "px-4 py-2 rounded-md text-xs font-bold transition text-secondary hover:text-white";
+        }
 
+        function syncRankingViewControls(team) {
+            if (!['Sistema', 'Catraca', 'Todos'].includes(team)) team = 'Sistema';
+            ['rankingViewSelect', 'rankingViewSelectPresentation'].forEach(id => {
+                const select = document.getElementById(id);
+                if (select) select.value = team;
+            });
+            const selectorIconClass = team === 'Sistema' ? 'computer' : team === 'Catraca' ? 'settings' : 'users';
+            ['rankingViewSelectIcon', 'rankingViewSelectPresentationIcon'].forEach(id => {
+                const icon = document.getElementById(id);
+                if (icon) icon.className = `fi fi-rr-${selectorIconClass}`;
+            });
+        }
+
+        function switchRankingTab(team) {
+            if (!['Sistema', 'Catraca', 'Todos'].includes(team)) team = 'Sistema';
+            activeRankingTab = team;
+            syncRankingViewControls(team);
             render();
         }
 
-        // --- AUTOMAÇÃO: ALTERNÂNCIA AUTOMÁTICA DO RANKING (SISTEMA <-> CATRACA) ---
+        // --- AUTOMAÇÃO: ALTERNÂNCIA ENTRE SOFTWARE, CATRACA E VISÃO CONJUNTA ---
         let rankingAutoRotateTimer = null;
         let rankingAutoRotateActive = false;
 
@@ -3515,9 +4380,11 @@
 
             if (rankingAutoRotateActive) {
                 rankingAutoRotateTimer = setInterval(() => {
-                    switchRankingTab(activeRankingTab === 'Sistema' ? 'Catraca' : 'Sistema');
+                    const views = ['Sistema', 'Catraca', 'Todos'];
+                    const currentIndex = Math.max(0, views.indexOf(activeRankingTab));
+                    switchRankingTab(views[(currentIndex + 1) % views.length]);
                 }, 5000);
-                showToast("Auto-alternância do ranking ativada (a cada 5s).");
+                showToast("Auto-alternância das três visualizações ativada (a cada 5s).");
             } else {
                 if (rankingAutoRotateTimer) clearInterval(rankingAutoRotateTimer);
                 rankingAutoRotateTimer = null;
@@ -3531,19 +4398,21 @@
             const icon = document.getElementById('autoRotateIcon');
             const btnP = document.getElementById('btnAutoRotatePresentation');
             const iconP = document.getElementById('autoRotateIconPresentation');
-            const badgeP = document.getElementById('presentationAutoRotateBadge');
 
-            [btn, btnP].forEach(b => {
-                if (!b) return;
-                b.classList.toggle('bg-primary-500/15', rankingAutoRotateActive);
-                b.classList.toggle('border-primary-500/50', rankingAutoRotateActive);
-                b.classList.toggle('text-primary-300', rankingAutoRotateActive);
-                b.classList.toggle('text-secondary', !rankingAutoRotateActive);
-            });
-            if (icon) icon.className = rankingAutoRotateActive ? 'fa-solid fa-pause text-[10px]' : 'fa-solid fa-play text-[10px]';
-            if (iconP) iconP.className = rankingAutoRotateActive ? 'fa-solid fa-pause' : 'fa-solid fa-play';
-            if (btn) btn.title = rankingAutoRotateActive ? "Desativar alternância automática" : "Ativar alternância automática (Software/Catraca a cada 5s)";
-            if (badgeP) badgeP.classList.toggle('hidden', !rankingAutoRotateActive);
+            if (btn) {
+                btn.classList.toggle('is-active', rankingAutoRotateActive);
+                btn.setAttribute('aria-pressed', String(rankingAutoRotateActive));
+            }
+            if (btnP) {
+                btnP.classList.toggle('bg-primary-500/15', rankingAutoRotateActive);
+                btnP.classList.toggle('border-primary-500/50', rankingAutoRotateActive);
+                btnP.classList.toggle('text-primary-300', rankingAutoRotateActive);
+                btnP.classList.toggle('text-secondary', !rankingAutoRotateActive);
+                btnP.setAttribute('aria-pressed', String(rankingAutoRotateActive));
+            }
+            if (icon) icon.className = rankingAutoRotateActive ? 'fi fi-rr-pause' : 'fi fi-rr-refresh';
+            if (iconP) iconP.className = rankingAutoRotateActive ? 'fi fi-rr-pause' : 'fi fi-rr-refresh';
+            if (btn) btn.title = rankingAutoRotateActive ? "Desativar alternância automática" : "Ativar alternância das três visualizações a cada 5s";
         }
 
         // --- MODO DE APRESENTAÇÃO (RANKING EXPANDIDO) ---
@@ -4209,7 +5078,7 @@
                 currentAdminId = selectedId;
                 document.getElementById('adminPass').value = "";
                 closeAdminModal();
-                render();
+                navigateTo({ name: 'admin', section: activeAdminTab || 'cadastros' });
             } else {
                 showToast("Senha incorreta!", "error");
             }
@@ -4218,7 +5087,8 @@
         function logoutAdmin() {
             isAdminLoggedIn = false;
             currentAdminId = null;
-            render();
+            navigateTo('dashboard', { replace: true, root: true });
+            showToast('Sessão de gestão encerrada.');
         }
 
         function openPecaModal() {
@@ -4262,7 +5132,7 @@
                 currentPecaUserId = selectedId;
                 document.getElementById('pecaPass').value = "";
                 closePecaModal();
-                render();
+                navigateTo('pecas');
             } else {
                 showToast("Senha incorreta!", "error");
             }
@@ -4271,7 +5141,8 @@
         function logoutPeca() {
             isPecaLoggedIn = false;
             currentPecaUserId = null;
-            render();
+            navigateTo('dashboard', { replace: true, root: true });
+            showToast('Sessão de Envio/Coleta encerrada.');
         }
 
         async function submitPecaScore(e) {
