@@ -1,0 +1,10 @@
+# Artefatos locais do macOS
+.DS_Store
+**/.DS_Store
+
+# Credenciais reais nunca entram no Git; o repositório guarda só .env.example
+.env
+.env.local
+
+# Dependências e temporários de verificação local
+node_modules/
