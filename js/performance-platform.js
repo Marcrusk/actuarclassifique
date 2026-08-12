@@ -231,7 +231,10 @@
         tabs?.classList.add('hidden');
     }
 
-    function isSecureRoute(name) { return secureRoutes.has(name); }
+    // Com a autenticação desligada, o init() nem monta a sessão: tratar estas rotas
+    // como seguras jogaria o usuário na tela de login desta plataforma — que é o que
+    // fazia "Editar perfil" parecer um logout. Volta a valer quando a flag for ligada.
+    function isSecureRoute(name) { return authenticationEnabled && secureRoutes.has(name); }
 
     function canSelectLegacyAnalyst(legacyId, teamCode) {
         if (!authenticationEnabled) return true;
