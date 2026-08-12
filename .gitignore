@@ -8,3 +8,6 @@
 
 # Dependências e temporários de verificação local
 node_modules/
+
+# Saída do build estático (gerada por npm run build e publicada pela Vercel)
+public/
