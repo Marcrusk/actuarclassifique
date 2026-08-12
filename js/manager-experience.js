@@ -14,7 +14,10 @@
         if (manager.allTeamsAccess === true) return allTeams.slice();
         const configured = Array.isArray(manager.managedTeams) ? manager.managedTeams.filter(team => allTeams.includes(team)) : [];
         if (configured.length) return [...new Set(configured)];
-        return allTeams.includes(manager.team) ? [manager.team] : [];
+        // Sem restrição declarada, a gestão responde pelas duas equipes. Antes o padrão
+        // era a própria equipe do gestor, o que escondia Catraca de quem era de Sistema
+        // e Sistema de quem era de Catraca — inclusive no módulo de prioridades.
+        return allTeams.slice();
     }
 
     function isRankable(user) {
@@ -60,7 +63,16 @@
             if (!grouped[row.team]) grouped[row.team] = [];
             grouped[row.team].push({ ...row, confirmedPoints: Number(row.confirmedPoints ?? row.total ?? 0), pendingPoints: Number(row.pendingPoints || 0) });
         });
-        return Object.values(grouped).flatMap(group => group.sort((a, b) => b.confirmedPoints - a.confirmedPoints || a.name.localeCompare(b.name, 'pt-BR')).map((row, index) => ({ ...row, position: index + 1 })));
+        // Pontuação igual, posição igual: numerar por ordem alfabética faria dois
+        // analistas com os mesmos pontos aparecerem em 1º e 2º sem motivo.
+        return Object.values(grouped).flatMap(group => {
+            const sorted = group.sort((a, b) => b.confirmedPoints - a.confirmedPoints || a.name.localeCompare(b.name, 'pt-BR'));
+            let position = 0; let anterior = null;
+            return sorted.map((row, index) => {
+                if (anterior === null || row.confirmedPoints !== anterior) { position = index + 1; anterior = row.confirmedPoints; }
+                return { ...row, position, tied: false };
+            }).map((row, index, todos) => ({ ...row, tied: todos.some((outro, i) => i !== index && outro.position === row.position) }));
+        });
     }
 
     function canViewAnalyst(manager, user, allTeams = TEAMS) {

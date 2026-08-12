@@ -102,7 +102,9 @@
         if (!actor || actor.active === false) return false;
         if (actor.role === 'administrator' || actor.allTeamsAccess === true) return true;
         if (!['manager', 'Gestor Adm'].includes(actor.role)) return false;
-        return (actor.managedTeams || actor.managedTeamCodes || []).includes(team) || actor.team === team;
+        // Mesmo padrão do restante da gestão: sem equipes declaradas, responde por todas.
+        const configured = actor.managedTeams || actor.managedTeamCodes || [];
+        return configured.length ? (configured.includes(team) || actor.team === team) : true;
     }
 
     function start(input, actorId, now = Date.now(), attendanceId = null) {

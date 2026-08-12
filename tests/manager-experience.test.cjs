@@ -114,3 +114,66 @@ test('fluxos gerenciais principais possuem adaptação responsiva', () => {
     assert.match(css, /rotation-ops-sequence-row/);
     assert.match(css, /rotation-ops-footer/);
 });
+
+test('pontuação igual compartilha a mesma posição no ranking', () => {
+    const rows = [
+        { id: 'dyego', name: 'Dyego Antônio', team: 'Catraca', confirmedPoints: 150 },
+        { id: 'vitor', name: 'Vitor Massaki', team: 'Catraca', confirmedPoints: 150 },
+        { id: 'felipe', name: 'Felipe Lima', team: 'Catraca', confirmedPoints: 100 },
+        { id: 'ana', name: 'Ana Souza', team: 'Catraca', confirmedPoints: 80 }
+    ];
+    const ranked = manager.rankRows(rows);
+    const posicao = id => ranked.find(row => row.id === id).position;
+
+    // Antes a ordem alfabética desempatava e Vitor caía em 2º com os mesmos 150 pts.
+    assert.equal(posicao('dyego'), 1);
+    assert.equal(posicao('vitor'), 1);
+    assert.equal(posicao('felipe'), 3, 'depois de um empate duplo a próxima posição é a terceira');
+    assert.equal(posicao('ana'), 4);
+
+    assert.equal(ranked.find(row => row.id === 'dyego').tied, true);
+    assert.equal(ranked.find(row => row.id === 'felipe').tied, false);
+});
+
+test('cabeçalho de card acomoda a ação ao lado do texto', () => {
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+    // Sem layout no header, o botão de ação caía para baixo da descrição.
+    assert.match(css, /\.actuar-card-header \{ display: flex;[^}]*justify-content: space-between;/);
+    // A prévia do ranking tem uma coluna a mais que a lista de pendências:
+    // posição, avatar, nome e pontos — quem estica é o nome.
+    assert.match(css, /\.priority-preview-ranking > button \{ grid-template-columns: auto auto minmax\(0,1fr\) auto;/);
+});
+
+test('gestão responde pelas duas equipes quando não há restrição declarada', () => {
+    const marco = { name: 'Marco Nunes', team: 'Sistema', role: 'Gestor Adm', active: true };
+    const joao = { name: 'João Gabriel', team: 'Catraca', role: 'Gestor Adm', active: true };
+
+    // Antes o padrão era a própria equipe: Marco não via Catraca e João não via Sistema.
+    assert.deepEqual(manager.authorizedTeams(marco), ['Sistema', 'Catraca']);
+    assert.deepEqual(manager.authorizedTeams(joao), ['Sistema', 'Catraca']);
+
+    // Restrição explícita continua valendo, para quando existir configuração.
+    assert.deepEqual(manager.authorizedTeams({ ...joao, managedTeams: ['Catraca'] }), ['Catraca']);
+    assert.deepEqual(manager.authorizedTeams({ ...joao, allTeamsAccess: true }), ['Sistema', 'Catraca']);
+
+    // Quem não é gestão, ou está inativo, segue sem escopo nenhum.
+    assert.deepEqual(manager.authorizedTeams({ ...joao, role: 'Analista de catraca' }), []);
+    assert.deepEqual(manager.authorizedTeams({ ...joao, active: false }), []);
+});
+
+test('todo asset local é versionado para a correção chegar ao navegador', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const build = fs.readFileSync('scripts/build-check.cjs', 'utf8');
+
+    const referencias = [...html.matchAll(/(?:src|href)="((?:js|styles)\/[^"]+)"/g)].map(m => m[1]);
+    assert.ok(referencias.length >= 7, 'esperava as referências locais de js e css');
+    const semVersao = referencias.filter(ref => !/\?v=[^"]+$/.test(ref));
+    assert.deepEqual(semVersao, [], `asset servido sem versão: ${semVersao.join(', ')}`);
+
+    // Uma única versão por publicação: arquivos com versões diferentes escondem regressões.
+    const versoes = [...new Set(referencias.map(ref => ref.split('?v=')[1]))];
+    assert.equal(versoes.length, 1, `versões divergentes entre assets: ${versoes.join(', ')}`);
+
+    // E o build recusa a publicação se alguém esquecer.
+    assert.match(build, /Asset local sem versão na URL/);
+});
