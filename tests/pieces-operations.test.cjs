@@ -628,3 +628,165 @@ test('solicitação de peça é rotina de Catraca: Sistema não vê o botão nem
     // O Lab continua abrindo o wizard para corrigir uma solicitação existente.
     assert.match(ui, /openPiecesRequestModal\('\$\{record\.id\}'\)">Corrigir dados/);
 });
+
+test('analista entra com o próprio usuário e a URL não troca mais a identidade', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    // Login por usuário, com a senha conferida no banco pela mesma RPC já usada pelos outros acessos.
+    assert.match(html, /<select id="analystUserSelect" required><\/select>/);
+    assert.match(html, /if \(!await verifyLoginRemote\(selectedId, pass\)\) return showLoginError\('analyst', "Senha incorreta!"\);/);
+    assert.match(html, /isAnalystLoggedIn = true;\s*\n\s*currentActiveUser = selectedId;/);
+    // Nenhuma senha no frontend: só a checagem remota e o flag de "tem senha".
+    assert.doesNotMatch(html, /password:\s*['"][^'"]+['"]/);
+    assert.match(html, /if \(!user\.hasPassword\) return showLoginError\('analyst',/);
+
+    // A identidade vem da sessão; ?analyst= deixou de valer para não permitir personificação.
+    assert.match(html, /userId: analystSession,/);
+    assert.doesNotMatch(html, /userId: query\.get\('analyst'\)/);
+    // A persistência passou para a sessão unificada, que sobrevive à recarga.
+    assert.match(html, /saveSession\('analyst', selectedId\);/);
+    assert.match(html, /function logoutAnalyst\(\) \{[\s\S]{0,120}clearSession\(\);/);
+
+    // Primeiro acesso: senha aleatória por pessoa, gravada pela RPC, nunca fixa no código.
+    assert.match(html, /crypto\.getRandomValues\(values\)/);
+    assert.match(html, /if \(!await setUserPasswordRemote\(id, password\)\) continue;/);
+    assert.match(html, /const pending = analystOptionIds\(\)\.filter\(id => !usersList\[id\]\.hasPassword\)/);
+});
+
+test('acesso mockado de gestão foi removido do produto', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    for (const marker of ['__local_jg__', 'localManagerProfile', 'loginLocalManager', 'ensureLocalJoaoManager',
+                          'findJoaoManagerId', 'restoreLocalManagerSession', 'LOCAL_MANAGER_SESSION_KEY',
+                          'localManagerAccessButton', 'actuar-local-access-button']) {
+        assert.ok(!html.includes(marker), `resquício do acesso mockado no HTML: ${marker}`);
+    }
+    assert.ok(!css.includes('actuar-local-access-button'), 'CSS órfão do acesso mockado');
+
+    // Gestão passa a ter um caminho só: usuário cadastrado com senha conferida no banco.
+    assert.match(html, /function loginAdmin\(e\)/);
+    assert.match(html, /return isAdminLoggedIn \? currentAdminId : currentActiveUser;/);
+});
+
+test('sem sessão a aplicação fica no portão de acesso', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    // O portão cobre a aplicação enquanto ninguém estiver autenticado.
+    assert.match(html, /id="loginGate"/);
+    assert.match(html, /function hasAnySession\(\) \{ return isAnalystLoggedIn \|\| isAdminLoggedIn \|\| isPecaLoggedIn; \}/);
+    assert.match(html, /const locked = !hasAnySession\(\);/);
+    assert.match(html, /gate\.classList\.toggle\('hidden', !locked\);/);
+    // Reavaliado a cada render, então qualquer logout cai no portão.
+    assert.match(html, /function render\(\) \{\s*\n\s*syncLoginGate\(\);/);
+    // Sair não deixa mais o dashboard de outra pessoa aparecendo atrás do modal.
+    assert.match(html, /function logoutAnalyst\(\) \{[\s\S]*?closeAnalystModal\(\);[\s\S]*?syncLoginGate\(\);/);
+
+    // As três portas ficam no portão e expandem no lugar, sem abrir outra camada por cima.
+    for (const door of ['analyst', 'admin', 'peca']) {
+        assert.ok(html.includes(`onclick="toggleLoginDoor('${door}')"`), `porta ausente no portão: ${door}`);
+        assert.ok(html.includes(`data-door="${door}"`), `porta sem grupo expansível: ${door}`);
+        assert.ok(html.includes(`data-login-error="${door}"`), `porta sem área de erro no formulário: ${door}`);
+    }
+    for (const modal of ['analystModal', 'adminModal', 'pecaModal']) {
+        assert.ok(!html.includes(`id="${modal}"`), `${modal} voltou: o acesso é inline, dentro do portão`);
+    }
+    // Os campos moram no portão, uma única vez cada.
+    for (const campo of ['analystUserSelect', 'analystPass', 'adminUserSelect', 'adminPass', 'pecaUserSelect', 'pecaPass']) {
+        assert.equal((html.match(new RegExp(`id="${campo}"`, 'g')) || []).length, 1, `${campo} duplicado ou ausente`);
+    }
+    assert.match(css, /body\.actuar-locked \{ overflow: hidden; \}/);
+
+    // Sem sessão o portão cobre a aplicação, mas nunca o carregamento inicial.
+    const zOf = id => {
+        const found = html.match(new RegExp(`id="${id}" class="([^"]*)"`));
+        const z = found && (found[1].match(/z-\[(\d+)\]/) || found[1].match(/\bz-(\d+)\b/));
+        return z ? Number(z[1]) : null;
+    };
+    const gate = zOf('loginGate');
+    assert.ok(gate, 'portão sem z-index declarado');
+    assert.ok(gate < zOf('loadingOverlay'), 'o portão não pode cobrir o carregamento inicial');
+
+    // Identidade visual e as três portas descritas.
+    assert.match(html, /actuar-login-gate-brand[\s\S]{0,300}assets\/actuar\/logos\/actuar-group\.svg/);
+    for (const label of ['Sou analista', 'Modo Gestão', 'Acesso operacional']) {
+        assert.ok(html.includes(`<strong>${label}</strong>`), `porta sem rótulo: ${label}`);
+    }
+    assert.match(css, /\.actuar-login-door:focus-visible/);
+    assert.match(css, /\.actuar-login-door-group\.is-open \.actuar-login-panel \{ grid-template-rows: 1fr; \}/);
+    assert.match(css, /\.actuar-login-error \{/);
+});
+
+test('gestão redefine a senha de qualquer perfil pela linha do usuário', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    // Ação por linha, com rótulo que distingue criar de redefinir.
+    assert.match(html, /onclick="resetUserPassword\('\$\{id\}'\)"/);
+    assert.match(html, /\$\{u\.hasPassword \? 'Redefinir senha' : 'Criar senha'\}/);
+
+    // Não exige a senha antiga: sobrescreve no banco pela mesma RPC da gestão.
+    assert.match(html, /async function resetUserPassword\(userId\) \{/);
+    assert.match(html, /if \(!await setUserPasswordRemote\(userId, password\)\) return;/);
+    assert.match(html, /const password = makeTempPassword\(\);/);
+    assert.match(html, /await actuarConfirm\(\{\s*\n\s*tone: 'danger', icon: 'lock',\s*\n\s*title: `\$\{acao\} de \$\{user\.name\}\?`/);
+
+    // Uma única função exibe as senhas geradas, no lote e no individual.
+    assert.match(html, /function showGeneratedPasswords\(created\) \{/);
+    assert.ok(html.match(/showGeneratedPasswords\(/g).length >= 3, 'exibição deveria ser reaproveitada pelos dois caminhos');
+    // A senha nunca é persistida no JSON sincronizado: só o sinalizador.
+    assert.match(html, /user\.hasPassword = true;/);
+    assert.doesNotMatch(html, /usersList\[userId\]\.password\s*=/);
+});
+
+test('sessão sobrevive à recarga e só cai no logout explícito', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    // Uma única sessão persistida cobre os três perfis, em localStorage: sobrevive a
+    // recarregar e a fechar a aba. Antes só o analista guardava algo, em sessionStorage,
+    // então qualquer reload derrubava gestão e operacional.
+    assert.match(html, /const SESSION_STORAGE_KEY = 'actuar-classifique-session-v1';/);
+    assert.match(html, /localStorage\.setItem\(SESSION_STORAGE_KEY, JSON\.stringify\(\{ kind, userId \}\)\)/);
+
+    for (const [kind, call] of [['manager', "saveSession('manager', selectedId)"], ['operations', "saveSession('operations', selectedId)"], ['analyst', "saveSession('analyst', selectedId)"]]) {
+        assert.ok(html.includes(call), `login de ${kind} não persiste a sessão`);
+    }
+    // Os três logouts limpam.
+    assert.ok(html.match(/clearSession\(\);/g).length >= 3, 'algum logout não limpa a sessão');
+
+    // A restauração acontece depois da base carregar e reconfere o perfil,
+    // para uma pessoa inativada ou com função trocada não voltar com o papel antigo.
+    assert.match(html, /const restored = restoreSession\(\);/);
+    assert.match(html, /if \(!user \|\| user\.active === false\) \{ clearSession\(\); return false; \}/);
+    assert.match(html, /saved\.kind === 'manager' && user\.role === 'Gestor Adm'/);
+    assert.match(html, /saved\.kind === 'operations' && isPiecesOperatorRole\(user\.role\)/);
+    assert.match(html, /saved\.kind === 'analyst' && isRankableUser\(user\)/);
+});
+
+test('confirmação usa o diálogo do sistema, não o do navegador', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    // O diálogo do navegador ignora tema, tipografia e vocabulário do produto — e trava a página.
+    // O lookbehind já ignora window.confirm — o fallback interno para quando o diálogo não existe no DOM.
+    const nativos = html.match(/(?<![.\w])(?:confirm|alert|prompt)\(/g) || [];
+    assert.equal(nativos.length, 0, `ainda existem ${nativos.length} diálogo(s) do navegador`);
+    assert.equal((html.match(/window\.confirm\(/g) || []).length, 1, 'o fallback deveria ser único');
+
+    assert.match(html, /function actuarConfirm\(options = \{\}\)/);
+    assert.match(html, /function actuarAlert\(title, message, options = \{\}\)/);
+    assert.match(html, /id="actuarConfirmDialog"/);
+
+    // Toda decisão destrutiva precisa de tom próprio e rótulo que diga o que vai acontecer.
+    for (const rotulo of ['Excluir usuário', 'Excluir lançamento', 'Excluir protocolo', 'Fechar mês']) {
+        assert.ok(html.includes(`confirmLabel: '${rotulo}'`), `ação destrutiva sem rótulo próprio: ${rotulo}`);
+    }
+    assert.ok((html.match(/tone: 'danger'/g) || []).length >= 5, 'ações destrutivas deveriam usar o tom de perigo');
+
+    // Fecha por Esc e pelo fundo, e devolve o foco para quem abriu.
+    assert.match(html, /if \(event\.key !== 'Escape'\) return;/);
+    assert.match(html, /if \(event\.target\?\.id === 'actuarConfirmDialog'\) closeActuarConfirm\(false\);/);
+    assert.match(html, /layer\.dataset\.returnFocus = ativo\.id;/);
+
+    assert.match(css, /\.actuar-confirm-card\.tone-danger \.actuar-confirm-icon/);
+});

@@ -78,11 +78,103 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260812-catraca-gate-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260812-teams-2">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
     <!-- OVERLAY DE CARREGAMENTO INICIAL -->
+    <div id="loginGate" class="actuar-login-gate hidden fixed inset-0 z-[95] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="loginGateTitle">
+        <div class="actuar-login-gate-shell">
+            <aside class="actuar-login-gate-brand">
+                <img src="assets/actuar/logos/actuar-group.svg" alt="Actuar Group">
+                <h1 id="loginGateTitle">Performance do Atendimento</h1>
+                <p>Acompanhe protocolos, prioridades e a operação de peças do ciclo em um só lugar.</p>
+                <ul>
+                    <li><i class="fi fi-rr-chart-histogram" aria-hidden="true"></i>Sua performance e a do time, atualizadas no dia</li>
+                    <li><i class="fi fi-rr-trophy" aria-hidden="true"></i>Ranking, sprint e pontuação por ciclo</li>
+                    <li><i class="fi fi-rr-box-open" aria-hidden="true"></i>Solicitações de peça do envio à conclusão</li>
+                </ul>
+            </aside>
+            <section class="actuar-login-gate-access">
+                <h2>Entrar</h2>
+                <p>Escolha como você acessa. Cada perfil abre o que a sua função permite.</p>
+                <div class="actuar-login-gate-actions">
+                    <div class="actuar-login-door-group" data-door="analyst">
+                        <button type="button" id="loginDoorAnalyst" class="actuar-login-door" aria-expanded="false" aria-controls="loginPanelAnalyst" onclick="toggleLoginDoor('analyst')">
+                            <span class="actuar-login-door-icon" aria-hidden="true"><i class="fi fi-rr-user"></i></span>
+                            <span><strong>Sou analista</strong><small>Sua performance, prioridades e solicitações</small></span>
+                            <i class="fi fi-rr-angle-small-down actuar-login-door-caret" aria-hidden="true"></i>
+                        </button>
+                        <div id="loginPanelAnalyst" class="actuar-login-panel"><div>
+                            <form onsubmit="loginAnalyst(event)" class="actuar-login-form">
+                                <div class="actuar-field">
+                                    <label for="analystUserSelect">Usuário</label>
+                                    <select id="analystUserSelect" required></select>
+                                </div>
+                                <div class="actuar-field">
+                                    <label for="analystPass">Senha cadastrada</label>
+                                    <input type="password" id="analystPass" placeholder="Digite sua senha" autocomplete="current-password" required>
+                                </div>
+                                <p class="actuar-login-error" data-login-error="analyst" role="alert" hidden></p>
+                                <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg"><i class="fi fi-rr-sign-in-alt"></i>Entrar</button>
+                            </form>
+                        </div></div>
+                    </div>
+                    <div class="actuar-login-door-group" data-door="admin">
+                        <button type="button" id="loginDoorAdmin" class="actuar-login-door" aria-expanded="false" aria-controls="loginPanelAdmin" onclick="toggleLoginDoor('admin')">
+                            <span class="actuar-login-door-icon" aria-hidden="true"><i class="fi fi-rr-lock"></i></span>
+                            <span><strong>Modo Gestão</strong><small>Avaliações, aprovações e equipes que você administra</small></span>
+                            <i class="fi fi-rr-angle-small-down actuar-login-door-caret" aria-hidden="true"></i>
+                        </button>
+                        <div id="loginPanelAdmin" class="actuar-login-panel"><div>
+                            <form onsubmit="loginAdmin(event)" class="actuar-login-form">
+                                <div class="actuar-field">
+                                    <label for="adminUserSelect">Gestor</label>
+                                    <select id="adminUserSelect" required></select>
+                                </div>
+                                <div class="actuar-field">
+                                    <label for="adminPass">Senha cadastrada</label>
+                                    <input type="password" id="adminPass" placeholder="Digite sua senha" autocomplete="current-password" required>
+                                </div>
+                                <p class="actuar-login-error" data-login-error="admin" role="alert" hidden></p>
+                                <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg"><i class="fi fi-rr-sign-in-alt"></i>Entrar na Gestão</button>
+                            </form>
+                        </div></div>
+                    </div>
+                    <div class="actuar-login-door-group" data-door="peca">
+                        <button type="button" id="loginDoorPeca" class="actuar-login-door" aria-expanded="false" aria-controls="loginPanelPeca" onclick="toggleLoginDoor('peca')">
+                            <span class="actuar-login-door-icon" aria-hidden="true"><i class="fi fi-rr-truck-loading"></i></span>
+                            <span><strong>Acesso operacional</strong><small>Toletus Lab, Faturamento e Envio/Coleta</small></span>
+                            <i class="fi fi-rr-angle-small-down actuar-login-door-caret" aria-hidden="true"></i>
+                        </button>
+                        <div id="loginPanelPeca" class="actuar-login-panel"><div>
+                            <form onsubmit="loginPeca(event)" class="actuar-login-form">
+                                <div class="actuar-field">
+                                    <label for="pecaUserSelect">Usuário</label>
+                                    <select id="pecaUserSelect" required></select>
+                                </div>
+                                <div class="actuar-field">
+                                    <label for="pecaPass">Senha cadastrada</label>
+                                    <input type="password" id="pecaPass" placeholder="Digite sua senha" autocomplete="current-password" required>
+                                </div>
+                                <p class="actuar-login-error" data-login-error="peca" role="alert" hidden></p>
+                                <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg"><i class="fi fi-rr-sign-in-alt"></i>Entrar</button>
+                                <div id="pecaLocalPreviewButton" class="hidden actuar-local-operation-actions">
+                                    <button type="button" class="actuar-btn actuar-btn-ghost" onclick="enterLocalPecaPreview('Envio/Coleta')"><i class="fi fi-rr-box"></i>Visualizar como Envio/Coleta</button>
+                                    <button type="button" class="actuar-btn actuar-btn-ghost" onclick="enterLocalPecaPreview('Logística/Faturamento')"><i class="fi fi-rr-truck-loading"></i>Visualizar como Logística</button>
+                                    <button type="button" class="actuar-btn actuar-btn-ghost" onclick="enterLocalPecaPreview('Toletus Lab')"><i class="fi fi-rr-shield-check"></i>Visualizar como Toletus Lab</button>
+                                </div>
+                            </form>
+                        </div></div>
+                    </div>
+                </div>
+                <p class="actuar-login-gate-help">Sem senha cadastrada? Peça o primeiro acesso à gestão.</p>
+            </section>
+        </div>
+    </div>
+        </div>
+    </div>
+
     <div id="loadingOverlay" class="actuar-loading fixed inset-0 bg-bg flex flex-col items-center justify-center z-[100] gap-3" role="status" aria-live="polite">
         <img class="actuar-loading-logo" src="assets/actuar/logos/actuar-group.svg" alt="Actuar Group">
         <span class="sr-only">Carregando Performance do Atendimento</span>
@@ -203,6 +295,18 @@
         </div>
     </header>
 
+    <div id="actuarConfirmDialog" class="actuar-confirm-layer hidden fixed inset-0 z-[160] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="actuarConfirmTitle" aria-describedby="actuarConfirmMessage">
+        <div class="actuar-confirm-card">
+            <span id="actuarConfirmIcon" class="actuar-confirm-icon" aria-hidden="true"><i class="fi fi-rr-triangle-warning"></i></span>
+            <h2 id="actuarConfirmTitle">Confirmar ação</h2>
+            <p id="actuarConfirmMessage"></p>
+            <div class="actuar-confirm-actions">
+                <button type="button" id="actuarConfirmCancel" class="actuar-btn actuar-btn-secondary">Cancelar</button>
+                <button type="button" id="actuarConfirmOk" class="actuar-btn actuar-btn-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
     <section class="actuar-toolbar" aria-label="Filtros e acessos globais">
         <div class="actuar-toolbar-inner">
             <div class="actuar-filter-groups">
@@ -234,7 +338,7 @@
                         </div>
                     </div>
                 </section>
-                <section class="actuar-filter-group" aria-labelledby="filterContextTitle">
+                <section class="actuar-filter-group" id="filterContextGroup" aria-labelledby="filterContextTitle">
                     <span id="filterContextTitle" class="actuar-filter-group-title">Contexto</span>
                     <div class="actuar-filter-row">
                         <div class="actuar-filter-field actuar-filter-field--team">
@@ -260,10 +364,9 @@
                 </section>
             </div>
             <div class="actuar-access-actions">
+                <button id="btnAnalystAccess" onclick="openAnalystModal()" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-user"></i>Entrar</button>
                 <button id="btnPecaAccess" onclick="openPecaModal()" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-truck-loading"></i>Acesso operacional</button>
-                <button id="btnPecaLogout" onclick="logoutPeca()" class="hidden actuar-btn actuar-btn-secondary"><i class="fi fi-rr-sign-out-alt"></i>Sair Envio/Coleta</button>
                 <button id="btnAdminAccess" onclick="openAdminModal()" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-lock"></i>Modo Gestão</button>
-                <button id="btnAdminLogout" onclick="logoutAdmin()" class="hidden actuar-btn actuar-btn-secondary"><i class="fi fi-rr-sign-out-alt"></i>Sair da Gestão</button>
             </div>
         </div>
     </section>
@@ -1289,6 +1392,17 @@
                 <!-- LISTA DE USUÁRIOS CADASTRADOS PARA EDIÇÃO -->
                 <div class="mt-6">
                     <h4 class="text-xs font-bold text-secondary uppercase mb-2">Usuários Cadastrados</h4>
+                    <div id="analystFirstAccess" class="actuar-feedback actuar-feedback-info mb-3">
+                        <i class="fi fi-rr-lock" aria-hidden="true"></i>
+                        <div>
+                            <strong>Primeiro acesso dos analistas</strong>
+                            <p id="analystFirstAccessHint">Gere as senhas iniciais dos analistas de uma vez, ou use <strong>Redefinir senha</strong> na linha da pessoa para qualquer perfil. A senha aparece uma única vez, para você distribuir.</p>
+                            <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm mt-2" onclick="generateAnalystPasswords()">
+                                <i class="fi fi-rr-lock"></i>Gerar senhas de primeiro acesso
+                            </button>
+                            <div id="analystFirstAccessResult" class="hidden"></div>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto max-h-64 overflow-y-auto">
                         <table class="w-full text-left text-xs text-secondary">
                             <thead class="bg-bg sticky top-0 uppercase text-[10px]">
@@ -1726,12 +1840,12 @@
                     </section>
 
                     <section id="profilePasswordCard" class="actuar-card" aria-labelledby="profilePasswordTitle">
-                        <button id="profilePasswordToggle" class="actuar-password-toggle" type="button" aria-expanded="false" aria-controls="profilePasswordContent" onclick="toggleProfilePasswordSection()">
+                        <button id="profilePasswordToggle" class="actuar-password-toggle is-disabled" type="button" aria-expanded="false" aria-controls="profilePasswordContent" aria-disabled="true" disabled onclick="toggleProfilePasswordSection()">
                             <span>
                                 <strong id="profilePasswordTitle">Alteração de senha</strong>
-                                <small>Use ao menos 8 caracteres e não reutilize sua senha atual.</small>
+                                <small id="profilePasswordSubtitle">Temporariamente indisponível. Para trocar a sua senha, fale com a gestão.</small>
                             </span>
-                            <i id="profilePasswordToggleIcon" class="fi fi-rr-angle-small-down" aria-hidden="true"></i>
+                            <i id="profilePasswordToggleIcon" class="fi fi-rr-lock" aria-hidden="true"></i>
                         </button>
                         <div id="profilePasswordContent" class="actuar-password-content" hidden>
                             <div id="profilePasswordNotice" class="actuar-feedback actuar-feedback-info mb-4" role="note">
@@ -1796,68 +1910,9 @@
     </section>
 
     <!-- MODAL ADM -->
-    <div id="adminModal" class="actuar-access-modal hidden fixed inset-0 flex items-center justify-center z-50 p-4" aria-labelledby="adminModalTitle">
-        <div class="actuar-access-dialog w-full max-w-md">
-            <header class="actuar-access-dialog-header">
-                <span class="actuar-access-dialog-icon" aria-hidden="true"><i class="fi fi-rr-user-shield"></i></span>
-                <div>
-                    <h3 id="adminModalTitle">Acesso à Gestão</h3>
-                    <p>Entre com um perfil autorizado para gerenciar a operação.</p>
-                </div>
-                <button type="button" onclick="closeAdminModal()" class="actuar-modal-close" aria-label="Fechar acesso à Gestão"><i class="fi fi-rr-cross-small"></i></button>
-            </header>
-            <form onsubmit="loginAdmin(event)" class="actuar-access-form">
-                <div class="actuar-field">
-                    <label for="adminUserSelect">Gestor</label>
-                    <select id="adminUserSelect" required></select>
-                </div>
-                <div class="actuar-field">
-                    <label for="adminPass">Senha cadastrada</label>
-                    <input type="password" id="adminPass" placeholder="Digite sua senha" autocomplete="current-password" required>
-                </div>
-                <div class="actuar-access-note" role="note"><i class="fi fi-rr-lock" aria-hidden="true"></i><span>Área restrita a perfis de gestão.</span></div>
-                <div class="actuar-access-form-actions">
-                    <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-lg" onclick="closeAdminModal()">Cancelar</button>
-                    <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg"><i class="fi fi-rr-sign-in-alt"></i>Entrar na Gestão</button>
-                </div>
-                <button id="localManagerAccessButton" type="button" onclick="loginLocalManager()" class="hidden actuar-local-access-button"><i class="fi fi-rr-user-shield"></i>Acessar como João Gabriel <small>Somente neste localhost</small></button>
-            </form>
-        </div>
-    </div>
 
     <!-- MODAL ENVIO/COLETA DE PEÇAS -->
-    <div id="pecaModal" class="actuar-access-modal actuar-access-modal--operations hidden fixed inset-0 flex items-center justify-center z-50 p-4" aria-labelledby="pecaModalTitle">
-        <div class="actuar-access-dialog w-full max-w-md">
-            <header class="actuar-access-dialog-header">
-                <span class="actuar-access-dialog-icon" aria-hidden="true"><i class="fi fi-rr-box"></i></span>
-                <div>
-                    <h3 id="pecaModalTitle">Acesso operacional</h3>
-                    <p>Ambiente de Logística/Faturamento e preparação por Envio/Coleta.</p>
-                </div>
-                <button type="button" onclick="closePecaModal()" class="actuar-modal-close" aria-label="Fechar acesso a Envio e Coleta"><i class="fi fi-rr-cross-small"></i></button>
-            </header>
-            <form onsubmit="loginPeca(event)" class="actuar-access-form">
-                <div class="actuar-field">
-                    <label for="pecaUserSelect">Usuário</label>
-                    <select id="pecaUserSelect" required></select>
-                </div>
-                <div class="actuar-field">
-                    <label for="pecaPass">Senha cadastrada</label>
-                    <input type="password" id="pecaPass" placeholder="Digite sua senha" autocomplete="current-password" required>
-                </div>
-                <div class="actuar-access-note" role="note"><i class="fi fi-rr-info" aria-hidden="true"></i><span>Analistas de Catraca iniciam pela aba “Solicitações de peças”, sem entrar neste acesso operacional.</span></div>
-                <div class="actuar-access-form-actions">
-                    <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-lg" onclick="closePecaModal()">Cancelar</button>
-                    <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg"><i class="fi fi-rr-sign-in-alt"></i>Entrar</button>
-                </div>
-                <div id="pecaLocalPreviewButton" class="hidden actuar-local-operation-actions">
-                    <button type="button" class="actuar-btn actuar-btn-ghost actuar-btn-lg" onclick="enterLocalPecaPreview('Envio/Coleta')"><i class="fi fi-rr-box"></i>Visualizar como Envio/Coleta</button>
-                    <button type="button" class="actuar-btn actuar-btn-ghost actuar-btn-lg" onclick="enterLocalPecaPreview('Logística/Faturamento')"><i class="fi fi-rr-truck-loading"></i>Visualizar como Logística/Faturamento</button>
-                    <button type="button" class="actuar-btn actuar-btn-ghost actuar-btn-lg" onclick="enterLocalPecaPreview('Toletus Lab')"><i class="fi fi-rr-shield-check"></i>Visualizar como Toletus Lab</button>
-                </div>
-            </form>
-        </div>
-    </div>
+
 
     <!-- MODAL JUSTIFICATIVA DE REPROVAÇÃO DE PRIORIDADE -->
     <div id="rejectReasonModal" class="hidden fixed inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -2071,6 +2126,48 @@
         let activePeriodFilter = "ALL";
         let isAdminLoggedIn = false;
         let currentAdminId = null;
+        // TEMPORÁRIO: identificação por senha até o Supabase Auth entrar.
+        // A senha é conferida no banco (rpc verify_login); nada de credencial no frontend.
+        let isAnalystLoggedIn = false;
+        // A sessão sobrevive a recarga e a fechar a aba: só sai no logout explícito.
+        const SESSION_STORAGE_KEY = 'actuar-classifique-session-v1';
+        const ANALYST_SESSION_KEY = 'actuar-classifique-analyst-session-v1';
+
+        function saveSession(kind, userId) {
+            try { localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ kind, userId })); } catch (_) { /* sessão só nesta aba */ }
+        }
+        function clearSession() {
+            try { localStorage.removeItem(SESSION_STORAGE_KEY); sessionStorage.removeItem(ANALYST_SESSION_KEY); } catch (_) { /* nada a limpar */ }
+        }
+        function readSession() {
+            try { return JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) || 'null'); } catch (_) { return null; }
+        }
+
+        // Chamada depois que a base de usuários carrega: o perfil precisa ser reconferido,
+        // porque a pessoa pode ter sido inativada ou trocado de função desde o login.
+        function restoreSession() {
+            const saved = readSession();
+            if (!saved || !saved.userId) return false;
+            const user = (appStore?.users || defaultUsers)[saved.userId];
+            if (!user || user.active === false) { clearSession(); return false; }
+
+            if (saved.kind === 'manager' && user.role === 'Gestor Adm') {
+                isAdminLoggedIn = true; currentAdminId = saved.userId;
+                activeAdminTab = activeAdminTab || 'visao';
+                restoreManagerFilters();
+                return 'manager';
+            }
+            if (saved.kind === 'operations' && isPiecesOperatorRole(user.role)) {
+                isPecaLoggedIn = true; currentPecaUserId = saved.userId;
+                return 'operations';
+            }
+            if (saved.kind === 'analyst' && isRankableUser(user)) {
+                isAnalystLoggedIn = true; currentActiveUser = saved.userId;
+                return 'analyst';
+            }
+            clearSession();
+            return false;
+        }
         let isPecaLoggedIn = false;
         let currentPecaUserId = null;
         let activeAdminTab = "visao";
@@ -2078,7 +2175,6 @@
         let managerTvActive = false;
         let managerConsultationSource = null;
         let managerReturnScrollY = null;
-        let localManagerProfile = null;
         let managerComparisonIds = [];
         let priorityRotationOrderDraft = [];
         let priorityRotationTeamOverride = null;
@@ -2095,7 +2191,6 @@
         let pendingProfilePhoto = '';
         const VIEW_CONTEXT_STORAGE_KEY = 'actuar-classifique-view-context-v1';
         const MANAGER_FILTER_STORAGE_KEY = 'actuar-classifique-manager-filters-v1';
-        const LOCAL_MANAGER_SESSION_KEY = 'actuar-classifique-local-manager-v1';
 
         window.syncAuthenticatedLegacyViewer = legacyKey => {
             if (!legacyKey || !appStore?.users?.[legacyKey]) return false;
@@ -2131,8 +2226,12 @@
             try { saved = JSON.parse(sessionStorage.getItem(VIEW_CONTEXT_STORAGE_KEY) || 'null'); } catch (_) { saved = null; }
             let query = null;
             try { query = new URLSearchParams(window.location.search); } catch (_) { query = new URLSearchParams(); }
+            const savedSession = readSession();
+            const analystSession = savedSession?.kind === 'analyst' ? savedSession.userId : null;
             const restored = {
-                userId: query.get('analyst') || saved?.userId,
+                // A identidade vem da sessão autenticada. ?analyst= deixou de trocar quem você é:
+                // sem isso, bastaria editar a URL para entrar como qualquer colega.
+                userId: analystSession,
                 rankingTeam: query.get('ranking') || saved?.rankingTeam,
                 monthKey: query.get('month') || saved?.monthKey,
                 period: query.get('period') || saved?.period
@@ -2141,7 +2240,7 @@
 
             const users = appStore.users || defaultUsers;
             const validAnalystIds = Object.keys(users).filter(id => users[id].active !== false && isRankableUser(users[id]));
-            if (validAnalystIds.includes(restored.userId)) currentActiveUser = restored.userId;
+            if (validAnalystIds.includes(restored.userId)) { currentActiveUser = restored.userId; isAnalystLoggedIn = true; }
             else if (!validAnalystIds.includes(currentActiveUser) && validAnalystIds.length) currentActiveUser = validAnalystIds[0];
 
             if (['Sistema', 'Catraca'].includes(restored.rankingTeam)) activeRankingTab = restored.rankingTeam;
@@ -2156,7 +2255,6 @@
         // ============ EXPERIÊNCIA GERENCIAL CONSOLIDADA ============
         function getCurrentManager() {
             if (!isAdminLoggedIn || !currentAdminId) return null;
-            if (currentAdminId === '__local_jg__') return localManagerProfile;
             return getStore()?.users?.[currentAdminId] || null;
         }
 
@@ -2286,7 +2384,6 @@
 
         function priorityEvaluationActor(actorId) {
             if (!actorId) return null;
-            if (actorId === '__local_jg__') return localManagerProfile;
             return priorityRotationUser(actorId);
         }
 
@@ -2669,13 +2766,12 @@
         function priorityRotationUser(id) {
             if (!id) return null;
             const users = getStore()?.users || defaultUsers;
-            if (id === '__local_jg__') return localManagerProfile;
             if (id === 'system') return { name: 'Sistema', initial: 'SI' };
             return users[id] || null;
         }
 
         function priorityRotationActorId() {
-            return isAdminLoggedIn ? (currentAdminId || '__local_jg__') : currentActiveUser;
+            return isAdminLoggedIn ? currentAdminId : currentActiveUser;
         }
 
         function canManagePriorityRotation(team) {
@@ -3140,12 +3236,20 @@
 
         async function reactivatePriorityRotationParticipant(targetId) {
             const user = priorityRotationUser(targetId);
-            if (!confirm(`${user?.name || 'O participante'} será recolocado no final da fila. Deseja continuar?`)) return;
+            if (!await actuarConfirm({
+                title: `Recolocar ${user?.name || 'o participante'} no fim da fila?`,
+                message: 'A pessoa volta a participar do rodízio a partir da última posição.',
+                confirmLabel: 'Recolocar na fila', icon: 'refresh'
+            })) return;
             await persistPriorityRotationMutation(currentPriorityRotationTeam(), rotation => PriorityRotation.reactivateParticipant(rotation, targetId, priorityRotationActorId(), Date.now()), 'Participante reativado no final da fila.');
         }
 
         async function resumePriorityRotation() {
-            if (!confirm('Reativar este rodízio agora?')) return;
+            if (!await actuarConfirm({
+                title: 'Reativar o rodízio agora?',
+                message: 'Os atendimentos prioritários voltam a ser distribuídos pela fila.',
+                confirmLabel: 'Reativar rodízio', icon: 'play'
+            })) return;
             await persistPriorityRotationMutation(currentPriorityRotationTeam(), rotation => PriorityRotation.setPaused(rotation, false, priorityRotationActorId(), '', Date.now()), 'Rodízio reativado.');
         }
 
@@ -3176,7 +3280,11 @@
         }
 
         async function savePriorityRotationOrder() {
-            if (!confirm('Salvar a nova ordem da fila? A alteração ficará registrada no histórico.')) return;
+            if (!await actuarConfirm({
+                title: 'Salvar a nova ordem da fila?',
+                message: 'A alteração fica registrada no histórico com o seu nome e o horário.',
+                confirmLabel: 'Salvar ordem', icon: 'exchange'
+            })) return;
             const ok = await persistPriorityRotationMutation(currentPriorityRotationTeam(), rotation => PriorityRotation.reorder(rotation, priorityRotationOrderDraft, priorityRotationActorId(), Date.now()), 'Nova ordem salva e registrada.');
             if (ok) closePriorityRotationOrderModal();
         }
@@ -3410,7 +3518,6 @@
 
         function getCurrentProfileUser() {
             const users = (appStore && appStore.users) || defaultUsers;
-            if (isAdminLoggedIn && currentAdminId === '__local_jg__') return localManagerProfile;
             return users[getCurrentProfileUserId()] || null;
         }
 
@@ -3525,6 +3632,9 @@
             activeMonthKey = 'atual';
             activePeriodFilter = 'ALL';
             populateDropdowns();
+            // Sessão de analista precisa ser encerrada, não apenas reposicionada:
+            // logoutAnalyst limpa a flag, o sessionStorage e reabre o portão de acesso.
+            if (isAnalystLoggedIn) { logoutAnalyst(); showToast('Você saiu do seu perfil.'); return; }
             navigateTo('dashboard', { replace: true, root: true });
             showToast('Você saiu do perfil atual.');
         }
@@ -3597,7 +3707,10 @@
             toggle.classList.toggle('is-open', open);
         }
 
+        const PROFILE_PASSWORD_CHANGE_ENABLED = false;
+
         function toggleProfilePasswordSection() {
+            if (!PROFILE_PASSWORD_CHANGE_ENABLED) return;
             const toggle = document.getElementById('profilePasswordToggle');
             const open = toggle?.getAttribute('aria-expanded') !== 'true';
             setProfilePasswordSection(open);
@@ -4027,7 +4140,7 @@
 
         async function initApp() {
             if (!supabaseClient) {
-                alert("Configure as chaves do Supabase no código para o funcionamento!");
+                await actuarAlert('Conexão não configurada', 'As chaves do Supabase não foram informadas. Os dados exibidos não serão salvos até a configuração ser concluída.', { tone: 'danger' });
             } else {
                 try {
                     // Enquanto a autenticação oficial estiver pausada, a fonte de verdade
@@ -4503,7 +4616,173 @@
             }
         }
 
+        function hasAnySession() { return isAnalystLoggedIn || isAdminLoggedIn || isPecaLoggedIn; }
+        function syncLoginGate() {
+            const gate = document.getElementById('loginGate');
+            if (!gate) return;
+            const locked = !hasAnySession();
+            gate.classList.toggle('hidden', !locked);
+            document.body.classList.toggle('actuar-locked', locked);
+        }
+
+        /* Confirmação na identidade do sistema. O diálogo do navegador não respeita
+           o tema, a tipografia nem o vocabulário do produto — e trava a página. */
+        let actuarConfirmResolve = null;
+
+        function closeActuarConfirm(resultado) {
+            const layer = document.getElementById('actuarConfirmDialog');
+            if (!layer || layer.classList.contains('hidden')) return;
+            layer.classList.add('hidden');
+            const resolver = actuarConfirmResolve;
+            actuarConfirmResolve = null;
+            const anterior = layer.dataset.returnFocus;
+            delete layer.dataset.returnFocus;
+            if (anterior) document.getElementById(anterior)?.focus();
+            resolver?.(resultado);
+        }
+
+        function actuarConfirm(options = {}) {
+            const layer = document.getElementById('actuarConfirmDialog');
+            if (!layer) return Promise.resolve(window.confirm(options.message || options.title || ''));
+            closeActuarConfirm(false);
+
+            const tom = options.tone === 'danger' ? 'danger' : 'primary';
+            layer.querySelector('.actuar-confirm-card').className = `actuar-confirm-card tone-${tom}`;
+            document.getElementById('actuarConfirmIcon').innerHTML = `<i class="fi fi-rr-${options.icon || (tom === 'danger' ? 'triangle-warning' : 'interrogation')}"></i>`;
+            document.getElementById('actuarConfirmTitle').textContent = options.title || 'Confirmar ação';
+            const mensagem = document.getElementById('actuarConfirmMessage');
+            mensagem.textContent = options.message || '';
+            mensagem.hidden = !options.message;
+
+            const cancelar = document.getElementById('actuarConfirmCancel');
+            const confirmar = document.getElementById('actuarConfirmOk');
+            cancelar.textContent = options.cancelLabel || 'Cancelar';
+            cancelar.hidden = options.alert === true;
+            confirmar.textContent = options.confirmLabel || 'Confirmar';
+            confirmar.className = `actuar-btn ${tom === 'danger' ? 'actuar-btn-danger' : 'actuar-btn-primary'}`;
+
+            const ativo = document.activeElement;
+            if (ativo && ativo.id) layer.dataset.returnFocus = ativo.id;
+            layer.classList.remove('hidden');
+            requestAnimationFrame(() => (options.alert === true ? confirmar : cancelar).focus());
+
+            return new Promise(resolve => { actuarConfirmResolve = resolve; });
+        }
+
+        function actuarAlert(title, message, options = {}) {
+            return actuarConfirm({ ...options, title, message, alert: true, confirmLabel: options.confirmLabel || 'Entendi' });
+        }
+
+        document.addEventListener('click', event => {
+            if (event.target?.id === 'actuarConfirmDialog') closeActuarConfirm(false);
+            if (event.target?.closest?.('#actuarConfirmCancel')) closeActuarConfirm(false);
+            if (event.target?.closest?.('#actuarConfirmOk')) closeActuarConfirm(true);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Escape') return;
+            if (!document.getElementById('actuarConfirmDialog')?.classList.contains('hidden')) closeActuarConfirm(false);
+        });
+
+        /* Portão de acesso: a porta escolhida expande no lugar, em vez de abrir
+           outra camada por cima. O erro de senha aparece dentro do próprio
+           formulário — não como aviso no canto da tela, longe do olhar. */
+        const LOGIN_DOORS = {
+            analyst: { fill: fillAnalystDoor, focus: 'analystUserSelect' },
+            admin: { fill: fillAdminDoor, focus: 'adminUserSelect' },
+            peca: { fill: fillPecaDoor, focus: 'pecaUserSelect' }
+        };
+
+        function analystDoorOptions() {
+            const usersList = getStore()?.users || defaultUsers;
+            return analystOptionIds().map(id => `<option value="${id}">${usersList[id].name} · ${usersList[id].team}</option>`).join('');
+        }
+        function fillAnalystDoor() {
+            document.getElementById('analystUserSelect').innerHTML = analystDoorOptions() || `<option value="">Nenhum analista cadastrado</option>`;
+        }
+        function fillAdminDoor() {
+            const usersList = getStore()?.users || defaultUsers;
+            const opts = Object.keys(usersList).filter(id => usersList[id].role === 'Gestor Adm' && usersList[id].active !== false)
+                .map(id => `<option value="${id}">${usersList[id].name}</option>`).join('');
+            document.getElementById('adminUserSelect').innerHTML = opts || `<option value="">Nenhum gestor cadastrado</option>`;
+        }
+        function fillPecaDoor() {
+            const usersList = getStore()?.users || defaultUsers;
+            const opts = Object.keys(usersList).filter(id => isPiecesOperatorRole(usersList[id].role) && usersList[id].active !== false)
+                .map(id => `<option value="${id}">${usersList[id].name} · ${usersList[id].role}</option>`).join('');
+            document.getElementById('pecaUserSelect').innerHTML = opts || `<option value="">Nenhum usuário cadastrado</option>`;
+            document.getElementById('pecaLocalPreviewButton')?.classList.toggle('hidden', !['localhost', '127.0.0.1', '::1'].includes(location.hostname));
+        }
+
+        function clearLoginError(kind) {
+            const box = document.querySelector(`[data-login-error="${kind}"]`);
+            if (!box) return;
+            box.textContent = '';
+            box.hidden = true;
+            box.closest('.actuar-login-door-group')?.classList.remove('has-error');
+        }
+        function showLoginError(kind, message) {
+            const box = document.querySelector(`[data-login-error="${kind}"]`);
+            if (!box) return showToast(message, 'error');
+            box.textContent = message;
+            box.hidden = false;
+            const group = box.closest('.actuar-login-door-group');
+            group?.classList.add('has-error');
+            group?.querySelector('input[type="password"]')?.focus();
+        }
+
+        function closeLoginDoors(except) {
+            document.querySelectorAll('.actuar-login-door-group').forEach(group => {
+                if (group.dataset.door === except) return;
+                group.classList.remove('is-open', 'has-error');
+                group.querySelector('.actuar-login-door')?.setAttribute('aria-expanded', 'false');
+                const erro = group.querySelector('[data-login-error]');
+                if (erro) { erro.textContent = ''; erro.hidden = true; }
+            });
+        }
+
+        function openLoginDoor(kind) {
+            const config = LOGIN_DOORS[kind];
+            const group = document.querySelector(`.actuar-login-door-group[data-door="${kind}"]`);
+            if (!config || !group) return;
+            document.getElementById('loginGate')?.classList.remove('hidden');
+            document.body.classList.add('actuar-locked');
+            closeLoginDoors(kind);
+            clearLoginError(kind);
+            config.fill();
+            group.classList.add('is-open');
+            group.querySelector('.actuar-login-door')?.setAttribute('aria-expanded', 'true');
+            requestAnimationFrame(() => document.getElementById(config.focus)?.focus());
+        }
+
+        function toggleLoginDoor(kind) {
+            const group = document.querySelector(`.actuar-login-door-group[data-door="${kind}"]`);
+            if (group?.classList.contains('is-open')) { closeLoginDoors(null); return; }
+            openLoginDoor(kind);
+        }
+
+        /* Fonte única de verdade da toolbar: quem está na sessão decide o que aparece.
+           Antes isso vivia duplicado em quatro ramos do render(), com regras divergentes. */
+        function syncAccessControls() {
+            const show = (id, visible) => document.getElementById(id)?.classList.toggle('hidden', !visible);
+            const semSessao = !hasAnySession();
+
+            // Departamento e Analista são ferramenta de gestão: quem está no próprio
+            // perfil não filtra por outra pessoa, filtra só o período dele.
+            show('filterContextGroup', isAdminLoggedIn);
+
+            // As portas de entrada só existem fora de uma sessão. A saída não fica
+            // aqui: mora no menu da foto do usuário, no canto superior direito.
+            show('btnAnalystAccess', semSessao);
+            show('btnPecaAccess', semSessao);
+            show('btnAdminAccess', semSessao);
+            document.querySelector('.actuar-access-actions')?.classList.toggle('hidden', !semSessao);
+
+            document.querySelector('.actuar-toolbar')?.classList.toggle('is-single-group', !isAdminLoggedIn);
+        }
+
         function render() {
+            syncLoginGate();
+            syncAccessControls();
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const metrics = getAggregatedMetrics(activeMonthKey, activePeriodFilter);
@@ -4531,10 +4810,6 @@
                 ['viewAgent', 'viewRanking', 'viewFaq', 'viewPecas', 'viewAdmin'].forEach(id => document.getElementById(id).classList.add('hidden'));
                 profileView.classList.remove('hidden');
                 document.getElementById('publicTabsContainer').classList.add('hidden');
-                document.getElementById('btnAdminAccess').classList.toggle('hidden', isAdminLoggedIn || isPecaLoggedIn);
-                document.getElementById('btnAdminLogout').classList.toggle('hidden', !isAdminLoggedIn);
-                document.getElementById('btnPecaAccess').classList.toggle('hidden', isAdminLoggedIn || isPecaLoggedIn);
-                document.getElementById('btnPecaLogout').classList.toggle('hidden', !isPecaLoggedIn);
                 renderProfileScreen(currentRoute.section);
                 finalizeActuarUi();
                 return;
@@ -4548,10 +4823,6 @@
                 document.getElementById('viewPecas').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
                 document.getElementById('publicTabsContainer').classList.add('hidden');
-                document.getElementById('btnAdminAccess').classList.add('hidden');
-                document.getElementById('btnAdminLogout').classList.remove('hidden');
-                document.getElementById('btnPecaAccess').classList.add('hidden');
-                document.getElementById('btnPecaLogout').classList.add('hidden');
                 document.getElementById('loggedAdminName').innerText = getCurrentManager()?.name || "Gestor";
                 renderAdminLogs();
                 renderUsersManagementTable();
@@ -4567,10 +4838,6 @@
                 document.getElementById('viewAdmin').classList.add('hidden');
                 document.getElementById('viewPecas').classList.remove('hidden');
                 document.getElementById('publicTabsContainer').classList.toggle('hidden', isPecaLoggedIn);
-                document.getElementById('btnAdminAccess').classList.toggle('hidden', isPecaLoggedIn);
-                document.getElementById('btnAdminLogout').classList.add('hidden');
-                document.getElementById('btnPecaAccess').classList.toggle('hidden', isPecaLoggedIn);
-                document.getElementById('btnPecaLogout').classList.toggle('hidden', !isPecaLoggedIn);
                 document.getElementById('piecesAnalystEntry')?.classList.toggle('hidden', isPecaLoggedIn || window.canRequestPieces?.() === false);
                 renderPiecesExperience();
             } else {
@@ -4578,10 +4845,6 @@
                 document.getElementById('viewPecas').classList.add('hidden');
                 const managerConsulting = isAdminLoggedIn && currentRoute.name === 'dashboard';
                 document.getElementById('publicTabsContainer').classList.toggle('hidden', managerConsulting);
-                document.getElementById('btnAdminAccess').classList.toggle('hidden', isAdminLoggedIn || isPecaLoggedIn);
-                document.getElementById('btnAdminLogout').classList.toggle('hidden', !isAdminLoggedIn);
-                document.getElementById('btnPecaAccess').classList.toggle('hidden', isAdminLoggedIn || isPecaLoggedIn);
-                document.getElementById('btnPecaLogout').classList.toggle('hidden', !isPecaLoggedIn);
 
                 document.getElementById('agentName').innerText = user.name;
                 document.getElementById('agentTeam').innerText = teamLabel(user.team);
@@ -5309,6 +5572,7 @@
                         <td class="p-2 text-right whitespace-nowrap">
                             ${isRankableUser(u) && canManagerViewAnalyst(id) ? `<button onclick="openManagerAnalyst('${id}','pessoas')" class="text-primary-400 hover:text-primary-300 text-xs font-semibold mr-3"><i class="fi fi-rr-eye me-1"></i>Ver ficha</button>` : ''}
                             <button onclick="startEditUser('${id}')" class="text-primary-400 hover:text-primary-300 text-xs font-semibold mr-3"><i class="fa-solid fa-pen me-1"></i>Editar</button>
+                            <button onclick="resetUserPassword('${id}')" class="text-primary-400 hover:text-primary-300 text-xs font-semibold mr-3"><i class="fa-solid fa-key me-1"></i>${u.hasPassword ? 'Redefinir senha' : 'Criar senha'}</button>
                             <button onclick="toggleUserActive('${id}')" class="text-amber-400 hover:text-amber-300 text-xs font-semibold mr-3"><i class="fa-solid fa-power-off me-1"></i>${active ? 'Inativar' : 'Ativar'}</button>
                             <button onclick="deleteUser('${id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>
                         </td>
@@ -5478,7 +5742,12 @@
             const usersList = store.users || defaultUsers;
             const u = usersList[id];
             if (!u) return;
-            if (!confirm(`Excluir permanentemente o usuário "${u.name}"? Esta ação não pode ser desfeita.`)) return;
+            if (!await actuarConfirm({
+                tone: 'danger', icon: 'trash',
+                title: `Excluir ${u.name}?`,
+                message: 'O usuário é removido em definitivo. Esta ação não pode ser desfeita — considere inativar em vez de excluir.',
+                confirmLabel: 'Excluir usuário'
+            })) return;
             delete appStore.users[id];
             const ok = await persistStore();
             if (ok) showToast("Usuário excluído permanentemente.");
@@ -5489,7 +5758,12 @@
         async function deleteLog(logId) {
             const protectedLog = (appStore.logs || []).find(log => log.id === logId && ['PRIORITY', 'PRIORITY_ADJUSTMENT'].includes(log.type));
             if (protectedLog) { showToast('Movimentações de prioridade são auditáveis e não podem ser apagadas.', 'error'); return; }
-            if (!confirm("Excluir este lançamento? Essa ação não pode ser desfeita.")) return;
+            if (!await actuarConfirm({
+                tone: 'danger', icon: 'trash',
+                title: 'Excluir este lançamento?',
+                message: 'O registro sai da pontuação e do histórico. Esta ação não pode ser desfeita.',
+                confirmLabel: 'Excluir lançamento'
+            })) return;
             appStore.logs = (appStore.logs || []).filter(l => l.id !== logId);
             const ok = await persistStore();
             if (ok) showToast("Lançamento excluído.");
@@ -6866,8 +7140,12 @@
                 return;
             }
 
-            const confirmMsg = `Tem certeza que deseja excluir este protocolo pendente?`;
-            if (!confirm(confirmMsg)) return;
+            if (!await actuarConfirm({
+                tone: 'danger', icon: 'trash',
+                title: 'Excluir este protocolo pendente?',
+                message: 'Só protocolos ainda não avaliados podem ser excluídos. Esta ação não pode ser desfeita.',
+                confirmLabel: 'Excluir protocolo'
+            })) return;
 
             appStore.priorityRequests = (appStore.priorityRequests || []).filter(r => r.id !== id);
 
@@ -7052,7 +7330,12 @@
         }
 
         async function closeCurrentMonth() {
-            if (!confirm("Tem certeza que deseja fechar o mês atual? Todos os registros semanais serão arquivados e o novo ciclo iniciará limpo.")) return;
+            if (!await actuarConfirm({
+                tone: 'danger', icon: 'calendar-check',
+                title: 'Fechar o mês atual?',
+                message: 'Os registros semanais são arquivados e o novo ciclo começa zerado. O fechamento não pode ser desfeito.',
+                confirmLabel: 'Fechar mês'
+            })) return;
 
             const monthId = "m_" + Date.now();
             
@@ -7071,25 +7354,11 @@
             render();
         }
 
-        function openAdminModal() {
-            const store = getStore();
-            const usersList = store.users || defaultUsers;
-            let opts = "";
-            Object.keys(usersList).forEach(id => {
-                const u = usersList[id];
-                if (u.role === "Gestor Adm" && u.active !== false) {
-                    opts += `<option value="${id}">${u.name}</option>`;
-                }
-            });
-            document.getElementById('adminUserSelect').innerHTML = opts || `<option value="">Nenhum gestor cadastrado</option>`;
-            const localAccess = document.getElementById('localManagerAccessButton');
-            if (localAccess) localAccess.classList.toggle('hidden', !['localhost', '127.0.0.1', '::1'].includes(location.hostname));
-            document.getElementById('adminModal').classList.remove('hidden');
-        }
-        function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
-
+        function openAdminModal() { openLoginDoor('admin'); }
+        function closeAdminModal() { closeLoginDoors(null); }
         async function loginAdmin(e) {
             e.preventDefault();
+            clearLoginError('admin');
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const selectedId = document.getElementById('adminUserSelect').value;
@@ -7097,15 +7366,15 @@
             const user = usersList[selectedId];
 
             if (!user || user.role !== "Gestor Adm") {
-                showToast("Selecione um gestor válido.", "error");
+                showLoginError('admin', "Selecione um gestor válido.");
                 return;
             }
             if (user.active === false) {
-                showToast("Este usuário está inativo e não pode acessar o Modo Gestão.", "error");
+                showLoginError('admin', "Este usuário está inativo e não pode acessar o Modo Gestão.");
                 return;
             }
             if (!user.hasPassword) {
-                showToast("Este gestor ainda não possui senha cadastrada.", "error");
+                showLoginError('admin', "Este gestor ainda não possui senha cadastrada.");
                 return;
             }
             const valid = await verifyLoginRemote(selectedId, pass);
@@ -7113,102 +7382,135 @@
                 isAdminLoggedIn = true;
                 currentAdminId = selectedId;
                 activeAdminTab = 'visao';
+                saveSession('manager', selectedId);
                 restoreManagerFilters();
                 document.getElementById('adminPass').value = "";
                 closeAdminModal();
                 navigateTo({ name: 'admin', section: 'visao' });
             } else {
-                showToast("Senha incorreta!", "error");
+                showLoginError('admin', "Senha incorreta!");
             }
-        }
-
-        function ensureLocalJoaoManager() {
-            if (!['localhost', '127.0.0.1', '::1'].includes(location.hostname)) return null;
-            if (!appStore) return null;
-            const users = appStore.users || defaultUsers;
-            const normalizedName = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-            const historicalId = Object.keys(users).find(id => normalizedName(users[id].name).includes('joao gabriel'));
-            const existing = historicalId ? users[historicalId] : {};
-            localManagerProfile = {
-                id: '__local_jg__',
-                legacyUserKey: historicalId || 'jo_o_gabriel_nr3',
-                ...existing,
-                name: existing.name || 'João Gabriel',
-                email: existing.email || 'jg@actuar.com',
-                team: existing.team || 'Catraca',
-                role: 'Gestor Adm',
-                initial: existing.initial || 'JG',
-                active: true,
-                managedTeams: ['Sistema', 'Catraca'],
-                allTeamsAccess: true,
-                localOnly: true
-            };
-            return '__local_jg__';
-        }
-
-        function findJoaoManagerId() {
-            const managerId = ensureLocalJoaoManager();
-            return managerId && localManagerProfile?.role === 'Gestor Adm' && localManagerProfile.active !== false ? managerId : null;
-        }
-
-        function loginLocalManager() {
-            if (!['localhost', '127.0.0.1', '::1'].includes(location.hostname)) {
-                showToast('O acesso local não está disponível neste endereço.', 'error');
-                return;
-            }
-            const managerId = findJoaoManagerId();
-            if (!managerId) {
-                showToast('A ficha ativa de João Gabriel não foi encontrada.', 'error');
-                return;
-            }
-            isAdminLoggedIn = true;
-            currentAdminId = managerId;
-            activeAdminTab = 'visao';
-            try { sessionStorage.setItem(LOCAL_MANAGER_SESSION_KEY, managerId); } catch (_) { /* opcional */ }
-            restoreManagerFilters();
-            closeAdminModal();
-            navigateTo({ name: 'admin', section: 'visao' });
-            showToast('Acesso local liberado para João Gabriel.');
-        }
-
-        function restoreLocalManagerSession() {
-            if (!['localhost', '127.0.0.1', '::1'].includes(location.hostname)) return false;
-            let managerId = null;
-            try { managerId = sessionStorage.getItem(LOCAL_MANAGER_SESSION_KEY); } catch (_) { managerId = null; }
-            const ensuredManagerId = ensureLocalJoaoManager();
-            if (managerId && ensuredManagerId) managerId = ensuredManagerId;
-            const user = managerId === '__local_jg__' ? localManagerProfile : getStore()?.users?.[managerId];
-            if (!user || user.role !== 'Gestor Adm' || user.active === false) return false;
-            isAdminLoggedIn = true;
-            currentAdminId = managerId;
-            restoreManagerFilters();
-            return true;
         }
 
         function logoutAdmin() {
             isAdminLoggedIn = false;
             currentAdminId = null;
-            try { sessionStorage.removeItem(LOCAL_MANAGER_SESSION_KEY); } catch (_) { /* opcional */ }
+            clearSession();
             navigateTo('dashboard', { replace: true, root: true });
             showToast('Sessão de gestão encerrada.');
         }
 
-        function openPecaModal() {
-            const store = getStore();
-            const usersList = store.users || defaultUsers;
-            let opts = "";
-            Object.keys(usersList).forEach(id => {
-                const u = usersList[id];
-                if (isPiecesOperatorRole(u.role) && u.active !== false) {
-                    opts += `<option value="${id}">${u.name}</option>`;
-                }
-            });
-            document.getElementById('pecaUserSelect').innerHTML = opts || `<option value="">Nenhum usuário cadastrado</option>`;
-            document.getElementById('pecaLocalPreviewButton')?.classList.toggle('hidden', !['localhost', '127.0.0.1', '::1'].includes(location.hostname));
-            document.getElementById('pecaModal').classList.remove('hidden');
+        function makeTempPassword() {
+            // Sem ambiguidade visual (0/O, 1/l) porque a senha vai ser lida e digitada por outra pessoa.
+            const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+            const values = new Uint32Array(8);
+            crypto.getRandomValues(values);
+            return Array.from(values, value => alphabet[value % alphabet.length]).join('');
         }
-        function closePecaModal() { document.getElementById('pecaModal').classList.add('hidden'); }
 
+        // Redefinição individual: serve para qualquer perfil, inclusive operacional e gestão.
+        // A senha antiga não precisa ser conhecida — ela é sobrescrita no banco.
+        async function resetUserPassword(userId) {
+            const usersList = getStore()?.users || defaultUsers;
+            const user = usersList[userId];
+            if (!user) return showToast('Usuário não encontrado.', 'error');
+
+            const acao = user.hasPassword ? 'Redefinir a senha' : 'Criar a senha';
+            if (!await actuarConfirm({
+                tone: 'danger', icon: 'lock',
+                title: `${acao} de ${user.name}?`,
+                message: 'A senha atual deixa de valer na hora. A nova aparece uma única vez, para você repassar.',
+                confirmLabel: user.hasPassword ? 'Redefinir senha' : 'Criar senha'
+            })) return;
+
+            const password = makeTempPassword();
+            if (!await setUserPasswordRemote(userId, password)) return;
+
+            user.hasPassword = true;
+            await persistStore();
+            showGeneratedPasswords([{ name: user.name, team: user.team, password }]);
+            showToast(`Senha de ${user.name.split(' ')[0]} redefinida.`);
+            renderUsersManagementTable();
+        }
+
+        // Exibição única das senhas geradas, tanto no lote quanto na redefinição individual.
+        function showGeneratedPasswords(created) {
+            const result = document.getElementById('analystFirstAccessResult');
+            if (!result) return;
+            result.className = 'actuar-first-access-list';
+            result.innerHTML = `<p>Anote e entregue a cada pessoa. Esta lista some ao sair da tela.</p><table><thead><tr><th>Pessoa</th><th>Equipe</th><th>Senha</th></tr></thead><tbody>${
+                created.map(item => `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(teamLabel(item.team))}</td><td><code>${escapeHtml(item.password)}</code></td></tr>`).join('')
+            }</tbody></table>`;
+            result.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+        }
+
+        async function generateAnalystPasswords() {
+            const usersList = getStore()?.users || defaultUsers;
+            const pending = analystOptionIds().filter(id => !usersList[id].hasPassword);
+            if (!pending.length) {
+                showToast('Todos os analistas ativos já possuem senha cadastrada.');
+                return;
+            }
+            if (!await actuarConfirm({
+                icon: 'lock',
+                title: `Gerar senha de primeiro acesso para ${pending.length} analista(s)?`,
+                message: 'A lista aparece uma única vez. Copie antes de fechar para repassar a cada pessoa.',
+                confirmLabel: 'Gerar senhas'
+            })) return;
+
+            const created = [];
+            for (const id of pending) {
+                const password = makeTempPassword();
+                if (!await setUserPasswordRemote(id, password)) continue;
+                usersList[id].hasPassword = true;
+                created.push({ name: usersList[id].name, team: usersList[id].team, password });
+            }
+            if (!created.length) return showToast('Nenhuma senha foi gravada.', 'error');
+
+            await persistStore();
+            showGeneratedPasswords(created);
+            showToast(`${created.length} senha(s) gerada(s).`);
+            renderUsersManagementTable();
+        }
+
+        function analystOptionIds() {
+            const usersList = getStore()?.users || defaultUsers;
+            return Object.keys(usersList).filter(id => usersList[id].active !== false && isRankableUser(usersList[id]));
+        }
+        function openAnalystModal() { openLoginDoor('analyst'); }
+        function closeAnalystModal() { closeLoginDoors(null); }
+        async function loginAnalyst(e) {
+            e.preventDefault();
+            clearLoginError('analyst');
+            const usersList = getStore()?.users || defaultUsers;
+            const selectedId = document.getElementById('analystUserSelect').value;
+            const pass = document.getElementById('analystPass').value;
+            const user = usersList[selectedId];
+
+            if (!user || !isRankableUser(user)) return showLoginError('analyst', "Selecione um usuário válido.");
+            if (user.active === false) return showLoginError('analyst', "Este usuário está inativo.");
+            if (!user.hasPassword) return showLoginError('analyst', "Sua senha ainda não foi cadastrada. Peça para a gestão gerar o primeiro acesso.");
+
+            if (!await verifyLoginRemote(selectedId, pass)) return showLoginError('analyst', "Senha incorreta!");
+
+            isAnalystLoggedIn = true;
+            currentActiveUser = selectedId;
+            saveSession('analyst', selectedId);
+            closeAnalystModal();
+            showToast(`Bem-vindo, ${user.name.split(' ')[0]}!`);
+            navigateTo('dashboard');
+        }
+        function logoutAnalyst() {
+            isAnalystLoggedIn = false;
+            clearSession();
+            closeAnalystModal();
+            navigateTo('dashboard');
+            syncLoginGate();
+            syncAccessControls();
+        }
+
+        function openPecaModal() { openLoginDoor('peca'); }
+        function closePecaModal() { closeLoginDoors(null); }
         function enterLocalPecaPreview(role = 'Envio/Coleta') {
             if (!['localhost', '127.0.0.1', '::1'].includes(location.hostname)) return;
             const selectedId = document.getElementById('pecaUserSelect').value;
@@ -7227,6 +7529,7 @@
 
         async function loginPeca(e) {
             e.preventDefault();
+            clearLoginError('peca');
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const selectedId = document.getElementById('pecaUserSelect').value;
@@ -7234,32 +7537,34 @@
             const user = usersList[selectedId];
 
             if (!user || !isPiecesOperatorRole(user.role)) {
-                showToast("Selecione um usuário válido.", "error");
+                showLoginError('peca', "Selecione um usuário válido.");
                 return;
             }
             if (user.active === false) {
-                showToast("Este usuário está inativo e não pode acessar este espaço.", "error");
+                showLoginError('peca', "Este usuário está inativo e não pode acessar este espaço.");
                 return;
             }
             if (!user.hasPassword) {
-                showToast("Este usuário ainda não possui senha cadastrada.", "error");
+                showLoginError('peca', "Este usuário ainda não possui senha cadastrada.");
                 return;
             }
             const valid = await verifyLoginRemote(selectedId, pass);
             if (valid) {
                 isPecaLoggedIn = true;
                 currentPecaUserId = selectedId;
+                saveSession('operations', selectedId);
                 document.getElementById('pecaPass').value = "";
                 closePecaModal();
                 navigateTo('pecas');
             } else {
-                showToast("Senha incorreta!", "error");
+                showLoginError('peca', "Senha incorreta!");
             }
         }
 
         function logoutPeca() {
             isPecaLoggedIn = false;
             currentPecaUserId = null;
+            clearSession();
             window.ACTUAR_LOCAL_PIECES_ROLE = null;
             navigateTo('dashboard', { replace: true, root: true });
             showToast('Sessão de Envio/Coleta encerrada.');
@@ -7385,17 +7690,20 @@
 
         window.onload = async () => {
             await initApp();
-            const localManagerRestored = restoreLocalManagerSession();
+            // Depois de initApp() porque a restauração precisa da base de usuários carregada.
+            const restored = restoreSession();
+            if (restored === 'manager') navigateTo({ name: 'admin', section: activeAdminTab || 'visao' }, { replace: true });
+            else if (restored === 'operations') navigateTo('pecas', { replace: true });
+            else if (restored) render();
             await PerformancePlatform.init(supabaseClient);
-            if (localManagerRestored) navigateTo({ name: 'admin', section: activeAdminTab || 'visao' }, { replace: true });
         };
     </script>
-    <script src="js/actuar-fields.js?v=20260812-catraca-gate-1"></script>
-    <script src="js/performance-domain.js"></script>
-    <script src="js/manager-experience.js"></script>
-    <script src="js/priority-rotation.js"></script>
-    <script src="js/pieces-operations.js?v=20260812-catraca-gate-1"></script>
-    <script src="js/pieces-ui.js?v=20260812-catraca-gate-1"></script>
-    <script src="js/performance-platform.js"></script>
+    <script src="js/actuar-fields.js?v=20260812-teams-2"></script>
+    <script src="js/performance-domain.js?v=20260812-teams-2"></script>
+    <script src="js/manager-experience.js?v=20260812-teams-2"></script>
+    <script src="js/priority-rotation.js?v=20260812-teams-2"></script>
+    <script src="js/pieces-operations.js?v=20260812-teams-2"></script>
+    <script src="js/pieces-ui.js?v=20260812-teams-2"></script>
+    <script src="js/performance-platform.js?v=20260812-teams-2"></script>
 </body>
 </html>

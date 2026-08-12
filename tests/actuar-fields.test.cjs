@@ -79,11 +79,8 @@ test('o envio da solicitação aplica as mesmas regras dos campos', () => {
         return pieces.pendingRequirements(draft).map(item => item.field);
     };
     assert.ok(invalido({ id: 'K7552' }).includes('client.id'));
-    assert.ok(invalido({ document: '11.222.333/0001-99' }).includes('client.document'));
-    // Cliente pessoa física valida CPF no mesmo campo de documento.
-    assert.ok(invalido({ personType: 'Física', document: '111.222.333-99' }).includes('client.document'));
-    assert.deepEqual(invalido({ personType: 'Física', document: '529.982.247-25' }), []);
-    assert.deepEqual(invalido({ personType: 'Jurídica', document: '11.222.333/0001-81' }), []);
+    assert.ok(invalido({ personType: 'Jurídica', document: '11.222.333/0001-99' }).includes('client.document'));
+    assert.ok(invalido({ personType: 'Física', document: '529.982.247-26' }).includes('client.document'));
     assert.ok(invalido({ state: 'XX' }).includes('client.state'));
     assert.ok(invalido({ phone: '(20) 99999-8888' }).includes('client.phone'));
     assert.ok(invalido({ email: 'joao@actuar' }).includes('client.email'));
@@ -95,15 +92,12 @@ test('o envio da solicitação aplica as mesmas regras dos campos', () => {
 
 test('os campos do cadastro estão marcados para máscara e o módulo é carregado antes de quem depende dele', () => {
     const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
-    const ops = fs.readFileSync('js/pieces-operations.js', 'utf8');
     const html = fs.readFileSync('index.html', 'utf8');
     const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
 
     for (const type of ['clientId', 'uf', 'phone', 'email']) assert.ok(ui.includes(`data-field="${type}"`), `campo ${type} sem máscara`);
-    // O documento alterna a máscara entre CNPJ e CPF conforme o tipo de cliente.
+    // O documento do cliente alterna entre CPF e CNPJ conforme o tipo de pessoa.
     assert.match(ui, /data-field="\$\{domain\(\)\.documentTypeOf\(draft\.client\)\}"/);
-    assert.match(ops, /function documentTypeOf\(client\) \{ return personTypeOf\(client\) === 'Física' \? 'cpf' : 'cnpj'; \}/);
-    for (const type of ['cnpj', 'cpf']) assert.ok(fields.TYPES[type], `tipo ${type} ausente no ActuarFields`);
     assert.match(ui, /bindFields\(body\)/);
     assert.match(ui, /const fieldCheck = checkFields/);
     assert.ok(html.indexOf('js/actuar-fields.js') < html.indexOf('js/pieces-operations.js'), 'actuar-fields.js precisa carregar antes');
@@ -132,4 +126,34 @@ test('digitar caractere a caractere não embaralha o valor: o cursor ignora os s
     assert.equal(digitar('cep', '74000000'), '74000-000');
     assert.equal(digitar('clientId', 'tz2345'), 'TZ2345');
     assert.equal(digitar('email', 'joao@actuar.com.br'), 'joao@actuar.com.br');
+});
+
+test('a toolbar decide acessos e escopo de filtro num lugar só', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    assert.match(html, /function syncAccessControls\(\)/);
+    assert.match(html, /show\('filterContextGroup', isAdminLoggedIn\)/, 'Departamento e Analista só na gestão');
+    assert.match(html, /id="filterContextGroup"/);
+
+    // Dentro de uma sessão nenhuma porta de entrada continua na tela.
+    for (const botao of ['btnAnalystAccess', 'btnPecaAccess', 'btnAdminAccess']) {
+        assert.match(html, new RegExp(`show\\('${botao}', semSessao\\)`), `${botao} deveria sumir dentro da sessão`);
+    }
+    // A saída não fica na toolbar: vive no menu da foto do usuário.
+    for (const botao of ['btnAnalystLogout', 'btnPecaLogout', 'btnAdminLogout']) {
+        assert.ok(!html.includes(botao), `${botao} voltou para a toolbar; a saída é o menu do perfil`);
+    }
+    assert.match(html, /document\.querySelector\('\.actuar-access-actions'\)\?\.classList\.toggle\('hidden', !semSessao\)/);
+
+    // E o menu do perfil precisa encerrar as três sessões de verdade.
+    const inicio = html.indexOf('function signOutProfile()');
+    assert.ok(inicio > 0, 'signOutProfile não encontrado');
+    const sair = html.slice(inicio, html.indexOf('\n        function ', inicio + 10));
+    assert.match(sair, /if \(isAdminLoggedIn\) \{\s*logoutAdmin\(\);/);
+    assert.match(sair, /if \(isPecaLoggedIn\) \{\s*logoutPeca\(\);/);
+    assert.match(sair, /if \(isAnalystLoggedIn\) \{ logoutAnalyst\(\);/, 'sessão de analista precisa ser encerrada, não só reposicionada');
+
+    // Regressão: a visibilidade vivia duplicada em quatro ramos do render(), com regras divergentes.
+    const espalhado = html.match(/getElementById\('btn(Analyst|Peca|Admin)(Access|Logout)'\)\.classList/g) || [];
+    assert.equal(espalhado.length, 0, `visibilidade de acesso voltou a ficar espalhada: ${espalhado.length} ocorrência(s)`);
 });

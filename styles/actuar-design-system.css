@@ -509,7 +509,9 @@ body.actuar-app .overflow-x-auto:has(> table) { border: 1px solid var(--actuar-b
 .actuar-photo-actions { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
 .actuar-profile-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 16px; }
 .actuar-card { padding: 20px; border: 1px solid var(--actuar-border); border-radius: var(--actuar-radius-large); background: var(--actuar-surface); }
-.actuar-card-header { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--actuar-border); }
+.actuar-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--actuar-border); }
+.actuar-card-header > :first-child { min-width: 0; }
+.actuar-card-header > .actuar-btn { flex: none; }
 .actuar-card-title { margin: 0; font-size: 14px; font-weight: 700; }
 .actuar-card-description { margin: 4px 0 0; color: var(--actuar-secondary); font-size: 11px; line-height: 1.5; }
 #profilePasswordCard { align-self: start; padding: 0; overflow: hidden; }
@@ -1328,7 +1330,9 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #505A68; }
 .priority-overview-metric > i { color: var(--actuar-muted); }
 .priority-overview-rotation { overflow: visible; }
 .priority-preview-list, .priority-preview-ranking { display: flex; flex-direction: column; gap: 6px; }
-.priority-preview-list > button, .priority-preview-ranking > button { width: 100%; display: grid; grid-template-columns: auto minmax(0,1fr) auto auto; align-items: center; gap: 9px; padding: 9px; border: 1px solid transparent; border-radius: 6px; text-align: left; color: var(--actuar-foreground); background: var(--actuar-surface-soft); }
+.priority-preview-list > button, .priority-preview-ranking > button { width: 100%; display: grid; grid-template-columns: auto minmax(0,1fr) auto auto; align-items: center; gap: 9px; padding: 9px; border: 1px solid transparent; border-radius: 6px; text-align: left; color: var(--actuar-foreground); background: var(--actuar-surface-soft); transition: border-color var(--actuar-transition), background var(--actuar-transition); }
+/* Posição, avatar, nome e pontos: quem estica é o nome. */
+.priority-preview-ranking > button { grid-template-columns: auto auto minmax(0,1fr) auto; padding: 10px 12px; }
 .priority-preview-list > button:hover, .priority-preview-ranking > button:hover { border-color: var(--actuar-border-strong); }
 .priority-preview-list button > span:not(.rotation-avatar), .priority-preview-ranking button > span:not(.manager-avatar):not(.ranking-position) { min-width: 0; }
 .priority-preview-list strong, .priority-preview-ranking strong { display: block; font-size: 11px; }
@@ -1469,9 +1473,6 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #505A68; }
 .manager-empty strong { color: var(--actuar-text); font-size: 12px; }
 .manager-empty p { font-size: 10px; }
 .ranking-tv-control { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid var(--actuar-border); border-radius: 6px; background: var(--actuar-surface-muted); color: var(--actuar-text); font-size: 11px; font-weight: 700; }
-.actuar-local-access-button { width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; border: 1px dashed color-mix(in srgb, var(--actuar-primary) 55%, var(--actuar-border)); border-radius: 6px; background: var(--actuar-primary-soft); color: var(--actuar-primary); font-size: 11px; font-weight: 700; }
-.actuar-local-access-button small { color: var(--actuar-secondary); font-size: 9px; font-weight: 600; }
-.actuar-local-access-button:hover { border-style: solid; background: color-mix(in srgb, var(--actuar-primary) 15%, var(--actuar-surface)); }
 .ranking-presentation-period { margin-top: 4px; color: var(--actuar-secondary); font-size: 11px; }
 .manager-tv-person { display: inline-flex; align-items: center; gap: 10px; }
 #rankingPresentationOverlay .manager-podium-item { min-height: 190px; }
@@ -2208,3 +2209,112 @@ body.actuar-app .actuar-field.has-error > textarea:focus { outline: 2px solid co
 .actuar-field-error { display: flex; align-items: flex-start; gap: 5px; }
 .actuar-field-error::before { content: "!"; display: inline-grid; place-items: center; flex: 0 0 13px; width: 13px; height: 13px; margin-top: 1px; border-radius: 50%; background: var(--actuar-danger); color: #fff; font-size: 9px; font-weight: 700; }
 [data-field] { font-variant-numeric: tabular-nums; }
+
+/* Primeiro acesso dos analistas — lista exibida uma única vez para distribuição. */
+.actuar-first-access-list { margin-top: 12px; }
+.actuar-first-access-list > p { margin: 0 0 8px; color: var(--actuar-secondary); font-size: 12px; }
+.actuar-first-access-list table { width: 100%; border-collapse: collapse; }
+.actuar-first-access-list th { padding: 7px 8px; background: var(--actuar-surface-subtle, #f4f5f8); color: var(--actuar-secondary); font-size: 10px; text-align: left; text-transform: uppercase; }
+.actuar-first-access-list td { padding: 8px; border-top: 1px solid var(--actuar-border); color: var(--actuar-foreground); font-size: 12px; }
+.actuar-first-access-list code { padding: 3px 7px; border-radius: 5px; background: var(--actuar-primary-soft); color: var(--actuar-primary); font-family: Geist, "Open Sans", sans-serif; font-size: 13px; letter-spacing: .06em; }
+
+/* Toolbar com um único grupo de filtros (analista e operação): não estica a linha */
+.actuar-toolbar.is-single-group .actuar-filter-groups { justify-content: flex-start; }
+/* Portão de acesso: sem sessão ativa, a aplicação não exibe dado de ninguém. */
+body.actuar-locked { overflow: hidden; }
+.actuar-login-gate { display: grid; place-items: center; padding: 24px; background: var(--actuar-surface-soft); overflow: auto; }
+.actuar-login-gate.hidden { display: none; }
+.actuar-login-gate-shell { display: grid; grid-template-columns: 1.05fr .95fr; align-items: stretch; width: min(940px, 100%); overflow: hidden; border: 1px solid var(--actuar-border); border-radius: 14px; background: var(--actuar-surface); box-shadow: 0 24px 64px rgba(9, 10, 14, .18); }
+
+.actuar-login-gate-brand { display: flex; flex-direction: column; gap: 14px; padding: 40px 36px; background: var(--actuar-primary); color: #fff; }
+.actuar-login-gate-brand img { width: 132px; height: auto; filter: brightness(0) invert(1); }
+.actuar-login-gate-brand h1 { margin: 12px 0 0; font-size: 26px; line-height: 1.2; font-weight: 700; }
+.actuar-login-gate-brand > p { margin: 0; font-size: 13px; line-height: 1.6; color: rgba(255, 255, 255, .82); }
+.actuar-login-gate-brand ul { display: grid; gap: 11px; margin: auto 0 0; padding: 22px 0 0; list-style: none; border-top: 1px solid rgba(255, 255, 255, .22); }
+.actuar-login-gate-brand li { display: flex; align-items: center; gap: 10px; font-size: 12px; line-height: 1.45; color: rgba(255, 255, 255, .92); }
+.actuar-login-gate-brand li i { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 8px; background: rgba(255, 255, 255, .16); font-size: 12px; }
+
+.actuar-login-gate-access { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 40px 36px; }
+.actuar-login-gate-access h2 { margin: 0; color: var(--actuar-foreground); font-size: 22px; line-height: 1.25; }
+.actuar-login-gate-access > p { margin: 0 0 18px; color: var(--actuar-secondary); font-size: 13px; line-height: 1.55; }
+.actuar-login-gate-actions { display: grid; gap: 10px; }
+.actuar-login-door { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 13px; width: 100%; padding: 14px; border: 1px solid var(--actuar-border); border-radius: 10px; background: var(--actuar-surface); color: var(--actuar-foreground); font-family: inherit; text-align: left; cursor: pointer; transition: border-color .18s, background .18s, transform .18s; }
+.actuar-login-door:hover { border-color: var(--actuar-primary); background: var(--actuar-primary-soft); transform: translateY(-1px); }
+.actuar-login-door:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: 2px; }
+.actuar-login-door-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--actuar-primary-soft); color: var(--actuar-primary); font-size: 16px; }
+.actuar-login-door > span:nth-child(2) { display: grid; gap: 2px; min-width: 0; }
+.actuar-login-door strong { font-size: 14px; }
+.actuar-login-door small { color: var(--actuar-secondary); font-size: 11.5px; line-height: 1.4; }
+.actuar-login-door > i:last-child { color: var(--actuar-secondary); }
+.actuar-login-gate-help { margin: 18px 0 0; color: var(--actuar-secondary); font-size: 11.5px; }
+
+@media(max-width:860px){
+    .actuar-login-gate { padding: 0; }
+    .actuar-login-gate-shell { grid-template-columns: 1fr; width: 100%; min-height: 100%; border: 0; border-radius: 0; }
+    .actuar-login-gate-brand { padding: 28px 22px; }
+    .actuar-login-gate-brand h1 { font-size: 21px; }
+    .actuar-login-gate-brand ul { display: none; }
+    .actuar-login-gate-access { padding: 26px 22px 36px; }
+}
+
+/* Porta do portão que expande no lugar, em vez de abrir outra camada por cima */
+.actuar-login-door-group { border: 1px solid var(--actuar-border); border-radius: 12px; background: var(--actuar-surface); overflow: hidden; transition: border-color var(--actuar-transition), box-shadow var(--actuar-transition); }
+.actuar-login-door-group:hover { border-color: color-mix(in srgb, var(--actuar-primary) 45%, var(--actuar-border)); }
+.actuar-login-door-group.is-open { border-color: var(--actuar-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--actuar-primary) 12%, transparent); }
+.actuar-login-door-group.has-error { border-color: var(--actuar-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--actuar-danger) 12%, transparent); }
+.actuar-login-door-group > .actuar-login-door { border: 0; border-radius: 0; background: transparent; }
+.actuar-login-door-group > .actuar-login-door:hover { transform: none; }
+.actuar-login-door-caret { transition: transform var(--actuar-transition); }
+.actuar-login-door-group.is-open .actuar-login-door-caret { transform: rotate(180deg); color: var(--actuar-primary); }
+
+.actuar-login-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 220ms ease; }
+.actuar-login-door-group.is-open .actuar-login-panel { grid-template-rows: 1fr; }
+.actuar-login-panel > div { min-height: 0; overflow: hidden; visibility: hidden; }
+.actuar-login-door-group.is-open .actuar-login-panel > div { visibility: visible; }
+.actuar-login-form { display: grid; gap: 12px; padding: 4px 14px 16px; border-top: 1px solid var(--actuar-border); }
+.actuar-login-form > .actuar-btn { margin-top: 2px; justify-content: center; }
+.actuar-login-form .actuar-local-operation-actions { margin-top: 2px; }
+
+/* Erro de senha na cara de quem digitou, não num aviso no canto da tela */
+.actuar-login-error { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--actuar-danger) 32%, transparent); border-radius: var(--actuar-radius); background: var(--actuar-danger-soft); color: var(--actuar-danger); font-size: 12px; line-height: 1.45; font-weight: 600; }
+.actuar-login-error[hidden] { display: none; }
+.actuar-login-error::before { content: "!"; display: inline-grid; place-items: center; flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; background: var(--actuar-danger); color: #fff; font-size: 11px; }
+.actuar-login-door-group.has-error .actuar-login-error { animation: actuar-shake 320ms ease; }
+@keyframes actuar-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) { .actuar-login-panel { transition: none; } .actuar-login-door-group.has-error .actuar-login-error { animation: none; } }
+
+/* Alteração de senha suspensa até o Supabase Auth entrar. */
+.actuar-password-toggle.is-disabled { cursor: not-allowed; opacity: .62; }
+.actuar-password-toggle.is-disabled:hover { background: inherit; border-color: var(--actuar-border); }
+.actuar-password-toggle.is-disabled i { color: var(--actuar-secondary); }
+
+/* Prévia do ranking na visão de gestão */
+.priority-preview-ranking > button:hover { border-color: color-mix(in srgb, var(--actuar-primary) 45%, transparent); background: var(--actuar-primary-soft); }
+.priority-preview-ranking .ranking-position { flex: none; }
+.priority-preview-ranking .manager-avatar { width: 30px; height: 30px; flex-basis: 30px; font-size: 10px; }
+.priority-preview-ranking strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.priority-preview-ranking small { font-size: 10px; }
+.priority-preview-ranking > button > b { font-family: "Geist", "Open Sans", sans-serif; font-size: 15px; font-weight: 700; white-space: nowrap; letter-spacing: -.01em; }
+@media(max-width:520px){
+    .priority-preview-ranking > button { grid-template-columns: auto auto minmax(0,1fr); row-gap: 4px; }
+    .priority-preview-ranking > button > b { grid-column: 3; justify-self: start; font-size: 13px; }
+}
+
+/* Confirmação na identidade do sistema, no lugar do diálogo do navegador */
+.actuar-confirm-layer { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(9, 10, 14, .58); backdrop-filter: blur(2px); }
+.actuar-confirm-layer.hidden { display: none; }
+.actuar-confirm-card { display: grid; justify-items: start; gap: 10px; width: min(440px, 100%); padding: 24px; border: 1px solid var(--actuar-border); border-radius: 14px; background: var(--actuar-surface); box-shadow: 0 24px 64px rgba(9, 10, 14, .32); animation: actuar-confirm-in 160ms ease; }
+.actuar-confirm-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 11px; font-size: 17px; }
+.actuar-confirm-card.tone-primary .actuar-confirm-icon { background: var(--actuar-primary-soft); color: var(--actuar-primary); }
+.actuar-confirm-card.tone-danger .actuar-confirm-icon { background: var(--actuar-danger-soft); color: var(--actuar-danger); }
+.actuar-confirm-card h2 { margin: 2px 0 0; color: var(--actuar-foreground); font-size: 17px; line-height: 1.3; font-weight: 700; }
+.actuar-confirm-card p { margin: 0; color: var(--actuar-secondary); font-size: 13px; line-height: 1.55; }
+.actuar-confirm-card p[hidden] { display: none; }
+.actuar-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; width: 100%; margin-top: 10px; }
+.actuar-confirm-actions .actuar-btn[hidden] { display: none; }
+@keyframes actuar-confirm-in { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
+@media(max-width:480px){
+    .actuar-confirm-actions { flex-direction: column-reverse; }
+    .actuar-confirm-actions .actuar-btn { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .actuar-confirm-card { animation: none; } }

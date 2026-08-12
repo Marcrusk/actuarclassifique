@@ -11,6 +11,17 @@ for (const asset of ['styles/actuar-design-system.css','js/actuar-fields.js','js
   if (!html.includes(asset)) { console.error(`Asset não referenciado: ${asset}`); process.exit(1); }
 }
 
+/* 1b. Todo asset local precisa de versão na URL.
+   Sem isso o navegador continua servindo a cópia antiga do arquivo e a correção
+   simplesmente não chega em quem usa — foi o que aconteceu com manager-experience.js. */
+
+const referencias = [...html.matchAll(/(?:src|href)="((?:js|styles)\/[^"]+)"/g)].map(match => match[1]);
+const semVersao = referencias.filter(ref => !/\?v=[^"]+$/.test(ref));
+if (semVersao.length) {
+  console.error(`Asset local sem versão na URL: ${semVersao.join(', ')}. Acrescente ?v=<versão> para invalidar o cache.`);
+  process.exit(1);
+}
+
 /* 2. Publicação: monta public/ apenas com o que vai para o ar.
    Sem esse diretório a Vercel falha o deploy; e publicar a raiz exporia
    tests/, scripts/, supabase/ e a documentação interna do repositório. */
@@ -45,7 +56,10 @@ function count(dir) {
     .reduce((total, entry) => total + (entry.isDirectory() ? count(path.join(dir, entry.name)) : 1), 0);
 }
 
-fs.rmSync(OUTPUT, { recursive: true, force: true });
+// Em ambientes sem permissão de remoção (sandbox, volume montado) a limpeza falha:
+// seguir sobrescrevendo é melhor do que derrubar o build por causa disso.
+try { fs.rmSync(OUTPUT, { recursive: true, force: true }); }
+catch (error) { console.warn(`Aviso: não foi possível limpar ${OUTPUT}/ (${error.code}); os arquivos serão sobrescritos.`); }
 fs.mkdirSync(OUTPUT, { recursive: true });
 
 const published = [];
