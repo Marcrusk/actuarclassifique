@@ -67,6 +67,18 @@
         record.events = [...normalizeArray(record.events), event(type, actorId, text, metadata, timestamp)];
         record.updatedAt = timestamp || now(); record.version = Number(record.version || 0) + 1; return record;
     }
+    /* Comentário livre na ficha. Todas as notas que existiam estavam presas a uma
+       decisão — motivo da reprovação, resposta à logística. Acompanhar um chamado até
+       a entrega exige registrar o que não é decisão: "cliente pediu para entregar
+       depois das 14h". Sem isso, esse combinado vive no WhatsApp e some. */
+    function comment(input, actorId, text, timestamp = now()) {
+        requireValue(text, 'Escreva o comentário antes de enviar.');
+        const record = clone(input);
+        const texto = String(text).trim();
+        record.comments = [...normalizeArray(record.comments), { id: id('cmt'), actorId, text: texto, createdAt: timestamp }];
+        return append(record, 'commented', actorId, 'Comentário no acompanhamento.', { comment: texto }, timestamp);
+    }
+
     function handoff(record, area, timestamp, reason) {
         normalizeArray(record.assignments).filter(task => ['pending', 'processing'].includes(task.status)).forEach(task => { task.status = 'completed'; task.completedAt = timestamp; });
         record.assignments = [...normalizeArray(record.assignments), { id: id('task'), area, status: 'pending', assigneeId: null, reason: reason || '', createdAt: timestamp }];
@@ -210,14 +222,46 @@
     // O Lab corrige o que veio errado em vez de devolver ao analista; a pontuação reflete o que ele recebeu.
     const LAB_EDITABLE_FIELDS = ['sourceTicket', 'protocol', 'movement', 'reason', 'requestedPriority', 'priorityReason', 'promisedAt', 'targetManagerId', 'client', 'products', 'description', 'justification', 'diagnosis', 'evidence', 'conditional', 'managerNotes', 'logisticsNotes'];
 
+    /* Rótulo humano de cada campo editável. "client.id mudou" não responde nada para
+       quem lê a auditoria depois; "ID do cliente: TZ2244 → TZ3353" responde. */
+    const LAB_FIELD_LABELS = {
+        sourceTicket: 'Chamado de origem', protocol: 'Protocolo', movement: 'Movimento', reason: 'Motivo',
+        requestedPriority: 'Prioridade', priorityReason: 'Justificativa da prioridade', promisedAt: 'Prazo prometido',
+        targetManagerId: 'Gestor avaliador', client: 'Cliente', products: 'Produtos', description: 'Descrição',
+        justification: 'Justificativa', diagnosis: 'Diagnóstico', evidence: 'Evidências', conditional: 'Condições',
+        managerNotes: 'Notas para a gestão', logisticsNotes: 'Notas para a logística'
+    };
+
+    /* Guardar só o nome do campo não conta o que aconteceu. A auditoria precisa do
+       valor anterior e do novo — é a diferença entre "o Lab mexeu no cliente" e
+       "o ID do cliente era TZ2244 e passou a ser TZ3353". */
     function applyLabCorrections(record, corrections) {
         const applied = [];
         Object.entries(corrections || {}).forEach(([key, value]) => {
             if (!LAB_EDITABLE_FIELDS.includes(key)) return;
-            if (JSON.stringify(record[key] ?? null) === JSON.stringify(value ?? null)) return;
-            record[key] = clone(value); applied.push(key);
+            const antes = record[key] ?? null;
+            if (JSON.stringify(antes) === JSON.stringify(value ?? null)) return;
+            applied.push({ field: key, label: LAB_FIELD_LABELS[key] || key, before: clone(antes), after: clone(value ?? null) });
+            record[key] = clone(value);
         });
         return applied;
+    }
+
+    /* Achata objetos (cliente, produtos) em pares "caminho: valor" para a auditoria
+       mostrar exatamente qual pedaço mudou, e não o objeto inteiro. */
+    function diffOf(correction) {
+        const achatar = (valor, prefixo = '') => {
+            if (valor == null) return prefixo ? [[prefixo, '—']] : [];
+            if (Array.isArray(valor)) return valor.flatMap((item, indice) => achatar(item, `${prefixo}[${indice + 1}]`));
+            if (typeof valor === 'object') return Object.entries(valor).flatMap(([chave, item]) => achatar(item, prefixo ? `${prefixo}.${chave}` : chave));
+            return [[prefixo, String(valor)]];
+        };
+        const antes = new Map(achatar(correction.before));
+        const depois = new Map(achatar(correction.after));
+        if (!antes.size && !depois.size) return [{ path: '', before: String(correction.before ?? '—'), after: String(correction.after ?? '—') }];
+        return [...new Set([...antes.keys(), ...depois.keys()])]
+            .filter(chave => antes.get(chave) !== depois.get(chave))
+            .map(chave => ({ path: chave, before: antes.get(chave) ?? '—', after: depois.get(chave) ?? '—' }));
     }
 
     // O Lab ajusta os dados enquanto a solicitação está na fila dele, sem sair do estado de validação.
@@ -403,6 +447,43 @@
         if (movement.status === 'client_followup') return { label: 'Concluir chamado', area: LAB_AREA };
         if (movement.status === 'awaiting_confirmation') return { label: 'Confirmar com o solicitante', area: LAB_AREA };
         return { label: 'Atualizar movimentação', area: 'Envio/Coleta' };
+    }
+
+    /* Onde a solicitação está no caminho completo, do envio do analista à conclusão
+       com o cliente. operationalStatus() responde "qual o status"; isto responde
+       "de quem é a bola agora e quanto falta" — que é o que a tela precisa mostrar. */
+    const PIPELINE = [
+        { key: 'lab_review', order: 1, label: 'Aguardando validação', area: LAB_AREA, hint: 'Enviada pela equipe técnica; o Lab precisa corrigir, validar e pontuar.' },
+        { key: 'manager_check', order: 2, label: 'No check da gestão', area: 'Gestão', hint: 'Validada e pontuada pelo Lab; aguarda a conferência da gestão.' },
+        { key: 'invoicing', order: 3, label: 'Faturamento e rastreio', area: 'Logística/Faturamento', hint: 'Aprovada pela gestão; aguarda nota fiscal, etiqueta e código de rastreio.' },
+        { key: 'shipping', order: 4, label: 'Expedição', area: 'Envio/Coleta', hint: 'Documentos prontos; aguarda embalagem e postagem.' },
+        { key: 'lab_followup', order: 5, label: 'Acompanhamento do Lab', area: LAB_AREA, hint: 'Peça a caminho; o Lab acompanha a entrega e instrui o cliente até fechar.' },
+        { key: 'done', order: 6, label: 'Concluído', area: '', hint: 'Chamado encerrado com desfecho registrado.' },
+        { key: 'rejected', order: 0, label: 'Reprovada', area: '', hint: 'Encerrada sem seguir para a operação.' },
+        { key: 'draft', order: 0, label: 'Rascunho', area: 'Analista', hint: 'Ainda não enviada pelo analista.' }
+    ];
+    const PIPELINE_BY_KEY = PIPELINE.reduce((acc, item) => ({ ...acc, [item.key]: item }), {});
+
+    function pipelineStage(record) {
+        if (!record) return PIPELINE_BY_KEY.draft;
+        if (record.requestStatus === 'rejected') return PIPELINE_BY_KEY.rejected;
+        if (record.requestStatus === 'draft') return PIPELINE_BY_KEY.draft;
+        if (['pending_lab_review', 'correction_requested'].includes(record.requestStatus)) return PIPELINE_BY_KEY.lab_review;
+        if (['pending_manager_check', 'pending_review'].includes(record.requestStatus)) return PIPELINE_BY_KEY.manager_check;
+        if (operationalStatus(record) === 'Concluído') return PIPELINE_BY_KEY.done;
+        const area = nextAction(record).area;
+        if (area === LAB_AREA) return PIPELINE_BY_KEY.lab_followup;
+        if (area === 'Envio/Coleta') return PIPELINE_BY_KEY.shipping;
+        return PIPELINE_BY_KEY.invoicing;
+    }
+
+    // Contagem por etapa, na ordem do caminho, para a tela desenhar o funil.
+    function pipelineSummary(records) {
+        const rows = normalizeArray(records);
+        return PIPELINE.filter(stage => stage.order > 0).map(stage => ({
+            ...stage,
+            count: rows.filter(row => pipelineStage(row).key === stage.key).length
+        }));
     }
 
     function operationalStatus(record) {
@@ -611,10 +692,10 @@
     }
 
     return {
-        MOVEMENTS, REASONS, PRIORITIES, BRANDS, REQUEST_STATUSES, FISCAL_STATUSES, SHIPPING_STATUSES, OCCURRENCE_TYPES, CARRIERS, MODALITIES, SLA_TARGETS, SLA_STATES, LAB_AREA, LAB_EDITABLE_FIELDS, PERSON_TYPES,
+        MOVEMENTS, REASONS, PRIORITIES, BRANDS, REQUEST_STATUSES, FISCAL_STATUSES, SHIPPING_STATUSES, OCCURRENCE_TYPES, CARRIERS, MODALITIES, SLA_TARGETS, SLA_STATES, LAB_AREA, LAB_EDITABLE_FIELDS, LAB_FIELD_LABELS, PERSON_TYPES, diffOf,
         personTypeOf, documentOf, documentTypeOf, documentLabelOf, nameLabelOf,
         bootstrap, legacyToOperation, createDraft, updateDraft, validateForSubmit, pendingRequirements, submit, labCorrect, labReview, evaluate, claim, updateFiscal, registerTracking, returnForInformation, resolveInformation,
-        updateMovement, addOccurrence, resolveOccurrence, nextAction, operationalStatus, sla, isLate, filter, sortQueue, summarize,
+        updateMovement, addOccurrence, resolveOccurrence, comment, nextAction, operationalStatus, pipelineStage, pipelineSummary, PIPELINE, sla, isLate, filter, sortQueue, summarize,
         operationMetrics, qualityMetrics, freightMetrics, warrantyMetrics, guaranteeRate, scoreFromCriteria
     };
 });

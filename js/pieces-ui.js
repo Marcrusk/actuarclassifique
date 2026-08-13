@@ -8,7 +8,7 @@
     const ADVANCED_KEYS = ['reason', 'brand', 'stage', 'carrier', 'modality', 'category', 'state', 'sla', 'invoice', 'tracking', 'occurrence', 'from', 'to'];
     const state = {
         tab: '', filters: { ...EMPTY_FILTERS }, filtersOpen: false,
-        selectedId: null, wizardStep: 0, wizardDraft: null, wizardProducts: [], wizardVisited: [0], wizardChecked: false, action: null, actionContext: null, detailSuspended: false
+        pipeline: 'all', selectedId: null, wizardStep: 0, wizardDraft: null, wizardProducts: [], wizardVisited: [0], wizardChecked: false, action: null, actionContext: null, detailSuspended: false
     };
     const STEPS = ['Origem e tipo', 'Cliente', 'Produtos', 'Motivo e evidências', 'Revisão'];
     const STEP_KEYS = ['origin', 'client', 'products', 'details', 'review'];
@@ -22,8 +22,9 @@
     function currentContext() {
         if (typeof isAdminLoggedIn !== 'undefined' && isAdminLoggedIn) return { mode: 'manager', actorId: currentAdminId, user: getCurrentManager?.(), teams: getManagerAuthorizedTeams?.() || ['Sistema', 'Catraca'] };
         if (typeof isPecaLoggedIn !== 'undefined' && isPecaLoggedIn) {
-            const operator = users()[currentPecaUserId];
-            const user = window.ACTUAR_LOCAL_PIECES_ROLE ? { ...operator, role: window.ACTUAR_LOCAL_PIECES_ROLE } : operator;
+            // O papel vem do cadastro do usuário logado e de mais lugar nenhum: sem
+            // atalho de visualização, a tela sempre corresponde a quem entrou.
+            const user = users()[currentPecaUserId];
             return { mode: user?.role === LAB_ROLE ? 'lab' : 'logistics', actorId: currentPecaUserId, user, teams: ['Sistema', 'Catraca'] };
         }
         return { mode: 'analyst', actorId: currentActiveUser, user: users()[currentActiveUser], teams: [users()[currentActiveUser]?.team].filter(Boolean) };
@@ -67,6 +68,10 @@
         if (/aguard|process|trânsito|ajuste/.test(text)) return 'warning';
         return 'neutral';
     }
+    function stageBadge(record) {
+        const etapa = domain().pipelineStage(record);
+        return `<span class="pieces-stage-badge is-${e(etapa.key)}" title="${e(etapa.hint)}">${e(etapa.label)}${etapa.area ? ` · ${e(etapa.area)}` : ''}</span>`;
+    }
     function badge(label) { return `<span class="pieces-status ${statusClass(label)}">${e(label)}</span>`; }
     function root() { return document.getElementById(currentContext().mode === 'manager' ? 'admPiecesModule' : 'piecesModuleStandalone'); }
 
@@ -77,16 +82,26 @@
 
     function tabsFor(mode) {
         if (mode === 'logistics') return [['operation', 'Minha operação'], ...(operatorCan('Faturamento') ? [['invoices', 'Notas fiscais']] : []), ...(operatorCan('Expedição') ? [['shipping', 'Expedição'], ['collections', 'Coletas']] : []), ['transit', 'Em trânsito'], ['occurrences', 'Ocorrências'], ['completed', 'Concluídos']];
-        if (mode === 'lab') return [['validation', 'Validar e pontuar'], ['followup', 'Acompanhamento'], ['transit', 'Em trânsito'], ['occurrences', 'Ocorrências'], ['completed', 'Concluídos']];
+        /* Antônio e Jeremias são o Lab E quem embala e posta: validam na entrada,
+           preparam, despacham, acompanham e concluem com o cliente. Por isso a tela
+           deles é a da gestão inteira, mais a própria fila de validação — recortar
+           abas obrigaria a trocar de perfil no meio do próprio trabalho.
+           A aba de trabalho continua sendo a primeira ao entrar. */
+        if (mode === 'lab') return [['validation', 'Validar e pontuar'], ['overview', 'Visão geral'], ['requests', 'Solicitações'], ['evaluations', 'Avaliações'], ['shipping', 'A embalar'], ['collections', 'Coletas'], ['followup', 'Acompanhamento'], ['transit', 'Em trânsito'], ['occurrences', 'Ocorrências'], ['completed', 'Concluídos'], ['movements', 'Movimentações'], ['indicators', 'Indicadores']];
         if (mode === 'analyst') return [['overview', 'Visão geral'], ['requests', 'Minhas solicitações'], ['movements', 'Movimentações']];
-        return [['overview', 'Visão geral'], ['requests', 'Solicitações'], ['evaluations', 'Avaliações'], ['movements', 'Movimentações'], ['indicators', 'Indicadores']];
+        return [['overview', 'Visão geral'], ['requests', 'Solicitações'], ['evaluations', 'Avaliações'], ['shipping', 'A embalar'], ['transit', 'Em trânsito'], ['occurrences', 'Ocorrências'], ['completed', 'Concluídos'], ['movements', 'Movimentações'], ['indicators', 'Indicadores']];
     }
     function defaultTab(mode) { return mode === 'logistics' ? 'operation' : mode === 'lab' ? 'validation' : 'overview'; }
     function operatorCan(area) {
         const role = currentContext().user?.role;
+        // O Lab embala e posta, mas não emite nota: "cada área mexe só no que é dela"
+        // continua valendo para a parte fiscal, que é da Logística.
+        if (role === LAB_ROLE) return area !== 'Faturamento';
         if (role === 'Envio/Coleta') return area === 'Expedição';
         if (!['Faturamento', 'Expedição', 'Logística/Faturamento'].includes(role)) return true;
-        if (role === 'Logística/Faturamento') return true;
+        // A Logística emite a nota e lança o rastreio; quem embala e posta é o Lab.
+        // Sem este recorte a Sarah continuava com o chamado na fila e via "Embalar peça".
+        if (role === 'Logística/Faturamento') return area === 'Faturamento';
         return area === role;
     }
     function canRequestPieces() {
@@ -96,7 +111,17 @@
         return context.user?.team === 'Catraca';
     }
     function setTab(tab) { state.tab = tab; renderPiecesModule(); }
-    function updateFilter(key, value) { state.filters[key] = value; renderPiecesModule(); }
+    /* Devolver o foco resolve o cursor, mas redesenhar a lista inteira a cada tecla
+       ainda engasga a digitação. Campo de texto agenda o redesenho; o resto (selects,
+       datas) continua respondendo na hora. */
+    const TYPED_FILTERS = ['query'];
+    let filterTimer = null;
+    function updateFilter(key, value) {
+        state.filters[key] = value;
+        clearTimeout(filterTimer);
+        if (!TYPED_FILTERS.includes(key)) { renderPiecesModule(); return; }
+        filterTimer = setTimeout(() => { filterTimer = null; renderPiecesModule(); }, 250);
+    }
     function clearFilters() { state.filters = { ...EMPTY_FILTERS }; renderPiecesModule(); }
     function toggleFilters() { state.filtersOpen = !state.filtersOpen; renderPiecesModule(); }
     function activeFilters() { return Object.entries(state.filters).filter(([key, value]) => value && value !== 'all' && value !== EMPTY_FILTERS[key] && key !== 'query'); }
@@ -107,9 +132,42 @@
         return filters;
     }
 
+    /* Abas como "Validar e pontuar" já filtram por status. Marcar a etapa "No check da
+       gestão" dentro delas devolvia lista vazia — o número dizia que havia 1, e a tela
+       dizia que não havia nada. Ao escolher uma etapa, vamos para uma aba que lista
+       tudo, e o filtro passa a ser a própria etapa. */
+    const PIPELINE_LIST_TAB = { manager: 'requests', lab: 'requests', logistics: 'operation', analyst: 'requests' };
+
+    function setPipeline(stage) {
+        const desmarcando = state.pipeline === stage;
+        state.pipeline = desmarcando ? 'all' : stage;
+        if (!desmarcando) {
+            const destino = PIPELINE_LIST_TAB[currentContext().mode] || 'requests';
+            if (tabsFor(currentContext().mode).some(([id]) => id === destino)) state.tab = destino;
+        }
+        renderPiecesModule();
+    }
+
+    /* Funil do processo, do envio do analista à conclusão com o cliente. Cada etapa
+       diz de quem é a bola agora — era isso que faltava para saber o que é o quê. */
+    function renderPipeline(rows) {
+        const etapas = domain().pipelineSummary(rows);
+        const total = rows.length;
+        return `<nav class="pieces-pipeline" aria-label="Etapas do processo">${etapas.map((etapa, indice) => `
+            <button type="button" class="pieces-pipeline-step ${state.pipeline === etapa.key ? 'is-active' : ''} ${etapa.count ? '' : 'is-empty'}"
+                onclick="setPiecesPipeline('${etapa.key}')" title="${e(etapa.hint)}" aria-pressed="${state.pipeline === etapa.key}">
+                <span class="pieces-pipeline-order">${indice + 1}</span>
+                <span class="pieces-pipeline-text"><strong>${e(etapa.label)}</strong><small>${e(etapa.area || 'Encerrado')}</small></span>
+                <b class="num-mono">${etapa.count}</b>
+            </button>`).join('')}
+            ${state.pipeline === 'all' ? '' : `<button type="button" class="pieces-pipeline-clear" onclick="setPiecesPipeline('${state.pipeline}')"><i class="fi fi-rr-filter-slash"></i>Ver todas (${total})</button>`}
+        </nav>`;
+    }
+
     function activeRows() {
         let rows = domain().filter(allowedRecords(), appliedFilters());
         if (state.tab === 'evaluations') rows = rows.filter(row => ['pending_manager_check', 'pending_review', 'correction_requested', 'approved', 'rejected'].includes(row.requestStatus));
+        if (state.pipeline !== 'all') rows = rows.filter(row => domain().pipelineStage(row).key === state.pipeline);
         if (state.tab === 'validation') rows = domain().sortQueue(rows.filter(row => row.requestStatus === 'pending_lab_review'));
         if (state.tab === 'followup') rows = domain().sortQueue(rows.filter(row => row.requestStatus === 'approved' && domain().nextAction(row).area === LAB_ROLE));
         if (state.tab === 'operation') rows = domain().sortQueue(rows.filter(row => row.requestStatus === 'approved' && domain().operationalStatus(row) !== 'Concluído' && (currentContext().mode !== 'logistics' || (operatorCan('Faturamento') && domain().nextAction(row).area === 'Logística/Faturamento') || (operatorCan('Expedição') && domain().nextAction(row).area === 'Envio/Coleta'))));
@@ -132,23 +190,42 @@
 
     function renderPiecesModule() {
         const mount = root(); if (!mount || !domain()) return;
+        clearTimeout(filterTimer); filterTimer = null;
         if (!store()) { mount.innerHTML = skeleton(); return; }
         initStore();
         updatePendingBadge();
         const context = currentContext(); const tabs = tabsFor(context.mode); if (!tabs.some(([id]) => id === state.tab)) state.tab = defaultTab(context.mode);
         const summary = domain().summarize(allowedRecords());
         const isShippingOperator = context.mode === 'logistics' && context.user?.role === 'Envio/Coleta';
-        const title = context.mode === 'logistics' ? (isShippingOperator ? 'Preparação e acompanhamento' : 'Operação de peças') : 'Envio e coleta';
-        const description = context.mode === 'logistics' ? (isShippingOperator ? 'Receba peças liberadas, prepare a embalagem, acompanhe a entrega e conclua o chamado.' : 'Emita a nota fiscal, gere a etiqueta e o rastreio e encaminhe a peça para Envio/Coleta.') : 'Acompanhe solicitações de peças, avaliações e movimentações logísticas da equipe.';
+        // "Envio e coleta" era o nome da tela do Lab E o nome de outro papel: dava para
+        // olhar o cabeçalho e não saber em qual dos dois perfis se estava.
+        const title = context.mode === 'logistics' ? (isShippingOperator ? 'Preparação e acompanhamento' : 'Operação de peças') : context.mode === 'lab' ? 'Validação técnica e acompanhamento' : 'Envio e coleta';
+        const description = context.mode === 'logistics' ? (isShippingOperator ? 'Receba peças liberadas, prepare a embalagem, acompanhe a entrega e conclua o chamado.' : 'Emita a nota fiscal, gere a etiqueta e o rastreio e encaminhe a peça para Envio/Coleta.') : context.mode === 'lab' ? 'Valide e pontue o que chega dos analistas, acompanhe a entrega e conclua com o cliente.' : 'Acompanhe solicitações de peças, avaliações e movimentações logísticas da equipe.';
+        // Redesenhar o módulo troca os elementos: o campo em foco é destruído e o
+        // cursor se perde. Por isso a posição é guardada antes e devolvida depois —
+        // era o que fazia a busca parar a cada letra digitada.
+        const focado = document.activeElement;
+        const focoId = focado && mount.contains(focado) ? focado.id : null;
+        const selecao = focoId && typeof focado.selectionStart === 'number' ? [focado.selectionStart, focado.selectionEnd] : null;
+
         mount.innerHTML = `
-            <section class="pieces-heading"><div><span class="rotation-eyebrow">Performance do Atendimento</span><h2>${title}</h2><p>${description}</p></div><div class="pieces-heading-actions">${canRequestPieces() ? `<button class="actuar-btn actuar-btn-primary" onclick="openPiecesRequestModal()"><i class="fi fi-rr-add-document"></i>Nova solicitação</button>` : `<button class="actuar-btn actuar-btn-secondary" onclick="renderPiecesModule()"><i class="fi fi-rr-refresh"></i>Atualizar</button>`}</div></section>
+            <section class="pieces-heading"><div><span class="rotation-eyebrow">Performance do Atendimento</span><h2>${title}</h2><p>${description}</p>${context.user ? `<span class="pieces-identity" title="A tela que você vê depende deste papel. Para mudar: Modo Gestão → Pessoas e Acessos → Editar.">${avatar(context.user, 'is-small')}<b>${e(context.user.name)}</b><i>${e(context.user.role || 'Sem papel definido')}</i></span>` : ''}</div><div class="pieces-heading-actions">${canRequestPieces() ? `<button class="actuar-btn actuar-btn-primary" onclick="openPiecesRequestModal()"><i class="fi fi-rr-add-document"></i>Nova solicitação</button>` : `<button class="actuar-btn actuar-btn-secondary" onclick="renderPiecesModule()"><i class="fi fi-rr-refresh"></i>Atualizar</button>`}</div></section>
             <nav class="pieces-tabs" aria-label="Seções de Envio e Coleta">${tabs.map(([id, label]) => `<button class="${state.tab === id ? 'is-active' : ''}" onclick="setPiecesTab('${id}')" aria-current="${state.tab === id ? 'page' : 'false'}">${label}${tabCount(id, summary)}</button>`).join('')}</nav>
+            ${['lab', 'manager'].includes(context.mode) ? renderPipeline(allowedRecords()) : ''}
             ${renderFilters(context)}
             <div class="pieces-content">${renderTab(context, summary)}</div>`;
+
+        if (focoId) {
+            const devolvido = document.getElementById(focoId);
+            if (devolvido) {
+                devolvido.focus({ preventScroll: true });
+                if (selecao) { try { devolvido.setSelectionRange(selecao[0], selecao[1]); } catch (_) { /* campos sem seleção */ } }
+            }
+        }
     }
 
     function tabCount(tab, summary) {
-        const value = ({ evaluations: summary.awaitingApproval, operation: summary.awaitingInvoice + summary.awaitingLogistics, invoices: summary.awaitingInvoice, occurrences: summary.occurrences })[tab];
+        const value = ({ evaluations: summary.awaitingApproval, operation: summary.awaitingInvoice + summary.awaitingLogistics, invoices: summary.awaitingInvoice, occurrences: summary.occurrences, shipping: summary.readyToShip, transit: summary.inTransit })[tab];
         return value ? `<span>${value}</span>` : '';
     }
     function renderFilters(context) {
@@ -370,11 +447,29 @@
         const hint = missing ? `${missing} campo(s) obrigatório(s) pendente(s)` : 'Etapa completa';
         return `<button type="button" class="${classes}" onclick="goToPiecesWizardStep(${index})" ${index === state.wizardStep ? 'aria-current="step"' : ''} title="${e(`${label} · ${hint}`)}"><b>${index + 1}</b>${e(label)}${seen && missing ? '<i class="fi fi-rr-triangle-warning" aria-hidden="true"></i>' : ''}</button>`;
     }
+    // O Lab abre o mesmo wizard para corrigir dados de uma solicitação que já está na
+    // fila dele. Chamar isso de "enviar para avaliação" descreve o fluxo do analista,
+    // não o dele: ele não está enviando nada, está acertando o que vai avaliar.
+    function wizardIsLabCorrection() {
+        if (currentContext().mode !== 'lab' || !state.wizardDraft?.id) return false;
+        return records().some(item => item.id === state.wizardDraft.id && item.requestStatus === 'pending_lab_review');
+    }
+    function wizardCopy() {
+        return wizardIsLabCorrection()
+            ? { title: 'Corrigir dados da solicitação', submit: 'Salvar correções', verbo: 'salvar', pronta: 'pronta para salvar', review: 'Confira o que foi corrigido. Salvar não valida nem pontua — isso é feito em "Validar e pontuar".' }
+            : { title: 'Nova solicitação', submit: 'Enviar para validação', verbo: 'enviar', pronta: 'pronta para envio', review: 'Confira os dados antes de enviar. A criação não concede pontos.' };
+    }
+
     function renderWizard() {
         const draft = state.wizardDraft; if (!draft) return;
+        const copy = wizardCopy();
+        const titulo = document.getElementById('piecesRequestTitle');
+        if (titulo) titulo.textContent = copy.title;
+        const enviar = document.getElementById('piecesWizardSubmit');
+        if (enviar) enviar.textContent = copy.submit;
         const pending = wizardPending();
         const subtitle = document.getElementById('piecesRequestSubtitle');
-        if (subtitle) subtitle.textContent = `Etapa ${state.wizardStep + 1} de ${STEPS.length} · ${STEPS[state.wizardStep]}${pending.length ? ` · ${pending.length} pendência(s) para enviar` : ' · pronta para envio'}`;
+        if (subtitle) subtitle.textContent = `Etapa ${state.wizardStep + 1} de ${STEPS.length} · ${STEPS[state.wizardStep]}${pending.length ? ` · ${pending.length} pendência(s) para ${copy.verbo}` : ` · ${copy.pronta}`}`;
         document.getElementById('piecesWizardSteps').innerHTML = STEPS.map((label, index) => stepChip(label, index, pending)).join('');
         const body = document.getElementById('piecesWizardBody');
         if (state.wizardStep === 0) {
@@ -389,7 +484,7 @@
             const conditional = draft.conditional || {};
             body.innerHTML = `<section class="pieces-wizard-section"><h3>Motivo e evidências</h3><p>Registre o contexto técnico necessário para a avaliação.</p><div class="actuar-form-grid"><div class="actuar-field span-2"><label for="pwDescription">Descrição da necessidade</label><textarea id="pwDescription" rows="3" required>${e(draft.description)}</textarea></div><div class="actuar-field span-2"><label for="pwJustification">Justificativa</label><textarea id="pwJustification" rows="3">${e(draft.justification)}</textarea></div><div class="actuar-field span-2"><label for="pwDiagnosis">Diagnóstico técnico</label><textarea id="pwDiagnosis" rows="3">${e(draft.diagnosis)}</textarea></div><div class="actuar-field span-2"><label for="pwEvidence">Evidências e links</label><textarea id="pwEvidence" rows="3" placeholder="Um link ou referência por linha">${e((draft.evidence || []).join('\n'))}</textarea></div>${conditionalFields(draft.reason, conditional)}<div class="actuar-field span-2"><label for="pwManagerNotes">Observações para o gestor</label><textarea id="pwManagerNotes" rows="2">${e(draft.managerNotes)}</textarea></div><div class="actuar-field span-2"><label for="pwLogisticsNotes">Observações para Faturamento/Logística</label><textarea id="pwLogisticsNotes" rows="2">${e(draft.logisticsNotes)}</textarea></div></div></section>`;
         } else {
-            body.innerHTML = `<section class="pieces-wizard-section"><h3>Revisão</h3><p>Confira os dados antes de enviar. A criação não concede pontos.</p><div class="pieces-review-grid"><div><span>Chamado</span><strong>${e(draft.sourceTicket)}</strong></div><div><span>Movimento</span><strong>${e(draft.movement)}</strong></div><div><span>Motivo</span><strong>${e(draft.reason)}</strong></div><div><span>Cliente</span><strong>${e(draft.client?.id)} · ${e(draft.client?.name)}</strong></div><div><span>Marca</span><strong>${e(draft.client?.brand)}</strong></div><div><span>Produtos</span><strong>${state.wizardProducts.length} item(ns)</strong></div><div><span>Urgência solicitada</span><strong>${e(draft.requestedPriority)}</strong></div><div><span>Gestor avaliador</span><strong>${e(users()[draft.targetManagerId]?.name || 'Não selecionado')}</strong></div><div><span>Pontuação</span><strong>Calculada somente na avaliação</strong></div></div><div class="pieces-review-products">${state.wizardProducts.map(item => `<span>${e(item.quantity)}× ${e(item.name)} <small>${e(item.code)}</small></span>`).join('')}</div>${reviewChecklist(pending)}</section>`;
+            body.innerHTML = `<section class="pieces-wizard-section"><h3>Revisão</h3><p>${e(copy.review)}</p><div class="pieces-review-grid"><div><span>Chamado</span><strong>${e(draft.sourceTicket)}</strong></div><div><span>Movimento</span><strong>${e(draft.movement)}</strong></div><div><span>Motivo</span><strong>${e(draft.reason)}</strong></div><div><span>Cliente</span><strong>${e(draft.client?.id)} · ${e(draft.client?.name)}</strong></div><div><span>Marca</span><strong>${e(draft.client?.brand)}</strong></div><div><span>Produtos</span><strong>${state.wizardProducts.length} item(ns)</strong></div><div><span>Urgência solicitada</span><strong>${e(draft.requestedPriority)}</strong></div><div><span>Gestor avaliador</span><strong>${e(users()[draft.targetManagerId]?.name || 'Não selecionado')}</strong></div><div><span>Pontuação</span><strong>Calculada somente na avaliação</strong></div></div><div class="pieces-review-products">${state.wizardProducts.map(item => `<span>${e(item.quantity)}× ${e(item.name)} <small>${e(item.code)}</small></span>`).join('')}</div>${reviewChecklist(pending)}</section>`;
         }
         bindFields(body);
         bindFields(body);
@@ -486,7 +581,7 @@
         const events = (record.events || []).slice().reverse().map(item => `<div><i class="fi fi-rr-time-check"></i><span><strong>${e(item.text)}</strong><small>${e(users()[item.actorId]?.name || (item.actorId === 'system' ? 'Sistema' : 'Responsável'))} · ${fmtDate(item.timestamp, true)}</small></span></div>`).join('');
         const actions = detailActions(record, context);
         const info = domain().sla(record);
-        document.getElementById('piecesDetailBody').innerHTML = `<section class="pieces-detail-summary"><div><span>Status atual</span>${badge(status)}</div><div><span>Prioridade</span><strong>${e(record.approvedPriority || record.requestedPriority)}</strong></div><div><span>Próxima ação</span><strong>${e(action.label)}</strong></div><div><span>Responsável</span><strong>${e(record.assignments?.find(task => task.status === 'processing')?.assigneeId ? users()[record.assignments.find(task => task.status === 'processing').assigneeId]?.name : action.area || '—')}</strong></div><div><span>SLA</span><strong>${info.dueAt ? `${e(info.label)} · ${fmtDate(info.dueAt, true)}` : e(info.label)}</strong></div><div><span>Tempo na etapa</span><strong>${e(duration(info.elapsedMs))}</strong></div></section>${block('Origem', `<div class="pieces-person-hero">${avatar(user)}<div><strong>${e(user?.name || 'Analista')}</strong><span>${e(record.department)} · Chamado ${e(record.sourceTicket)}</span></div></div><p class="pieces-detail-copy">${e(record.description)}</p><div class="pieces-detail-grid">${kv('Movimento', record.movement)}${kv('Motivo', record.reason)}${kv('Gestor avaliador', users()[record.targetManagerId]?.name)}${kv('Justificativa', record.justification)}${kv('Diagnóstico', record.diagnosis)}</div>`)}${block('Cliente', `<div class="pieces-detail-grid">${kv('Marca', record.client?.brand)}${kv('ID', record.client?.id)}${kv('Nome', record.client?.name)}${kv(domain().documentLabelOf(record.client), domain().documentOf(record.client))}${kv('Unidade', record.client?.unit)}${kv('Cidade/UF', [record.client?.city, record.client?.state].filter(Boolean).join('/'))}${kv('Endereço', record.client?.address)}${kv('Contato', [record.client?.contact, record.client?.phone].filter(Boolean).join(' · '))}</div>`)}${block('Produtos', `<div class="pieces-product-list">${(record.products || []).map(item => `<div><strong>${e(item.quantity)}× ${e(item.name)}</strong><span>${e(item.code || 'Sem código')} · ${e(item.category || 'Outro')} · ${e(item.condition || '—')}${item.serial ? ` · Série ${e(item.serial)}` : ''}</span></div>`).join('')}</div>`)}${block('Avaliação da gestão', `<div class="pieces-detail-grid">${kv('Decisão', domain().REQUEST_STATUSES[record.requestStatus])}${kv('Pontuação calculada', `${record.scoring?.calculated || 0} pts`)}${kv('Pontuação final', `${record.scoring?.final || 0} pts`)}${kv('Gestor', users()[record.scoring?.approvedBy]?.name)}${kv('Data', fmtDate(record.scoring?.approvedAt, true))}${kv('Parecer', record.review?.note)}</div>`)}${block('Faturamento', `<div class="pieces-detail-grid">${kv('Necessidade de NF', record.fiscal?.required == null ? 'A definir' : record.fiscal.required ? 'Sim' : 'Não')}${kv('Situação', domain().FISCAL_STATUSES[record.fiscal?.status])}${kv('Número', record.fiscal?.number)}${kv('Série', record.fiscal?.series)}${kv('Chave', record.fiscal?.accessKey)}${kv('Valor', record.fiscal?.value ? money(record.fiscal.value) : '—')}</div>`)}${block('Logística', movements || '<p class="pieces-muted">As movimentações serão criadas automaticamente após a aprovação.</p>')}${record.occurrences?.length ? block('Ocorrências', record.occurrences.map(item => `<div class="pieces-occurrence ${item.status === 'resolved' ? 'is-resolved' : ''}"><header><strong>${e(item.type)}</strong>${badge(item.status === 'resolved' ? 'Resolvida' : 'Em tratativa')}</header><p>${e(item.description)}</p><small>${fmtDate(item.createdAt, true)} · ${e(item.nextAction || 'Acompanhar resolução')}${item.dueAt ? ` · Prazo ${fmtDate(item.dueAt, true)}` : ''}</small>${item.status === 'resolved' ? `<p class="pieces-occurrence-resolution"><i class="fi fi-rr-check-circle" aria-hidden="true"></i>${e(item.resolution)} — ${e(users()[item.resolvedBy]?.name || 'Responsável')} · ${fmtDate(item.resolvedAt, true)}</p>` : context.mode === 'logistics' ? `<button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openPiecesAction('resolveOccurrence','${e(item.id)}')">Encerrar ocorrência</button>` : ''}</div>`).join('')) : ''}${record.conclusion ? block('Conclusão da demanda', `<p class="pieces-detail-copy">${e(record.conclusion.outcome)}</p><div class="pieces-detail-grid">${kv('Encerrado por', users()[record.conclusion.closedBy]?.name)}${kv('Data', fmtDate(record.conclusion.closedAt, true))}</div>`) : ''}<details class="pieces-audit"><summary>Histórico e auditoria</summary><div>${events || '<p>Nenhum evento registrado.</p>'}</div></details><div class="pieces-detail-actions">${actions}</div>`;
+        document.getElementById('piecesDetailBody').innerHTML = `<section class="pieces-detail-summary"><div><span>Etapa do processo</span>${stageBadge(record)}</div><div><span>Status atual</span>${badge(status)}</div><div><span>Prioridade</span><strong>${e(record.approvedPriority || record.requestedPriority)}</strong></div><div><span>Próxima ação</span><strong>${e(action.label)}</strong></div><div><span>Responsável</span><strong>${e(record.assignments?.find(task => task.status === 'processing')?.assigneeId ? users()[record.assignments.find(task => task.status === 'processing').assigneeId]?.name : action.area || '—')}</strong></div><div><span>SLA</span><strong>${info.dueAt ? `${e(info.label)} · ${fmtDate(info.dueAt, true)}` : e(info.label)}</strong></div><div><span>Tempo na etapa</span><strong>${e(duration(info.elapsedMs))}</strong></div></section>${block('Origem', `<div class="pieces-person-hero">${avatar(user)}<div><strong>${e(user?.name || 'Analista')}</strong><span>${e(record.department)} · Chamado ${e(record.sourceTicket)}</span></div></div><p class="pieces-detail-copy">${e(record.description)}</p><div class="pieces-detail-grid">${kv('Movimento', record.movement)}${kv('Motivo', record.reason)}${kv('Gestor avaliador', users()[record.targetManagerId]?.name)}${kv('Justificativa', record.justification)}${kv('Diagnóstico', record.diagnosis)}</div>`)}${block('Cliente', `<div class="pieces-detail-grid">${kv('Marca', record.client?.brand)}${kv('ID', record.client?.id)}${kv('Nome', record.client?.name)}${kv(domain().documentLabelOf(record.client), domain().documentOf(record.client))}${kv('Unidade', record.client?.unit)}${kv('Cidade/UF', [record.client?.city, record.client?.state].filter(Boolean).join('/'))}${kv('Endereço', record.client?.address)}${kv('Contato', [record.client?.contact, record.client?.phone].filter(Boolean).join(' · '))}</div>`)}${block('Produtos', `<div class="pieces-product-list">${(record.products || []).map(item => `<div><strong>${e(item.quantity)}× ${e(item.name)}</strong><span>${e(item.code || 'Sem código')} · ${e(item.category || 'Outro')} · ${e(item.condition || '—')}${item.serial ? ` · Série ${e(item.serial)}` : ''}</span></div>`).join('')}</div>`)}${block('Avaliação da gestão', `<div class="pieces-detail-grid">${kv('Decisão', domain().REQUEST_STATUSES[record.requestStatus])}${kv('Pontuação calculada', `${record.scoring?.calculated || 0} pts`)}${kv('Pontuação final', `${record.scoring?.final || 0} pts`)}${kv('Gestor', users()[record.scoring?.approvedBy]?.name)}${kv('Data', fmtDate(record.scoring?.approvedAt, true))}${kv('Parecer', record.review?.note)}</div>`)}${block('Faturamento', `<div class="pieces-detail-grid">${kv('Necessidade de NF', record.fiscal?.required == null ? 'A definir' : record.fiscal.required ? 'Sim' : 'Não')}${kv('Situação', domain().FISCAL_STATUSES[record.fiscal?.status])}${kv('Número', record.fiscal?.number)}${kv('Série', record.fiscal?.series)}${kv('Chave', record.fiscal?.accessKey)}${kv('Valor', record.fiscal?.value ? money(record.fiscal.value) : '—')}</div>`)}${block('Logística', movements || '<p class="pieces-muted">As movimentações serão criadas automaticamente após a aprovação.</p>')}${record.occurrences?.length ? block('Ocorrências', record.occurrences.map(item => `<div class="pieces-occurrence ${item.status === 'resolved' ? 'is-resolved' : ''}"><header><strong>${e(item.type)}</strong>${badge(item.status === 'resolved' ? 'Resolvida' : 'Em tratativa')}</header><p>${e(item.description)}</p><small>${fmtDate(item.createdAt, true)} · ${e(item.nextAction || 'Acompanhar resolução')}${item.dueAt ? ` · Prazo ${fmtDate(item.dueAt, true)}` : ''}</small>${item.status === 'resolved' ? `<p class="pieces-occurrence-resolution"><i class="fi fi-rr-check-circle" aria-hidden="true"></i>${e(item.resolution)} — ${e(users()[item.resolvedBy]?.name || 'Responsável')} · ${fmtDate(item.resolvedAt, true)}</p>` : ['logistics', 'lab'].includes(context.mode) ? `<button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openPiecesAction('resolveOccurrence','${e(item.id)}')">Encerrar ocorrência</button>` : ''}</div>`).join('')) : ''}${record.conclusion ? block('Conclusão da demanda', `<p class="pieces-detail-copy">${e(record.conclusion.outcome)}</p><div class="pieces-detail-grid">${kv('Encerrado por', users()[record.conclusion.closedBy]?.name)}${kv('Data', fmtDate(record.conclusion.closedAt, true))}</div>`) : ''}${(record.labCorrections || []).length ? block('O que o Toletus Lab corrigiu', (record.labCorrections || []).map(entrada => `<article class="pieces-correction"><header><strong>${e(users()[entrada.actorId]?.name || 'Toletus Lab')}</strong><small>${fmtDate(entrada.timestamp, true)}</small></header>${(entrada.fields || []).map(campo => (typeof campo === 'string' ? [{ path: '', before: '—', after: '—', legado: true }] : domain().diffOf(campo)).map(parte => `<div class="pieces-correction-line"><span>${e(typeof campo === 'string' ? campo : campo.label)}${parte.path ? ` · ${e(parte.path)}` : ''}</span><b class="is-before">${e(parte.before)}</b><i class="fi fi-rr-arrow-right" aria-hidden="true"></i><b class="is-after">${e(parte.after)}</b></div>`).join('')).join('')}${entrada.note ? `<p class="pieces-correction-note">${e(entrada.note)}</p>` : ''}</article>`).join('')) : ''}${block('Acompanhamento', `<div class="pieces-comments">${(record.comments || []).map(item => `<article class="pieces-comment"><header>${avatar(users()[item.actorId], 'is-small')}<span><strong>${e(users()[item.actorId]?.name || 'Equipe')}</strong><small>${fmtDate(item.createdAt, true)}</small></span></header><p>${e(item.text)}</p></article>`).join('') || '<p class="pieces-muted">Nenhum comentário ainda. Use este espaço para registrar combinados com o cliente e o que aconteceu no caminho.</p>'}</div>${context.mode === 'analyst' ? '' : `<form class="pieces-comment-form" onsubmit="return submitPiecesComment(event)"><div class="actuar-field"><label for="pieceCommentText">Novo comentário</label><textarea id="pieceCommentText" rows="3" placeholder="Ex.: cliente pediu para entregar depois das 14h" required></textarea></div><button type="submit" class="actuar-btn actuar-btn-secondary actuar-btn-sm"><i class="fi fi-rr-comment-alt"></i>Comentar</button></form>`}`)}<details class="pieces-audit"><summary>Histórico e auditoria</summary><div>${events || '<p>Nenhum evento registrado.</p>'}</div></details><div class="pieces-detail-actions">${actions}</div>`;
         const flow = `<section class="pieces-process-flow"><span class="${record.submittedAt ? 'is-done' : 'is-current'}"><b>1</b>Analista registrou</span><span class="${record.requestStatus === 'approved' ? 'is-done' : record.requestStatus === 'pending_review' ? 'is-current' : ''}"><b>2</b>Gestão avaliou</span><span class="${['issued','not_required'].includes(record.fiscal?.status) && record.movements?.every(item => item.tracking?.length) ? 'is-done' : record.requestStatus === 'approved' ? 'is-current' : ''}"><b>3</b>NF e rastreio</span><span class="${record.movements?.some(item => ['in_transit','delivered','completed'].includes(item.status)) ? 'is-done' : action.area === 'Envio/Coleta' ? 'is-current' : ''}"><b>4</b>Envio/Coleta</span><span class="${status === 'Concluído' ? 'is-done' : ''}"><b>5</b>Conclusão</span></section>`;
         const infoAlert = record.informationRequest?.status === 'pending' ? `<section class="pieces-information-alert"><i class="fi fi-rr-comment-alt"></i><div><strong>Informação solicitada para ${e(record.informationRequest.targetArea)}</strong><p>${e(record.informationRequest.note)}</p></div></section>` : '';
         document.querySelector('#piecesDetailBody .pieces-detail-summary')?.insertAdjacentHTML("afterend", flow + infoAlert);
@@ -498,10 +593,11 @@
         if (context.mode === 'manager' && record.informationRequest?.status === 'pending' && record.informationRequest.targetArea === 'Gestão') buttons.push(`<button class="actuar-btn actuar-btn-primary" onclick="openPiecesAction('answerInfo')">Responder à Logística</button>`);
         if (context.mode === 'lab' && record.requestStatus === 'approved') {
             const movement = record.movements?.find(item => item.status !== 'completed');
+            // "Registrar ocorrência" já vem do bloco operacional abaixo, que agora
+            // também é do Lab; repetir aqui colocaria dois botões iguais na ficha.
             if (movement && domain().nextAction(record).area === LAB_ROLE) buttons.push(`<button class="actuar-btn actuar-btn-primary" onclick="openPiecesAction('labFollowup')">${e(domain().nextAction(record).label)}</button>`);
-            buttons.push(`<button class="actuar-btn actuar-btn-secondary" onclick="openPiecesAction('occurrence')">Registrar ocorrência</button>`);
         }
-        if (context.mode === 'logistics' && record.requestStatus === 'approved') {
+        if (['logistics', 'lab'].includes(context.mode) && record.requestStatus === 'approved') {
             if (!record.assignments?.some(task => task.status === 'processing')) buttons.push(`<button class="actuar-btn actuar-btn-secondary" onclick="openPiecesAction('claim')">Iniciar processamento</button>`);
             const currentMovement = record.movements?.find(item => item.status !== 'completed');
             if (operatorCan('Faturamento') && ['awaiting_invoice', 'processing', 'rejected', 'blocked'].includes(record.fiscal?.status)) buttons.push(`<button class="actuar-btn actuar-btn-primary" onclick="openPiecesAction('invoice')">${record.fiscal.status === 'processing' ? 'Registrar nota emitida' : 'Processar nota fiscal'}</button>`);
@@ -526,7 +622,10 @@
         if (action === 'labValidate') {
             const marked = record.labReview?.criteria || [];
             const isMet = label => !marked.length || marked.some(item => item.label === label && item.met === true);
-            return `<div class="pieces-criteria"><p>Desmarque o que veio errado do analista: a pontuação é de 4 pontos por critério atendido. O que você já corrigiu em "Corrigir dados" continua valendo como não atendido.</p>${CRITERIA.map(label => `<label class="actuar-checkbox-field"><input type="checkbox" name="pieceCriterion" value="${e(label)}" ${isMet(label) ? 'checked' : ''}><span>${e(label)}</span></label>`).join('')}</div><div class="actuar-form-grid"><div class="actuar-field span-2"><label for="paCorrectionNote">O que o Lab corrigiu</label><textarea id="paCorrectionNote" rows="2" placeholder="Obrigatório se você alterou algum dado da solicitação">${e(record.labReview?.correctionNote || '')}</textarea></div><div class="actuar-field span-2"><label for="paNote">Parecer técnico do Lab</label><textarea id="paNote" rows="3">${e(record.labReview?.note || '')}</textarea></div></div>`;
+            // A pontuação era consequência invisível dos check-boxes: quem validava só
+            // descobria o total depois de salvar. Agora ela aparece e muda ao vivo.
+            const marcados = CRITERIA.filter(isMet).length;
+            return `<div class="pieces-score-preview"><div><small>Pontuação desta solicitação</small><strong class="num-mono" id="paScorePreview">${marcados * 4}</strong><em>pontos</em></div><span id="paScoreDetail">${marcados} de ${CRITERIA.length} critérios atendidos · 4 pontos cada</span></div><div class="pieces-criteria" onchange="updatePiecesScorePreview()"><p>Desmarque o que veio errado do analista. O que você já corrigiu em "Corrigir dados" continua valendo como não atendido.</p>${CRITERIA.map(label => `<label class="actuar-checkbox-field"><input type="checkbox" name="pieceCriterion" value="${e(label)}" ${isMet(label) ? 'checked' : ''}><span>${e(label)}</span></label>`).join('')}</div><div class="actuar-form-grid"><div class="actuar-field span-2"><label for="paCorrectionNote">O que o Lab corrigiu</label><textarea id="paCorrectionNote" rows="2" placeholder="Obrigatório se você alterou algum dado da solicitação">${e(record.labReview?.correctionNote || '')}</textarea></div><div class="actuar-field span-2"><label for="paNote">Parecer técnico do Lab</label><textarea id="paNote" rows="3">${e(record.labReview?.note || '')}</textarea></div></div>`;
         }
         if (action === 'approve') {
             const lab = record.labReview; const labUser = users()[lab?.actorId];
@@ -629,6 +728,21 @@
         } catch (error) { showToast(error.message, 'error'); }
     }
 
+    /* Comentar não muda etapa nem responsável: é registro. Por isso não passa pela
+       modal de ação — o campo vive na própria ficha, onde a conversa acontece. */
+    async function submitComment(event) {
+        event.preventDefault();
+        const record = selected(); const context = currentContext();
+        try {
+            await saveRecord(domain().comment(record, context.actorId, document.getElementById('pieceCommentText')?.value));
+            renderDetail();
+            showToast('Comentário registrado no acompanhamento.');
+        } catch (error) {
+            showToast(error.message || 'Não foi possível registrar o comentário.', 'error');
+        }
+        return false;
+    }
+
     async function saveRecord(next) {
         const index = store().pieceOperations.findIndex(item => item.id === next.id); if (index >= 0) store().pieceOperations[index] = next; else store().pieceOperations.push(next);
         if (next.requestStatus === 'approved' && Number(next.scoring?.final || 0) > 0 && !store().logs.some(log => log.relatedPieceRequestId === next.id && log.type === 'PECA')) store().logs.push({ id: typeof uid === 'function' ? uid() : `piece_score_${Date.now()}`, type: 'PECA', userId: next.analystId, clientId: next.client?.id || '', tipo: next.movement, value: Number(next.scoring.final), registradoPor: next.scoring.approvedBy, relatedPieceRequestId: next.id, timestamp: next.scoring.approvedAt || Date.now() });
@@ -636,7 +750,16 @@
     }
 
     window.renderPiecesModule = renderPiecesModule; window.updatePiecesPendingBadge = updatePendingBadge; window.canRequestPieces = canRequestPieces;
-    window.setPiecesTab = setTab; window.updatePiecesFilter = updateFilter; window.clearPiecesFilters = clearFilters; window.togglePiecesFilters = toggleFilters;
+    window.updatePiecesScorePreview = () => {
+        const total = document.querySelectorAll('[name="pieceCriterion"]').length;
+        const marcados = document.querySelectorAll('[name="pieceCriterion"]:checked').length;
+        const valor = document.getElementById('paScorePreview');
+        const detalhe = document.getElementById('paScoreDetail');
+        if (valor) valor.textContent = String(marcados * 4);
+        if (detalhe) detalhe.textContent = `${marcados} de ${total} critérios atendidos · 4 pontos cada`;
+    };
+    window.submitPiecesComment = submitComment;
+    window.setPiecesTab = setTab; window.setPiecesPipeline = setPipeline; window.updatePiecesFilter = updateFilter; window.clearPiecesFilters = clearFilters; window.togglePiecesFilters = toggleFilters;
     window.openPiecesRequestModal = openRequest; window.closePiecesRequestModal = closeRequest; window.movePiecesWizard = moveWizard; window.goToPiecesWizardStep = goToStep; window.refreshPiecesPersonType = refreshPersonType; window.submitPiecesWizard = submitWizard;
     window.addPiecesWizardProduct = addProduct; window.updatePiecesWizardProduct = updateProduct; window.removePiecesWizardProduct = removeProduct;
     window.openPiecesDetail = openDetail; window.closePiecesDetail = closeDetail; window.openPiecesAction = openAction; window.closePiecesActionModal = closeAction; window.submitPiecesAction = submitActionV2;
