@@ -6,6 +6,11 @@
     'use strict';
 
     const TEAMS = ['Sistema', 'Catraca'];
+    /* Departamentos de cadastro. TEAMS continua sendo só onde há ranking de analistas;
+       as áreas de apoio existem no organograma mas não competem entre si, então entram
+       aqui sem contaminar pódio, filtros gerenciais nem autorização por equipe. */
+    const SUPPORT_DEPARTMENTS = ['Logística', 'Toletus Lab', 'Administrativo'];
+    const DEPARTMENTS = [...TEAMS, ...SUPPORT_DEPARTMENTS];
     const PERIODS = ['ALL', 'Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5'];
     const DEFAULT_FILTERS = Object.freeze({ team: 'Todos', analyst: 'Todos', category: 'Geral', month: 'atual', period: 'ALL', cycle: 'atual', cycleStatus: 'Todos' });
 
@@ -20,8 +25,13 @@
         return allTeams.slice();
     }
 
+    /* Perfis que executam a operação não competem no ranking. A lista estava parada em
+       Envio/Coleta e não acompanhou Faturamento, Expedição, Logística e Toletus Lab:
+       qualquer um deles lotado em Sistema ou Catraca entrava na lista de analistas. */
+    const NON_RANKED_ROLES = ['Gestor Adm', 'Envio/Coleta', 'Faturamento', 'Expedição', 'Logística/Faturamento', 'Toletus Lab'];
+
     function isRankable(user) {
-        return Boolean(user && user.active !== false && !['Gestor Adm', 'Envio/Coleta'].includes(user.role));
+        return Boolean(user && user.active !== false && !NON_RANKED_ROLES.includes(user.role));
     }
 
     function authorizedAnalysts(users, teams) {
@@ -108,5 +118,5 @@
         catch (_) { return normalizeFilters({}, context); }
     }
 
-    return { TEAMS, PERIODS, DEFAULT_FILTERS, authorizedTeams, authorizedAnalysts, normalizeFilters, filterRows, rankRows, canViewAnalyst, summarize, tvProjection, serializeFilters, restoreFilters, isRankable };
+    return { TEAMS, DEPARTMENTS, SUPPORT_DEPARTMENTS, NON_RANKED_ROLES, PERIODS, DEFAULT_FILTERS, authorizedTeams, authorizedAnalysts, normalizeFilters, filterRows, rankRows, canViewAnalyst, summarize, tvProjection, serializeFilters, restoreFilters, isRankable };
 });
