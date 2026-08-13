@@ -109,6 +109,20 @@
         return rankRows(rows).map(row => ({ position: row.position, name: row.name, avatar: row.photo || '', initials: row.initial || '', team: row.team, confirmedPoints: row.confirmedPoints }));
     }
 
+    /* Modo TV: a lista inteira não cabe na tela e vira rolagem que ninguém rola.
+       Ficam as quatro primeiras posições e a última — a disputa de cima e a lanterna.
+       Time com até TV_TOP+1 pessoas aparece inteiro: recortar 5 para mostrar 5 só
+       tiraria gente sem ganhar espaço. O índice original é preservado para que o
+       número da posição continue verdadeiro depois do corte. */
+    const TV_TOP = 4;
+    function tvSlice(list, top = TV_TOP) {
+        const rows = Array.isArray(list) ? list : [];
+        const limite = Math.max(1, Number(top) || TV_TOP);
+        const marcado = rows.map((item, index) => ({ item, index, position: index + 1, isLast: index === rows.length - 1 && rows.length > 1 }));
+        if (marcado.length <= limite + 1) return marcado;
+        return [...marcado.slice(0, limite), marcado[marcado.length - 1]];
+    }
+
     function serializeFilters(filters) {
         return JSON.stringify({ ...DEFAULT_FILTERS, ...(filters || {}) });
     }
@@ -118,5 +132,5 @@
         catch (_) { return normalizeFilters({}, context); }
     }
 
-    return { TEAMS, DEPARTMENTS, SUPPORT_DEPARTMENTS, NON_RANKED_ROLES, PERIODS, DEFAULT_FILTERS, authorizedTeams, authorizedAnalysts, normalizeFilters, filterRows, rankRows, canViewAnalyst, summarize, tvProjection, serializeFilters, restoreFilters, isRankable };
+    return { TEAMS, DEPARTMENTS, SUPPORT_DEPARTMENTS, NON_RANKED_ROLES, PERIODS, DEFAULT_FILTERS, authorizedTeams, authorizedAnalysts, normalizeFilters, filterRows, rankRows, canViewAnalyst, summarize, tvProjection, tvSlice, TV_TOP, serializeFilters, restoreFilters, isRankable };
 });

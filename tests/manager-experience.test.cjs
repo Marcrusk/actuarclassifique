@@ -376,3 +376,83 @@ test('perfis operacionais não competem no ranking, mesmo lotados em Sistema ou 
     assert.deepEqual(manager.authorizedAnalysts(pessoas, manager.TEAMS).map(item => item.id), ['lucas']);
     assert.equal(manager.canViewAnalyst({ role: 'Gestor Adm', team: 'Sistema', active: true }, pessoas.jeremias), false);
 });
+
+test('no Modo TV o ranking mostra 1º ao 4º e a lanterna, sem mentir a posição', () => {
+    const lista = (n) => Array.from({ length: n }, (_, i) => ({ nome: `p${i + 1}` }));
+    const posicoes = (n) => manager.tvSlice(lista(n)).map(linha => linha.position);
+
+    // Time pequeno aparece inteiro: cortar 5 para mostrar 5 tira gente sem ganhar espaço.
+    assert.deepEqual(posicoes(5), [1, 2, 3, 4, 5]);
+    assert.deepEqual(posicoes(3), [1, 2, 3]);
+    assert.deepEqual(posicoes(1), [1]);
+    assert.deepEqual(posicoes(0), []);
+
+    // Passando de 5, some o miolo — e o número mostrado continua sendo o real.
+    assert.deepEqual(posicoes(6), [1, 2, 3, 4, 6]);
+    assert.deepEqual(posicoes(14), [1, 2, 3, 4, 14]);
+    assert.equal(manager.tvSlice(lista(14)).at(-1).index, 13, 'a última linha precisa carregar o índice original');
+
+    // Só a última é lanterna, e ninguém é lanterna sozinho na lista.
+    assert.deepEqual(manager.tvSlice(lista(9)).map(linha => linha.isLast), [false, false, false, false, true]);
+    assert.deepEqual(manager.tvSlice(lista(1)).map(linha => linha.isLast), [false]);
+
+    // O item original chega inteiro para quem desenha a linha.
+    assert.deepEqual(manager.tvSlice(lista(8)).at(-1).item, { nome: 'p8' });
+});
+
+test('o telão recorta e anima, a lista de trabalho continua completa', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    // Dois corpos, dois conteúdos: só o do telão passa pelo recorte.
+    assert.match(html, /const recorte = window\.ManagerExperience\.tvSlice\(group\.list\);/);
+    assert.match(html, /document\.getElementById\('leaderboardBody'\)\.innerHTML = html \|\| vazio;/);
+    assert.match(html, /if \(presBody\) presBody\.innerHTML = tvHtml \|\| vazio;/);
+    assert.ok(!/presBody\.innerHTML = finalHtml/.test(html), 'o telão voltou a repetir a lista inteira');
+
+    // A lanterna entra depois de todas as outras linhas.
+    assert.match(html, /const atraso = linha\.isLast \? \(recorte\.length - 1\) \* 260 \+ 1500 : ordem \* 260 \+ 200;/);
+    assert.match(html, /style="--tv-delay:\$\{tv\.atraso\}ms"/);
+
+    // O atraso vai por variável: `animation-delay` inline valeria para as três
+    // camadas da lanterna de uma vez e a pulsação começaria junto com a entrada.
+    assert.match(css, /#leaderboardBodyPresentation \.tv-row-lanterna \{[\s\S]*?animation-delay:[\s\S]*?calc\(var\(--tv-delay, 0ms\) \+ 780ms\)/);
+    for (const passo of ['tv-row-in', 'tv-lanterna-in', 'tv-lanterna-shake', 'tv-lanterna-pulse']) {
+        assert.match(css, new RegExp(`@keyframes ${passo} \\{`), `animação ausente: ${passo}`);
+    }
+
+    // O selo de lanterna é coisa de telão; na lista de trabalho ele ficaria fixo.
+    assert.match(css, /\.tv-lanterna-badge \{[\s\S]*?display: none;/);
+    assert.match(css, /#leaderboardBodyPresentation \.tv-lanterna-badge \{[\s\S]*?display: inline-flex;/);
+    assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?#leaderboardBodyPresentation \.tv-row-lanterna/);
+});
+
+test('no telão o pódio tem quatro lugares; na tela de trabalho continua com três', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    // Duas montagens: a pública sem lanterna, a do telão com.
+    assert.match(html, /const buildPodium = \(team, tv = false\) => \{/);
+    assert.match(html, /document\.getElementById\('podiumSistema'\)\.innerHTML = podiumHtml\.Sistema;/);
+    assert.match(html, /Sistema: buildPodium\('Sistema', true\)/);
+    assert.match(html, /Catraca: buildPodium\('Catraca', true\)/);
+    assert.match(html, /presPodium\.innerHTML = conteudo;/);
+    assert.ok(!/presPodium\.innerHTML = podiumHtml\[activeRankingTab\]/.test(html), 'o telão voltou ao pódio de três');
+
+    // A lanterna só existe quando há alguém fora do pódio.
+    assert.match(html, /const ultimo = tv && ranking\.length > 3 \? ranking\[ranking\.length - 1\] : null;/);
+    // E o número dela é a posição real na lista, não um "4º".
+    assert.match(html, /podium-place-marker[^`]*>\$\{ranking\.length\}<\/span>/);
+
+    // Entrada em sequência: 3º, 2º, 1º e, bem depois, a lanterna.
+    assert.match(html, /const ATRASO_PODIO = \[900, 550, 200\];/);
+    assert.match(html, /style="--tv-delay:2300ms"/);
+
+    // Quatro colunas só no telão, e a regra precisa ganhar do grid-cols-3 do Tailwind.
+    assert.match(css, /#podiumPresentation\.podium-has-lanterna \{ grid-template-columns: repeat\(4, minmax\(0, 1fr\)\); /);
+    assert.match(css, /#podiumPresentation \.podium-combined-grid\.podium-has-lanterna \{ grid-template-columns: repeat\(4, minmax\(0, 1fr\)\); \}/);
+    for (const passo of ['tv-podium-in', 'tv-podium-lanterna-in', 'tv-podium-pulse']) {
+        assert.match(css, new RegExp(`@keyframes ${passo} \\{`), `animação ausente: ${passo}`);
+    }
+    assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?#podiumPresentation \.tv-podium-lanterna/);
+});

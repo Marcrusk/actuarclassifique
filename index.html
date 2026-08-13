@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260813-so-login-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260813-tv-lanterna-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -5744,12 +5744,10 @@
                     .sort((a, b) => b.total - a.total)
             }));
 
-            let html = "";
-            rankingGroups.forEach(group => {
-                if (activeRankingTab === 'Todos') {
-                    html += `<tr class="ranking-team-divider"><td colspan="12"><span>${teamLabel(group.team)}</span></td></tr>`;
-                }
-                group.list.forEach((item, index) => {
+            /* O Modo TV mostra 1º ao 4º e a lanterna: a lista inteira não cabe na tela
+               e virava rolagem que ninguém rola. A linha é a mesma dos dois lugares —
+               só a seleção e a entrada animada mudam. */
+            const linhaRanking = (item, index, tv = null) => {
                 const rankingTone = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'standard';
                 const posBadge = `<span class="ranking-position ranking-position--${rankingTone} font-extrabold">${index + 1}º</span>`;
                 const listAvatar = item.photo
@@ -5758,10 +5756,11 @@
 
                 const b = item.calc.breakdown;
                 const isSelf = item.id === currentActiveUser && !isAdminLoggedIn;
-                const rowTint = `ranking-row ranking-row--${rankingTone}${isSelf ? ' ranking-row--self font-bold' : ''}`;
+                const rowTint = `ranking-row ranking-row--${rankingTone}${isSelf ? ' ranking-row--self font-bold' : ''}${tv ? ` ${tv.classe}` : ''}`;
 
-                html += `
+                return `
                     <tr class="group cursor-pointer transition-colors duration-150 hover:bg-surface2/70 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-accent/50 ${rowTint}"
+                        ${tv ? `style="--tv-delay:${tv.atraso}ms"` : ''}
                         onclick="viewAnalystFromPodium('${item.id}','${item.team}')"
                         role="button" tabindex="0"
                         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewAnalystFromPodium('${item.id}','${item.team}')}"
@@ -5771,6 +5770,7 @@
                             <span class="inline-flex items-center gap-2">
                                 <span class="ranking-list-avatar" aria-hidden="${item.photo ? 'false' : 'true'}">${listAvatar}</span>
                                 <span class="ranking-user-name">${item.name}</span>
+                                ${tv?.lanterna ? `<span class="tv-lanterna-badge"><i class="fi fi-rr-arrow-trend-down" aria-hidden="true"></i>Lanterna</span>` : ''}
                                 ${activeRankingTab === 'Todos' ? `<span class="ranking-team-badge">${teamLabel(item.team)}</span>` : ''}
                                 <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-secondary/0 group-hover:text-accent transition-colors duration-150"></i>
                             </span>
@@ -5787,13 +5787,30 @@
                         <td class="ranking-total p-3 text-right font-extrabold text-accent text-sm">${item.total} pts</td>
                     </tr>
                 `;
+            };
+
+            let html = "";
+            let tvHtml = "";
+            rankingGroups.forEach(group => {
+                if (activeRankingTab === 'Todos') {
+                    const divisor = `<tr class="ranking-team-divider"><td colspan="12"><span>${teamLabel(group.team)}</span></td></tr>`;
+                    html += divisor;
+                    tvHtml += divisor;
+                }
+                group.list.forEach((item, index) => { html += linhaRanking(item, index); });
+                // As posições de cima entram em sequência; a lanterna entra depois de
+                // todas, sozinha na tela, que é o efeito pedido para o telão.
+                const recorte = window.ManagerExperience.tvSlice(group.list);
+                recorte.forEach((linha, ordem) => {
+                    const atraso = linha.isLast ? (recorte.length - 1) * 260 + 1500 : ordem * 260 + 200;
+                    tvHtml += linhaRanking(linha.item, linha.index, { classe: linha.isLast ? 'tv-row-lanterna' : 'tv-row-reveal', atraso, lanterna: linha.isLast });
                 });
             });
 
-            const finalHtml = html || `<tr><td colspan="12" class="p-4 text-center text-secondary">Nenhum lançamento neste período.</td></tr>`;
-            document.getElementById('leaderboardBody').innerHTML = finalHtml;
+            const vazio = `<tr><td colspan="12" class="p-4 text-center text-secondary">Nenhum lançamento neste período.</td></tr>`;
+            document.getElementById('leaderboardBody').innerHTML = html || vazio;
             const presBody = document.getElementById('leaderboardBodyPresentation');
-            if (presBody) presBody.innerHTML = finalHtml;
+            if (presBody) presBody.innerHTML = tvHtml || vazio;
         }
 
         function viewAnalystFromPodium(id, team) {
@@ -5849,16 +5866,21 @@
                 }
             ];
 
-            const buildPodium = team => {
-                const list = Object.keys(usersList)
+            /* No telão o pódio tem quatro lugares: o top 3 e a lanterna. Fora dele
+               continuam três — a lanterna fixa na tela de trabalho seria exposição
+               permanente, e não o efeito de apresentação que se quer no telão.
+               A ordem de entrada é 3º, 2º, 1º e, bem depois, o último. */
+            const ATRASO_PODIO = [900, 550, 200];
+            const buildPodium = (team, tv = false) => {
+                const ranking = Object.keys(usersList)
                     .filter(id => (team === 'Todos' || usersList[id].team === team) && isRankableUser(usersList[id]) && usersList[id].active !== false)
                     .map(id => {
                         const user = usersList[id];
                         const c = calculatePoints(id, metrics);
                         return { id, team: user.team, name: user.name, initial: user.initial || user.name.slice(0, 2).toUpperCase(), photo: user.photo, total: c.total };
                     })
-                    .sort((a, b) => b.total - a.total)
-                    .slice(0, 3);
+                    .sort((a, b) => b.total - a.total);
+                const list = ranking.slice(0, 3);
 
                 let html = "";
                 for (let i = 0; i < 3; i++) {
@@ -5870,7 +5892,8 @@
                             ? `<img src="${item.photo}" alt="Foto de ${item.name}" class="podium-avatar-image">`
                             : item.initial;
                         html += `
-                            <div class="${s.order} ${s.height} ${s.tone} podium-card group relative border rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center cursor-pointer"
+                            <div class="${s.order} ${s.height} ${s.tone} podium-card group relative border rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center cursor-pointer${tv ? ' tv-podium-reveal' : ''}"
+                                 ${tv ? `style="--tv-delay:${ATRASO_PODIO[i]}ms"` : ''}
                                  onclick="viewAnalystFromPodium('${item.id}','${item.team}')"
                                  role="button" tabindex="0"
                                  onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewAnalystFromPodium('${item.id}','${item.team}')}"
@@ -5898,12 +5921,44 @@
                         `;
                     }
                 }
+
+                // Só existe lanterna quando há alguém além do pódio: com três pessoas
+                // ou menos, o "último" já está no palco e repetir seria invenção.
+                const ultimo = tv && ranking.length > 3 ? ranking[ranking.length - 1] : null;
+                if (ultimo) {
+                    const temFoto = Boolean(ultimo.photo);
+                    const avatarLanterna = temFoto
+                        ? `<img src="${ultimo.photo}" alt="Foto de ${ultimo.name}" class="podium-avatar-image">`
+                        : ultimo.initial;
+                    html += `
+                        <div class="order-4 min-h-[136px] podium-card podium-card--lanterna tv-podium-lanterna group relative border rounded-xl p-3 sm:p-4 pt-6 flex flex-col items-center justify-end text-center cursor-pointer"
+                             style="--tv-delay:2300ms"
+                             onclick="viewAnalystFromPodium('${ultimo.id}','${ultimo.team}')"
+                             role="button" tabindex="0"
+                             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();viewAnalystFromPodium('${ultimo.id}','${ultimo.team}')}"
+                             title="Ver dashboard de ${ultimo.name}">
+                            <span class="podium-lanterna-tag"><i class="fi fi-rr-arrow-trend-down" aria-hidden="true"></i>Lanterna</span>
+                            <div class="relative mb-2">
+                                <div class="podium-avatar ${temFoto ? 'podium-avatar--photo' : 'podium-avatar--initials'} w-11 h-11 text-sm flex items-center justify-center font-extrabold border overflow-hidden">${avatarLanterna}</div>
+                                <span class="podium-place-marker absolute -bottom-1 -right-1 w-5 h-5 rounded-full text-[10px] font-extrabold flex items-center justify-center">${ranking.length}</span>
+                            </div>
+                            <p class="podium-name text-xs sm:text-sm font-bold truncate max-w-[100px] sm:max-w-[120px]" title="${ultimo.name}">${ultimo.name}</p>
+                            <p class="podium-points text-base sm:text-lg font-extrabold mt-0.5 leading-none num-mono">${ultimo.total}<span class="text-[10px] font-semibold ml-0.5">pts</span></p>
+                            <p class="podium-prize podium-prize--none text-[10px] font-semibold mt-1.5 rounded-full px-2 py-0.5">Sem premiação</p>
+                        </div>
+                    `;
+                }
                 return html;
             };
 
             const podiumHtml = {
                 Sistema: buildPodium('Sistema'),
                 Catraca: buildPodium('Catraca')
+            };
+            // O telão tem o seu próprio pódio: quatro lugares e entrada animada.
+            const podiumTv = {
+                Sistema: buildPodium('Sistema', true),
+                Catraca: buildPodium('Catraca', true)
             };
             document.getElementById('podiumSistema').innerHTML = podiumHtml.Sistema;
             document.getElementById('podiumCatraca').innerHTML = podiumHtml.Catraca;
@@ -5912,19 +5967,23 @@
             if (presPodium) {
                 const combined = activeRankingTab === 'Todos';
                 presPodium.classList.toggle('podium-presentation--combined', combined);
+                const comLanterna = conteudo => conteudo.includes('tv-podium-lanterna') ? ' podium-has-lanterna' : '';
                 if (combined) {
                     presPodium.innerHTML = `
                         <section class="podium-combined-group" aria-labelledby="podiumCombinedSistemaTitle">
                             <h4 id="podiumCombinedSistemaTitle"><i class="fi fi-rr-computer" aria-hidden="true"></i> Software</h4>
-                            <div class="podium-combined-grid">${podiumHtml.Sistema}</div>
+                            <div class="podium-combined-grid${comLanterna(podiumTv.Sistema)}">${podiumTv.Sistema}</div>
                         </section>
                         <section class="podium-combined-group" aria-labelledby="podiumCombinedCatracaTitle">
                             <h4 id="podiumCombinedCatracaTitle"><i class="fi fi-rr-settings" aria-hidden="true"></i> Catraca</h4>
-                            <div class="podium-combined-grid">${podiumHtml.Catraca}</div>
+                            <div class="podium-combined-grid${comLanterna(podiumTv.Catraca)}">${podiumTv.Catraca}</div>
                         </section>
                     `;
+                    presPodium.classList.remove('podium-has-lanterna');
                 } else {
-                    presPodium.innerHTML = podiumHtml[activeRankingTab] || podiumHtml.Sistema;
+                    const conteudo = podiumTv[activeRankingTab] || podiumTv.Sistema;
+                    presPodium.innerHTML = conteudo;
+                    presPodium.classList.toggle('podium-has-lanterna', conteudo.includes('tv-podium-lanterna'));
                 }
             }
         }
@@ -9197,13 +9256,13 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-fields.js?v=20260813-so-login-1"></script>
-    <script src="js/attendance-clock.js?v=20260813-so-login-1"></script>
-    <script src="js/performance-domain.js?v=20260813-so-login-1"></script>
-    <script src="js/manager-experience.js?v=20260813-so-login-1"></script>
-    <script src="js/priority-rotation.js?v=20260813-so-login-1"></script>
-    <script src="js/pieces-operations.js?v=20260813-so-login-1"></script>
-    <script src="js/pieces-ui.js?v=20260813-so-login-1"></script>
-    <script src="js/performance-platform.js?v=20260813-so-login-1"></script>
+    <script src="js/actuar-fields.js?v=20260813-tv-lanterna-1"></script>
+    <script src="js/attendance-clock.js?v=20260813-tv-lanterna-1"></script>
+    <script src="js/performance-domain.js?v=20260813-tv-lanterna-1"></script>
+    <script src="js/manager-experience.js?v=20260813-tv-lanterna-1"></script>
+    <script src="js/priority-rotation.js?v=20260813-tv-lanterna-1"></script>
+    <script src="js/pieces-operations.js?v=20260813-tv-lanterna-1"></script>
+    <script src="js/pieces-ui.js?v=20260813-tv-lanterna-1"></script>
+    <script src="js/performance-platform.js?v=20260813-tv-lanterna-1"></script>
 </body>
 </html>

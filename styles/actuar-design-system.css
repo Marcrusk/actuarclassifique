@@ -2928,3 +2928,159 @@ body.actuar-app .pieces-search-control > input:not([type="checkbox"]):not([type=
 body.actuar-app .actuar-field-with-action > input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
     padding-right: 42px !important;
 }
+
+/* ==========================================================================
+   MODO TV — ENTRADA DO RANKING E A LANTERNA
+   No telão a lista vinha inteira e transbordava a tela: quem estava embaixo
+   nunca aparecia. Agora entram 1º a 4º e o último, em sequência, e a lanterna
+   entra sozinha depois de todos. O atraso de cada linha chega por --tv-delay,
+   escrito no próprio elemento; assim uma única variável comanda as três camadas
+   de animação da lanterna sem que o inline sobrescreva todos os delays.
+   ========================================================================== */
+@keyframes tv-row-in {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes tv-lanterna-in {
+    0% { opacity: 0; transform: translateY(34px) scale(.96); }
+    70% { opacity: 1; transform: translateY(-4px) scale(1.01); }
+    100% { opacity: 1; transform: none; }
+}
+@keyframes tv-lanterna-shake {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-7px); }
+    30% { transform: translateX(6px); }
+    45% { transform: translateX(-5px); }
+    60% { transform: translateX(4px); }
+    80% { transform: translateX(-2px); }
+}
+@keyframes tv-lanterna-pulse {
+    0%, 100% { background-color: color-mix(in srgb, var(--actuar-danger) 12%, transparent); box-shadow: inset 4px 0 0 0 var(--actuar-danger); }
+    50% { background-color: color-mix(in srgb, var(--actuar-danger) 34%, transparent); box-shadow: inset 8px 0 0 0 var(--actuar-danger); }
+}
+@keyframes tv-lanterna-badge-in {
+    0% { opacity: 0; transform: scale(.6) rotate(-8deg); }
+    60% { opacity: 1; transform: scale(1.18) rotate(2deg); }
+    100% { opacity: 1; transform: none; }
+}
+
+#leaderboardBodyPresentation .tv-row-reveal {
+    animation: tv-row-in 460ms cubic-bezier(.2,.8,.2,1) both;
+    animation-delay: var(--tv-delay, 0ms);
+}
+#leaderboardBodyPresentation .tv-row-lanterna {
+    animation:
+        tv-lanterna-in 820ms cubic-bezier(.34,1.4,.64,1) both,
+        tv-lanterna-shake 640ms ease-in-out both,
+        tv-lanterna-pulse 1.9s ease-in-out infinite;
+    animation-delay:
+        var(--tv-delay, 0ms),
+        calc(var(--tv-delay, 0ms) + 780ms),
+        calc(var(--tv-delay, 0ms) + 1400ms);
+}
+#leaderboardBodyPresentation .tv-row-lanterna .ranking-user-name,
+#leaderboardBodyPresentation .tv-row-lanterna .ranking-total { color: var(--actuar-danger) !important; }
+#leaderboardBodyPresentation .tv-row-lanterna .ranking-position { border-color: var(--actuar-danger); color: var(--actuar-danger); }
+
+.tv-lanterna-badge {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border: 1px solid var(--actuar-danger);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--actuar-danger) 18%, transparent);
+    color: var(--actuar-danger);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+/* O selo só existe no telão: na lista de trabalho ele seria humilhação permanente. */
+#leaderboardBodyPresentation .tv-lanterna-badge {
+    display: inline-flex;
+    animation: tv-lanterna-badge-in 520ms cubic-bezier(.34,1.56,.64,1) both;
+    animation-delay: calc(var(--tv-delay, 0ms) + 820ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #leaderboardBodyPresentation .tv-row-reveal,
+    #leaderboardBodyPresentation .tv-row-lanterna,
+    #leaderboardBodyPresentation .tv-lanterna-badge { animation: none; opacity: 1; transform: none; }
+    #leaderboardBodyPresentation .tv-row-lanterna { background-color: color-mix(in srgb, var(--actuar-danger) 16%, transparent); box-shadow: inset 4px 0 0 0 var(--actuar-danger); }
+}
+
+/* --- Modo TV: o pódio ganha um quarto lugar, a lanterna --- */
+#podiumPresentation.podium-has-lanterna { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 68rem; }
+#podiumPresentation .podium-combined-grid.podium-has-lanterna { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.podium-card--lanterna {
+    border-color: var(--actuar-danger) !important;
+    background: color-mix(in srgb, var(--actuar-danger) 14%, var(--actuar-surface)) !important;
+}
+.podium-card--lanterna .podium-name,
+.podium-card--lanterna .podium-points { color: var(--actuar-danger) !important; }
+.podium-card--lanterna .podium-place-marker { background: var(--actuar-danger) !important; color: #fff !important; }
+.podium-card--lanterna .podium-avatar { border-color: var(--actuar-danger) !important; }
+.podium-prize--none {
+    border: 1px dashed var(--actuar-danger);
+    background: transparent !important;
+    color: var(--actuar-danger) !important;
+}
+.podium-lanterna-tag {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--actuar-danger);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transform: translateX(-50%);
+}
+
+@keyframes tv-podium-in {
+    0% { opacity: 0; transform: translateY(28px) scale(.94); }
+    100% { opacity: 1; transform: none; }
+}
+@keyframes tv-podium-lanterna-in {
+    0% { opacity: 0; transform: translateY(48px) scale(.86) rotate(-3deg); }
+    65% { opacity: 1; transform: translateY(-8px) scale(1.05) rotate(1.5deg); }
+    100% { opacity: 1; transform: none; }
+}
+@keyframes tv-podium-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--actuar-danger) 55%, transparent); }
+    50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--actuar-danger) 0%, transparent); }
+}
+#podiumPresentation .tv-podium-reveal {
+    animation: tv-podium-in 560ms cubic-bezier(.2,.8,.2,1) both;
+    animation-delay: var(--tv-delay, 0ms);
+}
+#podiumPresentation .tv-podium-lanterna {
+    animation:
+        tv-podium-lanterna-in 900ms cubic-bezier(.34,1.4,.64,1) both,
+        tv-lanterna-shake 640ms ease-in-out both,
+        tv-podium-pulse 1.9s ease-out infinite;
+    animation-delay:
+        var(--tv-delay, 0ms),
+        calc(var(--tv-delay, 0ms) + 860ms),
+        calc(var(--tv-delay, 0ms) + 1500ms);
+}
+#podiumPresentation .tv-podium-lanterna .podium-lanterna-tag {
+    animation: tv-lanterna-badge-in 520ms cubic-bezier(.34,1.56,.64,1) both;
+    animation-delay: calc(var(--tv-delay, 0ms) + 900ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #podiumPresentation .tv-podium-reveal,
+    #podiumPresentation .tv-podium-lanterna,
+    #podiumPresentation .tv-podium-lanterna .podium-lanterna-tag { animation: none; opacity: 1; transform: none; }
+    #podiumPresentation .tv-podium-lanterna .podium-lanterna-tag { transform: translateX(-50%); }
+}
