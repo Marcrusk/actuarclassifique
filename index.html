@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260812-teams-2">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260813-so-login-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -159,11 +159,6 @@
                                 </div>
                                 <p class="actuar-login-error" data-login-error="peca" role="alert" hidden></p>
                                 <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg"><i class="fi fi-rr-sign-in-alt"></i>Entrar</button>
-                                <div id="pecaLocalPreviewButton" class="hidden actuar-local-operation-actions">
-                                    <button type="button" class="actuar-btn actuar-btn-ghost" onclick="enterLocalPecaPreview('Envio/Coleta')"><i class="fi fi-rr-box"></i>Visualizar como Envio/Coleta</button>
-                                    <button type="button" class="actuar-btn actuar-btn-ghost" onclick="enterLocalPecaPreview('Logística/Faturamento')"><i class="fi fi-rr-truck-loading"></i>Visualizar como Logística</button>
-                                    <button type="button" class="actuar-btn actuar-btn-ghost" onclick="enterLocalPecaPreview('Toletus Lab')"><i class="fi fi-rr-shield-check"></i>Visualizar como Toletus Lab</button>
-                                </div>
                             </form>
                         </div></div>
                     </div>
@@ -195,7 +190,7 @@
                     </span>
                     <span class="ranking-presentation-divider" aria-hidden="true"></span>
                     <h2 class="text-2xl md:text-4xl font-display font-extrabold text-white flex items-center gap-2">
-                        Ranking Performance <span id="presentationTeamLabel" class="text-primary-500">Software</span>
+                        <span id="presentationTitlePrefix">Ranking Performance</span> <span id="presentationTeamLabel" class="text-primary-500">Software</span>
                     </h2>
                     <p id="presentationPeriodLabel" class="ranking-presentation-period">Mês atual · Acumulado</p>
                 </div>
@@ -207,29 +202,24 @@
                     <button onclick="toggleAutoRotateRanking()" id="btnAutoRotatePresentation" title="Ativar/desativar alternância automática" class="flex items-center gap-1.5 bg-surface2 hover:bg-surface3 border border-line text-secondary hover:text-white px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200">
                         <i class="fi fi-rr-refresh" id="autoRotateIconPresentation" aria-hidden="true"></i>
                     </button>
-                    <button onclick="refreshManagerTv()" id="btnRefreshManagerTv" title="Atualizar dados" class="hidden ranking-tv-control"><i class="fi fi-rr-refresh"></i><span>Atualizar</span></button>
                     <button onclick="togglePresentationFullscreen()" id="btnPresentationFullscreen" title="Entrar em tela cheia" aria-label="Entrar em tela cheia" class="ranking-tv-control"><i id="presentationFullscreenIcon" class="fi fi-rr-expand" aria-hidden="true"></i></button>
-                    <button onclick="closeRankingPresentation()" id="btnReturnManagerRanking" title="Retornar ao ranking" class="hidden ranking-tv-control"><i class="fi fi-rr-arrow-left"></i><span>Ranking</span></button>
                     <button onclick="closeRankingPresentation()" title="Fechar apresentação (Esc)" class="bg-surface2 hover:bg-surface3 text-white w-10 h-10 rounded-full flex items-center justify-center border border-line transition-all duration-200">
                         <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                 </div>
             </div>
 
-            <div class="ranking-view-selector ranking-view-selector--presentation mb-6">
-                <i id="rankingViewSelectPresentationIcon" class="fi fi-rr-computer" aria-hidden="true"></i>
-                <label class="sr-only" for="rankingViewSelectPresentation">Visualização do ranking no modo TV</label>
-                <select id="rankingViewSelectPresentation" onchange="switchRankingTab(this.value)">
-                    <option value="Sistema">Software</option>
-                    <option value="Catraca">Catraca</option>
-                </select>
-                <i class="fi fi-rr-angle-small-down ranking-view-selector-arrow" aria-hidden="true"></i>
+            <!-- Um único controle de departamento na apresentação: o seletor da esquerda
+                 duplicava o alternador e permitia dois estados diferentes na mesma tela. -->
+            <div class="presentation-context-row mb-6">
+                <div id="presentationTeamSwitch" class="presentation-team-switch" role="group" aria-label="Departamento exibido"></div>
             </div>
+            <aside id="presentationRotationPanel" class="presentation-rotation-strip hidden mb-6" aria-label="Rodízio de prioridades"></aside>
 
             <!-- PÓDIO DO DEPARTAMENTO ATIVO (MODO APRESENTAÇÃO) -->
             <div class="mb-8">
-                <h3 class="text-lg md:text-2xl font-display font-extrabold text-white mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-trophy text-accent"></i> Pódio
+                <h3 id="presentationSectionTitle" class="text-lg md:text-2xl font-display font-extrabold text-white mb-4 flex items-center gap-2">
+                    <i id="presentationSectionIcon" class="fa-solid fa-trophy text-accent"></i> <span id="presentationSectionLabel">Pódio</span>
                 </h3>
                 <div id="podiumPresentation" class="grid grid-cols-3 gap-3 sm:gap-6 items-end max-w-3xl"></div>
             </div>
@@ -307,10 +297,61 @@
         </div>
     </div>
 
+    <!-- Seletor de horário da escala. Campo de tempo nativo obriga a digitar quatro
+         dígitos e navegar por setas; aqui a gestão escolhe numa grade, em um clique,
+         vendo o expediente da pessoa e podendo repetir na semana sem sair da célula. -->
+    <div id="attendanceSlotModal" class="attendance-slot-layer hidden fixed inset-0 z-[170] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="attendanceSlotTitle">
+        <div class="attendance-slot-card">
+            <header class="attendance-slot-head">
+                <div>
+                    <span id="attendanceSlotKind" class="attendance-slot-kind">Almoço</span>
+                    <h2 id="attendanceSlotTitle">—</h2>
+                    <p id="attendanceSlotContext">—</p>
+                </div>
+                <button type="button" class="actuar-icon-button" onclick="closeAttendanceSlotModal()" aria-label="Fechar"><i class="fi fi-rr-cross-small"></i></button>
+            </header>
+            <div id="attendanceSlotGrid" class="attendance-slot-grid" role="group" aria-label="Horários disponíveis"></div>
+            <label class="actuar-checkbox-field attendance-slot-repeat">
+                <input type="checkbox" id="attendanceSlotRepeat">
+                <span>Repetir nos outros dias em que a pessoa trabalha</span>
+            </label>
+            <footer class="attendance-slot-foot">
+                <button type="button" id="attendanceSlotClear" class="actuar-btn actuar-btn-secondary actuar-btn-sm"><i class="fi fi-rr-eraser"></i>Limpar horário</button>
+                <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="closeAttendanceSlotModal()">Fechar</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Saída fora da janela combinada. Não bloqueia: pede o porquê e leva o motivo
+         junto para o painel da gestão. Bloquear puniria quem ficou preso num
+         atendimento; deixar passar em silêncio esconderia o que a gestão precisa ver. -->
+    <div id="attendanceOffScheduleModal" class="attendance-offschedule-layer hidden fixed inset-0 z-[165] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="attendanceOffScheduleTitle">
+        <div class="attendance-offschedule-card">
+            <span class="attendance-offschedule-icon" aria-hidden="true"><i class="fi fi-rr-time-forward"></i></span>
+            <h2 id="attendanceOffScheduleTitle">Fora do horário combinado</h2>
+            <p id="attendanceOffScheduleMessage"></p>
+            <div class="attendance-offschedule-compare">
+                <div><small>Combinado</small><strong id="attendanceOffScheduleWhen" class="num-mono">—</strong></div>
+                <i class="fi fi-rr-arrow-right" aria-hidden="true"></i>
+                <div><small>Agora</small><strong id="attendanceOffScheduleNow" class="num-mono">—</strong></div>
+                <span id="attendanceOffScheduleDelta" class="attendance-offschedule-delta">—</span>
+            </div>
+            <div class="actuar-field">
+                <label for="attendanceOffScheduleReason">Por que está saindo agora?</label>
+                <textarea id="attendanceOffScheduleReason" rows="3" placeholder="Ex.: fiquei em atendimento com o cliente até agora" maxlength="240"></textarea>
+                <p class="actuar-field-help">Seu gestor vê esta justificativa junto do registro.</p>
+            </div>
+            <div class="actuar-confirm-actions">
+                <button type="button" id="attendanceOffScheduleCancel" class="actuar-btn actuar-btn-secondary">Voltar</button>
+                <button type="button" id="attendanceOffScheduleOk" class="actuar-btn actuar-btn-primary">Registrar e sair</button>
+            </div>
+        </div>
+    </div>
+
     <section class="actuar-toolbar" aria-label="Filtros e acessos globais">
         <div class="actuar-toolbar-inner">
             <div class="actuar-filter-groups">
-                <section class="actuar-filter-group" aria-labelledby="filterPeriodTitle">
+                <section class="actuar-filter-group" id="filterPeriodGroup" aria-labelledby="filterPeriodTitle">
                     <span id="filterPeriodTitle" class="actuar-filter-group-title">Período</span>
                     <div class="actuar-filter-row">
                         <div class="actuar-filter-field actuar-filter-field--month">
@@ -404,10 +445,13 @@
             </button>
         </div>
 
+        <section id="managerConsultationBanner" class="hidden manager-consultation-banner" aria-live="polite"></section>
+
         <!-- VISÃO AGENTE / PÚBLICA -->
         <div id="viewAgent" class="space-y-6">
-            <section id="managerConsultationBanner" class="hidden manager-consultation-banner" aria-live="polite"></section>
             <section id="authenticatedDashboardSummary" class="hidden" aria-label="Resumo autenticado"></section>
+            <!-- Barra de ponto: só aparece para quem tem controle marcado na ficha. -->
+            <section id="attendanceBar" class="hidden attendance-bar" aria-label="Ponto e pausas" aria-live="polite"></section>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 anim-fade-up">
                 <div class="md:col-span-2 relative overflow-hidden bg-surface border border-line rounded-2xl card-hover p-6 flex items-center justify-between flex-wrap gap-4">
                     <div class="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary-500/10 blur-2xl"></div>
@@ -1228,6 +1272,9 @@
                 <button onclick="openPriorityModule('visao')" id="admNavPrioridades" class="is-active">
                     <i class="fi fi-rr-star me-1"></i> Prioridades
                 </button>
+                <button onclick="switchAdminTab('rankingGeral')" id="admNavRankingGeral">
+                    <i class="fi fi-rr-ranking-podium me-1"></i> Ranking geral
+                </button>
                 <button onclick="switchAdminTab('cadastros')" id="admTabBtnCadastros">
                     <i class="fa-solid fa-users-gear me-1"></i> Pessoas e Acessos
                 </button>
@@ -1240,6 +1287,9 @@
                 <button onclick="switchAdminTab('pecas')" id="admTabBtnPecas">
                     <i class="fa-solid fa-box me-1"></i> Peças <span id="admPiecesPendingBadge" class="hidden ml-1 bg-amber-500 text-black rounded-full px-1.5 text-[10px]">0</span>
                 </button>
+                <button onclick="switchAdminTab('ponto')" id="admTabBtnPonto">
+                    <i class="fi fi-rr-time-check me-1"></i> Ponto e pausas <span id="admBreakLiveBadge" class="hidden ml-1 bg-amber-500 text-black rounded-full px-1.5 text-[10px]">0</span>
+                </button>
                 <button onclick="switchAdminTab('ciclos')" id="admTabBtnCiclos">
                     <i class="fi fi-rr-calendar-check me-1"></i> Ciclos e Fechamento
                 </button>
@@ -1247,6 +1297,14 @@
                     <i class="fa-solid fa-clock-rotate-left me-1"></i> Histórico/Auditoria
                 </button>
             </div>
+
+            <!-- Trilha da seção. Substitui a faixa roxa: diz onde o gestor está, de quem
+                 são os dados e que a visão é de leitura, sem ocupar meia tela. -->
+            <div id="managerSectionHeader" class="hidden manager-section-header" aria-live="polite"></div>
+            <!-- Onde o Ranking geral e o dashboard do analista são encaixados. Eles vivem
+                 antes do viewAdmin no documento; sem mudar de lugar, apareceriam ACIMA da
+                 navegação da gestão. -->
+            <div id="managerSectionHost"></div>
 
             <section id="priorityModuleShell" class="priority-module-shell" aria-labelledby="priorityModuleTitle">
                 <div class="priority-module-heading">
@@ -1294,6 +1352,28 @@
                 </div>
                 <section id="priorityManagerHistorySection" class="priority-inline-history" aria-labelledby="priorityManagerHistoryTitle">
                     <header><div><span class="rotation-eyebrow">Atendimentos realizados</span><h3 id="priorityManagerHistoryTitle">Histórico de prioridades da equipe</h3><p id="priorityManagerHistorySubtitle">Atendimentos agrupados por analista e passagem no rodízio.</p></div><span>Atualizado agora</span></header>
+                    <div class="priority-page-filters">
+                        <div class="actuar-field">
+                            <label for="priorityHistorySearch">Buscar</label>
+                            <input id="priorityHistorySearch" type="search" placeholder="Protocolo ou analista" oninput="updatePriorityHistoryFilter('query', this.value)">
+                        </div>
+                        <div class="actuar-field">
+                            <label for="priorityHistoryAnalyst">Analista</label>
+                            <select id="priorityHistoryAnalyst" onchange="updatePriorityHistoryFilter('analyst', this.value)"></select>
+                        </div>
+                        <div class="actuar-field">
+                            <label for="priorityHistoryStatus">Status</label>
+                            <select id="priorityHistoryStatus" onchange="updatePriorityHistoryFilter('status', this.value)">
+                                <option value="Todos">Todos</option>
+                                <option value="aprovado">Aprovados</option>
+                                <option value="reprovado">Reprovados</option>
+                                <option value="pendente">Aguardando aprovação</option>
+                                <option value="ajuste_solicitado">Precisam de ajuste</option>
+                                <option value="sem_registro">Sem lançamento vinculado</option>
+                            </select>
+                        </div>
+                        <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="clearPriorityHistoryFilters()"><i class="fi fi-rr-filter-slash"></i>Limpar</button>
+                    </div>
                     <div id="priorityManagerHistoryBody" class="priority-inline-history-body"></div>
                 </section>
             </div>
@@ -1330,6 +1410,73 @@
                 <section class="actuar-card"><div class="actuar-card-header"><h3 class="actuar-card-title">Ciclos e fechamento</h3><p class="actuar-card-description">O mês corrente é parcial; meses arquivados são apresentados como fechados.</p></div><div id="managerCyclesList" class="actuar-list"></div><div class="actuar-form-actions"><button class="actuar-btn actuar-btn-primary" onclick="closeCurrentMonth()"><i class="fi fi-rr-calendar-check"></i>Fechar mês atual</button></div></section>
             </div>
 
+            <!-- PAINEL: PONTO E PAUSAS -->
+            <div id="admPanelPonto" class="hidden space-y-6">
+                <section class="actuar-card">
+                    <div class="actuar-card-header">
+                        <div>
+                            <h3 class="actuar-card-title">Ponto e pausas do dia</h3>
+                            <p class="actuar-card-description">Almoço e lanche são direito e ficam fora da conta. Todo o resto do tempo parado é ociosidade — medida em tempo e em quantidade de paradas.</p>
+                        </div>
+                        <div class="attendance-header-actions">
+                            <div class="attendance-header-clock"><small>Agora</small><strong class="num-mono" data-attendance-clock-seconds>--:--:--</strong></div>
+                            <div class="actuar-field"><label for="attendanceTeamFilter">Departamento</label><select id="attendanceTeamFilter" onchange="updateAttendanceFilter('team',this.value)"></select></div>
+                            <div class="actuar-field"><label for="attendanceDayFilter">Dia</label><input type="date" id="attendanceDayFilter" onchange="updateAttendanceFilter('date',this.value)"></div>
+                            <div class="actuar-field"><label for="attendanceCompareFilter">Comparar com</label><input type="date" id="attendanceCompareFilter" onchange="updateAttendanceFilter('compare',this.value)"></div>
+                            <button type="button" id="attendanceDayToday" class="hidden actuar-btn actuar-btn-ghost actuar-btn-sm" onclick="updateAttendanceFilter('date','')">Hoje</button>
+                            <button type="button" class="actuar-icon-button" onclick="renderAttendanceManager()" aria-label="Atualizar" title="Atualizar"><i class="fi fi-rr-refresh"></i></button>
+                        </div>
+                    </div>
+                    <div id="attendanceKpis" class="attendance-kpis" aria-live="polite"></div>
+                    <div id="attendanceLive" class="attendance-live" aria-live="polite"></div>
+                    <section id="attendanceComparison" class="hidden attendance-comparison" aria-label="Comparação entre dias"></section>
+                </section>
+
+                <section class="actuar-card">
+                    <div class="actuar-card-header"><div><h3 class="actuar-card-title">Ociosidade por analista</h3><p class="actuar-card-description">Ordenado pelo maior tempo ocioso do dia.</p></div></div>
+                    <div class="attendance-table-wrap"><table class="attendance-table"><thead><tr><th>Analista</th><th>Entrada</th><th>Situação</th><th class="num">No ponto</th><th class="num">Ociosidade</th><th class="num">Paradas</th><th class="num">Almoço</th><th class="num">Lanche</th><th class="num">Estouro</th><th>Escala</th></tr></thead><tbody id="attendanceTableBody"></tbody></table></div>
+                </section>
+
+                <!-- JORNADAS: o expediente não é o mesmo para todo mundo, e editar
+                     dez fichas uma a uma era o caminho errado para descobrir isso. -->
+                <section class="actuar-card">
+                    <div class="actuar-card-header">
+                        <div>
+                            <h3 class="actuar-card-title">Jornadas da equipe</h3>
+                            <p class="actuar-card-description">Cada pessoa tem o seu expediente — 07–17, 08–18, 09–19. Ligue o controle e ajuste o horário aqui mesmo, sem abrir a ficha de cada uma. Salva a cada alteração.</p>
+                        </div>
+                    </div>
+                    <div class="attendance-table-wrap"><table class="attendance-shifts" id="attendanceShiftsTable"></table></div>
+                </section>
+
+                <section class="actuar-card">
+                    <div class="actuar-card-header">
+                        <div><h3 class="actuar-card-title">Escala semanal de almoço e lanche</h3><p class="actuar-card-description" id="attendanceScheduleHint">Preencha o horário de almoço e de lanche de cada analista na tabela abaixo, um campo por dia. Enquanto estiver em rascunho ninguém da equipe enxerga; publique para liberar.</p></div>
+                        <div class="attendance-week-nav">
+                            <button type="button" class="attendance-week-arrow" onclick="stepAttendanceWeek(-1)" title="Semana anterior" aria-label="Semana anterior"><i class="fi fi-rr-angle-left"></i></button>
+                            <div id="attendanceWeekLabel" class="attendance-week-label" aria-live="polite"></div>
+                            <button type="button" class="attendance-week-arrow" onclick="stepAttendanceWeek(1)" title="Próxima semana" aria-label="Próxima semana"><i class="fi fi-rr-angle-right"></i></button>
+                            <button type="button" id="attendanceWeekToday" class="hidden attendance-week-today" onclick="goToCurrentAttendanceWeek()">Hoje</button>
+                        </div>
+                    </div>
+                    <div id="attendanceScheduleStatus" class="attendance-schedule-status" aria-live="polite"></div>
+                    <div class="attendance-table-wrap"><table class="attendance-schedule" id="attendanceScheduleTable"></table></div>
+                    <!-- Preencher rascunho e liberar para a equipe são decisões de peso
+                         diferente: os atalhos ficam agrupados de um lado, publicar do outro. -->
+                    <div class="attendance-schedule-actions">
+                        <div class="attendance-assist">
+                            <span class="attendance-assist-label">Preencher rascunho</span>
+                            <div class="attendance-assist-buttons">
+                                <button type="button" class="attendance-assist-btn" onclick="copyPreviousBreakWeek()"><i class="fi fi-rr-copy-alt"></i>Copiar semana anterior</button>
+                                <button type="button" class="attendance-assist-btn" onclick="distributeBreakWeek()"><i class="fi fi-rr-shuffle"></i>Distribuir em rodízio</button>
+                            </div>
+                        </div>
+                        <button type="button" class="actuar-btn actuar-btn-primary" onclick="publishBreakSchedule()"><i class="fi fi-rr-paper-plane"></i>Publicar escala da semana</button>
+                    </div>
+                </section>
+            </div>
+            <!-- FIM PAINEL PONTO -->
+
             <!-- PAINEL: CADASTROS E USUÁRIOS -->
             <div id="admPanelCadastros" class="hidden space-y-6">
             <!-- CADASTRO / EDIÇÃO DE USUÁRIOS -->
@@ -1350,19 +1497,18 @@
                         <select id="inputUserRole" onchange="onUserRoleChange(this.value)" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                             <option value="Analista de sistema">Analista de sistema</option>
                             <option value="Analista de catraca">Analista de catraca</option>
-                            <option value="Envio/Coleta">Validação Técnica (Envio/Coleta)</option>
+                            <option value="Toletus Lab">Toletus Lab (valida e pontua)</option>
+                            <option value="Envio/Coleta">Envio/Coleta (embala e posta)</option>
                             <option value="Faturamento">Faturamento</option>
                             <option value="Expedição">Expedição</option>
                             <option value="Logística/Faturamento">Logística/Faturamento completo</option>
+                            <option value="Toletus Lab">Toletus Lab (validação e acompanhamento)</option>
                             <option value="Gestor Adm">Gestor Adm</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs text-secondary mb-1">Departamento</label>
-                        <select id="inputUserTeam" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
-                            <option value="Sistema">Software</option>
-                            <option value="Catraca">Catraca</option>
-                        </select>
+                        <select id="inputUserTeam" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
                     </div>
                     <div class="flex gap-2">
                         <button type="submit" id="btnSaveUser" class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">Salvar Usuário</button>
@@ -1386,6 +1532,22 @@
                         <label class="block text-xs text-secondary mb-1">Senha de Acesso (obrigatória para Gestor Adm e Envio/Coleta)</label>
                         <input type="password" id="inputUserPassword" placeholder="Defina a senha deste gestor" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
+
+                    <!-- CONTROLE DE PONTO: é aqui que se decide quem entra na medição.
+                         Fora daqui ninguém é medido, e ninguém vê a barra de pausas. -->
+                    <fieldset class="md:col-span-4 shift-fieldset">
+                        <legend class="shift-legend"><i class="fi fi-rr-time-check"></i>Ponto e pausas</legend>
+                        <label class="actuar-checkbox-field shift-toggle">
+                            <input type="checkbox" id="inputUserTracked" onchange="onUserTrackedChange(this.checked)">
+                            <span><strong>Controlar ponto e pausas desta pessoa</strong><small>O ponto abre no primeiro login do dia e a barra de pausas passa a aparecer para ela.</small></span>
+                        </label>
+                        <div id="userShiftFields" class="hidden shift-grid">
+                            <div class="actuar-field"><label for="inputUserShiftStart">Entrada</label><input type="time" id="inputUserShiftStart" value="08:00"></div>
+                            <div class="actuar-field"><label for="inputUserShiftEnd">Saída</label><input type="time" id="inputUserShiftEnd" value="18:00"></div>
+                            <div class="actuar-field"><label for="inputUserShiftTolerance">Tolerância (min)</label><input type="number" id="inputUserShiftTolerance" min="0" max="60" value="5"></div>
+                            <div class="actuar-field shift-days"><label>Dias de jornada</label><div id="inputUserShiftDays" class="shift-days-row" role="group" aria-label="Dias de jornada"></div></div>
+                        </div>
+                    </fieldset>
                 </form>
                 <p class="text-[10px] text-secondary mt-2"><i class="fa-solid fa-circle-info me-1"></i> A foto é exibida apenas no Dashboard/Resultado Individual do próprio analista e no Pódio por Departamento.</p>
 
@@ -1757,7 +1919,7 @@
             <div class="rotation-modal-card pieces-wizard-card">
                 <header><div><span class="rotation-eyebrow">Central de operações de peças</span><h2 id="piecesRequestTitle">Nova solicitação</h2><p id="piecesRequestSubtitle">Vincule o chamado, cliente e produtos antes de enviar para avaliação.</p></div><button class="actuar-icon-button" type="button" onclick="closePiecesRequestModal()" aria-label="Fechar"><i class="fi fi-rr-cross-small"></i></button></header>
                 <div id="piecesWizardSteps" class="pieces-wizard-steps" aria-label="Etapas da solicitação"></div>
-                <form id="piecesRequestForm" onsubmit="submitPiecesWizard(event)"><div id="piecesWizardBody"></div><div class="actuar-form-actions pieces-wizard-actions"><button type="button" class="actuar-btn actuar-btn-secondary" id="piecesWizardBack" onclick="movePiecesWizard(-1)">Voltar</button><button type="button" class="actuar-btn actuar-btn-primary" id="piecesWizardNext" onclick="movePiecesWizard(1)">Continuar</button><button type="submit" class="hidden actuar-btn actuar-btn-primary" id="piecesWizardSubmit">Enviar para avaliação</button></div></form>
+                <form id="piecesRequestForm" onsubmit="submitPiecesWizard(event)"><div id="piecesWizardBody"></div><div class="actuar-form-actions pieces-wizard-actions"><button type="button" class="actuar-btn actuar-btn-secondary" id="piecesWizardBack" onclick="movePiecesWizard(-1)">Voltar</button><button type="button" class="actuar-btn actuar-btn-primary" id="piecesWizardNext" onclick="movePiecesWizard(1)">Continuar</button><button type="submit" class="hidden actuar-btn actuar-btn-primary" id="piecesWizardSubmit">Enviar para validação</button></div></form>
             </div>
         </div>
 
@@ -2137,7 +2299,12 @@
             try { localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ kind, userId })); } catch (_) { /* sessão só nesta aba */ }
         }
         function clearSession() {
-            try { localStorage.removeItem(SESSION_STORAGE_KEY); sessionStorage.removeItem(ANALYST_SESSION_KEY); } catch (_) { /* nada a limpar */ }
+            try {
+                localStorage.removeItem(SESSION_STORAGE_KEY);
+                localStorage.removeItem(VIEW_CONTEXT_STORAGE_KEY);
+                localStorage.removeItem(MANAGER_FILTER_STORAGE_KEY);
+                sessionStorage.removeItem(ANALYST_SESSION_KEY);
+            } catch (_) { /* nada a limpar */ }
         }
         function readSession() {
             try { return JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) || 'null'); } catch (_) { return null; }
@@ -2208,7 +2375,7 @@
                 period: activePeriodFilter
             };
             try {
-                sessionStorage.setItem(VIEW_CONTEXT_STORAGE_KEY, JSON.stringify(context));
+                localStorage.setItem(VIEW_CONTEXT_STORAGE_KEY, JSON.stringify(context));
             } catch (_) { /* sessionStorage pode estar indisponível */ }
 
             try {
@@ -2223,7 +2390,7 @@
 
         function restoreViewContext() {
             let saved = null;
-            try { saved = JSON.parse(sessionStorage.getItem(VIEW_CONTEXT_STORAGE_KEY) || 'null'); } catch (_) { saved = null; }
+            try { saved = JSON.parse(localStorage.getItem(VIEW_CONTEXT_STORAGE_KEY) || 'null'); } catch (_) { saved = null; }
             let query = null;
             try { query = new URLSearchParams(window.location.search); } catch (_) { query = new URLSearchParams(); }
             const savedSession = readSession();
@@ -2284,7 +2451,7 @@
 
         function persistManagerFilters() {
             managerFilters = normalizeManagerFilters();
-            try { sessionStorage.setItem(MANAGER_FILTER_STORAGE_KEY, JSON.stringify(managerFilters)); } catch (_) { /* opcional */ }
+            try { localStorage.setItem(MANAGER_FILTER_STORAGE_KEY, JSON.stringify(managerFilters)); } catch (_) { /* opcional */ }
             try {
                 const url = new URL(location.href);
                 const map = { team: 'mgrTeam', analyst: 'mgrAnalyst', category: 'mgrRanking', month: 'mgrMonth', period: 'mgrPeriod', cycle: 'mgrCycle', cycleStatus: 'mgrCycleStatus' };
@@ -2295,7 +2462,7 @@
 
         function restoreManagerFilters() {
             let saved = {};
-            try { saved = JSON.parse(sessionStorage.getItem(MANAGER_FILTER_STORAGE_KEY) || '{}'); } catch (_) { saved = {}; }
+            try { saved = JSON.parse(localStorage.getItem(MANAGER_FILTER_STORAGE_KEY) || '{}'); } catch (_) { saved = {}; }
             const query = new URLSearchParams(location.search);
             const fromUrl = { team: query.get('mgrTeam'), analyst: query.get('mgrAnalyst'), category: query.get('mgrRanking'), month: query.get('mgrMonth'), period: query.get('mgrPeriod'), cycle: query.get('mgrCycle'), cycleStatus: query.get('mgrCycleStatus') };
             Object.keys(fromUrl).forEach(key => { if (!fromUrl[key]) delete fromUrl[key]; });
@@ -2778,10 +2945,42 @@
             return isAdminLoggedIn && window.PriorityRotation?.canManage(getCurrentManager(), team);
         }
 
-        function priorityRotationAvatar(user, size = '') {
-            if (!user) return `<span class="rotation-avatar ${size}"><i class="fi fi-rr-user"></i></span>`;
+        function priorityRotationAvatar(user, size = '', extra = '') {
+            if (!user) return `<span class="rotation-avatar ${size} ${extra}"><i class="fi fi-rr-user"></i></span>`;
             const initials = user.initial || String(user.name || '').split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
-            return `<span class="rotation-avatar ${size}">${user.photo ? `<img src="${escapeHtml(user.photo)}" alt="">` : escapeHtml(initials)}</span>`;
+            return `<span class="rotation-avatar ${size} ${extra}">${user.photo ? `<img src="${escapeHtml(user.photo)}" alt="">` : escapeHtml(initials)}</span>`;
+        }
+
+        /* O anel do avatar carrega a colocação da pessoa no ranking: ouro, prata e
+           bronze para quem está no top do próprio departamento, neutro para o resto.
+           Assim a mesma foto conta a mesma história em qualquer lugar da apresentação. */
+        function rankingRingClass(position) {
+            return position === 1 ? 'is-gold' : position === 2 ? 'is-silver' : position === 3 ? 'is-bronze' : '';
+        }
+
+        /* A colocação do anel precisa vir da MESMA conta que monta o pódio na tela:
+           pontos de calculatePoints, por departamento. Qualquer outra fonte — o ranking
+           de prioridades, por exemplo — daria uma medalha que não bate com o pódio.
+           Roda para todos os departamentos de uma vez, porque a apresentação alterna
+           entre Catraca e Sistema sem recalcular. */
+        function rankingPositionsByTeam(metrics) {
+            const store = getStore();
+            const usersList = store.users || defaultUsers;
+            const posicoes = new Map();
+            const equipes = [...new Set(Object.values(usersList).map(user => user?.team).filter(Boolean))];
+            equipes.forEach(team => {
+                Object.keys(usersList)
+                    .filter(id => usersList[id].team === team && isRankableUser(usersList[id]) && usersList[id].active !== false)
+                    .map(id => ({ id, total: calculatePoints(id, metrics).total }))
+                    .sort((a, b) => b.total - a.total)
+                    .forEach((row, index) => {
+                        // Mesma ordem e mesma numeração do pódio — inclusive no empate,
+                        // em que o pódio já distribui ouro e prata por casa. E sem ponto
+                        // não há colocação: um time zerado ficaria inteiro dourado.
+                        posicoes.set(row.id, row.total > 0 ? index + 1 : 0);
+                    });
+            });
+            return posicoes;
         }
 
         function priorityRotationPerson(id, detail = '') {
@@ -3155,12 +3354,66 @@
             return [...records.values()].filter(record => isAdminLoggedIn ? canManagerViewAnalyst(record.analystId) : record.analystId === currentActiveUser).sort((a,b) => b.startedAt-a.startedAt);
         }
 
-        function renderPriorityHistoryInto(bodyId, subtitleId, team) {
+        // Busca do histórico da equipe: protocolo, analista e situação do lançamento.
+        const priorityHistoryFilters = { query: '', analyst: 'Todos', status: 'Todos' };
+
+        function updatePriorityHistoryFilter(key, value) {
+            priorityHistoryFilters[key] = value;
+            renderPriorityInlineHistories();
+        }
+        function clearPriorityHistoryFilters() {
+            priorityHistoryFilters.query = ''; priorityHistoryFilters.analyst = 'Todos'; priorityHistoryFilters.status = 'Todos';
+            const search = document.getElementById('priorityHistorySearch'); if (search) search.value = '';
+            const status = document.getElementById('priorityHistoryStatus'); if (status) status.value = 'Todos';
+            renderPriorityInlineHistories();
+        }
+        function priorityHistoryFiltersActive() {
+            return Boolean(priorityHistoryFilters.query.trim()) || priorityHistoryFilters.analyst !== 'Todos' || priorityHistoryFilters.status !== 'Todos';
+        }
+
+        function filterPriorityHistoryRecords(records) {
+            const search = priorityHistoryFilters.query.trim().toLocaleLowerCase('pt-BR');
+            const users = getStore()?.users || defaultUsers;
+            return records.filter(record => {
+                if (priorityHistoryFilters.analyst !== 'Todos' && record.analystId !== priorityHistoryFilters.analyst) return false;
+                if (priorityHistoryFilters.status !== 'Todos') {
+                    // Atendimentos do rodízio sem solicitação vinculada não têm status próprio.
+                    const status = record.request?.status || 'sem_registro';
+                    if (status !== priorityHistoryFilters.status) return false;
+                }
+                if (!search) return true;
+                const alvo = `${record.request?.protocolo || ''} ${users[record.analystId]?.name || ''}`;
+                return alvo.toLocaleLowerCase('pt-BR').includes(search);
+            });
+        }
+
+        function renderPriorityHistoryAnalystOptions(records) {
+            const select = document.getElementById('priorityHistoryAnalyst');
+            if (!select) return;
+            const users = getStore()?.users || defaultUsers;
+            const ids = [...new Set(records.map(record => record.analystId).filter(Boolean))]
+                .sort((a, b) => String(users[a]?.name || a).localeCompare(String(users[b]?.name || b), 'pt-BR'));
+            select.innerHTML = `<option value="Todos">Todos</option>${ids.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(users[id]?.name || id)}</option>`).join('')}`;
+            select.value = ids.includes(priorityHistoryFilters.analyst) ? priorityHistoryFilters.analyst : 'Todos';
+            if (select.value === 'Todos') priorityHistoryFilters.analyst = 'Todos';
+        }
+
+        function renderPriorityHistoryInto(bodyId, subtitleId, team, filtered = false) {
             const rotation = ensurePriorityRotation(team), body = document.getElementById(bodyId);
             if (!body) return;
             const subtitle = document.getElementById(subtitleId);
-            if (subtitle) subtitle.textContent = `${teamLabel(team)} · atendimentos agrupados por passagem no rodízio`;
-            const records = priorityAttendanceRecordsForTeam(team);
+            const todos = priorityAttendanceRecordsForTeam(team);
+            if (filtered) renderPriorityHistoryAnalystOptions(todos);
+            const records = filtered ? filterPriorityHistoryRecords(todos) : todos;
+            if (subtitle) {
+                subtitle.textContent = filtered && priorityHistoryFiltersActive()
+                    ? `${teamLabel(team)} · ${records.length} de ${todos.length} atendimento(s)`
+                    : `${teamLabel(team)} · atendimentos agrupados por passagem no rodízio`;
+            }
+            if (filtered && !records.length && todos.length) {
+                body.innerHTML = `<div class="priority-history-empty"><i class="fi fi-rr-search"></i><p>Nenhum atendimento encontrado com esses filtros.</p><button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="clearPriorityHistoryFilters()">Limpar filtros</button></div>`;
+                return;
+            }
             const associatedEvents = new Set(records.flatMap(record => record.events.map(event => event.id)));
             const independentEvents = (rotation.events || []).filter(event => !associatedEvents.has(event.id));
             body.innerHTML = records.length ? `<div class="priority-attendance-list">${records.map(priorityAttendanceCard).join('')}</div>${independentEvents.length ? `<details class="priority-audit-details"><summary>Intervenções independentes do rodízio</summary><div>${independentEvents.slice().reverse().map(item => { const label = PRIORITY_ROTATION_EVENT_LABELS[item.type]?.[0] || item.type; const actor = priorityEvaluationActor(item.actorId); return `<p><strong>${escapeHtml(label)}</strong><span>${formatRotationTime(item.timestamp,true)} · ${escapeHtml(actor?.name || 'Sistema')}${item.reason ? ` · ${escapeHtml(item.reason)}` : ''}</span></p>`; }).join('')}</div></details>` : ''}` : `<div class="actuar-empty-state"><i class="fi fi-rr-calendar-cross"></i><strong>Nenhum atendimento encontrado</strong><p>Não existem atendimentos concluídos neste rodízio para o período selecionado.</p></div>`;
@@ -3171,7 +3424,7 @@
             if (!isAdminLoggedIn) renderPriorityHistoryInto('priorityInlineHistoryBody', 'priorityInlineHistorySubtitle', currentPriorityRotationTeam());
             if (isAdminLoggedIn) {
                 const team = document.getElementById('priorityModuleTeam')?.value || currentPriorityRotationTeam();
-                renderPriorityHistoryInto('priorityManagerHistoryBody', 'priorityManagerHistorySubtitle', team);
+                renderPriorityHistoryInto('priorityManagerHistoryBody', 'priorityManagerHistorySubtitle', team, true);
             }
         }
 
@@ -3289,6 +3542,65 @@
             if (ok) closePriorityRotationOrderModal();
         }
 
+        /* Fonte de verdade da seção aberta no Modo Gestão. */
+        function managerSection() {
+            return (currentRoute.name === 'admin' && currentRoute.section) || activeAdminTab || 'visao';
+        }
+
+        /* Ranking geral e consulta de analista não têm painel próprio: reaproveitam os
+           mesmos blocos que o analista vê, exibidos abaixo da navegação da gestão. */
+        /* Move um bloco público para dentro do Modo Gestão e sabe devolvê-lo. A âncora
+           invisível guarda o lugar de origem: sem ela, devolver o bloco dependeria de
+           adivinhar a posição entre os irmãos do shell. */
+        function parkManagerView(id, dentro) {
+            const node = document.getElementById(id);
+            const host = document.getElementById('managerSectionHost');
+            if (!node || !host) return;
+            let ancora = document.getElementById(`${id}Anchor`);
+            if (!ancora) {
+                ancora = document.createElement('div');
+                ancora.id = `${id}Anchor`;
+                ancora.hidden = true;
+                node.parentNode.insertBefore(ancora, node);
+            }
+            if (dentro && node.parentNode !== host) host.appendChild(node);
+            if (!dentro && node.parentNode === host) ancora.parentNode.insertBefore(node, ancora.nextSibling);
+        }
+
+        function syncManagerSectionViews() {
+            const secao = managerSection();
+            const naGestao = currentRoute.name === 'admin' && isAdminLoggedIn;
+            const noRanking = naGestao && secao === 'rankingGeral';
+            const noAnalista = naGestao && secao === 'analista';
+            document.getElementById('viewRanking')?.classList.toggle('hidden', !noRanking);
+            document.getElementById('viewAgent')?.classList.toggle('hidden', !noAnalista);
+            parkManagerView('viewRanking', noRanking);
+            parkManagerView('viewAgent', noAnalista);
+            renderManagerSectionHeader();
+            // A barra de filtros pertence à seção: trocar de seção sem navegar também
+            // precisa reavaliar quais grupos fazem sentido ali.
+            syncAccessControls();
+        }
+
+        /* Trilha da seção dentro do Modo Gestão. Só aparece quando o gestor está
+           consultando um analista — nas outras seções o título da página já basta. */
+        function renderManagerSectionHeader() {
+            const faixa = document.getElementById('managerSectionHeader');
+            if (!faixa) return;
+            const consultando = managerSection() === 'analista';
+            faixa.classList.toggle('hidden', !consultando);
+            if (!consultando) { faixa.innerHTML = ''; return; }
+            const analista = getStore()?.users?.[currentActiveUser];
+            faixa.innerHTML = `
+                <nav class="manager-crumbs" aria-label="Trilha">
+                    <button type="button" onclick="switchAdminTab('rankingGeral')">Ranking geral</button>
+                    <i class="fi fi-rr-angle-small-right" aria-hidden="true"></i>
+                    <span>${escapeHtml(analista?.name || 'Analista')}</span>
+                </nav>
+                <span class="manager-readonly"><i class="fi fi-rr-eye"></i>Somente leitura · você é ${escapeHtml(getCurrentManager()?.name || 'gestor')}</span>
+                <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="switchAdminTab('rankingGeral')"><i class="fi fi-rr-cross-small"></i>Fechar consulta</button>`;
+        }
+
         function openManagerAnalyst(id, source = 'gestao') {
             const users = getStore()?.users || defaultUsers;
             if (!canManagerViewAnalyst(id)) {
@@ -3301,16 +3613,33 @@
             activePeriodFilter = managerFilters.period;
             activeRankingTab = users[id].team;
             populateDropdowns();
-            navigateTo('dashboard');
-            showToast(`Consulta aberta: ${users[id].name}. Sua identidade de gestor permanece ativa.`);
+            // Antes isto era `navigateTo('dashboard')`, que jogava o gestor na aplicação
+            // do analista. Agora é só mais uma seção do Modo Gestão.
+            navigateTo({ name: 'admin', section: 'analista' });
         }
 
+        // O ranking geral é a visão consolidada das duas equipes, que só existia para
+        // o analista. A gestão passa a alcançá-la sem trocar de identidade nem de sessão.
         function renderManagerConsultationBanner() {
             const banner = document.getElementById('managerConsultationBanner');
             if (!banner) return;
             const user = getStore()?.users?.[currentActiveUser];
-            const visible = isAdminLoggedIn && currentRoute.name === 'dashboard' && user && canManagerViewAnalyst(currentActiveUser);
+            // A navegação da gestão vive dentro do viewAdmin. Em rota pública ela some,
+            // e sem esta faixa o gestor fica sem caminho de volta — foi assim que se
+            // ficava preso no dashboard depois de recarregar com a URL antiga.
+            // Dentro do Modo Gestão a trilha do cabeçalho já diz onde o gestor está e de
+            // quem são os dados; a faixa só existe para quem caiu numa rota pública
+            // (link antigo, recarregar com a URL de antes) e precisa de caminho de volta.
+            const rotasPublicas = ['dashboard', 'ranking', 'faq', 'priorities', 'pecas'];
+            const foraDaGestao = isAdminLoggedIn && rotasPublicas.includes(currentRoute.name);
+            const consulta = foraDaGestao && currentRoute.name === 'dashboard' && user && canManagerViewAnalyst(currentActiveUser);
+            const noRanking = foraDaGestao && !consulta;
+            const visible = foraDaGestao;
             banner.classList.toggle('hidden', !visible);
+            if (noRanking) {
+                banner.innerHTML = `<div><i class="fi fi-rr-ranking-podium"></i><span><small>Consulta gerencial</small><strong>${escapeHtml(ROUTE_META[currentRoute.name]?.title || 'Visão pública')}</strong><p>Você continua identificado como ${escapeHtml(getCurrentManager()?.name || 'gestor')}. Esta é uma visão de leitura.</p></span></div><button class="actuar-btn actuar-btn-secondary" onclick="navigateTo({ name: 'admin', section: activeAdminTab || 'visao' })"><i class="fi fi-rr-arrow-left"></i>Voltar à gestão</button>`;
+                return;
+            }
             banner.innerHTML = visible ? `<div><i class="fi fi-rr-eye"></i><span><small>Consulta gerencial</small><strong>Visualizando dados de ${escapeHtml(user.name)}</strong><p>Você continua identificado como ${escapeHtml(getCurrentManager()?.name || 'gestor')} e não pode registrar ações em nome do analista.</p></span></div><button class="actuar-btn actuar-btn-secondary" onclick="navigateBack()"><i class="fi fi-rr-arrow-left"></i>Voltar aos resultados</button>` : '';
         }
 
@@ -3481,7 +3810,9 @@
                 prioridades: { title: 'Prioridades · Aprovações', description: 'Revise os atendimentos registrados antes de conceder pontuação.' },
                 priorityLaunches: { title: 'Prioridades · Lançamentos', description: 'Consulte os registros da equipe e o resultado de cada validação.' },
                 ranking: { title: 'Prioridades · Ranking', description: 'Acompanhe os pontos validados no período selecionado.' },
-                pecas: { title: 'Envio e coleta', description: 'Acompanhe solicitações, avaliações e movimentações logísticas da equipe.' }
+                pecas: { title: 'Envio e coleta', description: 'Acompanhe solicitações, avaliações e movimentações logísticas da equipe.' },
+                rankingGeral: { title: 'Ranking geral', description: 'Compare o desempenho das equipes e consulte a classificação consolidada.' },
+                analista: { title: `Ranking geral · ${getStore()?.users?.[currentActiveUser]?.name || 'Analista'}`, description: 'Consulta de leitura: nenhuma ação aqui é registrada em nome do analista.' }
             };
             const meta = currentRoute.name === 'admin' && adminMeta[currentRoute.section] ? adminMeta[currentRoute.section] : (ROUTE_META[currentRoute.name] || ROUTE_META.dashboard);
             const state = window.history.state || {};
@@ -3624,7 +3955,7 @@
                 return;
             }
             closeProfileMenu(false);
-            try { sessionStorage.removeItem(VIEW_CONTEXT_STORAGE_KEY); } catch (_) { /* opcional */ }
+            try { localStorage.removeItem(VIEW_CONTEXT_STORAGE_KEY); } catch (_) { /* opcional */ }
             const users = (appStore && appStore.users) || defaultUsers;
             const firstAnalyst = Object.keys(users).find(id => users[id].active !== false && isRankableUser(users[id]));
             if (firstAnalyst) currentActiveUser = firstAnalyst;
@@ -4050,6 +4381,43 @@
             return result;
         }
 
+        /* Mapas aninhados (ponto, jornadas, escala) são comparados numa profundidade
+           fixa — o nível em que duas pessoas mexem ao mesmo tempo sem se atrapalhar.
+           Comparar o objeto inteiro faria a pausa de um analista apagar a do outro no
+           mesmo dia; comparar folha a folha resolve isso sem trava de versão. */
+        function diffNestedMap(base, local, depth) {
+            const changed = {}; const removed = [];
+            const percorrer = (antes, agora, nivel, prefixo) => {
+                const chaves = new Set([...Object.keys(antes || {}), ...Object.keys(agora || {})]);
+                chaves.forEach(chave => {
+                    const caminho = [...prefixo, chave];
+                    const de = (antes || {})[chave];
+                    const para = (agora || {})[chave];
+                    if (nivel > 1) return percorrer(de || {}, para || {}, nivel - 1, caminho);
+                    if (JSON.stringify(de ?? null) === JSON.stringify(para ?? null)) return;
+                    if (para === undefined) removed.push(caminho);
+                    else changed[caminho.join(' ')] = deepClone(para);
+                });
+            };
+            percorrer(base, local, depth, []);
+            return { changed, removed };
+        }
+
+        function applyNestedMapDiff(target, diff) {
+            const resultado = deepClone(target) || {};
+            (diff?.removed || []).forEach(caminho => {
+                const pai = caminho.slice(0, -1).reduce((node, chave) => node?.[chave], resultado);
+                if (pai) delete pai[caminho[caminho.length - 1]];
+            });
+            Object.entries(diff?.changed || {}).forEach(([chaveado, valor]) => {
+                const caminho = chaveado.split(' ');
+                let node = resultado;
+                caminho.slice(0, -1).forEach(chave => { node[chave] ||= {}; node = node[chave]; });
+                node[caminho[caminho.length - 1]] = valor;
+            });
+            return resultado;
+        }
+
         // Descobre tudo que ESTE cliente mudou localmente desde a última sincronização.
         function computeStoreDiff(base, local) {
             base = base || {};
@@ -4079,7 +4447,11 @@
                 priorityRequests: { ...priorityRequestDiff, expectedVersions: expectedPriorityRequestVersions },
                 transferRequests: diffKeyedArray(base.transferRequests, local.transferRequests),
                 pieceOperations: { ...pieceOperationDiff, expectedVersions: expectedPieceOperationVersions },
-                priorityRotations: { changed: changedRotations, expectedVersions: expectedRotationVersions }
+                priorityRotations: { changed: changedRotations, expectedVersions: expectedRotationVersions },
+                // Jornada por usuário; ponto por dia e usuário; escala por semana e time.
+                workProfiles: diffNestedMap(base.workProfiles, local.workProfiles, 1),
+                timeClock: diffNestedMap(base.timeClock, local.timeClock, 2),
+                breakSchedule: diffNestedMap(base.breakSchedule, local.breakSchedule, 2)
             };
         }
 
@@ -4125,6 +4497,9 @@
                 if (nextRotation) merged.priorityRotations[team] = nextRotation;
                 else delete merged.priorityRotations[team];
             });
+            merged.workProfiles = applyNestedMapDiff(merged.workProfiles, diff.workProfiles);
+            merged.timeClock = applyNestedMapDiff(merged.timeClock, diff.timeClock);
+            merged.breakSchedule = applyNestedMapDiff(merged.breakSchedule, diff.breakSchedule);
             return merged;
         }
 
@@ -4188,7 +4563,10 @@
                     priorityRequests: [],
                     transferRequests: [],
                     pieceOperations: [],
-                    priorityRotations: {}
+                    priorityRotations: {},
+                    workProfiles: {},
+                    timeClock: {},
+                    breakSchedule: {}
                 };
                 lastSyncedSnapshot = {}; // nada sincronizado ainda: tudo conta como novidade
             } else {
@@ -4197,6 +4575,11 @@
                 if (!appStore.transferRequests) appStore.transferRequests = [];
                 appStore.pieceOperations = window.PiecesOperations ? PiecesOperations.bootstrap(appStore, appStore.users || defaultUsers) : (appStore.pieceOperations || []);
                 if (!appStore.priorityRotations) appStore.priorityRotations = {};
+                // Ponto e pausas: base vazia em store antigo, para o módulo nunca
+                // precisar testar existência antes de ler.
+                if (!appStore.workProfiles) appStore.workProfiles = {};
+                if (!appStore.timeClock) appStore.timeClock = {};
+                if (!appStore.breakSchedule) appStore.breakSchedule = {};
                 Object.values(appStore.users).forEach(u => { if (u.active === undefined) u.active = true; });
 
             }
@@ -4710,7 +5093,6 @@
             const opts = Object.keys(usersList).filter(id => isPiecesOperatorRole(usersList[id].role) && usersList[id].active !== false)
                 .map(id => `<option value="${id}">${usersList[id].name} · ${usersList[id].role}</option>`).join('');
             document.getElementById('pecaUserSelect').innerHTML = opts || `<option value="">Nenhum usuário cadastrado</option>`;
-            document.getElementById('pecaLocalPreviewButton')?.classList.toggle('hidden', !['localhost', '127.0.0.1', '::1'].includes(location.hostname));
         }
 
         function clearLoginError(kind) {
@@ -4762,13 +5144,56 @@
 
         /* Fonte única de verdade da toolbar: quem está na sessão decide o que aparece.
            Antes isso vivia duplicado em quatro ramos do render(), com regras divergentes. */
+        /* Onde cada grupo de filtro faz sentido. Barra de filtro em tela de cadastro
+           ou de ponto não filtra nada — só ocupa espaço e sugere um poder que ela não
+           tem. Fora do mapa, o padrão é não mostrar. */
+        const TOOLBAR_SCOPE = {
+            visao:            { periodo: true,  contexto: true  },
+            prioridades:      { periodo: true,  contexto: true  },
+            priorityLaunches: { periodo: true,  contexto: true  },
+            ranking:          { periodo: true,  contexto: true  },
+            rankingGeral:     { periodo: true,  contexto: true  },
+            analista:         { periodo: true,  contexto: true  },
+            transferencias:   { periodo: true,  contexto: true  },
+            historico:        { periodo: true,  contexto: true  },
+            // Ciclos é por mês, não por pessoa.
+            ciclos:           { periodo: true,  contexto: false },
+            // Métricas operacionais já tem o seu próprio "Departamento em edição".
+            lancamentos:      { periodo: true,  contexto: false },
+            cadastros:        { periodo: false, contexto: false },
+            pecas:            { periodo: false, contexto: false },
+            // Ponto e pausas é hoje e a semana, com seletor próprio de departamento.
+            ponto:            { periodo: false, contexto: false }
+        };
+
+        const TOOLBAR_ROUTES = {
+            dashboard:  { periodo: true,  contexto: false },
+            ranking:    { periodo: true,  contexto: false },
+            priorities: { periodo: true,  contexto: false },
+            faq:        { periodo: false, contexto: false },
+            pecas:      { periodo: false, contexto: false },
+            profile:    { periodo: false, contexto: false }
+        };
+
+        function toolbarScope() {
+            if (currentRoute.name === 'admin' && isAdminLoggedIn) {
+                return TOOLBAR_SCOPE[managerSection()] || { periodo: false, contexto: false };
+            }
+            return TOOLBAR_ROUTES[currentRoute.name] || { periodo: true, contexto: false };
+        }
+
         function syncAccessControls() {
             const show = (id, visible) => document.getElementById(id)?.classList.toggle('hidden', !visible);
             const semSessao = !hasAnySession();
 
             // Departamento e Analista são ferramenta de gestão: quem está no próprio
             // perfil não filtra por outra pessoa, filtra só o período dele.
-            show('filterContextGroup', isAdminLoggedIn);
+            const escopo = toolbarScope();
+            const contexto = isAdminLoggedIn && escopo.contexto;
+            show('filterPeriodGroup', escopo.periodo);
+            show('filterContextGroup', contexto);
+            // Sem nenhum grupo, a barra inteira sai: uma faixa vazia no topo é ruído.
+            document.querySelector('.actuar-toolbar')?.classList.toggle('hidden', !escopo.periodo && !contexto);
 
             // As portas de entrada só existem fora de uma sessão. A saída não fica
             // aqui: mora no menu da foto do usuário, no canto superior direito.
@@ -4777,7 +5202,63 @@
             show('btnAdminAccess', semSessao);
             document.querySelector('.actuar-access-actions')?.classList.toggle('hidden', !semSessao);
 
-            document.querySelector('.actuar-toolbar')?.classList.toggle('is-single-group', !isAdminLoggedIn);
+            document.querySelector('.actuar-toolbar')?.classList.toggle('is-single-group', !(escopo.periodo && contexto));
+        }
+
+        /* O dashboard do analista é o mesmo bloco nos dois lugares: quando o próprio
+           analista abre o seu, e quando a gestão consulta o de alguém. Antes ele só
+           existia dentro do `else` de render(), e era por isso que consultar um
+           analista obrigava o gestor a sair do Modo Gestão. */
+        function renderAnalystDashboard(user, usersList, metrics) {
+            // Gestor consultando: os formulários de ação somem, porque nada ali seria
+            // registrado em nome do analista.
+            const managerConsulting = isAdminLoggedIn;
+            document.getElementById('agentName').innerText = user.name;
+            document.getElementById('agentTeam').innerText = teamLabel(user.team);
+            document.getElementById('agentRole').innerText = user.role;
+            document.getElementById('agentInitials').innerHTML = user.photo
+                ? `<img src="${user.photo}" alt="Foto de ${user.name}" class="agent-dashboard-avatar-image">`
+                : (user.initial || user.name.slice(0, 2).toUpperCase());
+            document.getElementById('lblPeriodFilter').innerText = activePeriodFilter === 'ALL' ? 'Acumulado' : activePeriodFilter;
+
+            const calc = calculatePoints(currentActiveUser, metrics);
+            animateNumber('agentTotalPts', calc.total, ' pts');
+
+            const currentTeamList = Object.keys(usersList)
+                .filter(id => usersList[id].team === user.team && isRankableUser(usersList[id]) && usersList[id].active !== false)
+                .map(id => ({ id, total: calculatePoints(id, metrics).total }))
+                .sort((a, b) => b.total - a.total);
+
+            const myRank = currentTeamList.findIndex(item => item.id === currentActiveUser) + 1;
+            document.getElementById('agentPos').innerText = `Classificação: ${myRank > 0 ? myRank + 'º' : '-'} Lugar`;
+
+            const prizeElem = document.getElementById('agentPrize');
+            const prizeSub = document.getElementById('prizeSubtext');
+            if (myRank === 1) { prizeElem.innerText = "R$ 1.000,00"; prizeSub.innerText = "1º colocado no ranking"; }
+            else if (myRank === 2) { prizeElem.innerText = "R$ 500,00"; prizeSub.innerText = "2º colocado no ranking"; }
+            else if (myRank === 3) { prizeElem.innerText = "R$ 300,00"; prizeSub.innerText = "3º colocado no ranking"; }
+            else { prizeElem.innerText = "R$ 0,00"; prizeSub.innerText = "Fora da Zona de Premiação"; }
+
+            const penBox = document.getElementById('agentPenaltiesBox');
+            const myPenalties = metrics[currentActiveUser] ? metrics[currentActiveUser].penaltiesList : [];
+            if (myPenalties.length > 0) {
+                penBox.classList.remove('hidden');
+                penBox.innerHTML = '<i class="fi fi-rr-triangle-warning me-1"></i>' +
+                    myPenalties.map(p => `${p.reason} (${p.value} pts)`).join(' · ');
+            } else {
+                penBox.classList.add('hidden');
+                penBox.innerHTML = '';
+            }
+
+            renderHistoricalStats(currentActiveUser);
+            renderCharts(currentActiveUser);
+            renderMetricBreakdown(user, calc);
+            renderMonitoringFeedback(currentActiveUser, metrics);
+            renderPriorityRotation();
+            renderMyPriorityRequests();
+            renderMyTransferRequests();
+            document.querySelectorAll('form[onsubmit*="submitPriorityRequest"], form[onsubmit*="submitTransferRequest"]').forEach(form => form.closest('.bg-surface')?.classList.toggle('hidden', managerConsulting));
+
         }
 
         function render() {
@@ -4817,12 +5298,21 @@
             profileView.classList.add('hidden');
 
             if (currentRoute.name === 'admin' && isAdminLoggedIn) {
-                document.getElementById('viewAgent').classList.add('hidden');
-                document.getElementById('viewRanking').classList.add('hidden');
+                /* Ranking geral e dashboard individual deixaram de ser "outra tela".
+                   São seções do Modo Gestão: o mesmo bloco de conteúdo aparece abaixo
+                   da navegação da gestão, que nunca some. Sem troca de cabeçalho, sem
+                   barra de abas do analista, sem botão de voltar. */
+                /* A seção vem da ROTA, não do global: `applyRoute` chama render() antes
+                   de `switchAdminTabView`, então `activeAdminTab` ainda é o valor
+                   anterior aqui — e a tela ficava sempre um passo atrasada. */
+                const secao = managerSection();
+                const analistaNaGestao = secao === 'analista';
                 document.getElementById('viewFaq').classList.add('hidden');
                 document.getElementById('viewPecas').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
                 document.getElementById('publicTabsContainer').classList.add('hidden');
+                syncManagerSectionViews();
+                if (analistaNaGestao) renderAnalystDashboard(user, usersList, metrics);
                 document.getElementById('loggedAdminName').innerText = getCurrentManager()?.name || "Gestor";
                 renderAdminLogs();
                 renderUsersManagementTable();
@@ -4843,59 +5333,14 @@
             } else {
                 document.getElementById('viewAdmin').classList.add('hidden');
                 document.getElementById('viewPecas').classList.add('hidden');
-                const managerConsulting = isAdminLoggedIn && currentRoute.name === 'dashboard';
-                document.getElementById('publicTabsContainer').classList.toggle('hidden', managerConsulting);
-
-                document.getElementById('agentName').innerText = user.name;
-                document.getElementById('agentTeam').innerText = teamLabel(user.team);
-                document.getElementById('agentRole').innerText = user.role;
-                document.getElementById('agentInitials').innerHTML = user.photo
-                    ? `<img src="${user.photo}" alt="Foto de ${user.name}" class="agent-dashboard-avatar-image">`
-                    : (user.initial || user.name.slice(0, 2).toUpperCase());
-                document.getElementById('lblPeriodFilter').innerText = activePeriodFilter === 'ALL' ? 'Acumulado' : activePeriodFilter;
-
-                const calc = calculatePoints(currentActiveUser, metrics);
-                animateNumber('agentTotalPts', calc.total, ' pts');
-
-                const currentTeamList = Object.keys(usersList)
-                    .filter(id => usersList[id].team === user.team && isRankableUser(usersList[id]) && usersList[id].active !== false)
-                    .map(id => ({ id, total: calculatePoints(id, metrics).total }))
-                    .sort((a, b) => b.total - a.total);
-
-                const myRank = currentTeamList.findIndex(item => item.id === currentActiveUser) + 1;
-                document.getElementById('agentPos').innerText = `Classificação: ${myRank > 0 ? myRank + 'º' : '-'} Lugar`;
-
-                const prizeElem = document.getElementById('agentPrize');
-                const prizeSub = document.getElementById('prizeSubtext');
-                if (myRank === 1) { prizeElem.innerText = "R$ 1.000,00"; prizeSub.innerText = "1º colocado no ranking"; }
-                else if (myRank === 2) { prizeElem.innerText = "R$ 500,00"; prizeSub.innerText = "2º colocado no ranking"; }
-                else if (myRank === 3) { prizeElem.innerText = "R$ 300,00"; prizeSub.innerText = "3º colocado no ranking"; }
-                else { prizeElem.innerText = "R$ 0,00"; prizeSub.innerText = "Fora da Zona de Premiação"; }
-
-                const penBox = document.getElementById('agentPenaltiesBox');
-                const myPenalties = metrics[currentActiveUser] ? metrics[currentActiveUser].penaltiesList : [];
-                if (myPenalties.length > 0) {
-                    penBox.classList.remove('hidden');
-                    penBox.innerHTML = '<i class="fi fi-rr-triangle-warning me-1"></i>' +
-                        myPenalties.map(p => `${p.reason} (${p.value} pts)`).join(' · ');
-                } else {
-                    penBox.classList.add('hidden');
-                    penBox.innerHTML = '';
-                }
-
-                renderHistoricalStats(currentActiveUser);
-                renderCharts(currentActiveUser);
-                renderMetricBreakdown(user, calc);
-                renderMonitoringFeedback(currentActiveUser, metrics);
-                renderPriorityRotation();
-                renderMyPriorityRequests();
-                renderMyTransferRequests();
-                document.querySelectorAll('form[onsubmit*="submitPriorityRequest"], form[onsubmit*="submitTransferRequest"]').forEach(form => form.closest('.bg-surface')?.classList.toggle('hidden', managerConsulting));
+                document.getElementById('publicTabsContainer').classList.toggle('hidden', isAdminLoggedIn);
+                renderAnalystDashboard(user, usersList, metrics);
             }
 
             renderLeaderboard(metrics);
             renderTopDashboard(metrics);
             renderYouAreHereGauges(metrics);
+            renderAttendanceBar();
             finalizeActuarUi();
         }
 
@@ -5325,7 +5770,7 @@
                         <td class="p-3 font-semibold text-white">
                             <span class="inline-flex items-center gap-2">
                                 <span class="ranking-list-avatar" aria-hidden="${item.photo ? 'false' : 'true'}">${listAvatar}</span>
-                                <span>${item.name}</span>
+                                <span class="ranking-user-name">${item.name}</span>
                                 ${activeRankingTab === 'Todos' ? `<span class="ranking-team-badge">${teamLabel(item.team)}</span>` : ''}
                                 <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-secondary/0 group-hover:text-accent transition-colors duration-150"></i>
                             </span>
@@ -5551,7 +5996,20 @@
             document.getElementById('admHistoryLogs').innerHTML = html || `<tr><td colspan="7" class="p-4 text-center text-secondary">Nenhum registro efetuado este mês.</td></tr>`;
         }
 
+        // Uma lista só de departamentos, vinda do domínio. Manter as opções no HTML
+        // criava uma segunda fonte de verdade que ia divergir na primeira mudança.
+        function syncDepartmentOptions() {
+            const select = document.getElementById('inputUserTeam');
+            if (!select || !window.ManagerExperience) return;
+            const atual = select.value;
+            const departamentos = ManagerExperience.DEPARTMENTS;
+            if (select.options.length === departamentos.length) return;
+            select.innerHTML = departamentos.map(dep => `<option value="${escapeHtml(dep)}">${escapeHtml(teamLabel(dep))}</option>`).join('');
+            if (departamentos.includes(atual)) select.value = atual;
+        }
+
         function renderUsersManagementTable() {
+            syncDepartmentOptions();
             const store = getStore();
             const usersList = store.users || defaultUsers;
             let html = "";
@@ -5649,6 +6107,62 @@
             document.getElementById('btnSaveUser').innerText = "Atualizar Usuário";
             document.getElementById('btnCancelEdit').classList.remove('hidden');
             onUserRoleChange(u.role);
+            fillShiftForm(id);
+        }
+
+        /* A jornada mora na ficha porque é lá que a gestão já pensa na pessoa. Um
+           cadastro separado de "quem tem ponto" viraria uma segunda lista para
+           manter em dia — e é sempre a segunda lista que fica desatualizada. */
+        function renderShiftDayChips(selecionados) {
+            const caixa = document.getElementById('inputUserShiftDays');
+            if (!caixa || !attendanceReady()) return;
+            caixa.innerHTML = AttendanceClock.WEEKDAYS.map(dia => `
+                <label class="shift-day"><input type="checkbox" value="${dia.day}" ${selecionados.includes(dia.day) ? 'checked' : ''}><span>${dia.short}</span></label>`).join('');
+        }
+
+        function onUserTrackedChange(marcado) {
+            document.getElementById('userShiftFields')?.classList.toggle('hidden', !marcado);
+            if (marcado && !document.getElementById('inputUserShiftDays')?.children.length) {
+                renderShiftDayChips(AttendanceClock.DEFAULT_SHIFT.days);
+            }
+        }
+
+        function fillShiftForm(userId) {
+            if (!attendanceReady()) return;
+            const bruto = attendanceProfiles()[userId] || null;
+            const jornada = { ...AttendanceClock.DEFAULT_SHIFT, ...(bruto?.shift || {}) };
+            const marcado = bruto?.tracked === true;
+            document.getElementById('inputUserTracked').checked = marcado;
+            document.getElementById('inputUserShiftStart').value = jornada.start;
+            document.getElementById('inputUserShiftEnd').value = jornada.end;
+            document.getElementById('inputUserShiftTolerance').value = String(jornada.toleranceMin ?? 5);
+            renderShiftDayChips(Array.isArray(jornada.days) ? jornada.days.map(Number) : AttendanceClock.DEFAULT_SHIFT.days);
+            onUserTrackedChange(marcado);
+        }
+
+        function readShiftForm() {
+            const marcado = document.getElementById('inputUserTracked')?.checked === true;
+            if (!marcado) return null;
+            const dias = [...document.querySelectorAll('#inputUserShiftDays input:checked')].map(input => Number(input.value));
+            return {
+                tracked: true,
+                shift: {
+                    start: document.getElementById('inputUserShiftStart').value || AttendanceClock.DEFAULT_SHIFT.start,
+                    end: document.getElementById('inputUserShiftEnd').value || AttendanceClock.DEFAULT_SHIFT.end,
+                    toleranceMin: Math.max(0, Number(document.getElementById('inputUserShiftTolerance').value) || 0),
+                    days: dias.length ? dias : [...AttendanceClock.DEFAULT_SHIFT.days]
+                }
+            };
+        }
+
+        function applyShiftProfile(userId) {
+            if (!attendanceReady()) return;
+            const perfil = readShiftForm();
+            appStore.workProfiles ||= {};
+            // Desmarcar apaga o perfil, e não deixa um `tracked: false` órfão contando
+            // como cadastro existente na próxima leitura.
+            if (perfil) appStore.workProfiles[userId] = perfil;
+            else delete appStore.workProfiles[userId];
         }
 
         function cancelEditUser() {
@@ -5662,6 +6176,7 @@
             document.getElementById('btnSaveUser').innerText = "Salvar Usuário";
             document.getElementById('btnCancelEdit').classList.add('hidden');
             onUserRoleChange("Analista de sistema");
+            fillShiftForm(null);
         }
 
         async function saveUser(e) {
@@ -5703,6 +6218,7 @@
                     appStore.users[editId].hasPassword = true;
                 }
                 appStore.users[editId].photo = photoData || undefined;
+                applyShiftProfile(editId);
                 showToast("Usuário atualizado com sucesso!");
             } else {
                 // Cadastra novo usuário
@@ -5714,6 +6230,7 @@
                     if (!saved) return;
                 }
                 appStore.users[newId] = { name, email: email || undefined, team, role, initial: initials, active: true, photo: photoData || undefined, hasPassword: needsPassword || undefined };
+                applyShiftProfile(newId);
                 showToast("Novo usuário cadastrado com sucesso!");
             }
 
@@ -6042,6 +6559,833 @@
             }
         }
 
+        /* ==========================================================================
+           PONTO E PAUSAS
+           A regra que organiza tudo: almoço e lanche são direito e saem da conta;
+           o resto do tempo parado é ociosidade, medida em tempo E em quantidade.
+           O domínio vive em js/attendance-clock.js — aqui só há tela e persistência.
+           ========================================================================== */
+
+        let attendanceFilters = { team: 'Catraca', date: '', compare: '' };
+        let attendanceWeek = null;
+        let attendanceTicker = null;
+
+        function attendanceReady() { return !!window.AttendanceClock; }
+        function attendanceState() { const store = getStore(); if (store) store.timeClock ||= {}; return store?.timeClock || {}; }
+        function attendanceProfiles() { const store = getStore(); if (store) store.workProfiles ||= {}; return store?.workProfiles || {}; }
+        function attendanceSchedule() { const store = getStore(); if (store) store.breakSchedule ||= {}; return store?.breakSchedule || {}; }
+        function isAttendanceTracked(userId) { return attendanceReady() && AttendanceClock.isTracked(attendanceProfiles(), userId); }
+        function attendanceProfile(userId) { return attendanceReady() ? AttendanceClock.profileOf(attendanceProfiles(), userId) : null; }
+        function attendanceSummary(userId, reference = Date.now()) {
+            return AttendanceClock.daySummary(attendanceState(), userId, Date.now(), attendanceProfile(userId), reference);
+        }
+
+        /* O ponto abre sozinho no primeiro login do dia. Pedir para a pessoa "bater
+           o ponto" depois de já ter entrado no sistema seria pedir duas vezes a
+           mesma informação — e é justamente aí que o registro se perde. */
+        async function openAttendanceClock(userId) {
+            if (!attendanceReady() || !isAttendanceTracked(userId)) return;
+            const resultado = AttendanceClock.registerLogin(attendanceState(), userId, Date.now());
+            if (!resultado.opened) return;
+            await persistStore();
+            const resumo = attendanceSummary(userId);
+            if (resumo.late) showToast(`Ponto aberto às ${AttendanceClock.timeLabel(resumo.login)} · ${AttendanceClock.formatDuration(resumo.lateMs)} depois do horário.`, 'error');
+            else showToast(`Ponto aberto às ${AttendanceClock.timeLabel(resumo.login)}. Bom trabalho!`);
+        }
+
+        async function closeAttendanceClock(userId) {
+            if (!attendanceReady() || !isAttendanceTracked(userId)) return;
+            const resultado = AttendanceClock.registerLogout(attendanceState(), userId, Date.now());
+            if (!resultado.ok) return;
+            if (resultado.closedBreak) syncRotationWithBreak(userId, false);
+            await persistStore();
+        }
+
+        /* Pausa tira da fila; voltar recoloca no fim. Foi a regra escolhida: ninguém
+           recebe chamado no banheiro, e a vez circula em vez de esperar por quem saiu. */
+        function syncRotationWithBreak(userId, entrando, motivo = 'Pausa registrada no ponto') {
+            if (!window.PriorityRotation) return;
+            const user = (getStore()?.users || defaultUsers)[userId];
+            if (!user?.team) return;
+            const rotation = ensurePriorityRotation(user.team);
+            const participante = rotation?.participants?.[userId];
+            if (!participante) return;
+            const jaPausado = participante.status === PriorityRotation.PARTICIPANT_STATUS.PAUSED;
+            try {
+                if (entrando && !jaPausado) appStore.priorityRotations[user.team] = PriorityRotation.pauseParticipant(rotation, userId, userId, motivo, Date.now(), 'keep');
+                else if (!entrando && jaPausado) appStore.priorityRotations[user.team] = PriorityRotation.reactivateParticipant(rotation, userId, userId);
+            } catch (error) {
+                // A pausa do ponto não pode falhar porque o rodízio recusou o movimento.
+                console.warn('O rodízio não acompanhou a pausa:', error.message || error);
+            }
+        }
+
+        /* Diálogo de saída fora da janela. Devolve a justificativa escrita, ou null
+           se a pessoa desistir. Promessa em vez de callback para o fluxo da pausa
+           continuar lendo de cima para baixo. */
+        let attendanceOffScheduleResolve = null;
+
+        function closeAttendanceOffSchedule(valor) {
+            const layer = document.getElementById('attendanceOffScheduleModal');
+            if (!layer || layer.classList.contains('hidden')) return;
+            layer.classList.add('hidden');
+            const resolver = attendanceOffScheduleResolve;
+            attendanceOffScheduleResolve = null;
+            resolver?.(valor);
+        }
+
+        function askAttendanceOffSchedule(spec, verificacao) {
+            const layer = document.getElementById('attendanceOffScheduleModal');
+            if (!layer) return Promise.resolve('Fora do horário combinado');
+            const adiantado = verificacao.status === 'adiantado';
+            const minutos = Math.abs(verificacao.deltaMin);
+
+            document.getElementById('attendanceOffScheduleMessage').textContent =
+                `Seu ${spec.label.toLowerCase()} de hoje está combinado para ${verificacao.scheduledAt}. Você pode sair assim mesmo — só precisa dizer o motivo.`;
+            document.getElementById('attendanceOffScheduleWhen').textContent = verificacao.scheduledAt;
+            document.getElementById('attendanceOffScheduleNow').textContent = AttendanceClock.timeLabel(Date.now());
+            const delta = document.getElementById('attendanceOffScheduleDelta');
+            delta.textContent = `${minutos} min ${adiantado ? 'adiantado' : 'atrasado'}`;
+            delta.className = `attendance-offschedule-delta is-${adiantado ? 'early' : 'late'}`;
+
+            const campo = document.getElementById('attendanceOffScheduleReason');
+            campo.value = '';
+            const confirmar = document.getElementById('attendanceOffScheduleOk');
+            const cancelar = document.getElementById('attendanceOffScheduleCancel');
+            const validar = () => { confirmar.disabled = campo.value.trim().length < 4; };
+            validar();
+
+            campo.oninput = validar;
+            confirmar.onclick = () => closeAttendanceOffSchedule(campo.value.trim());
+            cancelar.onclick = () => closeAttendanceOffSchedule(null);
+            layer.onclick = evento => { if (evento.target === layer) closeAttendanceOffSchedule(null); };
+
+            layer.classList.remove('hidden');
+            requestAnimationFrame(() => campo.focus());
+            return new Promise(resolve => { attendanceOffScheduleResolve = resolve; });
+        }
+
+        async function startAttendanceBreak(type) {
+            const userId = currentActiveUser;
+            if (!isAttendanceTracked(userId)) return;
+            const spec = AttendanceClock.BREAK_TYPES[type];
+
+            // Clique em botão bloqueado explica o porquê, em vez de não fazer nada.
+            const resumoAtual = attendanceSummary(userId);
+            if (resumoAtual.openBreak) return showToast(`Você está em ${resumoAtual.openBreak.spec.label.toLowerCase()}. Volte ao atendimento antes de marcar outra pausa.`, 'error');
+            if (spec.perDay && resumoAtual.byType[type].count >= spec.perDay) return showToast(`${spec.label} já foi registrado hoje.`, 'error');
+
+            /* Almoço e lanche têm hora combinada; os outros quatro, não. Sem escala
+               publicada não existe janela — e cobrar horário que ninguém combinou
+               seria injusto com quem nunca recebeu a escala. */
+            const janela = attendanceScheduleToday(userId);
+            const verificacao = AttendanceClock.windowCheck(type, janela?.[type] || null, Date.now());
+            let desvio = null;
+            if (verificacao.offSchedule) {
+                const motivo = await askAttendanceOffSchedule(spec, verificacao);
+                if (!motivo) return;
+                desvio = { scheduledAt: verificacao.scheduledAt, deltaMin: verificacao.deltaMin, status: verificacao.status, reason: motivo };
+            }
+
+            const resultado = AttendanceClock.startBreak(attendanceState(), userId, type, Date.now(), { offSchedule: desvio });
+            if (!resultado.ok) { showToast(resultado.message, 'error'); return; }
+            syncRotationWithBreak(userId, true, `Pausa: ${spec.label}`);
+            await persistStore();
+            renderAttendanceBar();
+            showToast(desvio
+                ? `${spec.label} registrado fora do horário combinado. Sua gestão foi informada.`
+                : `${spec.label} iniciado.${spec.limitMin ? ` Você tem ${spec.limitMin} minutos.` : ''}`, desvio ? 'error' : 'success');
+        }
+
+        async function endAttendanceBreak() {
+            const userId = currentActiveUser;
+            const resultado = AttendanceClock.endBreak(attendanceState(), userId, Date.now());
+            if (!resultado.ok) { showToast(resultado.message, 'error'); return; }
+            const spec = AttendanceClock.BREAK_TYPES[resultado.entry.type];
+            const duracao = resultado.entry.endedAt - resultado.entry.startedAt;
+            syncRotationWithBreak(userId, false);
+            await persistStore();
+            renderAttendanceBar();
+            // Sem eco de duração: quanto durou o almoço é leitura da gestão, não da
+            // pessoa. Ela já acompanhou a contagem regressiva enquanto esteve fora.
+            const estourou = spec.limitMin && duracao > spec.limitMin * 60000;
+            showToast(estourou ? `De volta ao atendimento. O ${spec.label.toLowerCase()} passou do combinado.` : 'De volta ao atendimento.', estourou ? 'error' : 'success');
+        }
+
+        /* Um único cronômetro para a tela inteira: cada pausa aberta com o seu
+           próprio setInterval encheria a página de timers órfãos. */
+        function syncAttendanceTicker() {
+            const precisa = !document.getElementById('attendanceBar')?.classList.contains('hidden')
+                || !document.getElementById('admPanelPonto')?.classList.contains('hidden');
+            if (precisa && !attendanceTicker) {
+                attendanceTicker = setInterval(() => {
+                    const agora = Date.now();
+                    document.querySelectorAll('[data-attendance-since]').forEach(node => {
+                        node.textContent = AttendanceClock.formatClock(agora - Number(node.dataset.attendanceSince));
+                    });
+                    // Hora real: é o que a pessoa confere de relance para saber se já
+                    // está na janela dela. Sem segundos ele parece travado.
+                    document.querySelectorAll('[data-attendance-clock]').forEach(node => { node.textContent = AttendanceClock.timeLabel(agora); });
+                    document.querySelectorAll('[data-attendance-clock-seconds]').forEach(node => { node.textContent = attendanceClockNow(); });
+                    document.querySelectorAll('[data-attendance-countdown]').forEach(node => {
+                        const restante = Number(node.dataset.attendanceCountdown) - agora;
+                        node.textContent = AttendanceClock.formatClock(Math.abs(restante));
+                        node.classList.toggle('is-over', restante < 0);
+                        const rotulo = node.parentElement?.querySelector('[data-countdown-label]');
+                        if (rotulo && restante < 0 && !rotulo.textContent.startsWith('além')) rotulo.textContent = rotulo.textContent.replace('Tempo restante', 'além do combinado');
+                    });
+                }, 1000);
+            } else if (!precisa && attendanceTicker) {
+                clearInterval(attendanceTicker); attendanceTicker = null;
+            }
+        }
+
+        function attendanceScheduleToday(userId) {
+            const user = (getStore()?.users || defaultUsers)[userId];
+            if (!user?.team) return null;
+            return AttendanceClock.slotFor(attendanceSchedule(), AttendanceClock.weekKey(Date.now()), user.team, userId, new Date().getDay());
+        }
+
+        /* O rodízio de pausas só cumpre o objetivo se a pessoa enxergar a semana
+           inteira: é isso que permite planejar quando o horário muda a cada dia.
+           Mostrar só a janela de hoje deixaria o analista descobrindo dia a dia. */
+        function renderMyWeekSchedule(userId) {
+            const user = (getStore()?.users || defaultUsers)[userId];
+            const semana = AttendanceClock.weekKey(Date.now());
+            const hoje = new Date().getDay();
+            const dias = AttendanceClock.WEEKDAYS.filter(dia => dia.day >= 1 && dia.day <= 5)
+                .map(dia => ({ ...dia, slot: AttendanceClock.slotFor(attendanceSchedule(), semana, user?.team, userId, dia.day) }));
+            if (!dias.some(dia => dia.slot)) return '';
+            return `<div class="attendance-week-strip">
+                <span class="attendance-week-strip-label"><i class="fi fi-rr-calendar"></i>Minha escala · ${escapeHtml(AttendanceClock.weekInfo(semana).title)}<small>${escapeHtml(AttendanceClock.weekInfo(semana).range)}</small></span>
+                <div class="attendance-week-strip-track">${dias.map(dia => `
+                    <div class="attendance-week-day ${dia.day === hoje ? 'is-today' : ''}">
+                        <small>${dia.short}</small>
+                        <strong>${dia.slot?.almoco || '—'}</strong>
+                        <em>${dia.slot?.lanche || '—'}</em>
+                    </div>`).join('')}</div>
+                <span class="attendance-week-strip-legend">Almoço · Lanche</span>
+            </div>`;
+        }
+
+        function renderAttendanceBar() {
+            const bar = document.getElementById('attendanceBar');
+            if (!bar || !attendanceReady()) return;
+            const userId = currentActiveUser;
+            const visivel = isAnalystLoggedIn && isAttendanceTracked(userId);
+            bar.classList.toggle('hidden', !visivel);
+            if (!visivel) { bar.innerHTML = ''; syncAttendanceTicker(); return; }
+
+            const resumo = attendanceSummary(userId);
+            const aberta = resumo.openBreak;
+            const janela = attendanceScheduleToday(userId);
+            const vigia = aberta ? AttendanceClock.breakWatch(aberta, janela?.[aberta.type] || null) : null;
+
+            const botoes = AttendanceClock.BREAK_ORDER.map(key => {
+                const spec = AttendanceClock.BREAK_TYPES[key];
+                const esgotado = spec.perDay && resumo.byType[key].count >= spec.perDay;
+                // O horário combinado é instrução, não medição: dizer "seu almoço é
+                // 12:30" ajuda a pessoa a se organizar sem entregar desempenho.
+                const combinado = janela?.[key];
+                const apoio = esgotado ? 'Já registrado hoje' : combinado ? `Combinado ${combinado}` : spec.scheduled ? 'Sem escala' : 'Quando precisar';
+
+                // O botão cinza precisa se explicar. Antes usava `disabled`, e elemento
+                // desabilitado não dispara `title` no Chrome: ficava cinza e mudo. Agora
+                // ele continua clicável e o clique responde o motivo.
+                const janelaCombinada = combinado ? AttendanceClock.scheduleWindow(combinado) : null;
+                const duracao = spec.limitMin ? AttendanceClock.formatDuration(spec.limitMin * AttendanceClock.MINUTE) : null;
+                const explicacao = esgotado
+                    ? `${spec.label} já registrado hoje. É uma vez por dia.`
+                    : aberta
+                        ? `Você está em ${aberta.spec.label.toLowerCase()}. Volte ao atendimento para marcar ${spec.label.toLowerCase()}.`
+                        : janelaCombinada
+                            ? `Seu ${spec.label.toLowerCase()} está combinado para as ${janelaCombinada.scheduledAt}${duracao ? `, com até ${duracao}` : ''}. Pode marcar entre ${janelaCombinada.from} e ${janelaCombinada.to} sem justificar. Clique para marcar a saída.`
+                            : spec.scheduled
+                                ? `Ainda não há escala publicada para hoje. Você pode marcar ${spec.label.toLowerCase()} assim que sair.`
+                                : `Marque ${spec.label.toLowerCase()} quando precisar${duracao ? `, com até ${duracao}` : ', sem limite de tempo'}.`;
+                const bloqueado = Boolean(aberta || esgotado);
+                return `<button type="button" class="attendance-break-btn attendance-break-btn--${spec.tone} ${bloqueado ? 'is-blocked' : ''}" onclick="startAttendanceBreak('${key}')" aria-disabled="${bloqueado}" title="${escapeHtml(explicacao)}">
+                    <i class="fi ${spec.icon}"></i>
+                    <span><strong>${escapeHtml(spec.label)}</strong><small>${escapeHtml(apoio)}</small></span>
+                </button>`;
+            }).join('');
+
+            /* A tela do analista é de MARCAÇÃO, não de medição. Ele vê a hora, a
+               situação e os botões. Ociosidade, tempo em atendimento e acumulados do
+               dia vivem só no painel da gestão — é lá que essa leitura tem uso. */
+            const estado = aberta
+                ? `<div class="attendance-status is-paused">
+                        <span class="attendance-status-label"><i class="fi ${aberta.spec.icon}"></i>Você está em ${escapeHtml(aberta.spec.label.toLowerCase())}</span>
+                        ${vigia?.limitMs !== null && vigia?.limitMs !== undefined
+                            ? `<strong class="attendance-timer num-mono ${vigia.exceeded ? 'is-over' : ''}" data-attendance-countdown="${aberta.startedAt + vigia.limitMs}">${AttendanceClock.formatClock(Math.abs(vigia.remainingMs))}</strong><small data-countdown-label>${vigia.exceeded ? 'além do combinado' : 'Tempo restante'} · saiu às ${AttendanceClock.timeLabel(aberta.startedAt)}</small>`
+                            : `<strong class="attendance-timer num-mono">—</strong><small>Saiu às ${AttendanceClock.timeLabel(aberta.startedAt)}</small>`}
+                        <button type="button" class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="endAttendanceBreak()"><i class="fi fi-rr-play"></i>Voltar ao atendimento</button>
+                   </div>`
+                : `<div class="attendance-status is-available is-plain">
+                        <span class="attendance-status-label"><i class="fi fi-rr-headset"></i>Em atendimento</span>
+                        <small>Ponto aberto às ${resumo.login ? AttendanceClock.timeLabel(resumo.login) : '—'}</small>
+                   </div>`;
+
+            bar.innerHTML = `
+                <div class="attendance-bar-main">
+                    ${estado}
+                    <div class="attendance-break-actions">${botoes}</div>
+                </div>
+                <div class="attendance-bar-side">
+                    <div class="attendance-now">
+                        <small>${escapeHtml(attendanceTodayLabel())}</small>
+                        <strong class="num-mono" data-attendance-clock-seconds>${attendanceClockNow()}</strong>
+                        <em>${janela?.almoco || janela?.lanche
+                            ? `${janela.almoco ? `Almoço ${janela.almoco}` : ''}${janela.almoco && janela.lanche ? ' · ' : ''}${janela.lanche ? `Lanche ${janela.lanche}` : ''}`
+                            : 'Sem escala publicada para hoje'}</em>
+                    </div>
+                </div>
+                ${renderMyWeekSchedule(userId)}`;
+            syncAttendanceTicker();
+        }
+
+        /* Data por extenso ao lado do relógio: o relógio sozinho não diz que dia da
+           escala é hoje, e é o dia que define a janela de almoço da pessoa. */
+        function attendanceClockNow(ts = Date.now()) {
+            const d = new Date(ts);
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+        }
+
+        function attendanceTodayLabel() {
+            const hoje = new Date();
+            const dia = AttendanceClock.WEEKDAYS.find(item => item.day === hoje.getDay());
+            return `${dia?.label || ''}, ${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        /* ----- visão da gestão ----- */
+
+        /* Comparação entre dois dias. Responde "segunda rendeu mais que terça?" sem
+           obrigar a anotar os números de uma tela e abrir a outra. */
+        function renderAttendanceComparison(usuarios) {
+            const alvo = document.getElementById('attendanceComparison');
+            if (!alvo) return;
+            const outro = attendanceCompareTs();
+            if (!outro) { alvo.classList.add('hidden'); alvo.innerHTML = ''; return; }
+
+            const dados = AttendanceClock.compareDays(attendanceState(), attendanceProfiles(), usuarios, attendanceReferenceTs(), outro, { team: attendanceFilters.team, schedule: attendanceSchedule() });
+            const dia = chave => chave.split('-').reverse().slice(0, 2).join('/');
+            const metricas = [
+                ['onlineMs', 'Tempo no ponto', true],
+                ['availableMs', 'Em atendimento', true],
+                ['idleMs', 'Ociosidade', true],
+                ['restMs', 'Almoço e lanche', true],
+                ['overMs', 'Estouro', true],
+                ['idleCount', 'Paradas', false]
+            ];
+            const valor = (ms, tempo) => tempo ? AttendanceClock.formatDuration(ms) : String(ms);
+            // Em ociosidade, estouro e paradas, cair é bom; nas demais, subir é bom.
+            const bom = campo => ['idleMs', 'overMs', 'idleCount'].includes(campo) ? -1 : 1;
+            const sentidoDe = (campo, delta) => delta === 0 ? 'is-flat' : (delta > 0 ? bom(campo) : -bom(campo)) > 0 ? 'is-better' : 'is-worse';
+
+            alvo.classList.remove('hidden');
+            alvo.innerHTML = `
+                <header><strong>Comparação</strong><span>${dia(dados.dateA)} <i class="fi fi-rr-arrow-right"></i> ${dia(dados.dateB)}</span>
+                    <button type="button" class="actuar-btn actuar-btn-ghost actuar-btn-sm" onclick="updateAttendanceFilter('compare','')"><i class="fi fi-rr-cross-small"></i>Fechar</button></header>
+                <div class="attendance-compare-grid">${metricas.map(([campo, rotulo, tempo]) => {
+                    const t = dados.totals[campo];
+                    return `<article class="attendance-compare-card ${sentidoDe(campo, t.delta)}">
+                        <small>${escapeHtml(rotulo)}</small>
+                        <div><span class="num-mono">${escapeHtml(valor(t.a, tempo))}</span><i class="fi fi-rr-arrow-right"></i><strong class="num-mono">${escapeHtml(valor(t.b, tempo))}</strong></div>
+                        <em>${t.delta === 0 ? 'sem mudança' : `${t.delta > 0 ? '+' : '−'}${escapeHtml(valor(Math.abs(t.delta), tempo))}`}</em>
+                    </article>`;
+                }).join('')}</div>
+                <div class="actuar-table-wrap"><table class="attendance-compare-table">
+                    <thead><tr><th>Analista</th><th>Tempo no ponto</th><th>Ociosidade</th><th>Almoço e lanche</th><th>Paradas</th></tr></thead>
+                    <tbody>${dados.rows.map(row => {
+                        const celula = (campo, tempo) => {
+                            const d = row.delta[campo];
+                            return `<td><span class="num-mono">${escapeHtml(valor(Number(row.a?.[campo] || 0), tempo))}</span> <i class="fi fi-rr-arrow-right"></i> <strong class="num-mono">${escapeHtml(valor(Number(row.b?.[campo] || 0), tempo))}</strong>${d === 0 ? '' : ` <em class="${sentidoDe(campo, d)}">${d > 0 ? '+' : '−'}${escapeHtml(valor(Math.abs(d), tempo))}</em>`}</td>`;
+                        };
+                        return `<tr><td><strong>${escapeHtml(row.name)}</strong>${row.a?.login && row.b?.login ? '' : `<small>sem ponto ${!row.a?.login && !row.b?.login ? 'nos dois dias' : !row.a?.login ? 'no primeiro dia' : 'no segundo dia'}</small>`}</td>${celula('onlineMs', true)}${celula('idleMs', true)}${celula('restMs', true)}${celula('idleCount', false)}</tr>`;
+                    }).join('')}</tbody>
+                </table></div>`;
+        }
+
+        function updateAttendanceFilter(key, value) { attendanceFilters[key] = value; renderAttendanceManager(); }
+
+        // Data escolhida para leitura; vazio significa hoje.
+        function attendanceReferenceTs() {
+            const escolhido = attendanceFilters.date;
+            if (!escolhido) return Date.now();
+            const [ano, mes, dia] = escolhido.split('-').map(Number);
+            return new Date(ano, mes - 1, dia, 12, 0, 0).getTime();
+        }
+        function attendanceCompareTs() {
+            const escolhido = attendanceFilters.compare;
+            if (!escolhido) return null;
+            const [ano, mes, dia] = escolhido.split('-').map(Number);
+            return new Date(ano, mes - 1, dia, 12, 0, 0).getTime();
+        }
+        function attendanceIsToday() { return AttendanceClock.dateKey(attendanceReferenceTs()) === AttendanceClock.dateKey(Date.now()); }
+        function goToCurrentAttendanceWeek() {
+            attendanceWeek = AttendanceClock.weekKey(Date.now());
+            renderAttendanceManager();
+        }
+
+        function stepAttendanceWeek(delta) {
+            const base = new Date(attendanceWeek || AttendanceClock.weekKey(Date.now()));
+            base.setDate(base.getDate() + delta * 7);
+            attendanceWeek = AttendanceClock.weekKey(base.getTime());
+            renderAttendanceManager();
+        }
+
+        function attendanceTeams() {
+            const usuarios = getStore()?.users || defaultUsers;
+            return [...new Set(Object.values(usuarios).map(user => user.team).filter(Boolean))];
+        }
+
+        function renderAttendanceManager() {
+            if (!attendanceReady() || !document.getElementById('attendanceKpis')) return;
+            const usuarios = getStore()?.users || defaultUsers;
+            const times = attendanceTeams();
+            if (!times.includes(attendanceFilters.team)) attendanceFilters.team = times[0] || 'Catraca';
+
+            const seletor = document.getElementById('attendanceTeamFilter');
+            if (seletor) {
+                seletor.innerHTML = times.map(team => `<option value="${escapeHtml(team)}">${escapeHtml(teamLabel(team))}</option>`).join('');
+                seletor.value = attendanceFilters.team;
+            }
+
+            // Saídas fora do combinado, com o motivo que a pessoa escreveu: sem o
+            // motivo o indicador seria uma acusação sem contraditório.
+            const doTime = new Set(Object.keys(usuarios).filter(id => usuarios[id].team === attendanceFilters.team));
+            const foraDaJanela = AttendanceClock.offScheduleToday(attendanceState()).filter(item => doTime.has(item.userId));
+
+            const referencia = attendanceReferenceTs();
+            const campoDia = document.getElementById('attendanceDayFilter');
+            if (campoDia) campoDia.value = attendanceFilters.date || AttendanceClock.dateKey(Date.now());
+            document.getElementById('attendanceDayToday')?.classList.toggle('hidden', attendanceIsToday());
+            renderAttendanceComparison(usuarios);
+
+            const { rows, totals } = AttendanceClock.teamSummary(attendanceState(), attendanceProfiles(), usuarios, referencia, { team: attendanceFilters.team, schedule: attendanceSchedule(), reference: AttendanceClock.endOfDayReference(referencia) });
+
+            document.getElementById('admBreakLiveBadge')?.classList.toggle('hidden', totals.emPausa === 0);
+            const badge = document.getElementById('admBreakLiveBadge');
+            if (badge) badge.textContent = String(totals.emPausa);
+
+            document.getElementById('attendanceKpis').innerHTML = [
+                { rotulo: 'Em pausa agora', valor: String(totals.emPausa), apoio: `${totals.disponiveis} em atendimento`, tom: totals.emPausa ? 'warning' : 'neutral' },
+                { rotulo: 'Ociosidade do time', valor: AttendanceClock.formatDuration(totals.idleMs), apoio: `${totals.idleCount} parada${totals.idleCount === 1 ? '' : 's'} · média de ${AttendanceClock.formatDuration(totals.idleMedioMs)}`, tom: 'primary' },
+                { rotulo: 'Atrasos hoje', valor: String(totals.atrasos), apoio: `de ${totals.analistas} analista${totals.analistas === 1 ? '' : 's'} controlados`, tom: totals.atrasos ? 'danger' : 'success' },
+                { rotulo: 'Estouro de almoço e lanche', valor: AttendanceClock.formatDuration(totals.overMs), apoio: totals.overMs ? 'Tempo além do combinado' : 'Tudo dentro do combinado', tom: totals.overMs ? 'danger' : 'success' },
+                { rotulo: 'Fora da janela', valor: String(foraDaJanela.length), apoio: foraDaJanela.length ? 'Pausas iniciadas fora do combinado' : 'Todas as pausas no horário', tom: foraDaJanela.length ? 'warning' : 'success' },
+                { rotulo: 'Fora da plataforma', valor: String(totals.offline), apoio: 'Sem ponto aberto hoje', tom: 'neutral' }
+            ].map(item => `<article class="attendance-kpi attendance-kpi--${item.tom}"><small>${escapeHtml(item.rotulo)}</small><strong class="num-mono">${escapeHtml(item.valor)}</strong><em>${escapeHtml(item.apoio)}</em></article>`).join('');
+
+            renderAttendancePresence(rows, usuarios);
+
+            const situacoes = { pausa: ['Em pausa', 'warning'], disponivel: ['Em atendimento', 'success'], encerrado: ['Ponto encerrado', 'neutral'], offline: ['Sem login hoje', 'danger'] };
+            document.getElementById('attendanceTableBody').innerHTML = rows.length ? rows.map(row => {
+                const [rotulo, tom] = situacoes[row.status];
+                // O desvio confirmado carrega o motivo que a pessoa escreveu — é o que
+                // separa "saiu fora do horário" de "saiu fora do horário porque X".
+                const desvios = (row.offSchedule || []).map(item => `<span class="attendance-adherence is-fora" title="${escapeHtml(`${AttendanceClock.BREAK_TYPES[item.type]?.label || item.type} combinado para ${item.scheduledAt || '—'}; saiu ${AttendanceClock.formatDelta(item.deltaMin)}. Motivo: ${item.reason}`)}">${escapeHtml(AttendanceClock.BREAK_TYPES[item.type]?.label || item.type)} ${escapeHtml(AttendanceClock.formatDelta(item.deltaMin))} · justificado</span>`).join('');
+                // Quando a saída foi justificada, o desvio já conta a história com o
+                // motivo junto; repetir a aderência do mesmo tipo é dizer duas vezes.
+                const justificados = new Set((row.offSchedule || []).map(item => item.type));
+                const aderencia = (row.adherence || []).filter(item => item.status !== 'nao_registrada' && !justificados.has(item.type));
+                const escala = row.slot
+                    ? aderencia.length
+                        ? aderencia.map(item => `<span class="attendance-adherence is-${item.status}" title="${escapeHtml(`${item.label} combinado para ${AttendanceClock.timeLabel(item.planned)}${item.actual ? `; saiu às ${AttendanceClock.timeLabel(item.actual)}` : ''}. O valor é a distância do horário combinado, não a duração da pausa.`)}">${escapeHtml(item.label)} ${escapeHtml(item.deltaLabel)}</span>`).join('')
+                        : `<span class="attendance-adherence is-pendente">${escapeHtml([row.slot.almoco && `Almoço ${row.slot.almoco}`, row.slot.lanche && `Lanche ${row.slot.lanche}`].filter(Boolean).join(' · '))}</span>`
+                    : desvios ? '' : '<span class="attendance-adherence is-vazia">Sem escala publicada</span>';
+                return `<tr class="${row.offScheduleCount ? 'has-offschedule' : ''}">
+                    <td><div class="attendance-person">${priorityRotationAvatar(usuarios[row.userId], 'is-small')}<span><strong>${escapeHtml(row.name)}</strong><small class="attendance-shift-tag">${escapeHtml(AttendanceClock.shiftLabel(attendanceProfile(row.userId)))}</small></span></div></td>
+                    <td>${row.login ? `<span class="${row.late ? 'attendance-late' : ''}">${AttendanceClock.timeLabel(row.login)}</span>${row.late ? `<small class="attendance-late-detail">+${Math.round(row.lateMs / 60000)}min</small>` : ''}` : '—'}</td>
+                    <td><span class="attendance-badge attendance-badge--${tom}">${rotulo}</span></td>
+                    <td class="num">${row.login
+                        ? `<strong class="num-mono" ${row.logout ? '' : `data-attendance-since="${row.login}"`}>${AttendanceClock.formatClock(row.onlineMs)}</strong><small class="attendance-cell-note">${AttendanceClock.formatDuration(row.availableMs)} disponível</small>`
+                        : '—'}</td>
+                    <td class="num num-mono">${AttendanceClock.formatDuration(row.idleMs)}</td>
+                    <td class="num num-mono">${row.idleCount}</td>
+                    <td class="num num-mono">${row.byType.almoco.count ? AttendanceClock.formatDuration(row.byType.almoco.ms) : '—'}</td>
+                    <td class="num num-mono">${row.byType.lanche.count ? AttendanceClock.formatDuration(row.byType.lanche.ms) : '—'}</td>
+                    <td class="num num-mono ${row.overMs ? 'attendance-late' : ''}">${row.overMs ? AttendanceClock.formatDuration(row.overMs) : '—'}</td>
+                    <td>${escala}${desvios}</td>
+                </tr>`;
+            }).join('') : '<tr><td colspan="10" class="attendance-empty">Nenhum analista deste departamento tem controle de ponto marcado na ficha.</td></tr>';
+
+            renderTeamShifts();
+            renderBreakSchedule(rows.map(row => row.userId));
+            syncAttendanceTicker();
+        }
+
+        /* Mural de presença. Responde a uma pergunta concreta: não achei a pessoa na
+           estação — onde ela está e há quanto tempo? Por isso mostra TODO MUNDO, não
+           só quem está em pausa: alguém "em atendimento" também é uma resposta, e
+           "sem login hoje" é a resposta mais importante de todas.
+           A ordem é por urgência de leitura, não alfabética. */
+        const ATTENDANCE_PRESENCE_ORDER = { pausa: 0, disponivel: 1, encerrado: 2, offline: 3 };
+
+        function attendancePresenceCard(row, usuarios) {
+            const foto = priorityRotationAvatar(usuarios[row.userId], 'is-featured');
+            const turno = AttendanceClock.shiftLabel(attendanceProfile(row.userId));
+
+            if (row.status === 'pausa') {
+                const programado = AttendanceClock.slotFor(attendanceSchedule(), AttendanceClock.weekKey(Date.now()), usuarios[row.userId]?.team, row.userId, new Date().getDay())?.[row.openBreak.type] || '';
+                const watch = AttendanceClock.breakWatch(row.openBreak, programado);
+                const desvio = row.openBreak.offSchedule;
+                const tom = watch.exceeded ? 'danger' : row.openBreak.spec.idle ? 'idle' : 'rest';
+                const limite = watch.limitMs === null
+                    ? '<span class="attendance-presence-limit">Sem limite definido</span>'
+                    : `<span class="attendance-presence-limit ${watch.exceeded ? 'is-exceeded' : ''}">${watch.exceeded ? `${AttendanceClock.formatDuration(-watch.remainingMs)} além do combinado` : `restam ${AttendanceClock.formatDuration(watch.remainingMs)}`}</span>`;
+                return `<article class="attendance-presence-card is-${tom}">
+                    <header>${foto}<span><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(turno)}</small></span>
+                        <span class="attendance-presence-state"><i class="fi ${row.openBreak.spec.icon}"></i>${escapeHtml(row.openBreak.spec.label)}</span></header>
+                    <strong class="attendance-presence-timer num-mono" data-attendance-since="${row.openBreak.startedAt}">${AttendanceClock.formatClock(watch.elapsedMs)}</strong>
+                    <p>Saiu às ${AttendanceClock.timeLabel(row.openBreak.startedAt)}${watch.scheduledAt ? ` · combinado ${escapeHtml(watch.scheduledAt)}` : ''}</p>
+                    <footer>${limite}${desvio ? `<span class="attendance-presence-flag" title="${escapeHtml(desvio.reason)}"><i class="fi fi-rr-triangle-warning"></i>Fora da janela</span>` : ''}</footer>
+                </article>`;
+            }
+
+            if (row.status === 'disponivel') {
+                return `<article class="attendance-presence-card is-live">
+                    <header>${foto}<span><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(turno)}</small></span>
+                        <span class="attendance-presence-state"><i class="fi fi-rr-headset"></i>Em atendimento</span></header>
+                    <strong class="attendance-presence-timer num-mono" data-attendance-since="${row.login}">${AttendanceClock.formatClock(row.onlineMs)}</strong>
+                    <p>No ponto desde ${AttendanceClock.timeLabel(row.login)}${row.late ? ` · ${Math.round(row.lateMs / 60000)} min de atraso` : ''}</p>
+                    <footer><span class="attendance-presence-limit">${row.idleCount ? `${row.idleCount} parada${row.idleCount === 1 ? '' : 's'} hoje · ${AttendanceClock.formatDuration(row.idleMs)}` : 'Nenhuma parada hoje'}</span></footer>
+                </article>`;
+            }
+
+            if (row.status === 'encerrado') {
+                return `<article class="attendance-presence-card is-done">
+                    <header>${foto}<span><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(turno)}</small></span>
+                        <span class="attendance-presence-state"><i class="fi fi-rr-check"></i>Encerrado</span></header>
+                    <strong class="attendance-presence-timer num-mono">${AttendanceClock.formatClock(row.onlineMs)}</strong>
+                    <p>Das ${AttendanceClock.timeLabel(row.login)} às ${AttendanceClock.timeLabel(row.logout)}</p>
+                    <footer><span class="attendance-presence-limit">${AttendanceClock.formatDuration(row.availableMs)} disponível</span></footer>
+                </article>`;
+            }
+
+            return `<article class="attendance-presence-card is-off">
+                <header>${foto}<span><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(turno)}</small></span>
+                    <span class="attendance-presence-state"><i class="fi fi-rr-user"></i>Sem login</span></header>
+                <strong class="attendance-presence-timer num-mono">—</strong>
+                <p>${row.scheduledToday ? `Esperado às ${AttendanceClock.timeLabel(row.expectedStart)}` : 'Fora da jornada hoje'}</p>
+                <footer><span class="attendance-presence-limit">Ponto não aberto</span></footer>
+            </article>`;
+        }
+
+        function renderAttendancePresence(rows, usuarios) {
+            const alvo = document.getElementById('attendanceLive');
+            if (!alvo) return;
+            if (!rows.length) { alvo.innerHTML = '<span class="attendance-live-empty">Nenhum analista com controle de ponto neste departamento.</span>'; return; }
+
+            const ordenadas = [...rows].sort((a, b) =>
+                (ATTENDANCE_PRESENCE_ORDER[a.status] - ATTENDANCE_PRESENCE_ORDER[b.status])
+                // Dentro de "em pausa", quem está fora há mais tempo aparece primeiro.
+                || (b.openBreak?.ms || 0) - (a.openBreak?.ms || 0)
+                || String(a.name).localeCompare(String(b.name), 'pt-BR'));
+
+            const contagem = ordenadas.reduce((acc, row) => ({ ...acc, [row.status]: (acc[row.status] || 0) + 1 }), {});
+            alvo.innerHTML = `
+                <div class="attendance-presence-head">
+                    <span class="attendance-live-label"><i class="fi fi-rr-users-alt"></i>Presença agora</span>
+                    <span class="attendance-presence-legend">
+                        <b class="is-live">${contagem.disponivel || 0} em atendimento</b>
+                        <b class="is-rest">${contagem.pausa || 0} em pausa</b>
+                        <b class="is-off">${(contagem.offline || 0) + (contagem.encerrado || 0)} fora</b>
+                    </span>
+                </div>
+                <div class="attendance-presence-grid">${ordenadas.map(row => attendancePresenceCard(row, usuarios)).join('')}</div>`;
+        }
+
+        /* Quadro único de jornadas. A tabela lista TODO analista do departamento,
+           não só quem já é controlado — é daqui que se liga o controle, sem passar
+           pela ficha de cada pessoa. */
+        function attendanceTeamAnalysts() {
+            const usuarios = getStore()?.users || defaultUsers;
+            return Object.keys(usuarios)
+                .filter(id => usuarios[id].active !== false && isRankableUser(usuarios[id]) && usuarios[id].team === attendanceFilters.team)
+                .sort((a, b) => String(usuarios[a].name).localeCompare(String(usuarios[b].name), 'pt-BR'));
+        }
+
+        function renderTeamShifts() {
+            const tabela = document.getElementById('attendanceShiftsTable');
+            if (!tabela) return;
+            const usuarios = getStore()?.users || defaultUsers;
+            const ids = attendanceTeamAnalysts();
+            if (!ids.length) { tabela.innerHTML = '<tbody><tr><td class="attendance-empty">Nenhum analista ativo neste departamento.</td></tr></tbody>'; return; }
+
+            const atalhos = AttendanceClock.SHIFT_PRESETS;
+            tabela.innerHTML = `
+                <thead><tr><th>Analista</th><th>Controlar ponto</th><th>Entrada</th><th>Saída</th><th>Turnos usados</th><th class="num">Jornada</th><th>Tolerância</th><th>Dias</th></tr></thead>
+                <tbody>${ids.map(id => {
+                    const perfil = attendanceProfile(id);
+                    const jornada = perfil?.shift || AttendanceClock.DEFAULT_SHIFT;
+                    const ligado = !!perfil;
+                    // Turno que não é nenhum dos que a operação usa: pode ser exceção
+                    // real, mas costuma ser resquício de cadastro. Fica sinalizado.
+                    const foraDoPadrao = ligado && !atalhos.some(preset => preset.start === jornada.start && preset.end === jornada.end);
+                    return `<tr class="${ligado ? '' : 'is-off'}">
+                        <td><div class="attendance-person">${priorityRotationAvatar(usuarios[id], 'is-small')}<span><strong>${escapeHtml(usuarios[id].name)}</strong><small>${escapeHtml(usuarios[id].role || '')}</small></span></div></td>
+                        <td><label class="actuar-switch"><input type="checkbox" ${ligado ? 'checked' : ''} onchange="toggleShiftControl('${id}',this.checked)" aria-label="Controlar ponto de ${escapeHtml(usuarios[id].name)}"><span></span></label></td>
+                        <td><input type="time" class="attendance-shift-time" value="${jornada.start}" ${ligado ? '' : 'disabled'} onchange="updateTeamShift('${id}','start',this.value)" aria-label="Entrada"></td>
+                        <td><input type="time" class="attendance-shift-time" value="${jornada.end}" ${ligado ? '' : 'disabled'} onchange="updateTeamShift('${id}','end',this.value)" aria-label="Saída"></td>
+                        <td><div class="attendance-shift-presets">${atalhos.map(preset => `<button type="button" class="attendance-preset ${jornada.start === preset.start && jornada.end === preset.end ? 'is-active' : ''}" ${ligado ? '' : 'disabled'} onclick="applyShiftPreset('${id}','${preset.start}','${preset.end}')">${preset.label}</button>`).join('')}${foraDoPadrao ? '<span class="attendance-shift-custom" title="Este horário não é nenhum dos turnos da operação. Confira se é exceção ou cadastro antigo.">Fora do padrão</span>' : ''}</div></td>
+                        <td class="num num-mono">${ligado ? AttendanceClock.formatDuration(AttendanceClock.shiftSpanMinutes(perfil) * 60000) : '—'}</td>
+                        <td><input type="number" class="attendance-shift-tolerance" min="0" max="60" value="${jornada.toleranceMin ?? 5}" ${ligado ? '' : 'disabled'} onchange="updateTeamShift('${id}','toleranceMin',this.value)" aria-label="Tolerância em minutos"></td>
+                        <td><div class="attendance-shift-days">${AttendanceClock.WEEKDAYS.map(dia => `<label class="shift-day"><input type="checkbox" value="${dia.day}" ${jornada.days.includes(dia.day) ? 'checked' : ''} ${ligado ? '' : 'disabled'} onchange="toggleShiftDay('${id}',${dia.day},this.checked)"><span>${dia.short}</span></label>`).join('')}</div></td>
+                    </tr>`;
+                }).join('')}</tbody>`;
+        }
+
+        function shiftProfileFor(userId) {
+            appStore.workProfiles ||= {};
+            const atual = appStore.workProfiles[userId];
+            if (!atual?.tracked) return null;
+            atual.shift = { ...AttendanceClock.DEFAULT_SHIFT, ...(atual.shift || {}) };
+            return atual;
+        }
+
+        async function toggleShiftControl(userId, ligado) {
+            appStore.workProfiles ||= {};
+            if (ligado) appStore.workProfiles[userId] = { tracked: true, shift: { ...AttendanceClock.DEFAULT_SHIFT } };
+            else delete appStore.workProfiles[userId];
+            await persistStore();
+            renderAttendanceManager();
+        }
+
+        async function updateTeamShift(userId, campo, valor) {
+            const perfil = shiftProfileFor(userId);
+            if (!perfil) return;
+            if (campo === 'toleranceMin') perfil.shift.toleranceMin = Math.min(60, Math.max(0, Number(valor) || 0));
+            else {
+                if (!AttendanceClock.parseTime(valor)) { showToast('Informe o horário no formato 00:00.', 'error'); renderAttendanceManager(); return; }
+                perfil.shift[campo] = AttendanceClock.parseTime(valor).label;
+            }
+            await persistStore();
+            renderAttendanceManager();
+        }
+
+        async function applyShiftPreset(userId, inicio, fim) {
+            const perfil = shiftProfileFor(userId);
+            if (!perfil) return;
+            perfil.shift.start = inicio;
+            perfil.shift.end = fim;
+            await persistStore();
+            renderAttendanceManager();
+        }
+
+        async function toggleShiftDay(userId, dia, marcado) {
+            const perfil = shiftProfileFor(userId);
+            if (!perfil) return;
+            const dias = new Set(perfil.shift.days.map(Number));
+            if (marcado) dias.add(dia); else dias.delete(dia);
+            if (!dias.size) { showToast('A jornada precisa de ao menos um dia.', 'error'); renderAttendanceManager(); return; }
+            perfil.shift.days = [...dias].sort();
+            await persistStore();
+            renderAttendanceManager();
+        }
+
+        /* A escala é um quadro de parede: analistas nas linhas, dias nas colunas.
+           Fica em rascunho até a gestão publicar — e volta a rascunho a cada edição,
+           porque mudar a janela de alguém sem republicar é mudar nas costas dela. */
+        function renderBreakSchedule(ids) {
+            const tabela = document.getElementById('attendanceScheduleTable');
+            if (!tabela) return;
+            const usuarios = getStore()?.users || defaultUsers;
+            const semana = attendanceWeek || (attendanceWeek = AttendanceClock.weekKey(Date.now()));
+            const quadro = AttendanceClock.board(attendanceSchedule(), semana, attendanceFilters.team);
+            const dias = AttendanceClock.weekDates(semana).filter(dia => dia.day >= 1 && dia.day <= 5);
+            const hoje = AttendanceClock.dateKey(Date.now());
+
+            const rotulo = document.getElementById('attendanceWeekLabel');
+            const info = AttendanceClock.weekInfo(semana);
+            if (rotulo) {
+                rotulo.innerHTML = `<strong>${escapeHtml(info.title)}</strong><small>${escapeHtml(info.range)}<span class="attendance-week-tag ${info.isCurrent ? 'is-current' : ''}">${escapeHtml(info.relativo)}</span></small>`;
+                rotulo.title = info.crossesMonth ? `Esta semana termina em ${escapeHtml(info.endKey.split('-').reverse().slice(0, 2).join('/'))}, já no mês seguinte.` : '';
+            }
+            const btnHoje = document.getElementById('attendanceWeekToday');
+            if (btnHoje) btnHoje.classList.toggle('hidden', info.isCurrent);
+
+            const publicado = quadro.status === 'published';
+            document.getElementById('attendanceScheduleStatus').innerHTML = publicado
+                ? `<span class="attendance-schedule-badge is-published"><i class="fi fi-rr-check"></i>Publicada${quadro.publishedAt ? ` em ${formatRotationTime(quadro.publishedAt, true)}` : ''} · a equipe já enxerga</span>`
+                : `<span class="attendance-schedule-badge is-draft"><i class="fi fi-rr-pencil"></i>Rascunho · nenhum analista enxerga esta escala ainda</span>`;
+
+            if (!ids.length) { tabela.innerHTML = '<tbody><tr><td class="attendance-empty">Marque o controle de ponto na ficha das pessoas para montar a escala deste departamento.</td></tr></tbody>'; return; }
+
+            tabela.innerHTML = `
+                <thead><tr><th>Analista</th>${dias.map(dia => `<th class="${dia.key === hoje ? 'is-today' : ''}">${dia.short}<small>${dia.key.split('-').reverse().slice(0, 2).join('/')}</small></th>`).join('')}</tr></thead>
+                <tbody>${ids.map(id => {
+                    // O expediente fica à vista na linha: sem ele, marcar o lanche às
+                    // 17:30 para quem sai às 17h parece uma escolha razoável.
+                    const perfil = attendanceProfile(id);
+                    const trabalhaEm = dia => !perfil || perfil.shift.days.includes(dia);
+                    return `<tr>
+                    <td><div class="attendance-person">${priorityRotationAvatar(usuarios[id], 'is-small')}<span><strong>${escapeHtml(usuarios[id]?.name || id)}</strong><small class="attendance-shift-tag">${escapeHtml(AttendanceClock.shiftLabel(perfil) || 'Sem jornada')}</small></span></div></td>
+                    ${dias.map(dia => {
+                        const slot = (quadro.slots[id] || {})[dia.day] || {};
+                        if (!trabalhaEm(dia.day)) return `<td class="is-off ${dia.key === hoje ? 'is-today' : ''}"><span class="attendance-slot-off">Fora da jornada</span></td>`;
+                        const campo = tipo => {
+                            const valor = slot[tipo] || '';
+                            const fora = valor && !AttendanceClock.withinShift(perfil, valor);
+                            const rotulo = tipo === 'almoco' ? 'Almoço' : 'Lanche';
+                            // Botão em vez de campo de tempo: escolher numa grade é um clique;
+                            // digitar hh:mm no campo nativo é quatro teclas e erra fácil.
+                            return `<button type="button" class="attendance-slot ${fora ? 'is-outside' : ''} ${valor ? 'is-filled' : 'is-empty'}"
+                                onclick="openAttendanceSlotModal('${id}',${dia.day},'${tipo}')"
+                                title="${fora ? `Fora do expediente de ${escapeHtml(usuarios[id]?.name || id)} (${escapeHtml(AttendanceClock.shiftLabel(perfil))})` : `Definir ${rotulo.toLowerCase()} de ${escapeHtml(usuarios[id]?.name || id)} em ${escapeHtml(dia.label)}`}"
+                                aria-label="${rotulo} de ${escapeHtml(usuarios[id]?.name || id)} em ${escapeHtml(dia.label)}${valor ? `: ${valor}` : ': não definido'}">
+                                <span>${rotulo}</span><b class="num-mono">${valor || '--:--'}</b>
+                            </button>`;
+                        };
+                        return `<td class="${dia.key === hoje ? 'is-today' : ''}">${campo('almoco')}${campo('lanche')}</td>`;
+                    }).join('')}
+                </tr>`;
+                }).join('')}</tbody>`;
+        }
+
+        // Repete o primeiro horário preenchido da pessoa nos demais dias em que ela
+        // trabalha. É o que mais se faz depois de acertar a segunda-feira.
+        async function applyBreakSlotToWeek(userId, type) {
+            const semana = attendanceWeek || AttendanceClock.weekKey(Date.now());
+            const quadro = AttendanceClock.board(attendanceSchedule(), semana, attendanceFilters.team);
+            const slots = quadro.slots[userId] || {};
+            const base = [1, 2, 3, 4, 5].map(dia => (slots[dia] || {})[type]).find(Boolean);
+            const rotulo = type === 'almoco' ? 'almoço' : 'lanche';
+            if (!base) return showToast(`Defina o ${rotulo} em um dia antes de repetir.`, 'error');
+
+            // `profileOf` lê workProfiles, não users; e `worksOn` espera um instante,
+            // não um número de dia da semana. Com os dois trocados, o perfil vinha
+            // nulo, todo dia caía no `continue` e o botão não aplicava nada.
+            const perfil = attendanceProfile(userId);
+            let aplicados = 0;
+            for (const dia of [1, 2, 3, 4, 5]) {
+                if (perfil && !perfil.shift.days.includes(dia)) continue;
+                if ((slots[dia] || {})[type] === base) continue;
+                if (AttendanceClock.setSlot(attendanceSchedule(), semana, attendanceFilters.team, userId, dia, type, base, currentAdminId).ok) aplicados += 1;
+            }
+            if (!aplicados) { renderAttendanceManager(); return showToast(`A semana já estava com o ${rotulo} às ${base}.`); }
+            await persistStore();
+            renderAttendanceManager();
+            showToast(`${rotulo.charAt(0).toUpperCase() + rotulo.slice(1)} às ${base} aplicado em ${aplicados} dia(s).`);
+        }
+
+        /* Preenche a semana escalonando as janelas dentro do expediente de cada um.
+           Sobrescreve o rascunho inteiro, então pede confirmação quando já há coisa
+           preenchida — desfazer isso na mão custaria trinta campos. */
+        async function distributeBreakWeek() {
+            const semana = attendanceWeek || AttendanceClock.weekKey(Date.now());
+            const ids = attendanceTeamAnalysts().filter(id => isAttendanceTracked(id));
+            if (!ids.length) return showToast('Ligue o controle de ponto de alguém antes de distribuir.', 'error');
+
+            const quadro = AttendanceClock.board(attendanceSchedule(), semana, attendanceFilters.team);
+            const jaTem = Object.values(quadro.slots || {}).flatMap(dias => Object.values(dias || {})).some(janela => janela?.almoco || janela?.lanche);
+            if (jaTem && !await actuarConfirm({
+                title: 'Refazer a distribuição?',
+                message: 'Os horários já preenchidos desta semana serão substituídos pelo rodízio automático.',
+                confirmLabel: 'Distribuir', cancelLabel: 'Manter como está'
+            })) return;
+
+            const plano = AttendanceClock.distributeWeek(attendanceProfiles(), ids, semana);
+            const resultado = AttendanceClock.applyPlan(attendanceSchedule(), semana, attendanceFilters.team, plano, currentAdminId);
+            if (!resultado.ok) return showToast('Não foi possível montar a distribuição para este departamento.', 'error');
+            await persistStore();
+            renderAttendanceManager();
+            showToast(`${resultado.aplicados} janela(s) distribuída(s) em rodízio. Ajuste o que precisar e publique.`);
+        }
+
+        /* Recomeçar do zero toda segunda é o que faz a gestão desistir de manter o
+           quadro em dia — a escala real muda pouco de uma semana para a outra. */
+        async function copyPreviousBreakWeek() {
+            const semana = attendanceWeek || AttendanceClock.weekKey(Date.now());
+            const anterior = new Date(semana);
+            anterior.setDate(anterior.getDate() - 7);
+            const origem = AttendanceClock.weekKey(anterior.getTime());
+
+            const quadro = AttendanceClock.board(attendanceSchedule(), semana, attendanceFilters.team);
+            const jaTem = Object.values(quadro.slots || {}).flatMap(dias => Object.values(dias || {})).some(janela => janela?.almoco || janela?.lanche);
+            if (jaTem && !await actuarConfirm({
+                title: 'Trazer a semana anterior?',
+                message: 'Os horários preenchidos nesta semana serão substituídos pelos da semana anterior.',
+                confirmLabel: 'Copiar', cancelLabel: 'Manter como está'
+            })) return;
+
+            const resultado = AttendanceClock.copyWeek(attendanceSchedule(), origem, semana, attendanceFilters.team, currentAdminId);
+            if (!resultado.ok) return showToast(resultado.message || 'Nada para copiar da semana anterior.', 'error');
+            await persistStore();
+            renderAttendanceManager();
+            showToast(`${resultado.aplicados} janela(s) trazida(s) da semana anterior. Revise e publique.`);
+        }
+
+        /* Seletor de horário da escala. Modal em vez de popover flutuante: popover
+           exige listener global e cálculo de posição, e foi justamente isso que
+           quebrou na tentativa anterior. Escolher um horário aplica e fecha — pedir
+           uma confirmação a mais em cada uma das trinta células seria pior que digitar. */
+        let attendanceSlotTarget = null;
+
+        function closeAttendanceSlotModal() {
+            attendanceSlotTarget = null;
+            document.getElementById('attendanceSlotModal')?.classList.add('hidden');
+        }
+
+        function openAttendanceSlotModal(userId, weekday, type) {
+            const layer = document.getElementById('attendanceSlotModal');
+            if (!layer) return;
+            const usuarios = getStore()?.users || defaultUsers;
+            const perfil = attendanceProfile(userId);
+            const semana = attendanceWeek || AttendanceClock.weekKey(Date.now());
+            const atual = (AttendanceClock.board(attendanceSchedule(), semana, attendanceFilters.team).slots[userId] || {})[weekday]?.[type] || '';
+            const spec = AttendanceClock.BREAK_TYPES[type];
+            const dia = AttendanceClock.WEEKDAYS.find(item => item.day === weekday);
+            attendanceSlotTarget = { userId, weekday, type };
+
+            document.getElementById('attendanceSlotKind').innerHTML = `<i class="fi ${spec.icon}"></i>${escapeHtml(spec.label)}`;
+            document.getElementById('attendanceSlotTitle').textContent = usuarios[userId]?.name || userId;
+            document.getElementById('attendanceSlotContext').textContent =
+                `${dia?.label || ''} · expediente ${AttendanceClock.shiftLabel(perfil) || 'não definido'}${spec.limitMin ? ` · até ${AttendanceClock.formatDuration(spec.limitMin * AttendanceClock.MINUTE)}` : ''}`;
+
+            // Horários fora do expediente continuam clicáveis, mas marcados: a gestão
+            // pode ter um motivo, e bloquear em silêncio esconderia a exceção.
+            document.getElementById('attendanceSlotGrid').innerHTML = AttendanceClock.slotChoices(type, perfil)
+                .map(opcao => `<button type="button" class="attendance-slot-option ${opcao.time === atual ? 'is-selected' : ''} ${opcao.withinShift ? '' : 'is-outside'}"
+                    onclick="chooseAttendanceSlot('${opcao.time}')"
+                    ${opcao.withinShift ? '' : 'title="Fora do expediente desta pessoa"'}>${opcao.time}</button>`).join('');
+
+            const repetir = document.getElementById('attendanceSlotRepeat');
+            repetir.checked = false;
+            document.getElementById('attendanceSlotClear').onclick = () => chooseAttendanceSlot('');
+            layer.onclick = evento => { if (evento.target === layer) closeAttendanceSlotModal(); };
+            layer.classList.remove('hidden');
+            requestAnimationFrame(() => layer.querySelector('.attendance-slot-option.is-selected, .attendance-slot-option')?.focus());
+        }
+
+        async function chooseAttendanceSlot(valor) {
+            const alvo = attendanceSlotTarget;
+            if (!alvo) return;
+            const repetir = document.getElementById('attendanceSlotRepeat')?.checked === true;
+            closeAttendanceSlotModal();
+            await updateBreakSlot(alvo.userId, alvo.weekday, alvo.type, valor);
+            // Repetir só faz sentido com horário definido: limpar a semana inteira sem
+            // querer, a partir de uma célula, seria destrutivo demais para um clique.
+            if (repetir && valor) await applyBreakSlotToWeek(alvo.userId, alvo.type);
+        }
+
+        async function updateBreakSlot(userId, weekday, type, value) {
+            const semana = attendanceWeek || AttendanceClock.weekKey(Date.now());
+            const resultado = AttendanceClock.setSlot(attendanceSchedule(), semana, attendanceFilters.team, userId, weekday, type, value, currentAdminId);
+            if (!resultado.ok) { showToast(resultado.message, 'error'); renderAttendanceManager(); return; }
+            await persistStore();
+            renderAttendanceManager();
+        }
+
+        async function publishBreakSchedule() {
+            const semana = attendanceWeek || AttendanceClock.weekKey(Date.now());
+            const resultado = AttendanceClock.publishWeek(attendanceSchedule(), semana, attendanceFilters.team, currentAdminId, Date.now());
+            if (!resultado.ok) { showToast(resultado.message, 'error'); return; }
+            await persistStore();
+            renderAttendanceManager();
+            showToast(`Escala publicada · ${resultado.slots} janela${resultado.slots === 1 ? '' : 's'} visível${resultado.slots === 1 ? '' : 'is'} para a equipe.`);
+        }
+
         function switchAdminTab(tab) {
             if (currentRoute.name === 'admin' && currentRoute.section !== tab) {
                 navigateTo({ name: 'admin', section: tab });
@@ -6070,12 +7414,12 @@
 
         function switchAdminTabView(tab) {
             activeAdminTab = tab;
-            const panels = { visao: 'admPanelVisao', ranking: 'admPanelRanking', priorityLaunches: 'admPanelPriorityLaunches', cadastros: 'admPanelCadastros', lancamentos: 'admPanelLancamentos', prioridades: 'admPanelPrioridades', transferencias: 'admPanelTransferencias', pecas: 'admPanelPecas', ciclos: 'admPanelCiclos', historico: 'admPanelHistorico' };
-            const btns = { visao: 'priorityModuleTabOverview', ranking: 'priorityModuleTabRanking', priorityLaunches: 'priorityModuleTabLaunches', cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'priorityModuleTabApprovals', transferencias: 'admTabBtnTransferencias', pecas: 'admTabBtnPecas', ciclos: 'admTabBtnCiclos', historico: 'admTabBtnHistorico' };
-            if (!panels[tab]) tab = activeAdminTab = 'visao';
+            const panels = { visao: 'admPanelVisao', ranking: 'admPanelRanking', priorityLaunches: 'admPanelPriorityLaunches', cadastros: 'admPanelCadastros', lancamentos: 'admPanelLancamentos', prioridades: 'admPanelPrioridades', transferencias: 'admPanelTransferencias', pecas: 'admPanelPecas', ponto: 'admPanelPonto', ciclos: 'admPanelCiclos', historico: 'admPanelHistorico', rankingGeral: null, analista: null };
+            const btns = { visao: 'priorityModuleTabOverview', ranking: 'priorityModuleTabRanking', priorityLaunches: 'priorityModuleTabLaunches', cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'priorityModuleTabApprovals', transferencias: 'admTabBtnTransferencias', pecas: 'admTabBtnPecas', ponto: 'admTabBtnPonto', ciclos: 'admTabBtnCiclos', historico: 'admTabBtnHistorico', rankingGeral: 'admNavRankingGeral', analista: 'admNavRankingGeral' };
+            if (!(tab in panels)) tab = activeAdminTab = 'visao';
 
             Object.keys(panels).forEach(key => {
-                document.getElementById(panels[key])?.classList.toggle('hidden', key !== tab);
+                if (panels[key]) document.getElementById(panels[key])?.classList.toggle('hidden', key !== tab);
                 const tabButton = document.getElementById(btns[key]);
                 tabButton?.classList.toggle('is-active', key === tab);
                 if (tabButton?.getAttribute('role') === 'tab') tabButton.setAttribute('aria-selected', String(key === tab));
@@ -6095,6 +7439,9 @@
             document.getElementById('priorityModuleTvAction')?.classList.toggle('hidden', !['visao', 'ranking'].includes(tab));
             if (moduleSections.includes(tab) || tab === 'ciclos') renderManagerExperience();
             if (tab === 'pecas') renderPiecesExperience();
+            if (tab === 'ponto') renderAttendanceManager();
+            syncManagerSectionViews();
+            syncAttendanceTicker();
         }
 
         function onAdminDeptChange(dept) {
@@ -6178,17 +7525,29 @@
             }
         }
 
+        /* Alternador de departamento da apresentação: numa TV, botões grandes lado a
+           lado funcionam melhor que um <select>, que ninguém abre de longe. */
+        function renderPresentationTeamSwitch(team) {
+            const wrap = document.getElementById('presentationTeamSwitch');
+            if (!wrap) return;
+            const teams = managerTvActive ? getManagerAuthorizedTeams() : ['Sistema', 'Catraca'];
+            // Com um único departamento autorizado não há o que alternar.
+            wrap.classList.toggle('hidden', teams.length < 2);
+            wrap.innerHTML = teams.map(item => `<button type="button" class="presentation-team-option ${item === team ? 'is-active' : ''}" aria-pressed="${item === team}" onclick="switchRankingTab('${item}')"><i class="fi fi-rr-${item === 'Sistema' ? 'computer' : 'settings'}" aria-hidden="true"></i>${escapeHtml(teamLabel(item))}</button>`).join('');
+        }
+
         function syncRankingViewControls(team) {
             if (!['Sistema', 'Catraca'].includes(team)) team = 'Sistema';
-            ['rankingViewSelect', 'rankingViewSelectPresentation'].forEach(id => {
+            ['rankingViewSelect'].forEach(id => {
                 const select = document.getElementById(id);
                 if (select) select.value = team;
             });
             const selectorIconClass = team === 'Sistema' ? 'computer' : 'settings';
-            ['rankingViewSelectIcon', 'rankingViewSelectPresentationIcon'].forEach(id => {
+            ['rankingViewSelectIcon'].forEach(id => {
                 const icon = document.getElementById(id);
                 if (icon) icon.className = `fi fi-rr-${selectorIconClass}`;
             });
+            renderPresentationTeamSwitch(team);
         }
 
         function switchRankingTab(team) {
@@ -6219,8 +7578,11 @@
 
             if (rankingAutoRotateActive) {
                 rankingAutoRotateTimer = setInterval(() => {
-                    const views = ['Sistema', 'Catraca'];
-                    const currentIndex = Math.max(0, views.indexOf(activeRankingTab));
+                    // No Modo TV a alternância percorre apenas os departamentos autorizados.
+                    const views = managerTvActive ? getManagerAuthorizedTeams() : ['Sistema', 'Catraca'];
+                    if (views.length < 2) return;
+                    const atual = managerTvActive ? managerFilters.team : activeRankingTab;
+                    const currentIndex = Math.max(0, views.indexOf(atual));
                     switchRankingTab(views[(currentIndex + 1) % views.length]);
                 }, 5000);
                 showToast("Auto-alternância entre Software e Catraca ativada.");
@@ -6263,12 +7625,14 @@
             render();
         }
 
+        // Cabeçalho completo da apresentação — usado pelo ranking público e pelo Modo TV,
+        // para que as duas telas mostrem exatamente as mesmas colunas.
+        const PRESENTATION_TABLE_HEAD = `<tr><th class="p-3">Pos</th><th class="p-3">Usuário</th><th class="p-3 text-center">TMA</th><th class="p-3 text-center">Resolvidos</th><th class="p-3 text-center">Atendidos</th><th class="p-3 text-center">NPS</th><th class="p-3 text-center">Prior./Transf.</th><th class="p-3 text-center">Sprint</th><th class="p-3 text-center">Rank. Semanal</th><th class="p-3 text-center" id="thExtraColPresentation">Monit. / Peças</th><th class="p-3 text-center text-red-400">Penal.</th><th class="p-3 text-right">Total</th></tr>`;
+
         function restorePublicPresentationStructure() {
-            document.getElementById('btnRefreshManagerTv')?.classList.add('hidden');
-            document.getElementById('btnReturnManagerRanking')?.classList.add('hidden');
             document.getElementById('btnAutoRotatePresentation')?.classList.remove('hidden');
             const head = document.getElementById('presentationTableHead');
-            if (head) head.innerHTML = `<tr><th class="p-3">Pos</th><th class="p-3">Usuário</th><th class="p-3 text-center">TMA</th><th class="p-3 text-center">Resolvidos</th><th class="p-3 text-center">Atendidos</th><th class="p-3 text-center">NPS</th><th class="p-3 text-center">Prior./Transf.</th><th class="p-3 text-center">Sprint</th><th class="p-3 text-center">Rank. Semanal</th><th class="p-3 text-center" id="thExtraColPresentation">Monit. / Peças</th><th class="p-3 text-center text-red-400">Penal.</th><th class="p-3 text-right">Total</th></tr>`;
+            if (head) head.innerHTML = PRESENTATION_TABLE_HEAD;
             const store = getStore();
             const label = document.getElementById('presentationPeriodLabel');
             if (label) label.textContent = `${activeMonthKey === 'atual' ? store.currentMonthName : (store.history || []).find(month => month.id === activeMonthKey)?.name || activeMonthKey} · ${activePeriodFilter === 'ALL' ? 'Acumulado' : activePeriodFilter}`;
@@ -6329,9 +7693,7 @@
             const overlay = document.getElementById('rankingPresentationOverlay');
             overlay.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
-            document.getElementById('btnRefreshManagerTv')?.classList.remove('hidden');
-            document.getElementById('btnReturnManagerRanking')?.classList.remove('hidden');
-            document.getElementById('btnAutoRotatePresentation')?.classList.add('hidden');
+            document.getElementById('btnAutoRotatePresentation')?.classList.remove('hidden');
             renderManagerTv();
         }
 
@@ -6340,38 +7702,164 @@
             const domain = window.ManagerExperience;
             const data = getManagerViewData();
             const safeRows = domain.tvProjection(data.rows).map(row => ({ ...row, name: managerTvOptions.showNames ? row.name : `${String(row.name).split(/\s+/)[0]} ${String(row.name).split(/\s+/).length > 1 ? '•••' : ''}`.trim() }));
-            const teams = getManagerAuthorizedTeams();
-            const select = document.getElementById('rankingViewSelectPresentation');
-            select.innerHTML = teams.map(team => `<option value="${team}">${teamLabel(team)}</option>`).join('');
-            select.value = managerFilters.team;
             const title = teamLabel(managerFilters.team);
-            document.getElementById('presentationTeamLabel').textContent = managerTvOptions.content === 'ranking' ? title : managerTvOptions.content === 'rotation' ? `Rodízio ${title}` : `${title} · Operação + Ranking`;
+            const ehRodizio = managerTvOptions.content === 'rotation';
+            document.getElementById('presentationTeamLabel').textContent = ehRodizio ? `Rodízio ${title}` : title;
+            // O prefixo e o título da seção acompanham o conteúdo: chamar de "Ranking"
+            // e "Pódio" uma fila de atendimento confunde quem olha de longe.
+            const prefixo = document.getElementById('presentationTitlePrefix');
+            if (prefixo) prefixo.textContent = ehRodizio ? 'Operação em tempo real' : 'Ranking Performance';
+            const secaoLabel = document.getElementById('presentationSectionLabel');
+            if (secaoLabel) secaoLabel.textContent = ehRodizio ? 'Atendimento agora' : 'Pódio';
+            const secaoIcone = document.getElementById('presentationSectionIcon');
+            if (secaoIcone) secaoIcone.className = ehRodizio ? 'fi fi-rr-headset text-accent' : 'fa-solid fa-trophy text-accent';
+            document.getElementById('podiumPresentation')?.classList.toggle('podium-presentation--rotation', ehRodizio);
             document.getElementById('presentationPeriodLabel').textContent = `${document.getElementById('managerFilterMonth')?.selectedOptions?.[0]?.textContent || managerFilters.month} · ${managerFilters.period === 'ALL' ? 'Acumulado' : managerFilters.period} · pontos confirmados`;
             const head = document.getElementById('presentationTableHead');
             const podium = document.getElementById('podiumPresentation');
+            // O Modo TV usa os mesmos renderizadores da apresentação do ranking:
+            // pódio com medalha, foto, pontuação e premiação, e a tabela completa de
+            // métricas. Antes havia uma segunda versão simplificada aqui, e era ela
+            // que aparecia ao abrir o Modo TV pela configuração manual.
             const renderRanking = () => {
-                head.innerHTML = `<tr><th>Posição</th><th>Participante</th><th>Equipe</th>${managerTvOptions.showPoints ? '<th class="num-col">Pontuação confirmada</th>' : ''}</tr>`;
-                document.getElementById('leaderboardBodyPresentation').innerHTML = safeRows.length ? safeRows.map(row => `<tr><td><span class="ranking-position ranking-position--${row.position === 1 ? 'gold' : row.position === 2 ? 'silver' : row.position === 3 ? 'bronze' : 'standard'}">${row.position}º</span></td><td><div class="manager-tv-person">${row.avatar ? `<span class="manager-avatar"><img src="${escapeHtml(row.avatar)}" alt=""></span>` : `<span class="manager-avatar">${escapeHtml(row.initials)}</span>`}<strong>${escapeHtml(row.name)}</strong></div></td><td>${teamLabel(row.team)}</td>${managerTvOptions.showPoints ? `<td class="num-col"><strong class="num-mono">${row.confirmedPoints} pts</strong></td>` : ''}</tr>`).join('') : `<tr><td colspan="4">${managerEmpty('Sem resultados', 'Não há pontuação confirmada para os filtros selecionados.')}</td></tr>`;
+                const tabAnterior = activeRankingTab;
+                const mesAnterior = activeMonthKey;
+                const periodoAnterior = activePeriodFilter;
+                activeRankingTab = managerFilters.team;
+                activeMonthKey = managerFilters.month || activeMonthKey;
+                activePeriodFilter = managerFilters.period || 'ALL';
+                try {
+                    head.innerHTML = PRESENTATION_TABLE_HEAD;
+                    const metrics = getAggregatedMetrics(activeMonthKey, activePeriodFilter);
+                    renderTopDashboard(metrics);
+                    renderLeaderboard(metrics);
+                } finally {
+                    activeRankingTab = tabAnterior;
+                    activeMonthKey = mesAnterior;
+                    activePeriodFilter = periodoAnterior;
+                }
+                applyManagerTvDisplayOptions();
             };
+
+            // Colocação por analista, calculada com os mesmos pontos do pódio e para
+            // os dois departamentos — o anel nunca discorda do que está na tela.
+            const posicoes = rankingPositionsByTeam(getAggregatedMetrics(managerFilters.month || activeMonthKey, managerFilters.period || 'ALL'));
             const rotation = PriorityRotation.view(ensurePriorityRotation(managerFilters.team));
             const operationCards = [{ label: 'Último atendimento', id: rotation.lastCompleted?.analystId, detail: rotation.lastCompleted ? formatRotationTime(rotation.lastCompleted.completedAt) : '—' }, { label: 'Em atendimento', id: rotation.current?.analystId, detail: rotation.current ? priorityRotationElapsed(rotation.current.startedAt) : 'Nenhum' }, { label: 'Próximo', id: rotation.next, detail: rotation.status === 'paused' ? 'Rodízio pausado' : 'Fila ativa' }];
             if (managerTvOptions.content === 'rotation') {
-                podium.innerHTML = operationCards.map(item => `<div class="manager-podium-item"><span>${escapeHtml(item.label)}</span>${priorityRotationPerson(item.id, item.detail)}</div>`).join('');
-                head.innerHTML = '<tr><th>Posição</th><th>Participante</th><th>Status</th></tr>';
-                document.getElementById('leaderboardBodyPresentation').innerHTML = rotation.queue.map((id,index) => `<tr><td>${index+1}º</td><td>${priorityRotationPerson(id)}</td><td>${id===rotation.current?.analystId?'Em atendimento':id===rotation.next?'Próximo':'Aguardando'}</td></tr>`).join('');
+                renderRotationStage(rotation, head, posicoes);
             } else {
                 renderRanking();
-                podium.innerHTML = managerTvOptions.content === 'combined'
-                    ? operationCards.map(item => `<div class="manager-podium-item"><span>${escapeHtml(item.label)}</span>${priorityRotationPerson(item.id, item.detail)}</div>`).join('')
-                    : safeRows.slice().sort((a, b) => b.confirmedPoints - a.confirmedPoints).slice(0, 3).map((row, index) => `<div class="manager-podium-item manager-podium-item--${['gold','silver','bronze'][index]}">${row.avatar ? `<span class="manager-avatar"><img src="${escapeHtml(row.avatar)}" alt=""></span>` : `<span class="manager-avatar">${escapeHtml(row.initials)}</span>`}<span>${index + 1}º</span><strong>${escapeHtml(row.name)}</strong>${managerTvOptions.showPoints ? `<b class="num-mono">${row.confirmedPoints} pts</b>` : ''}</div>`).join('');
             }
-            syncRankingViewControls(select.value);
+            renderPresentationRotationPanel(rotation, title, posicoes);
+            syncRankingViewControls(managerFilters.team);
         }
 
-        function refreshManagerTv() {
-            if (!managerTvActive) return;
-            renderManagerTv();
-            showToast('Dados do Modo TV atualizados.');
+        /* O Modo TV do rodízio segue a mesma hierarquia do pódio: um protagonista
+           em destaque, a sequência ao lado e a fila completa embaixo. Antes eram três
+           cartões de mesmo peso — e um deles dizia "Participante indisponível" quando
+           simplesmente não havia atendimento aberto. */
+        function renderRotationStage(rotation, head, posicoes = new Map()) {
+            const podium = document.getElementById('podiumPresentation');
+            const nome = id => {
+                const user = priorityRotationUser(id);
+                if (!user) return null;
+                return managerTvOptions.showNames ? user.name : `${String(user.name).split(/\s+/)[0]} •••`;
+            };
+            const pessoa = (id, tamanho = '') => {
+                const user = priorityRotationUser(id);
+                return `${priorityRotationAvatar(user, tamanho, rankingRingClass(posicoes.get(id)))}<strong>${escapeHtml(nome(id) || 'Vago')}</strong>`;
+            };
+
+            const pausado = rotation.status === 'paused';
+            const atendendo = rotation.current?.analystId || null;
+            const heroId = atendendo || rotation.next;
+            const heroRotulo = atendendo ? 'Em atendimento agora' : pausado ? 'Rodízio pausado' : 'Próximo a atender';
+            const heroDetalhe = atendendo
+                ? `Iniciado às ${escapeHtml(formatRotationTime(rotation.current.startedAt))} · ${escapeHtml(priorityRotationElapsed(rotation.current.startedAt))}`
+                : pausado ? 'A fila volta quando o rodízio for reativado' : 'Pronto para receber o próximo atendimento';
+
+            const sequencia = [atendendo ? rotation.next : null, ...(rotation.upcoming || [])].filter(Boolean).slice(0, 2);
+
+            podium.innerHTML = `
+                <article class="rotation-stage-hero ${atendendo ? 'is-live' : 'is-idle'}">
+                    <span class="rotation-stage-eyebrow">${escapeHtml(heroRotulo)}</span>
+                    ${heroId ? `<div class="rotation-stage-person">${pessoa(heroId, 'lg')}</div><p>${heroDetalhe}</p>`
+                        : `<p class="rotation-stage-vacant">Nenhum participante ativo na fila deste departamento.</p>`}
+                </article>
+                <aside class="rotation-stage-side">
+                    ${sequencia.length ? `<div class="rotation-stage-next"><span class="rotation-stage-eyebrow">Na sequência</span><ol>${sequencia.map((id, index) => `<li><b>${index + (atendendo ? 1 : 2)}º</b><div class="rotation-stage-person">${pessoa(id)}</div></li>`).join('')}</ol></div>` : ''}
+                    <div class="rotation-stage-last">
+                        <span class="rotation-stage-eyebrow">Último atendimento</span>
+                        ${rotation.lastCompleted ? `<div class="rotation-stage-person">${pessoa(rotation.lastCompleted.analystId)}</div><p>Concluído às ${escapeHtml(formatRotationTime(rotation.lastCompleted.completedAt))}</p>` : `<p class="rotation-stage-vacant">Nenhum atendimento concluído no período.</p>`}
+                    </div>
+                </aside>`;
+
+            const ativos = rotation.queue.length;
+            const pausados = (rotation.paused || []).length;
+            head.innerHTML = `<tr><th class="p-3" colspan="3"><div class="rotation-queue-caption"><span>Fila completa · ${ativos} participante${ativos === 1 ? '' : 's'}</span><small>${pausados ? `${pausados} pausado${pausados === 1 ? '' : 's'} · ` : ''}${escapeHtml(pausado ? 'Rodízio pausado' : 'Ordem fixa')}</small></div></th></tr><tr><th class="p-3">Posição</th><th class="p-3">Participante</th><th class="p-3 text-right">Situação</th></tr>`;
+            document.getElementById('leaderboardBodyPresentation').innerHTML = rotation.queue.length
+                ? rotation.queue.map((id, index) => {
+                    const situacao = id === atendendo ? ['Em atendimento', 'live'] : id === rotation.next ? ['Próximo', 'next'] : ['Aguardando', 'idle'];
+                    return `<tr class="rotation-queue-row rotation-queue-row--${situacao[1]}"><td class="p-3"><span class="ranking-position ranking-position--${index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'standard'}">${index + 1}º</span></td><td class="p-3"><div class="rotation-stage-person">${pessoa(id)}</div></td><td class="p-3 text-right"><span class="rotation-queue-badge rotation-queue-badge--${situacao[1]}">${situacao[0]}</span></td></tr>`;
+                }).join('')
+                : '<tr><td colspan="3" class="p-4 text-center text-secondary">Nenhum participante ativo no rodízio deste departamento.</td></tr>';
+        }
+
+        /* As opções da configuração continuam valendo sobre o markup completo:
+           sem elas, desmarcar "exibir nomes" ou "exibir pontuação" não teria efeito. */
+        function applyManagerTvDisplayOptions() {
+            const overlay = document.getElementById('rankingPresentationOverlay');
+            overlay?.classList.toggle('tv-hide-points', !managerTvOptions.showPoints);
+            if (managerTvOptions.showNames) return;
+            const abreviar = node => {
+                const partes = String(node.textContent || '').trim().split(/\s+/);
+                if (partes.length > 1) node.textContent = `${partes[0]} •••`;
+            };
+            document.querySelectorAll('#podiumPresentation .podium-name').forEach(abreviar);
+            document.querySelectorAll('#leaderboardBodyPresentation .ranking-user-name').forEach(abreviar);
+        }
+
+        /* Rodízio como informação de apoio no Modo TV combinado: quem está atendendo,
+           quem vem depois e quem fechou o último — sem roubar o pódio da tela. */
+        function renderPresentationRotationPanel(rotation, title, posicoes = new Map()) {
+            const panel = document.getElementById('presentationRotationPanel');
+            if (!panel) return;
+            const visivel = managerTvOptions.content === 'combined';
+            panel.classList.toggle('hidden', !visivel);
+            if (!visivel) { panel.innerHTML = ''; return; }
+
+            const nome = id => {
+                const user = priorityRotationUser(id);
+                if (!user) return null;
+                return managerTvOptions.showNames ? user.name : `${String(user.name).split(/\s+/)[0]} •••`;
+            };
+            const slot = (rotulo, id, detalhe, tom = '') => {
+                const texto = nome(id);
+                return `<div class="rotation-strip-slot ${tom}">
+                    <span class="rotation-strip-label">${escapeHtml(rotulo)}</span>
+                    ${texto
+                        ? `<div class="rotation-strip-person">${priorityRotationAvatar(priorityRotationUser(id), '', rankingRingClass(posicoes.get(id)))}<span><strong>${escapeHtml(texto)}</strong>${detalhe ? `<small>${escapeHtml(detalhe)}</small>` : ''}</span></div>`
+                        : `<span class="rotation-strip-vacant">—</span>`}
+                </div>`;
+            };
+
+            const pausado = rotation.status === 'paused';
+            const atendendo = rotation.current?.analystId || null;
+            const sequencia = (rotation.upcoming || []).slice(0, 2);
+
+            // Linha única, na ordem do ciclo: quem fechou, quem atende, quem vem.
+            panel.innerHTML = `
+                <div class="rotation-strip-head">
+                    <span class="rotation-strip-title">Rodízio · ${escapeHtml(title)}</span>
+                    <span class="rotation-strip-status ${pausado ? 'is-paused' : 'is-active'}">${pausado ? 'Pausado' : 'Ativo'}</span>
+                </div>
+                <div class="rotation-strip-track">
+                    ${slot('Último', rotation.lastCompleted?.analystId, rotation.lastCompleted ? formatRotationTime(rotation.lastCompleted.completedAt) : '')}
+                    ${slot(atendendo ? 'Em atendimento' : 'Nenhum aberto', atendendo, rotation.current ? priorityRotationElapsed(rotation.current.startedAt) : '', 'is-live')}
+                    ${slot('Próximo', rotation.next, pausado ? 'Rodízio pausado' : 'Fila ativa', 'is-next')}
+                    ${sequencia.map((id, index) => slot(`${index + 2}º da fila`, id, '')).join('')}
+                </div>`;
         }
 
         async function togglePresentationFullscreen() {
@@ -6386,7 +7874,9 @@
             document.getElementById('rankingPresentationOverlay').classList.add('hidden');
             document.body.style.overflow = '';
             managerTvActive = false;
+            document.getElementById('rankingPresentationOverlay')?.classList.remove('tv-hide-points');
             if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+            render();
         }
 
         document.addEventListener('fullscreenchange', () => {
@@ -6444,6 +7934,17 @@
                 managerFilters.analyst = val;
                 managerFilters.team = selected?.team || managerFilters.team;
                 persistManagerFilters();
+                activeRankingTab = selected?.team || activeRankingTab;
+                /* Escolher alguém no filtro tem que MOSTRAR essa pessoa. Antes só
+                   trocava a variável e re-renderizava a tela em que o gestor estava —
+                   nada mudava à vista, e a única forma de ver alguém era clicar na
+                   foto no pódio. */
+                if (currentRoute.name === 'admin') {
+                    // Já na consulta: só recarrega com a pessoa nova, sem navegar de novo.
+                    if (managerSection() === 'analista') { render(); return; }
+                    switchAdminTab('analista');
+                    return;
+                }
             }
             render();
         }
@@ -7498,9 +8999,12 @@
             saveSession('analyst', selectedId);
             closeAnalystModal();
             showToast(`Bem-vindo, ${user.name.split(' ')[0]}!`);
+            // O ponto começa no login: é este o marco combinado com a operação.
+            await openAttendanceClock(selectedId);
             navigateTo('dashboard');
         }
         function logoutAnalyst() {
+            closeAttendanceClock(currentActiveUser);
             isAnalystLoggedIn = false;
             clearSession();
             closeAnalystModal();
@@ -7511,22 +9015,6 @@
 
         function openPecaModal() { openLoginDoor('peca'); }
         function closePecaModal() { closeLoginDoors(null); }
-        function enterLocalPecaPreview(role = 'Envio/Coleta') {
-            if (!['localhost', '127.0.0.1', '::1'].includes(location.hostname)) return;
-            const selectedId = document.getElementById('pecaUserSelect').value;
-            const user = getStore()?.users?.[selectedId];
-            if (!user || !isPiecesOperatorRole(user.role) || user.active === false) {
-                showToast('Selecione um usuário operacional ativo.', 'error');
-                return;
-            }
-            isPecaLoggedIn = true;
-            currentPecaUserId = selectedId;
-            window.ACTUAR_LOCAL_PIECES_ROLE = role;
-            closePecaModal();
-            navigateTo('pecas');
-            showToast('Visualização operacional local iniciada.');
-        }
-
         async function loginPeca(e) {
             e.preventDefault();
             clearLoginError('peca');
@@ -7565,7 +9053,6 @@
             isPecaLoggedIn = false;
             currentPecaUserId = null;
             clearSession();
-            window.ACTUAR_LOCAL_PIECES_ROLE = null;
             navigateTo('dashboard', { replace: true, root: true });
             showToast('Sessão de Envio/Coleta encerrada.');
         }
@@ -7689,21 +9176,34 @@
         }
 
         window.onload = async () => {
+            // A rota tem de ser lida ANTES de initApp(). A navegação inicial roda com a
+            // sessão ainda não restaurada, e applyRoute() rejeita rota de gestão de quem
+            // não está logado, reescrevendo /admin/ponto para /dashboard no endereço.
+            // Sem essa cópia, o destino original já estava perdido quando fôssemos usá-lo.
+            const rotaPretendida = routeFromLocation();
             await initApp();
             // Depois de initApp() porque a restauração precisa da base de usuários carregada.
             const restored = restoreSession();
-            if (restored === 'manager') navigateTo({ name: 'admin', section: activeAdminTab || 'visao' }, { replace: true });
-            else if (restored === 'operations') navigateTo('pecas', { replace: true });
-            else if (restored) render();
+            if (restored) {
+                // Recarregar devolve a mesma tela. "dashboard" é o destino genérico de
+                // quem chega sem rota, inclusive de links antigos: não pode sequestrar a
+                // home do gestor nem da operação, então só conta como escolha deliberada
+                // uma rota diferente dele.
+                const rotaEscolhida = rotaPretendida.name !== 'dashboard' ? rotaPretendida : null;
+                const home = { manager: { name: 'admin', section: activeAdminTab || 'visao' }, operations: 'pecas', analyst: 'dashboard' }[restored];
+                if (rotaEscolhida) applyRoute(rotaEscolhida, { replace: true });
+                else navigateTo(home, { replace: true });
+            }
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-fields.js?v=20260812-teams-2"></script>
-    <script src="js/performance-domain.js?v=20260812-teams-2"></script>
-    <script src="js/manager-experience.js?v=20260812-teams-2"></script>
-    <script src="js/priority-rotation.js?v=20260812-teams-2"></script>
-    <script src="js/pieces-operations.js?v=20260812-teams-2"></script>
-    <script src="js/pieces-ui.js?v=20260812-teams-2"></script>
-    <script src="js/performance-platform.js?v=20260812-teams-2"></script>
+    <script src="js/actuar-fields.js?v=20260813-so-login-1"></script>
+    <script src="js/attendance-clock.js?v=20260813-so-login-1"></script>
+    <script src="js/performance-domain.js?v=20260813-so-login-1"></script>
+    <script src="js/manager-experience.js?v=20260813-so-login-1"></script>
+    <script src="js/priority-rotation.js?v=20260813-so-login-1"></script>
+    <script src="js/pieces-operations.js?v=20260813-so-login-1"></script>
+    <script src="js/pieces-ui.js?v=20260813-so-login-1"></script>
+    <script src="js/performance-platform.js?v=20260813-so-login-1"></script>
 </body>
 </html>

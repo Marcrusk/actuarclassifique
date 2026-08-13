@@ -8,7 +8,7 @@
 
 /* Central de operações de peças — Envio, Coleta, Faturamento e Logística */
 .pieces-module{display:grid;gap:20px;color:var(--actuar-text,#282828)}
-.actuar-local-operation-actions{display:grid;gap:6px;margin-top:4px}.actuar-local-operation-actions.hidden{display:none}.actuar-local-operation-actions .actuar-btn{width:100%;justify-content:center}
+
 .pieces-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:20px 24px;border:1px solid var(--actuar-border,#dfe2ea);border-radius:8px;background:var(--actuar-surface,#fff)}
 .pieces-heading h2{margin:3px 0 4px;font-size:24px;line-height:1.2;font-weight:700;color:var(--actuar-text,#282828)}
 .pieces-heading p{margin:0;color:var(--actuar-text-secondary,#667085);font-size:13px}
@@ -22,7 +22,7 @@
 .pieces-tabs button span{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--actuar-primary,#4043dd);color:#fff;font-family:Geist,Open Sans,sans-serif;font-size:10px}
 .pieces-filters{padding:16px;border:1px solid var(--actuar-border,#dfe2ea);border-radius:8px;background:var(--actuar-surface,#fff)}
 .pieces-filter-grid{display:grid;grid-template-columns:minmax(220px,1.7fr) repeat(4,minmax(130px,1fr)) auto;gap:12px;align-items:end}
-.pieces-search-control{position:relative}.pieces-search-control i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--actuar-text-secondary,#667085)}.pieces-search-control input{padding-left:34px!important}
+/* Ícone dentro do campo: bloco único em CAMPO COM ÍCONE, no fim do arquivo. */
 .pieces-clear{margin-bottom:1px;white-space:nowrap}
 .pieces-kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
 .pieces-kpi{min-width:0;padding:15px;text-align:left;border:1px solid var(--actuar-border,#dfe2ea);border-radius:8px;background:var(--actuar-surface,#fff);color:var(--actuar-text,#282828);transition:border-color .18s,transform .18s}
@@ -482,7 +482,7 @@ body.actuar-app input[type="checkbox"], body.actuar-app input[type="radio"] { ac
     opacity: 1 !important;
 }
 .actuar-field-with-action { position: relative; }
-.actuar-field-with-action input { padding-right: 40px !important; }
+/* O recuo à direita vive em CAMPO COM ÍCONE, com a especificidade certa. */
 .actuar-input-action { position: absolute; top: 0; right: 0; width: 36px; height: 32px; border: 0; background: transparent; color: var(--actuar-secondary); cursor: pointer; }
 
 body.actuar-app .bg-surface.border,
@@ -2273,7 +2273,6 @@ body.actuar-locked { overflow: hidden; }
 .actuar-login-door-group.is-open .actuar-login-panel > div { visibility: visible; }
 .actuar-login-form { display: grid; gap: 12px; padding: 4px 14px 16px; border-top: 1px solid var(--actuar-border); }
 .actuar-login-form > .actuar-btn { margin-top: 2px; justify-content: center; }
-.actuar-login-form .actuar-local-operation-actions { margin-top: 2px; }
 
 /* Erro de senha na cara de quem digitou, não num aviso no canto da tela */
 .actuar-login-error { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--actuar-danger) 32%, transparent); border-radius: var(--actuar-radius); background: var(--actuar-danger-soft); color: var(--actuar-danger); font-size: 12px; line-height: 1.45; font-weight: 600; }
@@ -2318,3 +2317,614 @@ body.actuar-locked { overflow: hidden; }
     .actuar-confirm-actions .actuar-btn { width: 100%; justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) { .actuar-confirm-card { animation: none; } }
+
+/* Modo TV combinado: ranking mantém o palco, rodízio entra como apoio no canto */
+.presentation-context-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.presentation-rotation-panel { display: grid; gap: 10px; width: min(320px, 100%); padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--actuar-primary) 26%, var(--actuar-border)); border-radius: 12px; background: color-mix(in srgb, var(--actuar-surface) 88%, transparent); backdrop-filter: blur(6px); }
+.presentation-rotation-panel.hidden { display: none; }
+.presentation-rotation-panel header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 9px; border-bottom: 1px solid var(--actuar-border); }
+.presentation-rotation-eyebrow { color: var(--actuar-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.presentation-rotation-status { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.presentation-rotation-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.presentation-rotation-status.is-active { background: var(--actuar-success-soft); color: var(--actuar-success); }
+.presentation-rotation-status.is-paused { background: var(--actuar-warning-soft); color: var(--actuar-warning); }
+.presentation-rotation-now, .presentation-rotation-next { display: grid; gap: 5px; }
+.presentation-rotation-now { padding: 9px 10px; border-left: 3px solid var(--actuar-primary); border-radius: 8px; background: var(--actuar-primary-soft); }
+.presentation-rotation-now.is-idle { border-left-color: var(--actuar-border-strong); background: var(--actuar-surface-muted); }
+.presentation-rotation-panel small { color: var(--actuar-secondary); font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.presentation-rotation-person { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.presentation-rotation-person strong { display: block; color: var(--actuar-foreground); font-size: 13px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.presentation-rotation-person small { display: block; margin-top: 1px; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 10.5px; }
+.presentation-rotation-person .rotation-avatar { width: 30px; height: 30px; flex: 0 0 30px; font-size: 10px; }
+.presentation-rotation-empty { color: var(--actuar-muted); font-size: 12px; }
+.presentation-rotation-queue { display: grid; gap: 6px; margin: 0; padding: 9px 0 0; list-style: none; border-top: 1px solid var(--actuar-border); }
+.presentation-rotation-queue li { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.presentation-rotation-queue b { flex: none; min-width: 22px; color: var(--actuar-secondary); font-family: "Geist", "Open Sans", sans-serif; font-size: 11px; }
+.presentation-rotation-queue .presentation-rotation-person strong { font-size: 12px; font-weight: 600; }
+.presentation-rotation-queue .rotation-avatar { width: 24px; height: 24px; flex-basis: 24px; font-size: 9px; }
+.presentation-rotation-panel footer { padding-top: 9px; border-top: 1px solid var(--actuar-border); color: var(--actuar-secondary); font-size: 10.5px; line-height: 1.45; }
+.presentation-rotation-panel footer strong { color: var(--actuar-foreground); font-weight: 600; }
+@media(max-width:900px){
+    .presentation-context-row { flex-direction: column; }
+    .presentation-rotation-panel { width: 100%; }
+}
+
+/* Modo TV: a opção "exibir pontuação" precisa valer sobre a tabela completa */
+#rankingPresentationOverlay.tv-hide-points .podium-points,
+#rankingPresentationOverlay.tv-hide-points .ranking-total,
+#rankingPresentationOverlay.tv-hide-points th:last-child { visibility: hidden; }
+
+/* Modo TV do rodízio: um protagonista, a sequência ao lado e a fila embaixo */
+#podiumPresentation.podium-presentation--rotation { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 18px; align-items: stretch; max-width: none; }
+.rotation-stage-eyebrow { display: block; color: var(--actuar-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.rotation-stage-hero { display: grid; align-content: center; gap: 12px; padding: 28px 30px; border: 1px solid var(--actuar-border); border-radius: 16px; background: var(--actuar-surface); }
+.rotation-stage-hero.is-live { border-color: var(--actuar-primary); background: linear-gradient(135deg, var(--actuar-primary-soft), var(--actuar-surface) 72%); box-shadow: inset 4px 0 0 var(--actuar-primary); }
+.rotation-stage-hero.is-live .rotation-stage-eyebrow { color: var(--actuar-primary); }
+.rotation-stage-hero > p { margin: 0; color: var(--actuar-secondary); font-size: 14px; }
+.rotation-stage-person { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.rotation-stage-person strong { color: var(--actuar-foreground); font-size: 15px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rotation-stage-hero .rotation-stage-person strong { font-size: 30px; font-weight: 800; letter-spacing: -.015em; }
+.rotation-stage-hero .rotation-avatar { width: 68px; height: 68px; flex: 0 0 68px; font-size: 20px; }
+.rotation-stage-vacant { margin: 0; color: var(--actuar-muted); font-size: 14px; }
+.rotation-stage-side { display: grid; align-content: start; gap: 14px; }
+.rotation-stage-next, .rotation-stage-last { display: grid; gap: 9px; padding: 16px 18px; border: 1px solid var(--actuar-border); border-radius: 14px; background: var(--actuar-surface); }
+.rotation-stage-next ol { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rotation-stage-next li { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rotation-stage-next b { flex: none; min-width: 26px; color: var(--actuar-secondary); font-family: "Geist", "Open Sans", sans-serif; font-size: 13px; }
+.rotation-stage-last > p { margin: 0; color: var(--actuar-secondary); font-size: 12px; }
+.rotation-queue-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.rotation-queue-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.rotation-queue-badge--live { background: var(--actuar-primary-soft); color: var(--actuar-primary); }
+.rotation-queue-badge--next { background: var(--actuar-success-soft); color: var(--actuar-success); }
+.rotation-queue-badge--idle { background: var(--actuar-surface-muted); color: var(--actuar-secondary); }
+.rotation-queue-row--live { background: color-mix(in srgb, var(--actuar-primary) 8%, transparent); }
+.rotation-queue-row--live .rotation-stage-person strong { color: var(--actuar-primary); }
+@media(max-width:900px){
+    #podiumPresentation.podium-presentation--rotation { grid-template-columns: 1fr; }
+    .rotation-stage-hero { padding: 20px; }
+    .rotation-stage-hero .rotation-stage-person strong { font-size: 24px; }
+}
+
+/* Histórico de prioridades sem resultado para os filtros aplicados. */
+.priority-history-empty { display: grid; justify-items: center; gap: 9px; padding: 36px 20px; border: 1px dashed var(--actuar-border); border-radius: 8px; text-align: center; }
+.priority-history-empty > i { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--actuar-primary-soft); color: var(--actuar-primary); font-size: 16px; }
+.priority-history-empty p { margin: 0; color: var(--actuar-secondary); font-size: 12px; }
+
+/* Alternador de departamento da apresentação */
+.presentation-team-switch { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--actuar-border); border-radius: 999px; background: var(--actuar-surface); }
+.presentation-team-switch.hidden { display: none; }
+.presentation-team-option { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 18px; border: 0; border-radius: 999px; background: transparent; color: var(--actuar-secondary); font-size: 13px; font-weight: 700; transition: background var(--actuar-transition), color var(--actuar-transition); }
+.presentation-team-option:hover { color: var(--actuar-foreground); background: var(--actuar-surface-muted); }
+.presentation-team-option.is-active { background: var(--actuar-primary); color: #fff; }
+.presentation-team-option.is-active:hover { background: var(--actuar-primary); }
+.presentation-team-option:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: 2px; }
+
+/* Rodízio do Modo TV combinado: uma linha, na ordem do ciclo */
+.presentation-rotation-strip { display: grid; gap: 12px; padding: 16px 20px; border: 1px solid color-mix(in srgb, var(--actuar-primary) 22%, var(--actuar-border)); border-radius: 14px; background: var(--actuar-surface); }
+.presentation-rotation-strip.hidden { display: none; }
+.rotation-strip-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rotation-strip-title { color: var(--actuar-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.rotation-strip-status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.rotation-strip-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.rotation-strip-status.is-active { background: var(--actuar-success-soft); color: var(--actuar-success); }
+.rotation-strip-status.is-paused { background: var(--actuar-warning-soft); color: var(--actuar-warning); }
+.rotation-strip-track { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; }
+.rotation-strip-slot { display: grid; gap: 7px; align-content: start; min-width: 0; padding: 4px 18px; border-left: 1px solid var(--actuar-border); }
+.rotation-strip-slot:first-child { padding-left: 0; border-left: 0; }
+.rotation-strip-label { color: var(--actuar-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.rotation-strip-slot.is-live .rotation-strip-label { color: var(--actuar-primary); }
+.rotation-strip-slot.is-next .rotation-strip-label { color: var(--actuar-success); }
+.rotation-strip-person { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rotation-strip-person strong { display: block; color: var(--actuar-foreground); font-size: 14px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rotation-strip-person small { display: block; margin-top: 1px; color: var(--actuar-secondary); font-size: 11px; }
+.rotation-strip-slot.is-live .rotation-strip-person strong { font-size: 16px; font-weight: 800; }
+.rotation-strip-person .rotation-avatar { width: 34px; height: 34px; flex: 0 0 34px; font-size: 11px; }
+.rotation-strip-slot.is-live .rotation-avatar { width: 40px; height: 40px; flex-basis: 40px; border-color: var(--actuar-primary); }
+.rotation-strip-vacant { color: var(--actuar-muted); font-size: 14px; }
+@media(max-width:1100px){
+    .rotation-strip-track { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 0; }
+    .rotation-strip-slot { padding: 0 14px; }
+    .rotation-strip-slot:nth-child(odd) { padding-left: 0; border-left: 0; }
+}
+@media(max-width:640px){
+    .rotation-strip-track { grid-template-columns: 1fr; }
+    .rotation-strip-slot { padding: 0; border-left: 0; }
+}
+
+/* Anel do avatar = colocação no ranking (mesma paleta das medalhas do pódio) */
+.rotation-avatar.is-gold { border-color: #F2C230; box-shadow: 0 0 0 2px color-mix(in srgb, #9A6B00 70%, transparent); }
+.rotation-avatar.is-silver { border-color: #D5DAE0; box-shadow: 0 0 0 2px color-mix(in srgb, #68717D 70%, transparent); }
+.rotation-avatar.is-bronze { border-color: #E39A68; box-shadow: 0 0 0 2px color-mix(in srgb, #87451F 70%, transparent); }
+.rotation-strip-slot.is-live .rotation-avatar.is-gold,
+.rotation-strip-slot.is-live .rotation-avatar.is-silver,
+.rotation-strip-slot.is-live .rotation-avatar.is-bronze { border-width: 3px; }
+
+/* Cabeçalho da apresentação: título e departamento na mesma linha, sem quebra feia */
+.ranking-presentation-heading h2 { flex-wrap: wrap; row-gap: 2px; }
+#presentationTitlePrefix { white-space: nowrap; }
+#presentationTeamLabel { white-space: nowrap; }
+/* Fila do rodízio: legenda própria, para a tabela não parecer repetição do palco */
+.rotation-queue-caption { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; text-transform: none; letter-spacing: 0; }
+.rotation-queue-caption span { color: var(--actuar-foreground); font-size: 13px; font-weight: 700; }
+.rotation-queue-caption small { color: var(--actuar-secondary); font-size: 11px; font-weight: 500; }
+
+/* Busca de peças: a lupa fica dentro do campo, sem encostar no texto.
+   A regra original (.pieces-search-control input) tinha especificidade baixa e o
+   ícone herdava o tamanho da fonte do bloco, podendo invadir a área digitada.
+   Aqui o ícone tem caixa própria e o recuo do texto é calculado a partir dela. */
+/* Ver CAMPO COM ÍCONE, no fim do arquivo. */
+
+/* ==========================================================================
+   PONTO E PAUSAS
+   A cor carrega a regra: verde é pausa de direito (almoço e lanche), âmbar é
+   pausa que conta como ociosidade, azul é compromisso convocado pela empresa.
+   ========================================================================== */
+
+/* --- ficha do usuário: jornada --- */
+.shift-fieldset { margin-top: 4px; padding: 16px; border: 1px solid var(--actuar-border); border-radius: 12px; background: var(--actuar-surface-subtle); }
+.shift-legend { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--actuar-text); font-size: 12px; font-weight: 700; }
+.shift-legend i { color: var(--actuar-primary); }
+.shift-toggle { align-items: flex-start; }
+.shift-toggle span { display: grid; gap: 2px; }
+.shift-toggle small { color: var(--actuar-text-secondary); font-size: 10px; }
+.shift-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 140px)) minmax(0, 1fr); gap: 12px; margin-top: 14px; }
+.shift-days-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.shift-day { position: relative; }
+.shift-day input { position: absolute; opacity: 0; pointer-events: none; }
+.shift-day span { display: grid; place-items: center; min-width: 42px; height: 34px; padding: 0 8px; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface); color: var(--actuar-text-secondary); font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s ease; }
+.shift-day input:checked + span { border-color: var(--actuar-primary); background: color-mix(in srgb, var(--actuar-primary) 12%, transparent); color: var(--actuar-primary); }
+.shift-day input:focus-visible + span { outline: 2px solid var(--actuar-primary); outline-offset: 2px; }
+
+/* --- barra do analista --- */
+.attendance-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; padding: 18px; border: 1px solid var(--actuar-border); border-radius: 16px; background: var(--actuar-surface); }
+.attendance-bar-main { display: grid; gap: 14px; min-width: 0; }
+.attendance-status { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 6px 14px; padding: 14px 16px; border-radius: 12px; }
+.attendance-status.is-available { border: 1px solid color-mix(in srgb, #12b76a 35%, transparent); background: color-mix(in srgb, #12b76a 8%, transparent); }
+.attendance-status.is-paused { border: 1px solid color-mix(in srgb, #f79009 40%, transparent); background: color-mix(in srgb, #f79009 10%, transparent); }
+.attendance-status-label { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--actuar-text); }
+.attendance-status.is-available .attendance-status-label i { color: #087a4b; }
+.attendance-status.is-paused .attendance-status-label i { color: #a15c00; }
+.attendance-timer { font-family: Geist, 'Open Sans', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: var(--actuar-text); font-variant-numeric: tabular-nums; }
+.attendance-status small { grid-column: 1 / 4; color: var(--actuar-text-secondary); font-size: 10px; }
+.attendance-status > button { grid-row: 1 / 3; grid-column: 4; }
+.attendance-break-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.attendance-break-btn { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 1px solid var(--actuar-border); border-radius: 10px; background: var(--actuar-surface); text-align: left; cursor: pointer; transition: all .15s ease; }
+.attendance-break-btn:hover:not(:disabled) { border-color: var(--actuar-primary); background: color-mix(in srgb, var(--actuar-primary) 6%, transparent); transform: translateY(-1px); }
+.attendance-break-btn:disabled { opacity: .45; cursor: not-allowed; }
+.attendance-break-btn i { font-size: 15px; }
+.attendance-break-btn span { display: grid; gap: 1px; min-width: 0; }
+.attendance-break-btn strong { color: var(--actuar-text); font-size: 11px; }
+.attendance-break-btn small { color: var(--actuar-text-secondary); font-size: 9px; }
+.attendance-break-btn--success i { color: #087a4b; }
+.attendance-break-btn--warning i { color: #a15c00; }
+.attendance-break-btn--info i { color: var(--actuar-primary); }
+.attendance-bar-side { display: grid; gap: 8px; align-content: start; min-width: 190px; }
+.attendance-chip { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--actuar-surface-subtle); }
+.attendance-chip small { color: var(--actuar-text-secondary); font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+.attendance-chip strong { color: var(--actuar-text); font-size: 15px; font-weight: 800; }
+.attendance-chip em { color: var(--actuar-text-secondary); font-size: 9px; font-style: normal; }
+
+/* --- painel da gestão --- */
+.attendance-header-actions { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.attendance-header-actions .actuar-field { margin: 0; min-width: 160px; }
+.attendance-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.attendance-kpi { display: grid; gap: 3px; padding: 14px; border: 1px solid var(--actuar-border); border-left-width: 3px; border-radius: 10px; background: var(--actuar-surface); }
+.attendance-kpi small { color: var(--actuar-text-secondary); font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+.attendance-kpi strong { color: var(--actuar-text); font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+.attendance-kpi em { color: var(--actuar-text-secondary); font-size: 10px; font-style: normal; }
+.attendance-kpi--primary { border-left-color: var(--actuar-primary); }
+.attendance-kpi--success { border-left-color: #12b76a; }
+.attendance-kpi--warning { border-left-color: #f79009; }
+.attendance-kpi--danger { border-left-color: #f04438; }
+.attendance-kpi--neutral { border-left-color: var(--actuar-border); }
+.attendance-live { display: grid; gap: 8px; margin-top: 14px; padding: 14px; border-radius: 10px; background: var(--actuar-surface-subtle); }
+.attendance-live-label { color: var(--actuar-text-secondary); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.attendance-live-track { display: flex; flex-wrap: wrap; gap: 8px; }
+.attendance-live-person { display: flex; align-items: center; gap: 9px; padding: 8px 12px; border: 1px solid var(--actuar-border); border-radius: 999px; background: var(--actuar-surface); }
+.attendance-live-person span { display: grid; gap: 1px; }
+.attendance-live-person strong { color: var(--actuar-text); font-size: 11px; }
+.attendance-live-person small { color: var(--actuar-text-secondary); font-size: 9px; }
+.attendance-live-person b { font-family: Geist, 'Open Sans', sans-serif; font-size: 12px; font-variant-numeric: tabular-nums; }
+.attendance-live-person--success { border-color: color-mix(in srgb, #12b76a 40%, transparent); }
+.attendance-live-person--warning { border-color: color-mix(in srgb, #f79009 45%, transparent); }
+.attendance-live-person--info { border-color: color-mix(in srgb, var(--actuar-primary) 40%, transparent); }
+.attendance-live-empty { display: inline-flex; align-items: center; gap: 7px; color: var(--actuar-text-secondary); font-size: 11px; }
+.attendance-live-empty i { color: #12b76a; }
+
+.attendance-table-wrap { overflow: auto; }
+.attendance-table { width: 100%; min-width: 940px; border-collapse: collapse; }
+.attendance-table th { padding: 10px 12px; background: var(--actuar-surface-subtle); color: var(--actuar-text-secondary); font-size: 9px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: .04em; }
+.attendance-table td { padding: 11px 12px; border-top: 1px solid var(--actuar-border); color: var(--actuar-text); font-size: 11px; vertical-align: middle; }
+.attendance-table .num { text-align: right; }
+.attendance-person { display: flex; align-items: center; gap: 9px; }
+.attendance-person span { display: grid; gap: 1px; min-width: 0; }
+.attendance-person strong { font-size: 11px; }
+.attendance-person small { color: var(--actuar-text-secondary); font-size: 9px; }
+.attendance-late { color: #c3271c; font-weight: 700; }
+.attendance-late-detail { display: block; color: #c3271c; font-size: 9px; }
+.attendance-badge { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; font-size: 9px; font-weight: 700; }
+.attendance-badge--success { border-color: rgba(18,183,106,.3); background: rgba(18,183,106,.1); color: #087a4b; }
+.attendance-badge--warning { border-color: rgba(247,144,9,.32); background: rgba(247,144,9,.11); color: #a15c00; }
+.attendance-badge--danger { border-color: rgba(240,68,56,.3); background: rgba(240,68,56,.1); color: #c3271c; }
+.attendance-badge--neutral { border-color: var(--actuar-border); background: var(--actuar-surface-subtle); color: var(--actuar-text-secondary); }
+.attendance-adherence { display: inline-flex; align-items: center; margin: 1px 3px 1px 0; padding: 2px 7px; border-radius: 6px; font-size: 9px; font-weight: 600; background: var(--actuar-surface-subtle); color: var(--actuar-text-secondary); }
+.attendance-adherence.is-no_horario { background: rgba(18,183,106,.12); color: #087a4b; }
+.attendance-adherence.is-atrasada { background: rgba(240,68,56,.12); color: #c3271c; }
+.attendance-adherence.is-adiantada { background: rgba(247,144,9,.14); color: #a15c00; }
+.attendance-empty { padding: 28px; color: var(--actuar-text-secondary); font-size: 11px; text-align: center; }
+
+/* --- escala semanal --- */
+.attendance-week-label { min-width: 108px; color: var(--actuar-text); font-size: 12px; font-weight: 700; text-align: center; }
+.attendance-schedule-status { margin-bottom: 12px; }
+.attendance-schedule-badge { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.attendance-schedule-badge.is-published { background: rgba(18,183,106,.12); color: #087a4b; }
+.attendance-schedule-badge.is-draft { background: rgba(247,144,9,.14); color: #a15c00; }
+.attendance-schedule { width: 100%; min-width: 860px; border-collapse: collapse; }
+.attendance-schedule th { padding: 9px 10px; background: var(--actuar-surface-subtle); color: var(--actuar-text-secondary); font-size: 10px; font-weight: 700; text-align: left; }
+.attendance-schedule th small { display: block; margin-top: 2px; font-size: 9px; font-weight: 400; }
+.attendance-schedule th.is-today, .attendance-schedule td.is-today { background: color-mix(in srgb, var(--actuar-primary) 7%, transparent); }
+.attendance-schedule td { padding: 9px 10px; border-top: 1px solid var(--actuar-border); vertical-align: top; }
+.attendance-slot { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: 6px; }
+.attendance-slot + .attendance-slot { margin-top: 5px; }
+.attendance-slot span { color: var(--actuar-text-secondary); font-size: 9px; }
+.attendance-slot input { width: 100%; min-height: 30px; padding: 4px 6px !important; border: 1px solid var(--actuar-border); border-radius: 6px; background: var(--actuar-surface); color: var(--actuar-text); font-size: 11px; }
+
+/* --- escala da semana na visão do analista --- */
+.attendance-week-strip { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 12px 14px; border-top: 1px solid var(--actuar-border); }
+.attendance-week-strip-label { display: inline-flex; align-items: center; gap: 6px; color: var(--actuar-text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.attendance-week-strip-label i { color: var(--actuar-primary); }
+.attendance-week-strip-track { display: flex; gap: 6px; flex-wrap: wrap; }
+.attendance-week-day { display: grid; gap: 1px; min-width: 62px; padding: 7px 10px; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface-subtle); text-align: center; }
+.attendance-week-day.is-today { border-color: var(--actuar-primary); background: color-mix(in srgb, var(--actuar-primary) 10%, transparent); }
+.attendance-week-day small { color: var(--actuar-text-secondary); font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.attendance-week-day strong { color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 12px; font-variant-numeric: tabular-nums; }
+.attendance-week-day em { color: var(--actuar-text-secondary); font-family: Geist, 'Open Sans', sans-serif; font-size: 10px; font-style: normal; font-variant-numeric: tabular-nums; }
+.attendance-week-strip-legend { margin-left: auto; color: var(--actuar-text-secondary); font-size: 9px; }
+
+@media (max-width: 900px) {
+    .attendance-bar { grid-template-columns: minmax(0, 1fr); }
+    .attendance-week-strip-legend { margin-left: 0; }
+    .attendance-bar-side { grid-template-columns: repeat(3, minmax(0, 1fr)); min-width: 0; }
+    .shift-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .attendance-status { grid-template-columns: auto minmax(0, 1fr); }
+    .attendance-status > button { grid-row: auto; grid-column: 1 / -1; }
+    .attendance-status small { grid-column: 1 / -1; }
+}
+
+/* Navegador de semana da escala: setas compactas, identidade no centro.
+   Antes os rótulos "Semana anterior" e "Próxima semana" competiam com o nome
+   da semana e a barra quebrava em cinco linhas empilhadas. */
+.attendance-week-nav { display: inline-flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--actuar-border); border-radius: 999px; background: var(--actuar-surface); }
+.attendance-week-arrow { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border: 0; border-radius: 50%; background: transparent; color: var(--actuar-secondary); font-size: 13px; cursor: pointer; transition: background .18s, color .18s; }
+.attendance-week-arrow:hover { background: var(--actuar-primary-soft); color: var(--actuar-primary); }
+.attendance-week-arrow:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: -2px; }
+.attendance-week-label { display: grid; gap: 1px; justify-items: center; min-width: 176px; padding: 0 4px; line-height: 1.3; text-align: center; }
+.attendance-week-label strong { color: var(--actuar-foreground); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.attendance-week-label small { display: inline-flex; align-items: center; gap: 6px; color: var(--actuar-secondary); font-family: Geist, "Open Sans", sans-serif; font-size: 11px; white-space: nowrap; }
+.attendance-week-tag { padding: 1px 6px; border-radius: 999px; background: var(--actuar-surface-muted); color: var(--actuar-secondary); font-family: "Open Sans", sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .02em; }
+.attendance-week-tag.is-current { background: var(--actuar-primary-soft); color: var(--actuar-primary); }
+.attendance-week-today { flex: none; height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--actuar-primary-soft); color: var(--actuar-primary); font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.attendance-week-today.hidden { display: none; }
+.attendance-week-today:hover { background: color-mix(in srgb, var(--actuar-primary) 18%, transparent); }
+
+/* Faixa do analista: diz de que semana é a escala publicada. */
+.attendance-week-strip-label { display: inline-flex; flex-direction: column; gap: 1px; }
+.attendance-week-strip-label small { color: var(--actuar-secondary); font-family: Geist, "Open Sans", sans-serif; font-size: 10px; }
+
+@media(max-width:640px){
+    .attendance-week-nav { width: 100%; justify-content: space-between; }
+    .attendance-week-label { min-width: 0; }
+    .attendance-week-label small { flex-wrap: wrap; justify-content: center; }
+}
+
+/* --- interruptor reutilizável (ligar/desligar em linha de tabela) --- */
+.actuar-switch { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+.actuar-switch input[type="checkbox"] { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+.actuar-switch > span { position: relative; display: block; width: 36px; height: 20px; border-radius: 999px; background: var(--actuar-border-strong); transition: background .16s ease; }
+.actuar-switch > span::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(16,24,40,.2); transition: transform .16s ease; }
+.actuar-switch input:checked + span { background: var(--actuar-primary); }
+.actuar-switch input:checked + span::after { transform: translateX(16px); }
+.actuar-switch input:focus-visible + span { outline: 2px solid var(--actuar-primary); outline-offset: 2px; }
+
+/* --- quadro de jornadas --- */
+.attendance-shifts { width: 100%; min-width: 960px; border-collapse: collapse; }
+.attendance-shifts th { padding: 10px 12px; background: var(--actuar-surface-subtle); color: var(--actuar-text-secondary); font-size: 9px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: .04em; }
+.attendance-shifts th.num, .attendance-shifts td.num { text-align: right; }
+.attendance-shifts td { padding: 10px 12px; border-top: 1px solid var(--actuar-border); color: var(--actuar-text); font-size: 11px; vertical-align: middle; }
+.attendance-shifts tr.is-off td { opacity: .5; }
+.attendance-shifts tr.is-off td:first-child, .attendance-shifts tr.is-off td:nth-child(2) { opacity: 1; }
+.attendance-shift-time, .attendance-shift-tolerance { min-height: 32px; padding: 4px 8px !important; border: 1px solid var(--actuar-border); border-radius: 6px; background: var(--actuar-surface); color: var(--actuar-text); font-size: 11px; }
+.attendance-shift-time { width: 108px; }
+.attendance-shift-tolerance { width: 66px; }
+.attendance-shift-time:disabled, .attendance-shift-tolerance:disabled { cursor: not-allowed; }
+.attendance-shift-presets { display: flex; gap: 4px; flex-wrap: wrap; }
+.attendance-preset { padding: 4px 8px; border: 1px solid var(--actuar-border); border-radius: 6px; background: var(--actuar-surface); color: var(--actuar-text-secondary); font-family: Geist, 'Open Sans', sans-serif; font-size: 10px; font-weight: 600; cursor: pointer; transition: all .15s ease; }
+.attendance-preset:hover:not(:disabled) { border-color: var(--actuar-primary); color: var(--actuar-primary); }
+.attendance-preset.is-active { border-color: var(--actuar-primary); background: color-mix(in srgb, var(--actuar-primary) 12%, transparent); color: var(--actuar-primary); }
+.attendance-preset:disabled { cursor: not-allowed; }
+.attendance-shift-days { display: flex; gap: 3px; flex-wrap: wrap; }
+.attendance-shift-days .shift-day span { min-width: 30px; height: 26px; padding: 0 5px; font-size: 9px; }
+.attendance-shift-tag { display: inline-block; color: var(--actuar-text-secondary); font-family: Geist, 'Open Sans', sans-serif; font-size: 9px; font-variant-numeric: tabular-nums; }
+
+/* Janela marcada fora do expediente da pessoa: o erro que só aparece quando os
+   turnos são diferentes — lanche às 17:30 para quem sai às 17h. */
+/* A regra base de input do DS tem !important e especificidade (0,4,2); um seletor
+   mais curto perde mesmo com !important. Daí a repetição dos :not(). */
+body.actuar-app .attendance-slot.is-outside input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { border-color: #f04438 !important; background: rgba(240,68,56,.08) !important; }
+.attendance-slot.is-outside span { color: #c3271c; font-weight: 700; }
+.attendance-schedule td.is-off { background: repeating-linear-gradient(135deg, transparent, transparent 6px, var(--actuar-surface-subtle) 6px, var(--actuar-surface-subtle) 12px); }
+.attendance-slot-off { display: block; padding: 12px 0; color: var(--actuar-text-secondary); font-size: 9px; text-align: center; }
+.attendance-shift-custom { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 6px; background: rgba(247,144,9,.14); color: #a15c00; font-size: 9px; font-weight: 700; cursor: help; }
+
+/* Escala: campo de tempo do Design System, com sugestões de horário no datalist. */
+.attendance-schedule .attendance-slot { display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 6px; }
+.attendance-schedule .attendance-slot + .attendance-slot { margin-top: 5px; }
+.attendance-schedule .attendance-slot > span { color: var(--actuar-secondary); font-size: 9px; }
+.attendance-schedule .attendance-slot input[type="time"] { width: 100%; min-height: 30px; padding: 0 6px; border: 1px solid var(--actuar-border); border-radius: 6px; background: var(--actuar-surface); color: var(--actuar-muted); font-family: Geist, "Open Sans", sans-serif; font-size: 12px; }
+.attendance-schedule .attendance-slot input[type="time"]:hover { border-color: var(--actuar-primary); }
+.attendance-schedule .attendance-slot.is-filled input[type="time"] { color: var(--actuar-foreground); font-weight: 600; }
+.attendance-schedule .attendance-slot.is-outside input[type="time"] { border-color: #f79009; color: #a15c00; }
+
+/* Atalhos da linha: repetem o horário da pessoa nos demais dias úteis. */
+.attendance-row-actions { display: inline-flex; gap: 4px; margin-top: 5px; }
+.attendance-row-actions button { padding: 2px 7px; border: 1px solid var(--actuar-border); border-radius: 999px; background: transparent; color: var(--actuar-secondary); font-family: inherit; font-size: 9px; font-weight: 700; cursor: pointer; }
+.attendance-row-actions button:hover { border-color: var(--actuar-primary); background: var(--actuar-primary-soft); color: var(--actuar-primary); }
+
+/* Pausa ao vivo: saída programada, cronômetro e folga contra o limite do tipo. */
+.attendance-live-start { font-size: 9px; font-style: normal; color: var(--actuar-secondary); }
+.attendance-live-start.is-late { color: #a15c00; }
+.attendance-live-start.is-early { color: var(--actuar-primary); }
+.attendance-live-start.is-ontime { color: #087a4b; }
+.attendance-live-limit { margin-left: 8px; color: var(--actuar-secondary); font-size: 9px; white-space: nowrap; }
+.attendance-live-limit.is-exceeded, .attendance-live-person b.is-exceeded { color: #c3271c; font-weight: 700; }
+
+/* ==========================================================================
+   PONTO — o analista marca, a gestão mede
+   A tela dele é de instrução (que horas são, o que fazer agora). A tela dela é
+   de medição. Nada de desempenho atravessa para o lado do analista.
+   ========================================================================== */
+
+.attendance-status.is-available .attendance-timer { font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.attendance-timer.is-over { color: #c3271c; }
+.attendance-now { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--actuar-border); border-radius: 12px; background: var(--actuar-surface-subtle); text-align: right; }
+.attendance-now small { color: var(--actuar-text-secondary); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
+.attendance-now strong { color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.attendance-now em { color: var(--actuar-text-secondary); font-size: 10px; font-style: normal; }
+
+.attendance-header-clock { display: grid; gap: 1px; padding: 6px 12px; border: 1px solid var(--actuar-border); border-radius: 10px; background: var(--actuar-surface-subtle); text-align: right; }
+.attendance-header-clock small { color: var(--actuar-text-secondary); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
+.attendance-header-clock strong { color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.attendance-since { display: block; margin-top: 3px; color: var(--actuar-text-secondary); font-size: 9px; font-variant-numeric: tabular-nums; }
+.attendance-table tr.has-offschedule td:first-child { box-shadow: inset 3px 0 0 #f79009; }
+.attendance-adherence.is-fora { background: rgba(247,144,9,.16); color: #a15c00; cursor: help; }
+
+/* --- saída fora da janela combinada --- */
+.attendance-offschedule-layer { background: rgba(22, 29, 43, .55); backdrop-filter: blur(2px); }
+.attendance-offschedule-card { width: min(460px, calc(100vw - 32px)); display: grid; gap: 14px; padding: 24px; border: 1px solid var(--actuar-border); border-radius: 16px; background: var(--actuar-surface); box-shadow: var(--actuar-shadow-dropdown); }
+.attendance-offschedule-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(247,144,9,.14); color: #a15c00; font-size: 20px; }
+.attendance-offschedule-card h2 { margin: 0; color: var(--actuar-text); font-size: 17px; font-weight: 800; }
+.attendance-offschedule-card > p { margin: -6px 0 0; color: var(--actuar-text-secondary); font-size: 12px; line-height: 1.5; }
+.attendance-offschedule-compare { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px; border-radius: 12px; background: var(--actuar-surface-subtle); }
+.attendance-offschedule-compare > div { display: grid; gap: 1px; }
+.attendance-offschedule-compare small { color: var(--actuar-text-secondary); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
+.attendance-offschedule-compare strong { color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.attendance-offschedule-compare > i { color: var(--actuar-text-secondary); }
+.attendance-offschedule-delta { margin-left: auto; padding: 5px 10px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.attendance-offschedule-delta.is-late { background: rgba(240,68,56,.12); color: #c3271c; }
+.attendance-offschedule-delta.is-early { background: rgba(247,144,9,.16); color: #a15c00; }
+.attendance-offschedule-card .actuar-field { margin: 0; }
+/* Em atendimento não tem número: o relógio canônico é o do cartão ao lado, e
+   repetir a hora nos dois lugares só disputa atenção com ela mesma. */
+.attendance-status.is-plain { grid-template-columns: auto minmax(0, 1fr); }
+.attendance-status.is-plain .attendance-status-label { font-size: 17px; font-weight: 800; }
+.attendance-status.is-plain .attendance-status-label i { font-size: 18px; }
+.attendance-status.is-plain small { grid-column: 1 / -1; }
+
+/* Pausa bloqueada continua clicável e com tooltip: `disabled` deixava o botão
+   cinza e mudo, porque elemento desabilitado não dispara title no Chrome. */
+.attendance-break-btn.is-blocked { opacity: .5; cursor: help; }
+.attendance-break-btn.is-blocked:hover { border-color: var(--actuar-border); background: var(--actuar-surface); transform: none; }
+.attendance-break-btn:hover:not(.is-blocked) { border-color: var(--actuar-primary); background: color-mix(in srgb, var(--actuar-primary) 6%, transparent); transform: translateY(-1px); }
+.attendance-cell-note { display: block; margin-top: 2px; color: var(--actuar-text-secondary); font-size: 9px; font-weight: 400; }
+
+/* --- mural de presença: onde cada pessoa está, agora ---
+   A cor responde antes da leitura: verde atende, azul é pausa de direito, âmbar é
+   ociosidade, vermelho passou do combinado, cinza não está. */
+.attendance-presence-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.attendance-presence-head .attendance-live-label { display: inline-flex; align-items: center; gap: 7px; }
+.attendance-presence-legend { display: flex; gap: 6px; flex-wrap: wrap; }
+.attendance-presence-legend b { padding: 3px 9px; border-radius: 999px; font-size: 9px; font-weight: 700; }
+.attendance-presence-legend .is-live { background: rgba(18,183,106,.12); color: #087a4b; }
+.attendance-presence-legend .is-rest { background: rgba(64,67,221,.1); color: var(--actuar-primary); }
+.attendance-presence-legend .is-off { background: var(--actuar-surface); color: var(--actuar-text-secondary); }
+
+.attendance-presence-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 10px; margin-top: 10px; }
+.attendance-presence-card { display: grid; gap: 6px; padding: 14px; border: 1px solid var(--actuar-border); border-left-width: 3px; border-radius: 12px; background: var(--actuar-surface); }
+.attendance-presence-card header { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 9px; }
+.attendance-presence-card header > span:nth-child(2) { display: grid; gap: 1px; min-width: 0; }
+.attendance-presence-card header strong { color: var(--actuar-text); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attendance-presence-card header small { color: var(--actuar-text-secondary); font-family: Geist, 'Open Sans', sans-serif; font-size: 9px; }
+.attendance-presence-state { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 6px; margin-top: 2px; padding: 3px 8px; border-radius: 999px; font-size: 9px; font-weight: 700; justify-self: start; }
+.attendance-presence-timer { color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.attendance-presence-card p { margin: 0; color: var(--actuar-text-secondary); font-size: 10px; }
+.attendance-presence-card footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 7px; border-top: 1px solid var(--actuar-border); }
+.attendance-presence-limit { color: var(--actuar-text-secondary); font-size: 9px; }
+.attendance-presence-limit.is-exceeded { color: #c3271c; font-weight: 700; }
+.attendance-presence-flag { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; padding: 3px 8px; border-radius: 999px; background: rgba(247,144,9,.16); color: #a15c00; font-size: 9px; font-weight: 700; cursor: help; }
+
+.attendance-presence-card.is-live { border-left-color: #12b76a; }
+.attendance-presence-card.is-live .attendance-presence-state { background: rgba(18,183,106,.12); color: #087a4b; }
+.attendance-presence-card.is-rest { border-left-color: var(--actuar-primary); }
+.attendance-presence-card.is-rest .attendance-presence-state { background: rgba(64,67,221,.1); color: var(--actuar-primary); }
+.attendance-presence-card.is-idle { border-left-color: #f79009; }
+.attendance-presence-card.is-idle .attendance-presence-state { background: rgba(247,144,9,.14); color: #a15c00; }
+.attendance-presence-card.is-danger { border-left-color: #f04438; background: rgba(240,68,56,.04); }
+.attendance-presence-card.is-danger .attendance-presence-state { background: rgba(240,68,56,.12); color: #c3271c; }
+.attendance-presence-card.is-danger .attendance-presence-timer { color: #c3271c; }
+.attendance-presence-card.is-done, .attendance-presence-card.is-off { border-left-color: var(--actuar-border); background: var(--actuar-surface-subtle); }
+.attendance-presence-card.is-done .attendance-presence-state, .attendance-presence-card.is-off .attendance-presence-state { background: var(--actuar-surface); color: var(--actuar-text-secondary); }
+.attendance-presence-card.is-off .attendance-presence-timer { color: var(--actuar-text-secondary); }
+
+/* ==========================================================================
+   ESCALA — preenchimento por seleção, não por digitação
+   ========================================================================== */
+
+/* Célula: botão com o horário grande e o tipo pequeno. Vazia fica pontilhada,
+   para o olho achar sozinho o que falta preencher. */
+.attendance-schedule .attendance-slot { display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface); text-align: left; cursor: pointer; transition: all .14s ease; }
+.attendance-schedule .attendance-slot + .attendance-slot { margin-top: 5px; }
+.attendance-schedule .attendance-slot span { color: var(--actuar-text-secondary); font-size: 9px; }
+.attendance-schedule .attendance-slot b { color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.attendance-schedule .attendance-slot:hover { border-color: var(--actuar-primary); background: color-mix(in srgb, var(--actuar-primary) 5%, transparent); }
+.attendance-schedule .attendance-slot:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: 1px; }
+.attendance-schedule .attendance-slot.is-empty { border-style: dashed; }
+.attendance-schedule .attendance-slot.is-empty b { color: var(--actuar-text-secondary); font-weight: 500; }
+.attendance-schedule .attendance-slot.is-filled { border-color: color-mix(in srgb, var(--actuar-primary) 30%, transparent); background: color-mix(in srgb, var(--actuar-primary) 6%, transparent); }
+.attendance-schedule .attendance-slot.is-outside { border-color: #f04438; background: rgba(240,68,56,.07); }
+.attendance-schedule .attendance-slot.is-outside span { color: #c3271c; font-weight: 700; }
+
+/* Seletor */
+.attendance-slot-layer { background: rgba(22, 29, 43, .55); backdrop-filter: blur(2px); }
+.attendance-slot-card { width: min(430px, calc(100vw - 32px)); max-height: calc(100vh - 48px); display: grid; gap: 14px; padding: 20px; border: 1px solid var(--actuar-border); border-radius: 16px; background: var(--actuar-surface); box-shadow: var(--actuar-shadow-dropdown); overflow: auto; }
+.attendance-slot-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.attendance-slot-kind { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, var(--actuar-primary) 10%, transparent); color: var(--actuar-primary); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.attendance-slot-head h2 { margin: 7px 0 2px; color: var(--actuar-text); font-size: 16px; font-weight: 800; }
+.attendance-slot-head p { margin: 0; color: var(--actuar-text-secondary); font-size: 11px; }
+.attendance-slot-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.attendance-slot-option { min-height: 36px; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface); color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; transition: all .12s ease; }
+.attendance-slot-option:hover { border-color: var(--actuar-primary); background: color-mix(in srgb, var(--actuar-primary) 8%, transparent); color: var(--actuar-primary); }
+.attendance-slot-option:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: 1px; }
+.attendance-slot-option.is-selected { border-color: var(--actuar-primary); background: var(--actuar-primary); color: #fff; }
+.attendance-slot-option.is-outside { border-style: dashed; color: #c3271c; }
+.attendance-slot-option.is-outside:hover { border-color: #f04438; background: rgba(240,68,56,.08); color: #c3271c; }
+.attendance-slot-repeat { padding: 10px 12px; border-radius: 10px; background: var(--actuar-surface-subtle); }
+.attendance-slot-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* Rodapé da escala */
+.attendance-schedule-actions { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--actuar-border); }
+.attendance-assist { display: grid; gap: 6px; }
+.attendance-assist-label { color: var(--actuar-text-secondary); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.attendance-assist-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+.attendance-assist-btn { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 12px; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface-subtle); color: var(--actuar-text); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .14s ease; }
+.attendance-assist-btn:hover { border-color: var(--actuar-primary); background: color-mix(in srgb, var(--actuar-primary) 7%, transparent); color: var(--actuar-primary); }
+.attendance-assist-btn i { font-size: 12px; }
+
+@media (max-width: 620px) {
+    .attendance-slot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .attendance-schedule-actions > .actuar-btn-primary { width: 100%; }
+}
+
+/* Trilha da seção no Modo Gestão. Substituiu a faixa de consulta gerencial: mesma
+   informação (onde estou, de quem são os dados, é leitura) numa linha só. */
+.manager-section-header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 14px; border: 1px solid var(--actuar-border); border-radius: 10px; background: var(--actuar-surface-subtle); }
+.manager-crumbs { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; }
+.manager-crumbs button { border: 0; background: none; color: var(--actuar-primary); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0; }
+.manager-crumbs button:hover { text-decoration: underline; }
+.manager-crumbs i { color: var(--actuar-text-secondary); font-size: 10px; }
+.manager-crumbs span { color: var(--actuar-text); font-weight: 700; }
+.manager-readonly { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: var(--actuar-surface); color: var(--actuar-text-secondary); font-size: 10px; }
+.manager-section-header > .actuar-btn { margin-left: auto; }
+
+/* Funil do processo de peças: cada etapa diz de quem é a bola agora. */
+.pieces-pipeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px; padding: 8px; border: 1px solid var(--actuar-border); border-radius: 10px; background: var(--actuar-surface); }
+.pieces-pipeline-step { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid transparent; border-radius: 8px; background: transparent; font-family: inherit; text-align: left; cursor: pointer; transition: border-color .18s, background .18s; }
+.pieces-pipeline-step:hover { border-color: var(--actuar-primary); background: var(--actuar-primary-soft); }
+.pieces-pipeline-step.is-active { border-color: var(--actuar-primary); background: var(--actuar-primary-soft); }
+.pieces-pipeline-step.is-empty { opacity: .55; }
+.pieces-pipeline-order { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--actuar-surface-muted); color: var(--actuar-secondary); font-family: Geist, "Open Sans", sans-serif; font-size: 10px; font-weight: 700; }
+.pieces-pipeline-step.is-active .pieces-pipeline-order { background: var(--actuar-primary); color: #fff; }
+.pieces-pipeline-text { display: grid; gap: 1px; min-width: 0; }
+.pieces-pipeline-text strong { color: var(--actuar-foreground); font-size: 11.5px; line-height: 1.25; }
+.pieces-pipeline-text small { color: var(--actuar-secondary); font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pieces-pipeline-step b { color: var(--actuar-foreground); font-size: 15px; }
+.pieces-pipeline-clear { grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px; border: 1px dashed var(--actuar-border); border-radius: 8px; background: transparent; color: var(--actuar-secondary); font-family: inherit; font-size: 11px; cursor: pointer; }
+
+.pieces-stage-badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; background: var(--actuar-surface-muted); color: var(--actuar-secondary); font-size: 10px; font-weight: 700; }
+.pieces-stage-badge.is-lab_review { background: rgba(64, 67, 221, .12); color: var(--actuar-primary); }
+.pieces-stage-badge.is-manager_check { background: rgba(247, 144, 9, .14); color: #a15c00; }
+.pieces-stage-badge.is-invoicing, .pieces-stage-badge.is-shipping { background: rgba(64, 67, 221, .1); color: var(--actuar-primary); }
+.pieces-stage-badge.is-lab_followup { background: rgba(18, 183, 106, .12); color: #087a4b; }
+.pieces-stage-badge.is-done { background: rgba(18, 183, 106, .12); color: #087a4b; }
+.pieces-stage-badge.is-rejected { background: rgba(240, 68, 56, .12); color: #c3271c; }
+
+/* Fio de acompanhamento na ficha da peça. É onde mora o que não é decisão: o
+   combinado com o cliente, o que atrasou, o que mudou no caminho. */
+.pieces-comments { display: grid; gap: 8px; }
+.pieces-comment { padding: 11px 12px; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface-subtle); }
+.pieces-comment header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.pieces-comment header span { display: grid; gap: 1px; }
+.pieces-comment strong { color: var(--actuar-text); font-size: 11px; }
+.pieces-comment small { color: var(--actuar-text-secondary); font-size: 9px; }
+.pieces-comment p { margin: 0; color: var(--actuar-text); font-size: 11px; line-height: 1.5; }
+.pieces-comment-form { display: grid; gap: 9px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--actuar-border); justify-items: start; }
+.pieces-comment-form .actuar-field { width: 100%; margin: 0; }
+
+/* Quem está logado e em qual papel. A tela de peças muda inteira conforme o papel;
+   sem isso, olhar o cabeçalho não dizia em qual perfil se estava. */
+.pieces-identity { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 5px 11px 5px 5px; border: 1px solid var(--actuar-border); border-radius: 999px; background: var(--actuar-surface-subtle); cursor: help; }
+.pieces-identity b { color: var(--actuar-text); font-size: 11px; }
+.pieces-identity i { padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--actuar-primary) 12%, transparent); color: var(--actuar-primary); font-size: 9px; font-style: normal; font-weight: 700; }
+
+/* Auditoria da correção do Lab: o valor de antes e o de agora, lado a lado. */
+.pieces-correction { padding: 12px; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface-subtle); }
+.pieces-correction + .pieces-correction { margin-top: 8px; }
+.pieces-correction header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.pieces-correction header strong { color: var(--actuar-text); font-size: 11px; }
+.pieces-correction header small { color: var(--actuar-text-secondary); font-size: 9px; }
+.pieces-correction-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 5px 0; border-top: 1px solid var(--actuar-border); font-size: 10px; }
+.pieces-correction-line > span { min-width: 150px; color: var(--actuar-text-secondary); }
+.pieces-correction-line b { padding: 2px 7px; border-radius: 5px; font-family: Geist, 'Open Sans', sans-serif; font-size: 10px; }
+.pieces-correction-line .is-before { background: rgba(240,68,56,.1); color: #c3271c; text-decoration: line-through; }
+.pieces-correction-line .is-after { background: rgba(18,183,106,.12); color: #087a4b; }
+.pieces-correction-line > i { color: var(--actuar-text-secondary); font-size: 9px; }
+.pieces-correction-note { margin: 8px 0 0; color: var(--actuar-text-secondary); font-size: 10px; font-style: italic; }
+
+/* Pontuação à vista enquanto o Lab marca os critérios. */
+.pieces-score-preview { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--actuar-primary) 28%, transparent); border-radius: 10px; background: color-mix(in srgb, var(--actuar-primary) 7%, transparent); }
+.pieces-score-preview > div { display: flex; align-items: baseline; gap: 7px; }
+.pieces-score-preview small { color: var(--actuar-text-secondary); font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+.pieces-score-preview strong { color: var(--actuar-primary); font-family: Geist, 'Open Sans', sans-serif; font-size: 26px; font-weight: 800; }
+.pieces-score-preview em { color: var(--actuar-primary); font-size: 11px; font-style: normal; font-weight: 700; }
+.pieces-score-preview > span { color: var(--actuar-text-secondary); font-size: 10px; }
+
+/* ==========================================================================
+   CAMPO COM ÍCONE
+   A lupa — e qualquer ícone dentro de um input — precisa de espaço reservado no
+   próprio campo. As regras antigas escreviam `.classe input`, especificidade
+   (0,1,1), e perdiam para a base do design system
+   `body.actuar-app input:not([type=checkbox]):not([type=radio]):not([type=file])`,
+   que é (0,4,2) — as duas com !important. O recuo simplesmente não era aplicado
+   e o ícone caía por cima do texto digitado, em toda tela que usasse o padrão.
+   Por isso o recuo aqui repete a cadeia de :not(): é o que faz a regra ganhar.
+   Para um campo novo com ícone use .actuar-input-icon; os nomes antigos seguem
+   como apelido para não quebrar as telas já escritas.
+   ========================================================================== */
+.actuar-input-icon,
+.pieces-search-control { position: relative; display: block; }
+.actuar-input-icon > i,
+.pieces-search-control > i {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 12px;
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    color: var(--actuar-secondary);
+    font-size: 14px;
+    line-height: 1;
+    pointer-events: none;
+    transform: translateY(-50%);
+}
+body.actuar-app .actuar-input-icon > input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body.actuar-app .pieces-search-control > input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+    width: 100%;
+    padding-left: 38px !important;
+    text-indent: 0;
+}
+/* Mesma história do outro lado: o botão do olho encostava na senha digitada. */
+body.actuar-app .actuar-field-with-action > input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+    padding-right: 42px !important;
+}

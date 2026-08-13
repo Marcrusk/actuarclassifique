@@ -84,7 +84,12 @@ test('Lab corrige os dados em vez de devolver ao analista e a pontuação reflet
     assert.equal(validated.client.city, 'Anápolis');
     assert.equal(validated.scoring.calculated, 4, 'critério não atendido reduz a pontuação do analista');
     assert.equal(validated.scoring.final, 4);
-    assert.deepEqual(validated.labReview.corrections, ['client']);
+    /* A correção passou a guardar o antes e o depois: "o Lab mexeu no cliente" não
+       responde nada na auditoria; "a cidade era Goiânia e virou Anápolis" responde. */
+    assert.deepEqual(validated.labReview.corrections.map(item => item.field), ['client']);
+    assert.equal(validated.labReview.corrections[0].label, 'Cliente');
+    assert.equal(validated.labReview.corrections[0].before.city, 'Goiânia');
+    assert.equal(validated.labReview.corrections[0].after.city, 'Anápolis');
     assert.equal(validated.assignments.at(-1).area, 'Gestão');
     assert.equal(pieces.nextAction(validated).area, 'Gestão');
     // Nenhum estado do fluxo devolve a solicitação ao analista.
@@ -546,9 +551,17 @@ test('interface reflete o fluxo Lab → Gestão → Logística → Lab', () => {
 
     // O Lab é um perfil operacional próprio, com modo e abas dedicadas.
     assert.match(html, /PIECES_OPERATION_ROLES = new Set\(\[[^\]]*'Toletus Lab'\]\)/);
-    assert.match(html, /enterLocalPecaPreview\('Toletus Lab'\)/);
+    // Chega-se ao Lab pelo login com o papel do cadastro — não por atalho de
+    // visualização na tela de entrada, que deixava qualquer um abrir a operação.
+    assert.match(html, /<option value="Toletus Lab">/);
+    for (const atalho of ['enterLocalPecaPreview', 'ACTUAR_LOCAL_PIECES_ROLE', 'pecaLocalPreviewButton', 'Visualizar como']) {
+        assert.ok(!html.includes(atalho), `atalho de visualização de volta na tela de login: ${atalho}`);
+        assert.ok(!ui.includes(atalho), `atalho de visualização de volta no módulo de peças: ${atalho}`);
+    }
     assert.match(ui, /mode: user\?\.role === LAB_ROLE \? 'lab' : 'logistics'/);
-    assert.match(ui, /if \(mode === 'lab'\) return \[\['validation', 'Validar e pontuar'\], \['followup', 'Acompanhamento'\]/);
+    // O Lab acompanha do começo ao fim e ainda embala e posta: a fila de validação
+    // abre a tela, e o resto é a visão da gestão inteira.
+    assert.match(ui, /if \(mode === 'lab'\) return \[\['validation', 'Validar e pontuar'\], \['overview', 'Visão geral'\], \['requests', 'Solicitações'\]/);
 
     // Filas de cada etapa.
     assert.match(ui, /state\.tab === 'validation'.*requestStatus === 'pending_lab_review'/);
@@ -789,4 +802,400 @@ test('confirmação usa o diálogo do sistema, não o do navegador', () => {
     assert.match(html, /layer\.dataset\.returnFocus = ativo\.id;/);
 
     assert.match(css, /\.actuar-confirm-card\.tone-danger \.actuar-confirm-icon/);
+});
+
+test('ranking geral e consulta de analista vivem DENTRO do Modo Gestão', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    /* Antes, "Ranking geral" mandava o gestor para a rota pública: outra barra de
+       abas, outro cabeçalho e um botão de voltar. Parecia outro acesso. Agora é
+       uma seção do próprio Modo Gestão. */
+    assert.match(html, /onclick="switchAdminTab\('rankingGeral'\)" id="admNavRankingGeral"/);
+    assert.ok(!html.includes('openManagerGeneralRanking'), 'a função que saía da gestão não pode sobrar');
+
+    // As duas seções entram no mapa de painéis sem painel próprio: o conteúdo é o
+    // mesmo bloco que o analista usa, exibido abaixo da navegação da gestão.
+    assert.match(html, /rankingGeral: null, analista: null \};/);
+    assert.match(html, /const analistaNaGestao = secao === 'analista';/);
+    assert.match(html, /document\.getElementById\('viewRanking'\)\?\.classList\.toggle\('hidden', !noRanking\);/);
+    assert.match(html, /if \(analistaNaGestao\) renderAnalystDashboard\(user, usersList, metrics\);/);
+    // Seção sem painel não pode ser confundida com aba inválida e cair na visão geral.
+    assert.match(html, /if \(!\(tab in panels\)\) tab = activeAdminTab = 'visao';/);
+
+    // Consultar um analista deixou de trocar de rota.
+    assert.match(html, /navigateTo\(\{ name: 'admin', section: 'analista' \}\);/);
+
+    // A barra de abas do analista nunca aparece para quem está no Modo Gestão.
+    assert.match(html, /document\.getElementById\('publicTabsContainer'\)\.classList\.add\('hidden'\);/);
+
+    // A trilha substitui a faixa roxa: mesma informação, uma linha.
+    assert.match(html, /function renderManagerSectionHeader\(\)/);
+    assert.match(html, /Somente leitura · você é \$\{escapeHtml\(getCurrentManager\(\)\?\.name \|\| 'gestor'\)\}/);
+    assert.match(html, /onclick="switchAdminTab\('rankingGeral'\)"><i class="fi fi-rr-cross-small"><\/i>Fechar consulta/);
+
+    /* A faixa continua existindo para quem cai numa rota pública por link antigo ou
+       por recarregar com a URL de antes — sem ela, ficaria sem caminho de volta. */
+    const banner = html.indexOf('id="managerConsultationBanner"');
+    const agent = html.indexOf('id="viewAgent"');
+    assert.ok(banner > 0 && banner < agent, 'o banner precisa ficar fora do viewAgent');
+    assert.equal(html.split('id="managerConsultationBanner"').length - 1, 1);
+    assert.match(html, /const rotasPublicas = \['dashboard', 'ranking', 'faq', 'priorities', 'pecas'\];/);
+    assert.match(html, /Voltar à gestão/);
+
+    // O ranking oferece as duas equipes, independentemente da equipe do gestor.
+    assert.match(html, /<select id="rankingViewSelect"[\s\S]{0,200}value="Sistema"[\s\S]{0,120}value="Catraca"/);
+});
+
+test('histórico de prioridades pode ser buscado por protocolo, status e analista', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    // Os três controles pedidos, no histórico da equipe.
+    assert.match(html, /id="priorityHistorySearch"[^>]*placeholder="Protocolo ou analista"/);
+    assert.match(html, /id="priorityHistoryAnalyst" onchange="updatePriorityHistoryFilter\('analyst', this\.value\)"/);
+    assert.match(html, /id="priorityHistoryStatus"/);
+    for (const status of ['aprovado', 'reprovado', 'pendente', 'ajuste_solicitado']) {
+        assert.ok(html.includes(`<option value="${status}">`), `status ausente no filtro: ${status}`);
+    }
+
+    // A busca cobre protocolo e nome, sem diferenciar maiúsculas.
+    assert.match(html, /const alvo = `\$\{record\.request\?\.protocolo \|\| ''\} \$\{users\[record\.analystId\]\?\.name \|\| ''\}`;/);
+    assert.match(html, /toLocaleLowerCase\('pt-BR'\)\.includes\(search\)/);
+
+    // Atendimento do rodízio sem lançamento vinculado não tem status próprio.
+    assert.match(html, /const status = record\.request\?\.status \|\| 'sem_registro';/);
+
+    // Os filtros valem só para o histórico da equipe; o do analista já é a visão dele.
+    assert.match(html, /renderPriorityHistoryInto\('priorityManagerHistoryBody', 'priorityManagerHistorySubtitle', team, true\)/);
+    assert.match(html, /renderPriorityHistoryInto\('priorityInlineHistoryBody', 'priorityInlineHistorySubtitle', currentPriorityRotationTeam\(\)\)/);
+
+    // Estado vazio e contagem quando há filtro aplicado.
+    assert.match(html, /Nenhum atendimento encontrado com esses filtros\./);
+    assert.match(html, /\$\{records\.length\} de \$\{todos\.length\} atendimento\(s\)/);
+    assert.match(css, /\.priority-history-empty \{/);
+});
+
+test('gestão acompanha a operação de peças por etapa', () => {
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+
+    // A gestão ganhou a leitura por etapa que logística e Lab já tinham.
+    const linha = ui.split('\n').find(line => line.includes("['evaluations', 'Avaliações']"));
+    assert.ok(linha, 'linha das abas da gestão não encontrada');
+    for (const tab of ["['shipping', 'A embalar']", "['transit', 'Em trânsito']", "['occurrences', 'Ocorrências']", "['completed', 'Concluídos']"]) {
+        assert.ok(linha.includes(tab), `aba ausente para a gestão: ${tab}`);
+    }
+
+    // As filas reaproveitam o filtro que já existia, sem regra nova.
+    assert.match(ui, /state\.tab === 'transit'.*\['in_transit', 'returning', 'out_for_delivery'\]/);
+    assert.match(ui, /state\.tab === 'completed'.*operationalStatus\(row\) === 'Concluído'/);
+
+    // Contadores nas abas novas.
+    assert.match(ui, /shipping: summary\.readyToShip, transit: summary\.inTransit/);
+});
+
+test('modo TV não repete o botão de fechar', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    // A seta "Ranking" fazia exatamente o que o X ao lado já faz.
+    assert.ok(!html.includes('btnReturnManagerRanking'), 'botão redundante do modo TV ainda presente');
+    // O X continua sendo a única saída da apresentação, junto com Esc.
+    assert.equal(html.split('onclick="closeRankingPresentation()"').length - 1, 1);
+    assert.match(html, /title="Fechar apresentação \(Esc\)"/);
+    // O botão de atualizar também saiu: o modo TV já redesenha sozinho.
+    assert.ok(!html.includes('btnRefreshManagerTv'), 'botão de atualizar ainda presente');
+    assert.ok(!html.includes('refreshManagerTv'), 'função órfã do botão de atualizar');
+
+    // Os controles que permanecem.
+    for (const id of ['btnPresentationFullscreen', 'btnAutoRotatePresentation']) {
+        assert.ok(html.includes(id), `controle do modo TV removido por engano: ${id}`);
+    }
+});
+
+test('lupa da busca de peças não invade o texto digitado', () => {
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+
+    // Estrutura: ícone e input irmãos dentro do controle posicionado.
+    assert.match(ui, /<div class="pieces-search-control"><i class="fi fi-rr-search"><\/i><input id="piecesSearch"/);
+
+    // O ícone tem caixa própria, então não cresce com a fonte herdada do bloco.
+    assert.match(css, /\.pieces-search-control > i \{[\s\S]*?width: 16px;[\s\S]*?height: 16px;/);
+    assert.match(css, /\.pieces-search-control > i \{[\s\S]*?pointer-events: none;/);
+
+    // O recuo do texto precisa VENCER a base do design system, que também é
+    // !important. A tentativa anterior (.pieces-filters .pieces-search-control > input)
+    // vinha depois na cascata, mas perdia na especificidade — e a lupa continuou por
+    // cima do texto na tela. Por isso aqui a comparação é de peso, não de ordem.
+    const peso = (seletor) => {
+        const ids = (seletor.match(/#[\w-]+/g) || []).length;
+        const classes = (seletor.match(/\.[\w-]+/g) || []).length + (seletor.match(/\[[^\]]+\]/g) || []).length;
+        const elementos = (seletor.replace(/\[[^\]]+\]/g, '').replace(/[.#][\w-]+/g, '').match(/[a-z]+/g) || []).filter(t => t !== 'not').length;
+        return ids * 10000 + classes * 100 + elementos;
+    };
+    const cadeia = ':not([type="checkbox"]):not([type="radio"]):not([type="file"])';
+    const base = `body.actuar-app input${cadeia}`;
+    assert.ok(css.includes(base), 'a base do design system mudou; revise o recuo da lupa');
+    for (const alvo of [`body.actuar-app .pieces-search-control > input${cadeia}`, `body.actuar-app .actuar-input-icon > input${cadeia}`]) {
+        assert.ok(css.includes(alvo), `regra do recuo ausente: ${alvo}`);
+        assert.ok(peso(alvo) > peso(base), `${alvo} perde para a base e o recuo não será aplicado`);
+    }
+    assert.match(css, /padding-left: 38px !important;/);
+});
+
+
+test('recarregar devolve a mesma tela e os mesmos filtros', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    // A rota vive no endereço e é reaplicada depois que a sessão volta. A navegação
+    // inicial roda antes da sessão existir, então sem reaplicar a tela ficava deslogada;
+    // e navegar incondicionalmente descartava a rota, jogando todo mundo em Prioridades.
+    // "dashboard" é o destino genérico de quem chega sem rota, inclusive de links
+    // antigos: ele não pode sequestrar a home de gestão nem da operação.
+    // A rota precisa ser copiada ANTES de initApp(): a navegação inicial roda sem sessão,
+    // applyRoute rejeita rota de gestão de quem não está logado e reescreve o endereço
+    // para /dashboard. Relendo depois, o destino original já se perdeu — era isso que
+    // devolvia /admin/visao a quem recarregava em /admin/ponto.
+    const onload = html.slice(html.indexOf('window.onload = async'), html.indexOf('await PerformancePlatform.init'));
+    assert.ok(onload.indexOf('const rotaPretendida = routeFromLocation();') < onload.indexOf('await initApp();'),
+        'a rota tem de ser lida antes de initApp()');
+    assert.ok(!onload.slice(onload.indexOf('await initApp();')).includes('routeFromLocation()'),
+        'depois do initApp o endereço já foi reescrito: reler traz a rota errada');
+    assert.match(html, /const rotaEscolhida = rotaPretendida\.name !== 'dashboard' \? rotaPretendida : null;/);
+    assert.match(html, /if \(rotaEscolhida\) applyRoute\(rotaEscolhida, \{ replace: true \}\);/);
+    assert.match(html, /const home = \{ manager: \{ name: 'admin', section: activeAdminTab \|\| 'visao' \}, operations: 'pecas', analyst: 'dashboard' \}\[restored\];/);
+    assert.match(html, /else navigateTo\(home, \{ replace: true \}\);/);
+
+    // A seção do admin faz parte do endereço, então "Ponto e pausas" é restaurável.
+    assert.match(html, /return `#\/\$\{clean\.name\}\$\{clean\.section \? '\/' \+ clean\.section : ''\}`;/);
+    assert.match(html, /history\.pushState\(nextState, '', routeUrl\(next\)\)/);
+
+    // Filtros e contexto passam a durar o mesmo que a sessão.
+    assert.match(html, /localStorage\.setItem\(VIEW_CONTEXT_STORAGE_KEY/);
+    assert.match(html, /localStorage\.setItem\(MANAGER_FILTER_STORAGE_KEY/);
+    assert.doesNotMatch(html, /sessionStorage\.setItem\(MANAGER_FILTER_STORAGE_KEY/);
+    // E são apagados no logout, para ninguém herdar o filtro do colega.
+    assert.match(html, /localStorage\.removeItem\(VIEW_CONTEXT_STORAGE_KEY\);[\s\S]{0,140}localStorage\.removeItem\(MANAGER_FILTER_STORAGE_KEY\);/);
+});
+
+test('a consulta de analista continua acesa no menu, porque é filha do ranking', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    // Sem isto o menu ficava sem nenhum item destacado durante a consulta, e o gestor
+    // perdia a referência de onde estava.
+    assert.match(html, /rankingGeral: 'admNavRankingGeral', analista: 'admNavRankingGeral' \};/);
+    // A seção vem da rota: applyRoute chama render() antes de switchAdminTabView.
+    assert.match(html, /function managerSection\(\) \{/);
+    assert.match(html, /return \(currentRoute\.name === 'admin' && currentRoute\.section\) \|\| activeAdminTab \|\| 'visao';/);
+    assert.match(html, /function syncManagerSectionViews\(\)/);
+});
+
+test('o conteúdo encaixado fica ABAIXO da navegação da gestão, e sabe voltar', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    // viewRanking e viewAgent vêm antes do viewAdmin no documento: sem mover, o
+    // conteúdo apareceria acima do menu da gestão.
+    assert.ok(html.indexOf('id="viewRanking"') < html.indexOf('id="viewAdmin"'), 'premissa do encaixe mudou');
+    assert.match(html, /id="managerSectionHost"/);
+    assert.match(html, /function parkManagerView\(id, dentro\)/);
+    // Âncora para devolver ao lugar de origem.
+    assert.match(html, /ancora\.id = `\$\{id\}Anchor`;/);
+    assert.match(html, /if \(!dentro && node\.parentNode === host\) ancora\.parentNode\.insertBefore\(node, ancora\.nextSibling\);/);
+});
+
+test('a barra de filtros só aparece onde filtra alguma coisa', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    assert.match(html, /const TOOLBAR_SCOPE = \{/);
+    assert.match(html, /function toolbarScope\(\)/);
+    assert.match(html, /id="filterPeriodGroup"/, 'sem id não há como esconder o grupo Período');
+
+    // Cadastro, peças e ponto não filtram por mês nem por analista.
+    for (const secao of ['cadastros', 'pecas', 'ponto']) {
+        assert.match(html, new RegExp(`${secao}:\\s*\\{ periodo: false, contexto: false \\}`), `${secao} não deveria mostrar filtro`);
+    }
+    // Ciclos é por mês; métricas operacionais tem o próprio seletor de departamento.
+    assert.match(html, /ciclos:\s*\{ periodo: true,  contexto: false \}/);
+    assert.match(html, /lancamentos:\s*\{ periodo: true,  contexto: false \}/);
+    // Onde há resultado por pessoa, os dois grupos aparecem.
+    for (const secao of ['rankingGeral', 'analista']) {
+        assert.match(html, new RegExp(`${secao}:\\s*\\{ periodo: true,  contexto: true  \\}`), `${secao} precisa dos dois grupos`);
+    }
+    // Sem nenhum grupo, a faixa inteira sai.
+    assert.match(html, /document\.querySelector\('\.actuar-toolbar'\)\?\.classList\.toggle\('hidden', !escopo\.periodo && !contexto\);/);
+    // Fora do mapa, o padrão é não mostrar.
+    assert.match(html, /return TOOLBAR_SCOPE\[managerSection\(\)\] \|\| \{ periodo: false, contexto: false \};/);
+});
+
+test('escolher o analista no filtro abre os resultados dele', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const trecho = html.slice(html.indexOf('function switchAgent(val)'), html.indexOf('function changeMonthView'));
+    // Antes só trocava a variável e re-renderizava a tela atual: nada mudava à vista.
+    assert.match(trecho, /if \(managerSection\(\) === 'analista'\) \{ render\(\); return; \}/);
+    assert.match(trecho, /switchAdminTab\('analista'\);/);
+    // O departamento acompanha a pessoa escolhida.
+    assert.match(trecho, /activeRankingTab = selected\?\.team \|\| activeRankingTab;/);
+});
+
+test('o funil de etapas aparece para quem opera peças, e não para o analista', () => {
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+    assert.match(ui, /function renderPipeline\(/);
+    // Hoje o funil é de quem decide o caminho do chamado: Lab e Gestão.
+    assert.match(ui, /\$\{\['lab', 'manager'\]\.includes\(context\.mode\) \? renderPipeline\(allowedRecords\(\)\) : ''\}/);
+    // O handler precisa estar exposto, senão o clique na etapa quebra.
+    assert.match(ui, /window\.setPiecesPipeline = setPipeline;/);
+    // As funções do domínio existem de verdade.
+    const dominio = fs.readFileSync('js/pieces-operations.js', 'utf8');
+    assert.match(dominio, /function pipelineStage\(record\)/);
+    assert.match(dominio, /function pipelineSummary\(records\)/);
+});
+
+test('o endereço publicado carrega o hash do próprio arquivo', () => {
+    const build = fs.readFileSync('scripts/build-check.cjs', 'utf8');
+    /* Duas vezes neste projeto um .js mudou sem o `?v=` mudar junto: o código estava
+       certo e o navegador continuava servindo o antigo. Depender de alguém lembrar de
+       trocar a versão à mão não é uma solução. */
+    assert.match(build, /function contentHash\(file\)/);
+    assert.match(build, /createHash\('sha1'\)\.update\(fs\.readFileSync\(file\)\)/);
+    assert.match(build, /\.replace\(\/\(\(\?:js\|styles\)\\\/\[\^"\?\]\+\)\\\?v=\[\^"\]\*\/g/);
+    assert.match(build, /fs\.writeFileSync\(publicado, carimbado\);/);
+});
+
+test('o papel que valida e pontua pode ser atribuído no cadastro', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+
+    /* Todo o fluxo de validação depende do papel 'Toletus Lab' — é ele que abre a aba
+       "Validar e pontuar". Ele existia no domínio e no login, mas não no formulário de
+       cadastro: dava para o processo existir e ninguém conseguir ocupar a primeira
+       etapa dele. */
+    assert.match(ui, /const LAB_ROLE = 'Toletus Lab';/);
+    assert.match(ui, /if \(mode === 'lab'\) return \[\['validation', 'Validar e pontuar'\]/);
+    assert.match(html, /<option value="Toletus Lab">/, 'sem a opção no cadastro, ninguém chega ao modo lab');
+    // O papel continua exigindo senha, como os demais perfis operacionais.
+    assert.match(html, /const PIECES_OPERATION_ROLES = new Set\(\['Envio\/Coleta', 'Faturamento', 'Expedição', 'Logística\/Faturamento', 'Toletus Lab'\]\);/);
+    // E a porta de acesso operacional lista qualquer perfil operacional.
+    assert.match(html, /filter\(id => isPiecesOperatorRole\(usersList\[id\]\.role\) && usersList\[id\]\.active !== false\)/);
+});
+
+test('o Lab acompanha o chamado do começo ao fim, com visão geral e comentários', () => {
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+
+    /* O Lab abre e fecha o processo: valida na entrada e conclui com o cliente. Sem a
+       visão geral ele via só a própria fila, e não o que estava represado antes ou
+       depois dele. */
+    const abas = ui.match(/if \(mode === 'lab'\) return \[([^\]]*\])+/)[0];
+    for (const aba of ['validation', 'overview', 'followup', 'movements', 'completed']) {
+        assert.ok(abas.includes(`'${aba}'`), `o Lab precisa da aba ${aba}`);
+    }
+    // A aba de trabalho continua sendo a primeira ao entrar.
+    assert.match(ui, /function defaultTab\(mode\) \{ return mode === 'logistics' \? 'operation' : mode === 'lab' \? 'validation' : 'overview'; \}/);
+
+    // Comentário é registro, não decisão: vive na ficha, fora da modal de ação.
+    assert.match(ui, /async function submitComment\(event\)/);
+    assert.match(ui, /window\.submitPiecesComment = submitComment;/);
+    assert.match(ui, /onsubmit="return submitPiecesComment\(event\)"/);
+    // O analista lê, mas não escreve.
+    assert.match(ui, /\$\{context\.mode === 'analyst' \? '' : `<form class="pieces-comment-form"/);
+});
+
+test('comentar registra autor, texto e evento — e recusa texto vazio', () => {
+    const dominio = require('../js/pieces-operations.js');
+    const base = { id: 'op-1', version: 3, events: [], comments: [] };
+
+    const comentado = dominio.comment(base, 'jeremias', '  cliente pediu entrega após as 14h  ', 1000);
+    assert.equal(comentado.comments.length, 1);
+    assert.equal(comentado.comments[0].text, 'cliente pediu entrega após as 14h', 'o texto é aparado');
+    assert.equal(comentado.comments[0].actorId, 'jeremias');
+    assert.equal(comentado.comments[0].createdAt, 1000);
+    // Entra na auditoria como qualquer outro movimento.
+    assert.equal(comentado.events.at(-1).type, 'commented');
+    assert.equal(comentado.version, 4, 'comentar versiona o registro');
+    // E não altera o original.
+    assert.equal(base.comments.length, 0);
+
+    for (const vazio of ['', '   ', null, undefined]) {
+        assert.throws(() => dominio.comment(base, 'jeremias', vazio), /Escreva o comentário/, `"${vazio}" não pode virar comentário`);
+    }
+});
+
+test('o cabeçalho diz quem está logado e em qual papel', () => {
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+    /* A tela de peças muda inteira conforme o papel: o Lab valida e pontua, o
+       Envio/Coleta embala e posta. Sem a identidade no cabeçalho, dava para achar que
+       a tela estava errada quando na verdade o cadastro é que estava. */
+    assert.match(ui, /class="pieces-identity"/);
+    assert.match(ui, /<b>\$\{e\(context\.user\.name\)\}<\/b><i>\$\{e\(context\.user\.role \|\| 'Sem papel definido'\)\}<\/i>/);
+    assert.match(ui, /Modo Gestão → Pessoas e Acessos → Editar/);
+    // E o título do Lab deixou de colidir com o nome do outro papel.
+    assert.match(ui, /context\.mode === 'lab' \? 'Validação técnica e acompanhamento'/);
+});
+
+test('o Lab tem a tela cheia de peças: valida, embala, posta, acompanha e conclui', () => {
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+
+    /* Antônio e Jeremias são o Lab E quem embala e posta. Recortar abas obrigaria a
+       trocar de perfil no meio do próprio trabalho. */
+    const abas = ui.match(/if \(mode === 'lab'\) return \[[^;]*/)[0];
+    for (const aba of ['validation', 'overview', 'requests', 'evaluations', 'shipping', 'collections', 'followup', 'transit', 'occurrences', 'completed', 'movements', 'indicators']) {
+        assert.ok(abas.includes(`'${aba}'`), `falta a aba ${aba} para o Lab`);
+    }
+
+    // As ações operacionais (assumir, embalar, postar, frete, ocorrência) valem para
+    // o Lab do mesmo jeito que para a logística.
+    assert.match(ui, /if \(\['logistics', 'lab'\]\.includes\(context\.mode\) && record\.requestStatus === 'approved'\) \{/);
+    assert.match(ui, /\['logistics', 'lab'\]\.includes\(context\.mode\) \? `<button[^`]*resolveOccurrence/);
+
+    // Mas a nota fiscal continua sendo da Logística — regra do processo.
+    assert.match(ui, /if \(role === LAB_ROLE\) return area !== 'Faturamento';/);
+
+    // E "Registrar ocorrência" não pode aparecer duas vezes na mesma ficha.
+    const blocoLab = ui.slice(ui.indexOf("if (context.mode === 'lab' && record.requestStatus === 'approved')"), ui.indexOf("if (['logistics', 'lab'].includes(context.mode)"));
+    assert.ok(!blocoLab.includes("openPiecesAction('occurrence')"), 'botão de ocorrência duplicado na ficha do Lab');
+});
+
+test('a auditoria mostra o campo, o valor anterior e o novo', () => {
+    const dominio = require('../js/pieces-operations.js');
+
+    // Objetos são achatados até o pedaço que mudou — não o objeto inteiro.
+    const diff = dominio.diffOf({
+        field: 'client', label: 'Cliente',
+        before: { id: 'TZ2244', name: 'Academia Modelo', city: 'Goiânia' },
+        after: { id: 'TZ3353', name: 'Academia Modelo', city: 'Goiânia' }
+    });
+    assert.equal(diff.length, 1, 'só o que mudou entra na auditoria');
+    assert.deepEqual(diff[0], { path: 'id', before: 'TZ2244', after: 'TZ3353' });
+
+    // Campo simples também funciona.
+    const simples = dominio.diffOf({ field: 'diagnosis', label: 'Diagnóstico', before: 'Placa solta', after: 'Placa queimada' });
+    assert.equal(simples[0].before, 'Placa solta');
+    assert.equal(simples[0].after, 'Placa queimada');
+
+    // Campo que não existia antes aparece como traço, não como "undefined".
+    const novo = dominio.diffOf({ field: 'diagnosis', label: 'Diagnóstico', before: null, after: 'Placa queimada' });
+    assert.equal(novo[0].before, '—');
+
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+    assert.match(ui, /O que o Toletus Lab corrigiu/);
+    assert.match(ui, /domain\(\)\.diffOf\(campo\)/);
+    // Registros antigos guardavam só o nome do campo: não podem quebrar a ficha.
+    assert.match(ui, /typeof campo === 'string'/);
+});
+
+test('a pontuação do Lab aparece antes de salvar e acompanha os critérios', () => {
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+    /* Antes o total era consequência invisível dos check-boxes: só se descobria
+       depois de salvar. */
+    assert.match(ui, /id="paScorePreview"/);
+    assert.match(ui, /<div class="pieces-criteria" onchange="updatePiecesScorePreview\(\)">/);
+    assert.match(ui, /window\.updatePiecesScorePreview = \(\) => \{/);
+    assert.match(ui, /critérios atendidos · 4 pontos cada/);
+});
+
+test('clicar numa etapa do funil leva a uma lista que consegue mostrá-la', () => {
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+    /* Abas como "Validar e pontuar" filtram por status. Marcar "No check da gestão"
+       dentro delas devolvia lista vazia: o número dizia 1 e a tela dizia nada. */
+    assert.match(ui, /const PIPELINE_LIST_TAB = \{ manager: 'requests', lab: 'requests', logistics: 'operation', analyst: 'requests' \};/);
+    assert.match(ui, /if \(tabsFor\(currentContext\(\)\.mode\)\.some\(\(\[id\]\) => id === destino\)\) state\.tab = destino;/);
+    // Desmarcar a etapa não pode arrastar a pessoa para outra aba.
+    assert.match(ui, /const desmarcando = state\.pipeline === stage;/);
+    assert.match(ui, /if \(!desmarcando\) \{/);
 });

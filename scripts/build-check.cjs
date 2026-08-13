@@ -3,11 +3,11 @@ const path = require('node:path');
 
 /* 1. Verificação: os arquivos existem e estão referenciados no shell. */
 
-const required = ['index.html','styles/actuar-design-system.css','js/actuar-fields.js','js/performance-domain.js','js/manager-experience.js','js/priority-rotation.js','js/pieces-operations.js','js/pieces-ui.js','js/performance-platform.js','supabase/migrations/202608100001_performance_platform.sql'];
+const required = ['index.html','styles/actuar-design-system.css','js/actuar-fields.js','js/attendance-clock.js','js/performance-domain.js','js/manager-experience.js','js/priority-rotation.js','js/pieces-operations.js','js/pieces-ui.js','js/performance-platform.js','supabase/migrations/202608100001_performance_platform.sql'];
 const missing = required.filter(file => !fs.existsSync(file));
 if (missing.length) { console.error(`Arquivos ausentes: ${missing.join(', ')}`); process.exit(1); }
 const html = fs.readFileSync('index.html', 'utf8');
-for (const asset of ['styles/actuar-design-system.css','js/actuar-fields.js','js/performance-domain.js','js/manager-experience.js','js/priority-rotation.js','js/pieces-operations.js','js/pieces-ui.js','js/performance-platform.js']) {
+for (const asset of ['styles/actuar-design-system.css','js/actuar-fields.js','js/attendance-clock.js','js/performance-domain.js','js/manager-experience.js','js/priority-rotation.js','js/pieces-operations.js','js/pieces-ui.js','js/performance-platform.js']) {
   if (!html.includes(asset)) { console.error(`Asset não referenciado: ${asset}`); process.exit(1); }
 }
 
@@ -71,4 +71,24 @@ for (const { item, allow } of PUBLISH) {
 
 if (!fs.existsSync(path.join(OUTPUT, 'index.html'))) { console.error('index.html não foi copiado para public/.'); process.exit(1); }
 
-console.log(`Build estático verificado. public/ gerado com ${count(OUTPUT)} arquivo(s): ${published.join(', ')}.`);
+/* 3. Cache-busting por conteúdo.
+   A versão escrita à mão no `?v=` depende de alguém lembrar de trocá-la. Duas vezes
+   neste projeto um arquivo mudou sem a versão mudar junto, e o navegador continuou
+   servindo o antigo — o código estava certo e ninguém via o resultado. Aqui o
+   endereço publicado passa a carregar o hash do próprio arquivo: se o conteúdo muda,
+   a URL muda; se não muda, o cache continua valendo. */
+const crypto = require('node:crypto');
+function contentHash(file) {
+  return crypto.createHash('sha1').update(fs.readFileSync(file)).digest('hex').slice(0, 10);
+}
+
+const publicado = path.join(OUTPUT, 'index.html');
+let marcados = 0;
+const carimbado = fs.readFileSync(publicado, 'utf8').replace(/((?:js|styles)\/[^"?]+)\?v=[^"]*/g, (trecho, asset) => {
+  if (!fs.existsSync(asset)) return trecho;
+  marcados += 1;
+  return `${asset}?v=${contentHash(asset)}`;
+});
+fs.writeFileSync(publicado, carimbado);
+
+console.log(`Build estático verificado. public/ gerado com ${count(OUTPUT)} arquivo(s): ${published.join(', ')}. ${marcados} asset(s) versionado(s) por conteúdo.`);

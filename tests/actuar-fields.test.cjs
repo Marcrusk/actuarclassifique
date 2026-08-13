@@ -132,7 +132,10 @@ test('a toolbar decide acessos e escopo de filtro num lugar só', () => {
     const html = fs.readFileSync('index.html', 'utf8');
 
     assert.match(html, /function syncAccessControls\(\)/);
-    assert.match(html, /show\('filterContextGroup', isAdminLoggedIn\)/, 'Departamento e Analista só na gestão');
+    // Departamento e Analista continuam sendo ferramenta de gestão, mas agora também
+    // dependem da tela: filtro por analista numa tela de cadastro não filtra nada.
+    assert.match(html, /const contexto = isAdminLoggedIn && escopo\.contexto;/);
+    assert.match(html, /show\('filterContextGroup', contexto\)/);
     assert.match(html, /id="filterContextGroup"/);
 
     // Dentro de uma sessão nenhuma porta de entrada continua na tela.
@@ -156,4 +159,58 @@ test('a toolbar decide acessos e escopo de filtro num lugar só', () => {
     // Regressão: a visibilidade vivia duplicada em quatro ramos do render(), com regras divergentes.
     const espalhado = html.match(/getElementById\('btn(Analyst|Peca|Admin)(Access|Logout)'\)\.classList/g) || [];
     assert.equal(espalhado.length, 0, `visibilidade de acesso voltou a ficar espalhada: ${espalhado.length} ocorrência(s)`);
+});
+
+test('a Logística fatura, o Lab embala: cada perfil só enxerga a etapa que é dele', () => {
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+    const inicio = ui.indexOf('    function operatorCan(area) {');
+    assert.ok(inicio > 0, 'operatorCan não encontrado');
+    const corpo = ui.slice(inicio, ui.indexOf('\n    }', inicio) + 6);
+    const permissao = new Function('currentContext', 'LAB_ROLE', `${corpo}\nreturn operatorCan;`);
+    const podeComo = (role) => permissao(() => ({ user: { role } }), 'Toletus Lab');
+
+    // A Sarah lança a nota e o rastreio; depois disso o chamado sai da fila dela.
+    const logistica = podeComo('Logística/Faturamento');
+    assert.equal(logistica('Faturamento'), true);
+    assert.equal(logistica('Expedição'), false, 'a Logística voltou a poder embalar');
+
+    // O Lab embala, posta e acompanha até a conclusão, mas não emite nota.
+    const lab = podeComo('Toletus Lab');
+    assert.equal(lab('Expedição'), true);
+    assert.equal(lab('Faturamento'), false);
+
+    // Envio/Coleta segue restrito à expedição e o analista comum não é operador.
+    assert.equal(podeComo('Envio/Coleta')('Expedição'), true);
+    assert.equal(podeComo('Envio/Coleta')('Faturamento'), false);
+    assert.equal(podeComo('Analista')('Expedição'), true);
+
+    // E a fila da Logística filtra pela área da próxima ação, senão o chamado ficaria parado lá.
+    assert.match(ui, /operatorCan\('Faturamento'\) && domain\(\)\.nextAction\(row\)\.area === 'Logística\/Faturamento'/);
+});
+
+test('digitar na busca não perde o foco nem o cursor, e a lupa não invade o texto', () => {
+    const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    // Cada tecla redesenhava o módulo por innerHTML: o input morria, o foco caía e
+    // só a primeira letra entrava. A digitação agora agenda o redesenho...
+    const filtro = ui.slice(ui.indexOf('    function updateFilter(key, value) {'));
+    const corpo = filtro.slice(0, filtro.indexOf('\n    }') + 6);
+    assert.match(corpo, /setTimeout\(\(\) => \{ filterTimer = null; renderPiecesModule\(\); \}, \d+\)/);
+    assert.match(corpo, /if \(!TYPED_FILTERS\.includes\(key\)\) \{ renderPiecesModule\(\); return; \}/);
+
+    // ...e o redesenho devolve foco e posição do cursor.
+    assert.match(ui, /const focoId = focado && mount\.contains\(focado\) \? focado\.id : null;/);
+    assert.match(ui, /devolvido\.focus\(\{ preventScroll: true \}\)/);
+    assert.match(ui, /devolvido\.setSelectionRange\(selecao\[0\], selecao\[1\]\)/);
+
+    // A lupa e o botão do olho só ficam fora do texto se o recuo ganhar da base do
+    // design system, que é !important e tem especificidade (0,4,2). Regra curta como
+    // `.pieces-search-control input { padding-left }` perde e o ícone volta por cima.
+    const cadeia = ':not([type="checkbox"]):not([type="radio"]):not([type="file"])';
+    for (const seletor of ['.actuar-input-icon > input', '.pieces-search-control > input', '.actuar-field-with-action > input']) {
+        assert.ok(css.includes(`body.actuar-app ${seletor}${cadeia}`), `${seletor} sem a cadeia de :not(); o recuo vai perder para a base`);
+    }
+    assert.ok(!/\.pieces-search-control input\s*\{/.test(css), 'voltou a regra fraca de .pieces-search-control input');
+    assert.ok(!/\.actuar-field-with-action input\s*\{/.test(css), 'voltou a regra fraca de .actuar-field-with-action input');
 });
