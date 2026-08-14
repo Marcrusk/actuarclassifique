@@ -95,6 +95,41 @@ npm run typecheck
 npm run build
 ```
 
-## Integração futura com Actask
+## Integração com o Actask
 
-O ponto de integração é `auth_user_id`/`corporate_email`, sem depender das chaves antigas. Um futuro SSO do Actask deve emitir ou federar a sessão Supabase, mantendo `public.users` como perfil operacional. Regras, solicitações, decisões e extrato não precisam ser reconstruídos.
+A autenticação do Actuar Classifique usa o cliente público OAuth do Actask quando
+`ACTASK_AUTH_CONFIG.clientId` estiver configurado. O fluxo é o login externo
+direto do Actask: `POST /oauth/login`, `GET /oauth/userinfo`, renovação por
+`POST /oauth/token` e revogação por `POST /oauth/revoke`. O frontend nunca recebe
+`client_secret`, não guarda a senha e mantém os tokens somente em
+`sessionStorage`.
+
+O `sub` do Actask é a identidade estável. Para manter os registros históricos,
+o Actuar associa essa identidade a `actaskId` e, quando possível, à chave
+legada por e-mail. A role efetiva e as permissões da Operação de peças são
+derivadas de `teams[].functional_roles`; as categorias `Analista`, `Gestão` e
+`Operacional` não são tratadas como roles de negócio.
+
+No stage, configure o client público cadastrado:
+
+```js
+window.ACTASK_AUTH_CONFIG = {
+    enabled: true,
+    environment: 'stage',
+    issuer: 'https://actaskapistage.bluefronte.com',
+    clientId: '<client público stage>',
+    redirectUri: '<redirect URI cadastrada no stage>',
+    audience: 'actask-public-api',
+    scopes: ['openid', 'profile']
+};
+```
+
+Na promoção para main, use `https://actaskapi.bluefronte.com` e o client
+`actuar-classifique-main-login`, mantendo a redirect URI cadastrada exatamente
+igual ao valor enviado no login.
+
+O `userinfo` atual não é um diretório completo. Enquanto o Actask não oferecer
+um endpoint público autenticado com escopo específico para leitura de usuários,
+a listagem administrativa do Actuar permanece uma projeção histórica; não use
+`client_credentials` diretamente no navegador e não trate `/auth/login-options`
+como fonte de roles funcionais.
