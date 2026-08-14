@@ -4,6 +4,7 @@ const fs = require('node:fs');
 
 const html = fs.readFileSync('index.html', 'utf8');
 const piecesUi = fs.readFileSync('js/pieces-ui.js', 'utf8');
+const actaskAuth = fs.readFileSync('js/actask-auth.js', 'utf8');
 
 test('shell expõe configuração stage/main sem segredo e carrega o adaptador Actask', () => {
     assert.match(html, /window\.ACTASK_AUTH_CONFIG = window\.ACTASK_AUTH_CONFIG \|\|/);
@@ -14,14 +15,20 @@ test('shell expõe configuração stage/main sem segredo e carrega o adaptador A
     assert.doesNotMatch(html, /client_secret\s*:/);
 });
 
-test('as três portas de entrada usam e-mail Actask quando o cliente está configurado', () => {
-    for (const kind of ['analyst', 'admin', 'peca']) {
-        assert.match(html, new RegExp(`id="${kind}Email"`));
-        const start = html.indexOf(`async function login${kind[0].toUpperCase()}${kind.slice(1)}(`);
-        const body = html.slice(start, start + 500);
-        assert.match(body, new RegExp(`if \\(actaskAuthEnabled\\(\\)\\)[\\s\\S]{0,180}submitActaskLogin\\('${kind}'\\)`));
-    }
-    assert.match(html, /async function submitActaskLogin\(kind\)/);
+test('login Actask exibe equipes e usuários do diretório público e usa a seleção validada', () => {
+    assert.match(html, /id="actaskDirectoryPanel"/);
+    assert.match(html, /id="actaskTeamSelect"/);
+    assert.match(html, /id="actaskUserSelect"/);
+    assert.match(html, /id="actaskPass"/);
+    assert.match(html, /async function loadActaskLoginOptions\(\)/);
+    assert.match(html, /window\.ActaskAuth\.loadLoginOptions\(\)/);
+    assert.match(html, /async function submitActaskDirectoryLogin\(e\)/);
+    assert.match(html, /window\.ActaskAuth\.loginSelected\(team, user, passwordInput\.value\)/);
+    assert.match(html, /isDirectoryConfigured\?\.\(\)/);
+    assert.match(html, /classList\.toggle\('hidden', enabled\)/);
+    assert.match(actaskAuth, /\/auth\/login-options/);
+    assert.match(actaskAuth, /\/auth\/login-selected/);
+    assert.match(actaskAuth, /\/auth\/login-selected-external/);
     assert.match(html, /function logoutActaskSession\(\)/);
 });
 

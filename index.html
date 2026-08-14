@@ -98,6 +98,29 @@
             <section class="actuar-login-gate-access">
                 <h2>Entrar</h2>
                 <p>Escolha como você acessa. Cada perfil abre o que a sua função permite.</p>
+                <div id="actaskDirectoryPanel" class="hidden" data-actask-directory-panel>
+                    <form onsubmit="submitActaskDirectoryLogin(event)" class="actuar-login-form" id="actaskDirectoryForm">
+                        <div class="actuar-field">
+                            <label for="actaskTeamSelect">Equipe</label>
+                            <select id="actaskTeamSelect" onchange="renderActaskDirectoryUsers()" required>
+                                <option value="">Carregando equipes...</option>
+                            </select>
+                        </div>
+                        <div class="actuar-field">
+                            <label for="actaskUserSelect">Usuário</label>
+                            <select id="actaskUserSelect" onchange="syncActaskSelectedUser()" required disabled>
+                                <option value="">Selecione uma equipe primeiro</option>
+                            </select>
+                        </div>
+                        <p class="actuar-field-help" id="actaskTeamHelp">As equipes e os usuários são carregados do Actask.</p>
+                        <div class="actuar-field">
+                            <label for="actaskPass">Senha cadastrada</label>
+                            <input type="password" id="actaskPass" placeholder="Digite sua senha" autocomplete="current-password" required>
+                        </div>
+                        <p class="actuar-login-error" id="actaskDirectoryError" role="alert" hidden></p>
+                        <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg" id="actaskDirectorySubmit"><i class="fi fi-rr-sign-in-alt"></i>Entrar</button>
+                    </form>
+                </div>
                 <div class="actuar-login-gate-actions">
                     <div class="actuar-login-door-group" data-door="analyst">
                         <button type="button" id="loginDoorAnalyst" class="actuar-login-door" aria-expanded="false" aria-controls="loginPanelAnalyst" onclick="toggleLoginDoor('analyst')">
@@ -5215,30 +5238,121 @@
             peca: { fill: fillPecaDoor, focus: 'pecaUserSelect' }
         };
 
+        let actaskLoginOptions = [];
+        let actaskLoginOptionsLoading = null;
+        let actaskLoginOptionsLoaded = false;
+
         function actaskAuthEnabled() {
-            return window.ActaskAuth?.isConfigured?.() === true;
+            return window.ActaskAuth?.isDirectoryConfigured?.() === true || window.ActaskAuth?.isConfigured?.() === true;
+        }
+
+        function actaskTeamTypeLabel(teamType) {
+            return ({ analyst: 'Analista', management: 'Gestão', operational: 'Operacional' }[teamType] || 'Sem categoria');
+        }
+
+        function setActaskDirectoryError(message) {
+            const box = document.getElementById('actaskDirectoryError');
+            if (!box) return;
+            box.textContent = message || '';
+            box.hidden = !message;
+            document.getElementById('actaskDirectoryPanel')?.classList.toggle('has-error', Boolean(message));
+        }
+
+        function selectedActaskTeam() {
+            const index = Number(document.getElementById('actaskTeamSelect')?.value);
+            return Number.isInteger(index) && index >= 0 ? actaskLoginOptions[index] || null : null;
+        }
+
+        function selectedActaskUser() {
+            const team = selectedActaskTeam();
+            const index = Number(document.getElementById('actaskUserSelect')?.value);
+            return team && Number.isInteger(index) && index >= 0 ? team.users[index] || null : null;
+        }
+
+        function renderActaskDirectoryTeams() {
+            const select = document.getElementById('actaskTeamSelect');
+            if (!select) return;
+            const previous = select.value;
+            select.innerHTML = actaskLoginOptions.length
+                ? `<option value="">Selecione uma equipe</option>${actaskLoginOptions.map((team, index) => `<option value="${index}">${escapeHtml(team.name)} · ${escapeHtml(actaskTeamTypeLabel(team.teamType))}</option>`).join('')}`
+                : '<option value="">Nenhuma equipe disponível</option>';
+            if (previous && actaskLoginOptions[Number(previous)]) select.value = previous;
+            renderActaskDirectoryUsers();
+        }
+
+        function renderActaskDirectoryUsers() {
+            const select = document.getElementById('actaskUserSelect');
+            const help = document.getElementById('actaskTeamHelp');
+            if (!select) return;
+            const team = selectedActaskTeam();
+            const previous = select.value;
+            if (!team) {
+                select.disabled = true;
+                select.innerHTML = '<option value="">Selecione uma equipe primeiro</option>';
+                if (help) help.textContent = 'As equipes e os usuários são carregados do Actask.';
+                return;
+            }
+            select.disabled = false;
+            select.innerHTML = team.users.length
+                ? `<option value="">Selecione um usuário</option>${team.users.map((user, index) => `<option value="${index}">${escapeHtml(user.name)}${user.functionalRoles?.length ? ` · ${escapeHtml(user.functionalRoles.join(', '))}` : ''}</option>`).join('')}`
+                : '<option value="">Nenhum usuário disponível</option>';
+            if (previous && team.users[Number(previous)]) select.value = previous;
+            if (help) help.textContent = `${team.name} · ${actaskTeamTypeLabel(team.teamType)} · ${team.loginTarget === 'actask' ? 'acesso interno do Actask' : 'acesso externo validado pelo Actask'}`;
+        }
+
+        function syncActaskSelectedUser() {
+            const user = selectedActaskUser();
+            const submit = document.getElementById('actaskDirectorySubmit');
+            if (submit) submit.disabled = !user;
+        }
+
+        async function loadActaskLoginOptions() {
+            if (!actaskAuthEnabled()) return [];
+            if (actaskLoginOptionsLoading) return actaskLoginOptionsLoading;
+            actaskLoginOptionsLoading = window.ActaskAuth.loadLoginOptions()
+                .then(options => {
+                    actaskLoginOptions = Array.isArray(options) ? options : [];
+                    actaskLoginOptionsLoaded = true;
+                    setActaskDirectoryError(actaskLoginOptions.length ? '' : 'O Actask não retornou equipes com usuários habilitados.');
+                    renderActaskDirectoryTeams();
+                    return actaskLoginOptions;
+                })
+                .catch(error => {
+                    actaskLoginOptionsLoaded = false;
+                    setActaskDirectoryError(error?.message || 'Não foi possível carregar as equipes do Actask.');
+                    renderActaskDirectoryTeams();
+                    return [];
+                })
+                .finally(() => { actaskLoginOptionsLoading = null; });
+            return actaskLoginOptionsLoading;
         }
 
         function syncActaskLoginForms() {
             const enabled = actaskAuthEnabled();
-            document.querySelectorAll('[data-actask-auth-field]').forEach(field => field.classList.toggle('hidden', !enabled));
-            document.querySelectorAll('[data-actask-auth-input]').forEach(input => { input.required = enabled; });
+            document.getElementById('actaskDirectoryPanel')?.classList.toggle('hidden', !enabled);
+            document.querySelector('.actuar-login-gate-actions')?.classList.toggle('hidden', enabled);
+            document.querySelectorAll('[data-actask-auth-field]').forEach(field => field.classList.add('hidden'));
+            document.querySelectorAll('[data-actask-auth-input]').forEach(input => { input.required = false; });
             document.querySelectorAll('[data-legacy-auth-field] select').forEach(select => {
                 select.required = !enabled;
                 select.closest('.actuar-field')?.classList.toggle('hidden', enabled);
             });
             document.querySelector('.actuar-login-gate-help')?.replaceChildren(document.createTextNode(
-                enabled ? 'Use o mesmo e-mail e senha cadastrados no Actask.' : 'Sem senha cadastrada? Peça o primeiro acesso à gestão.'
+                enabled ? 'Selecione a equipe e o usuário cadastrados no Actask. A senha é validada pelo Actask.' : 'Sem senha cadastrada? Peça o primeiro acesso à gestão.'
             ));
+            if (enabled && !actaskLoginOptionsLoaded) void loadActaskLoginOptions();
         }
 
         function activateActaskIdentity(identity, requestedMode = null) {
-            if (!identity?.id || !identity.teams?.length || !identity.roles?.length) {
-                return { ok: false, message: 'O Actask não retornou uma equipe e uma role funcional para este usuário.' };
+            if (!identity?.id || !identity.teams?.length) {
+                return { ok: false, message: 'O Actask não retornou uma equipe para este usuário.' };
             }
             if (identity.active === false) return { ok: false, message: 'Este usuário está inativo no Actask.' };
             const mode = window.ActaskAuth.modeForUser(identity);
-            if (!mode) return { ok: false, message: 'Este usuário não possui uma role habilitada no Actuar Classifique.' };
+            if (!mode) return { ok: false, message: 'Este usuário não possui uma equipe classificada no Actask.' };
+            if (mode === 'operations' && !identity.roles?.length) {
+                return { ok: false, message: 'A equipe operacional ainda não possui roles funcionais configuradas no Actask.' };
+            }
             if (requestedMode && requestedMode !== mode) {
                 const labels = { manager: 'Modo Gestão', operations: 'Acesso operacional', analyst: 'modo analista' };
                 return { ok: false, message: `Sua role não permite entrar no ${labels[requestedMode] || 'modo selecionado'}.` };
@@ -5265,6 +5379,45 @@
             syncLoginGate();
             syncAccessControls();
             return { ok: true, mode, legacyKey };
+        }
+
+        async function submitActaskDirectoryLogin(e) {
+            e.preventDefault();
+            setActaskDirectoryError('');
+            const team = selectedActaskTeam();
+            const user = selectedActaskUser();
+            const passwordInput = document.getElementById('actaskPass');
+            const submit = document.getElementById('actaskDirectorySubmit');
+            if (!team || !user) {
+                setActaskDirectoryError(!team ? 'Selecione uma equipe.' : 'Selecione um usuário.');
+                return false;
+            }
+            if (!passwordInput?.value) {
+                setActaskDirectoryError('Informe a senha.');
+                passwordInput?.focus();
+                return false;
+            }
+            if (submit) submit.disabled = true;
+            try {
+                const identity = await window.ActaskAuth.loginSelected(team, user, passwordInput.value);
+                const activation = activateActaskIdentity(identity);
+                if (!activation.ok) {
+                    setActaskDirectoryError(activation.message);
+                    return false;
+                }
+                passwordInput.value = '';
+                setActaskDirectoryError('');
+                showToast(`Bem-vindo, ${identity.name.split(' ')[0]}!`);
+                if (activation.mode === 'analyst') await openAttendanceClock(activation.legacyKey);
+                const home = { manager: { name: 'admin', section: 'visao' }, operations: 'pecas', analyst: 'dashboard' }[activation.mode];
+                navigateTo(home);
+                return true;
+            } catch (error) {
+                setActaskDirectoryError(error?.message || 'Não foi possível entrar pelo Actask.');
+                return false;
+            } finally {
+                if (submit) submit.disabled = false;
+            }
         }
 
         async function submitActaskLogin(kind) {
