@@ -102,6 +102,9 @@
             audience,
             scopes: [...new Set(scopes)],
             redirectUri,
+            loginOptionsEndpoint: supplied.loginOptionsEndpoint || `${issuer}/auth/login-options`,
+            selectedLoginEndpoint: supplied.selectedLoginEndpoint || `${issuer}/auth/login-selected`,
+            selectedExternalLoginEndpoint: supplied.selectedExternalLoginEndpoint || `${issuer}/auth/login-selected-external`,
             loginEndpoint: supplied.loginEndpoint || `${issuer}/oauth/login`,
             tokenEndpoint: supplied.tokenEndpoint || `${issuer}/oauth/token`,
             userinfoEndpoint: supplied.userinfoEndpoint || `${issuer}/oauth/userinfo`,
@@ -112,6 +115,11 @@
     function isConfigured() {
         const config = getConfig();
         return Boolean(config.enabled && config.issuer && config.clientId && config.redirectUri);
+    }
+
+    function isDirectoryConfigured() {
+        const config = getConfig();
+        return Boolean(config.enabled && config.issuer && config.loginOptionsEndpoint);
     }
 
     function configurationError() {
@@ -172,6 +180,48 @@
         return values ? [values] : [];
     }
 
+    function normalizeLoginOptionUser(user) {
+        if (!user || typeof user !== 'object') return null;
+        const functionalRoles = unique(
+            (user.functional_roles || user.functionalRoles || user.roles || [])
+                .map(normalizeRole)
+        );
+        const id = String(user.id || user.user_id || '').trim();
+        const name = String(user.name || '').trim();
+        if (!id || !name) return null;
+        return {
+            id,
+            name,
+            initials: String(user.initials || '').trim(),
+            membershipRole: user.role || user.membership_role || 'member',
+            functionalRoles,
+            hasPassword: user.has_password !== false && user.hasPassword !== false
+        };
+    }
+
+    function normalizeLoginOptions(payload) {
+        const source = Array.isArray(payload) ? payload : payload?.teams;
+        if (!Array.isArray(source)) return [];
+        return source.map((team, index) => {
+            if (!team || typeof team !== 'object') return null;
+            const users = (Array.isArray(team.users) ? team.users : [])
+                .map(normalizeLoginOptionUser)
+                .filter(Boolean);
+            const id = team.id === null || team.id === undefined ? null : String(team.id);
+            const name = String(team.name || team.code || team.id || `Equipe ${index + 1}`).trim();
+            return {
+                id,
+                name,
+                code: String(team.code || '').trim(),
+                color: team.color || '',
+                teamType: team.team_type || team.teamType || 'none',
+                loginTarget: team.login_target || team.loginTarget || 'external',
+                functionalRoles: unique(rawTeamRoles(team).map(normalizeRole)),
+                users
+            };
+        }).filter(team => team && team.users.length);
+    }
+
     function normalizeTeam(team, index) {
         if (!team || typeof team !== 'object') return null;
         const functionalRoles = unique(rawTeamRoles(team).map(normalizeRole));
@@ -197,6 +247,10 @@
         if (!user) return null;
         if (user.roles?.includes('Gestor Adm') || user.role === 'Gestor Adm') return 'manager';
         if (user.roles?.some(role => PIECES_ROLES.has(role)) || PIECES_ROLES.has(user.role)) return 'operations';
+        const teamType = user.teamType || user.teams?.find(team => team.isPrimary)?.teamType;
+        if (teamType === 'management') return 'manager';
+        if (teamType === 'operational') return 'operations';
+        if (teamType === 'analyst') return 'analyst';
         if (user.roles?.length || user.role) return 'analyst';
         return null;
     }
@@ -237,6 +291,33 @@
         user.isPiecesOperator = user.mode === 'operations';
         user.isRankable = user.mode === 'analyst';
         return user;
+    }
+
+    function identityFromSelection(team, selectedUser, responsePayload = {}) {
+        const returnedUser = responsePayload?.user || responsePayload?.identity || responsePayload;
+        if (returnedUser?.sub || returnedUser?.id && returnedUser?.teams) {
+            const identity = normalizeUser({
+                ...returnedUser,
+                sub: returnedUser.sub || returnedUser.id
+            });
+            if (identity.id) return identity;
+        }
+        return normalizeUser({
+            sub: selectedUser.id,
+            name: selectedUser.name,
+            teams: [{
+                id: team.id,
+                name: team.name,
+                code: team.code,
+                color: team.color,
+                team_type: team.teamType,
+                role: selectedUser.membershipRole,
+                is_primary: true,
+                functional_roles: selectedUser.functionalRoles.length
+                    ? selectedUser.functionalRoles
+                    : team.functionalRoles
+            }]
+        });
     }
 
     function attachToLegacyUsers(identity, users) {
@@ -298,6 +379,45 @@
         const identity = await fetchUserinfo(tokens.access_token);
         const session = createSession(tokens, identity);
         writeStoredSession(session);
+        return identity;
+    }
+
+    async function loadLoginOptions() {
+        if (!isDirectoryConfigured()) throw configurationError();
+        const config = getConfig();
+        const fetcher = requireFetch();
+        const response = await fetcher(config.loginOptionsEndpoint, {
+            headers: { Accept: 'application/json' }
+        });
+        const payload = await parseResponse(response);
+        return normalizeLoginOptions(payload);
+    }
+
+    async function loginSelected(team, selectedUser, password) {
+        if (!isDirectoryConfigured()) throw configurationError();
+        if (!team?.id && team?.id !== null) throw new ActaskAuthError('Selecione uma equipe.', 'invalid_selection');
+        if (!selectedUser?.id) throw new ActaskAuthError('Selecione um usuário.', 'invalid_selection');
+        if (!String(password || '')) throw new ActaskAuthError('Informe a senha.', 'invalid_request');
+        const config = getConfig();
+        const endpoint = team.loginTarget === 'actask'
+            ? config.selectedLoginEndpoint
+            : config.selectedExternalLoginEndpoint;
+        const fetcher = requireFetch();
+        const response = await fetcher(endpoint, {
+            method: 'POST',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: selectedUser.id,
+                team_id: team.id,
+                password
+            })
+        });
+        const payload = await parseResponse(response);
+        if (payload?.authenticated === false) throw new ActaskAuthError('Usuário ou senha inválidos.', 'invalid_grant', 401);
+        const identity = identityFromSelection(team, selectedUser, payload);
+        if (!identity.id) throw new ActaskAuthError('O Actask não retornou o usuário selecionado.', 'invalid_userinfo');
+        identity.selectedTeamId = team.id;
+        identity.loginTarget = team.loginTarget;
         return identity;
     }
 
@@ -410,9 +530,13 @@
         getSession,
         getUser,
         isConfigured,
+        isDirectoryConfigured,
+        loadLoginOptions,
+        loginSelected,
         login,
         logout,
         modeForUser,
+        normalizeLoginOptions,
         normalizeRole,
         normalizeTeam,
         normalizeUser,
