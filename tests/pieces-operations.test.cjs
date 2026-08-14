@@ -791,8 +791,9 @@ test('confirmação usa o diálogo do sistema, não o do navegador', () => {
     assert.match(html, /id="actuarConfirmDialog"/);
 
     // Toda decisão destrutiva precisa de tom próprio e rótulo que diga o que vai acontecer.
-    // "Excluir usuário" saiu da lista de propósito: ficha de pessoa não se exclui.
-    for (const rotulo of ['Excluir lançamento', 'Excluir protocolo', 'Fechar mês']) {
+    // "Excluir usuário" saiu de propósito: desligar alguém agora é inativar o acesso,
+    // porque a ficha precisa continuar rastreável nos chamados que a pessoa assinou.
+    for (const rotulo of ['Inativar acesso', 'Excluir lançamento', 'Excluir protocolo', 'Fechar mês']) {
         assert.ok(html.includes(`confirmLabel: '${rotulo}'`), `ação destrutiva sem rótulo próprio: ${rotulo}`);
     }
     assert.ok((html.match(/tone: 'danger'/g) || []).length >= 5, 'ações destrutivas deveriam usar o tom de perigo');
@@ -840,7 +841,7 @@ test('ranking geral e consulta de analista vivem DENTRO do Modo Gestão', () => 
     const agent = html.indexOf('id="viewAgent"');
     assert.ok(banner > 0 && banner < agent, 'o banner precisa ficar fora do viewAgent');
     assert.equal(html.split('id="managerConsultationBanner"').length - 1, 1);
-    assert.match(html, /const rotasPublicas = \['dashboard', 'ranking', 'faq', 'priorities', 'pecas'\];/);
+    assert.match(html, /const rotasPublicas = \['dashboard', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'priorities', 'pecas'\];/);
     assert.match(html, /Voltar à gestão/);
 
     // O ranking oferece as duas equipes, independentemente da equipe do gestor.

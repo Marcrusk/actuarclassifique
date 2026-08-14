@@ -598,3 +598,138 @@ test('pessoa inativa não entra por nenhuma das três portas de login', () => {
     const sessao = trecho('function restoreSession(', 'function persistSession');
     assert.match(sessao, /if \(!user \|\| user\.active === false\) \{ clearSession\(\); return false; \}/);
 });
+
+test('abas de operação por equipe: Catraca vê Envio e Coleta, Software vê Tasks', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    // Ordem da barra: as abas de operação entram depois do Ranking Geral e o FAQ fecha.
+    const posicao = (id) => html.indexOf(`id="${id}"`);
+    for (const id of ['btnTabRanking', 'btnTabEnvio', 'btnTabColeta', 'btnTabTasks', 'btnTabFaq']) {
+        assert.ok(posicao(id) > 0, `aba ausente: ${id}`);
+    }
+    assert.ok(posicao('btnTabRanking') < posicao('btnTabEnvio'), 'Envio vem depois do Ranking Geral');
+    assert.ok(posicao('btnTabEnvio') < posicao('btnTabColeta'), 'Coleta vem logo depois de Envio');
+    assert.ok(posicao('btnTabColeta') < posicao('btnTabTasks'), 'Tasks ocupa o mesmo lugar das abas de peça');
+    assert.ok(posicao('btnTabTasks') < posicao('btnTabFaq'), 'o FAQ precisa ser a última aba');
+
+    // Cada botão navega para a sua rota e tem a sua própria tela.
+    for (const rota of ['envio', 'coleta', 'tasks']) {
+        assert.ok(html.includes(`onclick="switchPublicTab('${rota}')"`), `botão sem navegação: ${rota}`);
+    }
+    for (const tela of ['viewEnvio', 'viewColeta', 'viewTasks']) {
+        assert.ok(html.includes(`<div id="${tela}" class="hidden space-y-6">`), `tela ausente: ${tela}`);
+    }
+
+    // Rotas registradas: sem isso, sanitizeRoute joga a URL de volta em dashboard.
+    for (const meta of [/envio: \{ title: 'Envio'/, /coleta: \{ title: 'Coleta'/, /tasks: \{ title: 'Tasks'/]) assert.match(html, meta);
+    assert.match(html, /\['dashboard', 'priorities', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'pecas'\]\.includes\(currentRoute\.name\)/);
+    assert.match(html, /const views = \{ ranking: 'viewRanking', envio: 'viewEnvio', coleta: 'viewColeta', tasks: 'viewTasks', faq: 'viewFaq', pecas: 'viewPecas' \};/);
+    assert.match(html, /coleta: 'btnTabColeta', tasks: 'btnTabTasks'/);
+
+    // A regra de quem vê o quê: Catraca (e o Lab) movimentam peça; Software é Tasks.
+    const inicio = html.indexOf('function publicTabAccess()');
+    assert.ok(inicio > 0, 'publicTabAccess não encontrado');
+    const regra = html.slice(inicio, html.indexOf('\n        }', inicio) + 10);
+    const acesso = new Function('getStore', 'defaultUsers', 'isPecaLoggedIn', 'currentPecaUserId', 'currentActiveUser', 'LAB_ROLE_NAME',
+        `${regra}\nreturn publicTabAccess;`);
+    const usuarios = {
+        dyego: { name: 'Dyego', team: 'Catraca', role: 'Analista de catraca' },
+        lucas: { name: 'Lucas', team: 'Sistema', role: 'Analista de sistema' },
+        jeremias: { name: 'Jeremias', team: 'Catraca', role: 'Toletus Lab' }
+    };
+    const para = (id, opts = {}) => acesso(() => ({ users: usuarios }), usuarios, Boolean(opts.peca), opts.peca || null, id, 'Toletus Lab')();
+
+    assert.deepEqual(para('dyego'), { envio: true, coleta: true, tasks: false }, 'Catraca movimenta peça, não vê Tasks');
+    assert.deepEqual(para('lucas'), { envio: false, coleta: false, tasks: true }, 'Software vê só Tasks');
+    assert.deepEqual(para('lucas', { peca: 'jeremias' }), { envio: true, coleta: true, tasks: false }, 'no acesso do Lab valem Envio e Coleta');
+    assert.deepEqual(para('ninguem'), { envio: false, coleta: false, tasks: false }, 'sem equipe resolvida, nenhuma aba de operação');
+
+    // Esconder o botão não basta: a rota vive no endereço e precisa ser barrada.
+    assert.match(html, /if \(OPERATION_TABS\.includes\(currentRoute\.name\) && !acesso\[currentRoute\.name\]\) \{\s*navigateTo\('dashboard', \{ replace: true \}\);/);
+    assert.match(html, /if \(!syncPublicTabAccess\(\)\) return;/);
+
+    /* REGRESSÃO REAL: switchPublicTabView reescreve o className inteiro de cada
+       botão. Enquanto a visibilidade era aplicada só depois do render, a primeira
+       troca de aba apagava o `hidden` e o analista de Software voltava a ver Envio
+       e Coleta. A visibilidade precisa ser montada JUNTO com a classe. */
+    const troca = html.slice(html.indexOf('function switchPublicTabView'), html.indexOf('function switchPublicTabView') + 2600);
+    assert.match(troca, /const acessoAbas = publicTabAccess\(\);/);
+    assert.match(troca, /button\.className = OPERATION_TABS\.includes\(key\) && !acessoAbas\[key\] \? `\$\{base\} hidden` : base;/);
+    assert.ok(!/button\.className = key === tab \? activeClass : inactiveClass;/.test(html),
+        'a troca de aba voltou a reescrever a classe sem considerar o acesso');
+
+    // E as três somem nas rotas que ocupam a tela inteira — senão ficam sob a gestão.
+    for (const lista of [/\['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin', 'viewProfile'\]/,
+                         /\['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin'\]/]) {
+        assert.match(html, lista);
+    }
+    assert.match(html, /const rotasPublicas = \['dashboard', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'priorities', 'pecas'\];/);
+});
+
+test('busca de prioridade acha por protocolo, cliente e analista — e ignora acento e pontuação', () => {
+    const rotation = require('../js/priority-rotation.js');
+    const chamado = {
+        protocolo: '45353', clientId: 'KM7552', clientName: 'Academia Modelo Fitness',
+        justificativa: 'Catraca travada na entrada', demand: 'Cliente sem acesso'
+    };
+
+    // O que a pessoa tem na mão quando liga: protocolo, ID ou nome do cliente.
+    for (const termo of ['45353', 'KM7552', 'km7552', 'academia', 'MODELO', 'travada']) {
+        assert.ok(rotation.matchesSearch(chamado, termo), `deveria achar por "${termo}"`);
+    }
+    // O ID quase nunca é digitado igual ao cadastro.
+    for (const termo of ['KM 7552', 'km-7552', ' km7552 ']) {
+        assert.ok(rotation.matchesSearch(chamado, termo), `ID com pontuação deveria achar: "${termo}"`);
+    }
+    // Acento não pode separar quem procura do que existe.
+    assert.ok(rotation.matchesSearch({ clientName: 'Ação Fitness' }, 'acao'));
+    assert.ok(rotation.matchesSearch({ clientName: 'Acao Fitness' }, 'AÇÃO'));
+
+    // Busca vazia não filtra nada; termo que não existe não inventa resultado.
+    assert.equal(rotation.matchesSearch(chamado, ''), true);
+    assert.equal(rotation.matchesSearch(chamado, '   '), true);
+    assert.equal(rotation.matchesSearch(chamado, 'TZ9999'), false);
+
+    // Emenda entre campos não pode virar resultado: "7552Academia" não existe.
+    assert.equal(rotation.matchesSearch(chamado, '7552Academia'), false);
+
+    // O nome do analista só entra quando quem busca é a gestão — o registro guarda o id.
+    assert.equal(rotation.matchesSearch(chamado, 'dyego'), false);
+    assert.equal(rotation.matchesSearch(chamado, 'dyego', { analystName: 'Dyego Antônio' }), true);
+    assert.equal(rotation.matchesSearch(chamado, 'ANTONIO', { analystName: 'Dyego Antônio' }), true);
+
+    // filterBySearch preserva a lista quando não há termo, e resolve extras por item.
+    const lista = [chamado, { protocolo: '99999', clientName: 'Outra Academia' }];
+    assert.equal(rotation.filterBySearch(lista, '').length, 2);
+    assert.deepEqual(rotation.filterBySearch(lista, '45353').map(i => i.protocolo), ['45353']);
+    assert.deepEqual(rotation.filterBySearch(lista, 'ana', () => ({ analystName: 'Ana Souza' })).map(i => i.protocolo), ['45353', '99999']);
+});
+
+test('a busca de prioridades está nas três telas e nunca amplia o que o analista vê', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    // Um campo em cada tela: analista, aprovações da gestão e lançamentos da gestão.
+    for (const id of ['analystPrioritySearch', 'priorityApprovalSearch', 'priorityLaunchSearch']) {
+        assert.ok(html.includes(`id="${id}"`), `campo de busca ausente: ${id}`);
+    }
+
+    // As três usam a MESMA regra de comparação — senão cada tela acha uma coisa.
+    assert.match(html, /PriorityRotation\.filterBySearch\(meus, analystPriorityQuery\)/);
+    assert.match(html, /PriorityRotation\.filterBySearch\(base, busca, item => \(\{ analystName: users\[item\.userId\]\?\.name/);
+    assert.match(html, /PriorityRotation\.matchesSearch\(request, search, \{ analystName: usersList\[request\.userId\]\?\.name \}\)/);
+    assert.ok(!html.includes("`${request.protocolo} ${usersList[request.userId]?.name || ''}`"), 'a busca das aprovações voltou a comparar só protocolo e nome');
+
+    // PRIVACIDADE: o recorte por userId precisa vir ANTES da busca. Se a busca rodasse
+    // sobre a lista inteira, o analista acharia chamado de colega pelo ID do cliente.
+    const trecho = html.slice(html.indexOf('function renderMyPriorityRequests'), html.indexOf('function renderMyPriorityRequests') + 1400);
+    const recorte = trecho.indexOf('r.userId === currentActiveUser');
+    const buscaAnalista = trecho.indexOf('filterBySearch');
+    assert.ok(recorte > 0 && buscaAnalista > recorte, 'a busca do analista precisa rodar sobre a lista já recortada por userId');
+
+    // Cliente visível na linha: buscar por ID sem mostrar o ID é busca às cegas.
+    assert.equal((html.match(/priority-client-line/g) || []).length, 2, 'a identificação do cliente deveria aparecer na lista do analista e na da gestão');
+    assert.match(fs.readFileSync('styles/actuar-design-system.css', 'utf8'), /small\.priority-client-line \{/);
+
+    // Vazio por busca é diferente de vazio de verdade.
+    assert.match(html, /Nada encontrado para esta busca/);
+});

@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260814-pessoas-cards-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260814-abas-por-equipe-2">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -440,6 +440,15 @@
             <button onclick="switchPublicTab('ranking')" id="btnTabRanking" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
                 <i class="fa-solid fa-ranking-star me-1"></i> Ranking Geral
             </button>
+            <button onclick="switchPublicTab('envio')" id="btnTabEnvio" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
+                <i class="fi fi-rr-truck-side me-1"></i> Envio
+            </button>
+            <button onclick="switchPublicTab('coleta')" id="btnTabColeta" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
+                <i class="fi fi-rr-inbox me-1"></i> Coleta
+            </button>
+            <button onclick="switchPublicTab('tasks')" id="btnTabTasks" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
+                <i class="fi fi-rr-list-check me-1"></i> Tasks
+            </button>
             <button onclick="switchPublicTab('faq')" id="btnTabFaq" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
                 <i class="fa-solid fa-circle-question me-1"></i> FAQ / Métricas & Regras
             </button>
@@ -582,6 +591,14 @@
 
                 <div class="mt-5">
                     <h4 class="text-xs font-bold text-secondary uppercase mb-2">Meus Protocolos</h4>
+                    <div class="actuar-field priority-search">
+                        <label for="analystPrioritySearch">Localizar atendimento</label>
+                        <div class="actuar-input-icon">
+                            <i class="fi fi-rr-search" aria-hidden="true"></i>
+                            <input id="analystPrioritySearch" type="search" oninput="setAnalystPriorityQuery(this.value)" placeholder="Protocolo, ID ou nome do cliente">
+                        </div>
+                        <p class="actuar-field-help" id="analystPriorityCount"></p>
+                    </div>
                     <div class="analyst-priority-filters" aria-label="Filtrar meus atendimentos">
                         <button class="is-active" data-status="Todos" onclick="setAnalystPriorityStatus('Todos',this)">Todos</button>
                         <button data-status="pendente" onclick="setAnalystPriorityStatus('pendente',this)">Aguardando</button>
@@ -1245,6 +1262,57 @@
             </div>
         </div>
 
+        <!-- VISÕES ENVIO E COLETA
+             Duas seções independentes: rota, botão e lugar da tela já existem e
+             sobrevivem à recarga. O conteúdo entra aqui quando as telas forem definidas. -->
+        <div id="viewEnvio" class="hidden space-y-6">
+            <div class="actuar-card">
+                <div class="actuar-card-header">
+                    <div>
+                        <h2 class="actuar-card-title">Envio</h2>
+                        <p class="actuar-card-description">Peças enviadas ao cliente, do despacho à entrega.</p>
+                    </div>
+                </div>
+                <div class="manager-empty">
+                    <i class="fi fi-rr-truck-side" aria-hidden="true"></i>
+                    <strong>Área em construção</strong>
+                    <p>As telas de envio ainda serão definidas.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewTasks" class="hidden space-y-6">
+            <div class="actuar-card">
+                <div class="actuar-card-header">
+                    <div>
+                        <h2 class="actuar-card-title">Tasks</h2>
+                        <p class="actuar-card-description">Tarefas do time de Software.</p>
+                    </div>
+                </div>
+                <div class="manager-empty">
+                    <i class="fi fi-rr-list-check" aria-hidden="true"></i>
+                    <strong>Área em construção</strong>
+                    <p>As telas de tasks ainda serão definidas.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewColeta" class="hidden space-y-6">
+            <div class="actuar-card">
+                <div class="actuar-card-header">
+                    <div>
+                        <h2 class="actuar-card-title">Coleta</h2>
+                        <p class="actuar-card-description">Peças recolhidas no cliente, do agendamento ao recebimento.</p>
+                    </div>
+                </div>
+                <div class="manager-empty">
+                    <i class="fi fi-rr-inbox" aria-hidden="true"></i>
+                    <strong>Área em construção</strong>
+                    <p>As telas de coleta ainda serão definidas.</p>
+                </div>
+            </div>
+        </div>
+
         <!-- VISÃO ADMIN -->
         <div id="viewAdmin" class="hidden space-y-6">
             <div class="bg-primary-500/10 border border-primary-500/30 p-4 rounded-xl flex flex-wrap justify-between items-center gap-4">
@@ -1394,6 +1462,7 @@
                     <div class="priority-page-filters">
                         <div class="actuar-field"><label for="priorityLaunchAnalyst">Analista</label><select id="priorityLaunchAnalyst" onchange="updatePriorityPageAnalyst(this.value)"></select></div>
                         <div class="actuar-field"><label for="priorityLaunchSource">Origem do registro</label><select id="priorityLaunchSource" onchange="renderPriorityLaunches()"><option value="Todos">Todas as origens</option><option value="rotation">Vinculado ao rodízio</option><option value="outside">Fora do rodízio</option></select></div>
+                        <div class="actuar-field priority-search"><label for="priorityLaunchSearch">Localizar chamado</label><div class="actuar-input-icon"><i class="fi fi-rr-search" aria-hidden="true"></i><input id="priorityLaunchSearch" type="search" oninput="renderPriorityLaunches()" placeholder="Protocolo, ID ou nome do cliente, ou analista"></div><p class="actuar-field-help" id="priorityLaunchCount"></p></div>
                     </div>
                     <div class="priority-launch-filters">
                         <button class="is-active" data-status="Todos" onclick="setPriorityLaunchStatus('Todos',this)">Todos</button>
@@ -1844,7 +1913,7 @@
                     <div class="priority-approval-filters">
                         <div class="actuar-field"><label for="priorityApprovalStatus">Status</label><select id="priorityApprovalStatus" onchange="renderAdminPriorityRequests()"><option value="Todos">Todos os status</option><option value="pendente">Pendentes</option><option value="aprovado">Aprovadas</option><option value="ajuste_solicitado">Devolvidas para ajuste</option><option value="reprovado">Reprovadas</option></select></div>
                         <div class="actuar-field"><label for="priorityApprovalAnalyst">Analista</label><select id="priorityApprovalAnalyst" onchange="updatePriorityPageAnalyst(this.value)"></select></div>
-                        <div class="actuar-field priority-approval-search"><label for="priorityApprovalSearch">Protocolo ou pessoa</label><input id="priorityApprovalSearch" type="search" oninput="renderAdminPriorityRequests()" placeholder="Buscar protocolo ou pessoa"></div>
+                        <div class="actuar-field priority-approval-search"><label for="priorityApprovalSearch">Localizar chamado</label><div class="actuar-input-icon"><i class="fi fi-rr-search" aria-hidden="true"></i><input id="priorityApprovalSearch" type="search" oninput="renderAdminPriorityRequests()" placeholder="Protocolo, ID ou nome do cliente, ou analista"></div></div>
                         <label class="actuar-checkbox-field priority-sla-filter"><input id="priorityApprovalSla" type="checkbox" onchange="renderAdminPriorityRequests()"><span>Somente acima de 24h</span></label>
                     </div>
                     <div class="overflow-x-auto">
@@ -2828,11 +2897,19 @@
             const users = getStore()?.users || defaultUsers;
             const source = document.getElementById('priorityLaunchSource')?.value || 'Todos';
             document.querySelectorAll('.priority-launch-filters button').forEach(item => item.classList.toggle('is-active', item.dataset.status === priorityLaunchStatus));
-            const rows = priorityRequestsForManager().filter(item => (priorityLaunchStatus === 'Todos' || item.status === priorityLaunchStatus)
-                && (source === 'Todos' || (source === 'rotation') === Boolean(item.rotationAttendanceId))).sort((a,b) => b.timestamp-a.timestamp);
+            const busca = document.getElementById('priorityLaunchSearch')?.value || '';
+            const base = priorityRequestsForManager().filter(item => (priorityLaunchStatus === 'Todos' || item.status === priorityLaunchStatus)
+                && (source === 'Todos' || (source === 'rotation') === Boolean(item.rotationAttendanceId)));
+            // O nome do analista entra pela lista de usuários: o registro guarda o id.
+            const rows = PriorityRotation.filterBySearch(base, busca, item => ({ analystName: users[item.userId]?.name, team: teamLabel(users[item.userId]?.team || item.rotationTeam || '') }))
+                .sort((a,b) => b.timestamp-a.timestamp);
+            const contador = document.getElementById('priorityLaunchCount');
+            if (contador) contador.textContent = busca.trim() ? `${rows.length} de ${base.length} chamado(s) neste filtro` : 'Busque por protocolo, cliente ou analista.';
             const statusLabel = { pendente: 'Aguardando aprovação', aprovado: 'Aprovado', reprovado: 'Reprovado', ajuste_solicitado: 'Precisa de ajuste' };
-            const emptyCopy = priorityLaunchStatus === 'aprovado' ? ['Nenhum atendimento aprovado no período', 'Os atendimentos avaliados como aprovados aparecerão aqui.'] : ['Nenhum atendimento encontrado', 'Não existem atendimentos concluídos neste rodízio para o período selecionado.'];
-            body.innerHTML = rows.length ? rows.map(item => `<tr class="${item.status==='ajuste_solicitado'?'priority-row-adjustment':''}"><td>${formatRotationTime(item.timestamp,true)}</td><td>${escapeHtml(users[item.userId]?.name || '—')}</td><td><strong>${escapeHtml(item.protocolo)}</strong></td><td>${teamLabel(users[item.userId]?.team || item.rotationTeam || 'Sistema')}</td><td>${item.rotationAttendanceId ? '<span class="actuar-badge actuar-badge-primary">Rodízio</span>' : '<span class="actuar-badge actuar-badge-neutral">Fora do rodízio</span>'}</td><td>${escapeHtml(statusLabel[item.status] || item.status)}</td><td class="num-col">${priorityGrantedPoints(item)} pts</td><td><button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openPriorityApprovalReview('${item.id}',true)">Ver ficha completa</button></td></tr>`).join('') : `<tr><td colspan="8">${managerEmpty(emptyCopy[0], emptyCopy[1])}</td></tr>`;
+            const emptyCopy = busca.trim()
+                ? ['Nada encontrado para esta busca', `Nenhum chamado combina com "${escapeHtml(busca.trim())}" nos filtros atuais.`]
+                : priorityLaunchStatus === 'aprovado' ? ['Nenhum atendimento aprovado no período', 'Os atendimentos avaliados como aprovados aparecerão aqui.'] : ['Nenhum atendimento encontrado', 'Não existem atendimentos concluídos neste rodízio para o período selecionado.'];
+            body.innerHTML = rows.length ? rows.map(item => `<tr class="${item.status==='ajuste_solicitado'?'priority-row-adjustment':''}"><td>${formatRotationTime(item.timestamp,true)}</td><td>${escapeHtml(users[item.userId]?.name || '—')}</td><td><strong>${escapeHtml(item.protocolo)}</strong>${item.clientId || item.clientName ? `<small class="priority-client-line">${escapeHtml([item.clientId, item.clientName].filter(Boolean).join(' · '))}</small>` : ''}</td><td>${teamLabel(users[item.userId]?.team || item.rotationTeam || 'Sistema')}</td><td>${item.rotationAttendanceId ? '<span class="actuar-badge actuar-badge-primary">Rodízio</span>' : '<span class="actuar-badge actuar-badge-neutral">Fora do rodízio</span>'}</td><td>${escapeHtml(statusLabel[item.status] || item.status)}</td><td class="num-col">${priorityGrantedPoints(item)} pts</td><td><button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openPriorityApprovalReview('${item.id}',true)">Ver ficha completa</button></td></tr>`).join('') : `<tr><td colspan="8">${managerEmpty(emptyCopy[0], emptyCopy[1])}</td></tr>`;
         }
 
         function managerEmpty(title, message) {
@@ -3659,7 +3736,7 @@
             // Dentro do Modo Gestão a trilha do cabeçalho já diz onde o gestor está e de
             // quem são os dados; a faixa só existe para quem caiu numa rota pública
             // (link antigo, recarregar com a URL de antes) e precisa de caminho de volta.
-            const rotasPublicas = ['dashboard', 'ranking', 'faq', 'priorities', 'pecas'];
+            const rotasPublicas = ['dashboard', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'priorities', 'pecas'];
             const foraDaGestao = isAdminLoggedIn && rotasPublicas.includes(currentRoute.name);
             const consulta = foraDaGestao && currentRoute.name === 'dashboard' && user && canManagerViewAnalyst(currentActiveUser);
             const noRanking = foraDaGestao && !consulta;
@@ -3678,6 +3755,9 @@
             dashboard: { title: 'Dashboard individual', description: 'Acompanhe indicadores, pontuação e solicitações do analista selecionado.' },
             priorities: { title: 'Prioridades', description: 'Acompanhe o rodízio, registre atendimentos e consulte seus lançamentos.' },
             ranking: { title: 'Ranking geral', description: 'Compare o desempenho das equipes e consulte a classificação consolidada.' },
+            envio: { title: 'Envio', description: 'Acompanhe as peças enviadas ao cliente, do despacho à entrega.' },
+            coleta: { title: 'Coleta', description: 'Acompanhe as peças recolhidas no cliente, do agendamento ao recebimento.' },
+            tasks: { title: 'Tasks', description: 'Acompanhe as tarefas do time de Software.' },
             faq: { title: 'Métricas e regras', description: 'Consulte critérios, fórmulas e regras operacionais da classificação.' },
             newRequest: { title: 'Nova solicitação', description: 'Registre uma prioridade ou transferência com a regra vigente.' },
             requests: { title: 'Minhas solicitações', description: 'Acompanhe decisões, correções e o histórico do que você enviou.' },
@@ -3810,7 +3890,7 @@
             }
 
             render();
-            if (currentRoute.name === 'dashboard' || currentRoute.name === 'priorities' || currentRoute.name === 'ranking' || currentRoute.name === 'faq' || currentRoute.name === 'pecas') {
+            if (['dashboard', 'priorities', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'pecas'].includes(currentRoute.name)) {
                 switchPublicTabView(currentRoute.name);
             }
             if (currentRoute.name === 'admin' && currentRoute.section) switchAdminTabView(currentRoute.section);
@@ -5298,7 +5378,7 @@
             const metrics = getAggregatedMetrics(activeMonthKey, activePeriodFilter);
 
             if (window.PerformancePlatform && PerformancePlatform.isSecureRoute(currentRoute.name)) {
-                ['viewAgent', 'viewRanking', 'viewFaq', 'viewPecas', 'viewAdmin', 'viewProfile'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+                ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin', 'viewProfile'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
                 document.getElementById('viewPlatform')?.classList.remove('hidden');
                 document.getElementById('publicTabsContainer')?.classList.add('hidden');
                 PerformancePlatform.renderCurrentRoute(currentRoute);
@@ -5317,7 +5397,7 @@
 
             const profileView = document.getElementById('viewProfile');
             if (currentRoute.name === 'profile') {
-                ['viewAgent', 'viewRanking', 'viewFaq', 'viewPecas', 'viewAdmin'].forEach(id => document.getElementById(id).classList.add('hidden'));
+                ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin'].forEach(id => document.getElementById(id).classList.add('hidden'));
                 profileView.classList.remove('hidden');
                 document.getElementById('publicTabsContainer').classList.add('hidden');
                 renderProfileScreen(currentRoute.section);
@@ -5336,6 +5416,9 @@
                    anterior aqui — e a tela ficava sempre um passo atrasada. */
                 const secao = managerSection();
                 const analistaNaGestao = secao === 'analista';
+                document.getElementById('viewEnvio').classList.add('hidden');
+                document.getElementById('viewColeta').classList.add('hidden');
+                document.getElementById('viewTasks').classList.add('hidden');
                 document.getElementById('viewFaq').classList.add('hidden');
                 document.getElementById('viewPecas').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
@@ -5353,6 +5436,9 @@
             } else if (currentRoute.name === 'pecas') {
                 document.getElementById('viewAgent').classList.add('hidden');
                 document.getElementById('viewRanking').classList.add('hidden');
+                document.getElementById('viewEnvio').classList.add('hidden');
+                document.getElementById('viewColeta').classList.add('hidden');
+                document.getElementById('viewTasks').classList.add('hidden');
                 document.getElementById('viewFaq').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.add('hidden');
                 document.getElementById('viewPecas').classList.remove('hidden');
@@ -5365,6 +5451,10 @@
                 document.getElementById('publicTabsContainer').classList.toggle('hidden', isAdminLoggedIn);
                 renderAnalystDashboard(user, usersList, metrics);
             }
+
+            // Depois de resolver quem está em contexto: as abas de operação dependem
+            // da equipe dele, e a rota precisa acompanhar o que ele pode ver.
+            if (!syncPublicTabAccess()) return;
 
             renderLeaderboard(metrics);
             renderTopDashboard(metrics);
@@ -6493,6 +6583,33 @@
             render();
         }
 
+        /* Abas de operação seguem a demanda de quem está na tela: Catraca movimenta
+           peça (Envio e Coleta) e Software trabalha por tarefa (Tasks). O Toletus Lab
+           acompanha o que sai e o que volta, então enxerga Envio e Coleta também.
+           A conta é sobre o analista em contexto — dentro de uma sessão, ele mesmo. */
+        const LAB_ROLE_NAME = 'Toletus Lab';
+        const OPERATION_TABS = ['envio', 'coleta', 'tasks'];
+        function publicTabAccess() {
+            const usuarios = getStore()?.users || defaultUsers;
+            const noLab = isPecaLoggedIn && usuarios[currentPecaUserId]?.role === LAB_ROLE_NAME;
+            const equipe = usuarios[currentActiveUser]?.team || '';
+            const catraca = equipe === 'Catraca' || noLab;
+            return { envio: catraca, coleta: catraca, tasks: !noLab && equipe === 'Sistema' };
+        }
+
+        /* Esconder o botão não basta: a rota vive no endereço, e quem colar
+           #/envio sendo do Software entraria numa tela que não é dele. */
+        function syncPublicTabAccess() {
+            const acesso = publicTabAccess();
+            const botoes = { envio: 'btnTabEnvio', coleta: 'btnTabColeta', tasks: 'btnTabTasks' };
+            OPERATION_TABS.forEach(aba => document.getElementById(botoes[aba])?.classList.toggle('hidden', !acesso[aba]));
+            if (OPERATION_TABS.includes(currentRoute.name) && !acesso[currentRoute.name]) {
+                navigateTo('dashboard', { replace: true });
+                return false;
+            }
+            return true;
+        }
+
         function switchPublicTab(tab) {
             if (currentRoute.name !== tab) {
                 navigateTo(tab);
@@ -6502,8 +6619,8 @@
         }
 
         function switchPublicTabView(tab) {
-            const views = { ranking: 'viewRanking', faq: 'viewFaq', pecas: 'viewPecas' };
-            const btns = { dashboard: 'btnTabDashboard', priorities: 'btnTabPriorities', pecas: 'btnTabPecas', ranking: 'btnTabRanking', faq: 'btnTabFaq' };
+            const views = { ranking: 'viewRanking', envio: 'viewEnvio', coleta: 'viewColeta', tasks: 'viewTasks', faq: 'viewFaq', pecas: 'viewPecas' };
+            const btns = { dashboard: 'btnTabDashboard', priorities: 'btnTabPriorities', pecas: 'btnTabPecas', ranking: 'btnTabRanking', envio: 'btnTabEnvio', coleta: 'btnTabColeta', tasks: 'btnTabTasks', faq: 'btnTabFaq' };
             const activeClass = "px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
             const inactiveClass = "px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line";
 
@@ -6515,7 +6632,17 @@
             agentView.classList.toggle('hidden', !agentVisible);
             agentView.classList.toggle('dashboard-mode', tab === 'dashboard');
             agentView.classList.toggle('priorities-mode', tab === 'priorities');
-            Object.entries(btns).forEach(([key,id]) => { const button = document.getElementById(id); if (button) button.className = key === tab ? activeClass : inactiveClass; });
+            /* Esta linha REESCREVE o className inteiro do botão. Qualquer classe posta
+               por fora — inclusive o `hidden` que esconde as abas de operação — era
+               apagada aqui na troca de aba. Por isso a visibilidade é recalculada
+               junto, e não aplicada depois. */
+            const acessoAbas = publicTabAccess();
+            Object.entries(btns).forEach(([key,id]) => {
+                const button = document.getElementById(id);
+                if (!button) return;
+                const base = key === tab ? activeClass : inactiveClass;
+                button.className = OPERATION_TABS.includes(key) && !acessoAbas[key] ? `${base} hidden` : base;
+            });
             if (tab === 'priorities') {
                 const firstPriorityTab = document.querySelector('.analyst-priority-module-header nav button');
                 if (firstPriorityTab) setAnalystPrioritySubsection(firstPriorityTab);
@@ -8401,6 +8528,14 @@
             render();
         }
 
+        /* A busca do analista roda sobre a lista que já é dele: o recorte por userId
+           continua sendo o primeiro filtro, e a busca nunca amplia o que ele vê. */
+        let analystPriorityQuery = '';
+        function setAnalystPriorityQuery(value) {
+            analystPriorityQuery = value || '';
+            renderMyPriorityRequests();
+        }
+
         function setAnalystPriorityStatus(status, button) {
             analystPriorityStatus = status;
             document.querySelectorAll('.analyst-priority-filters button').forEach(item => item.classList.toggle('is-active', item === button));
@@ -8412,7 +8547,12 @@
             if (!tbody) return;
             const store = getStore();
             document.querySelectorAll('.analyst-priority-filters button').forEach(item => item.classList.toggle('is-active', item.dataset.status === analystPriorityStatus));
-            const requests = (store.priorityRequests || []).filter(r => r.userId === currentActiveUser && (analystPriorityStatus === 'Todos' || r.status === analystPriorityStatus)).slice().reverse();
+            const meus = (store.priorityRequests || []).filter(r => r.userId === currentActiveUser && (analystPriorityStatus === 'Todos' || r.status === analystPriorityStatus));
+            const requests = PriorityRotation.filterBySearch(meus, analystPriorityQuery).slice().reverse();
+            const contador = document.getElementById('analystPriorityCount');
+            if (contador) contador.textContent = analystPriorityQuery.trim()
+                ? `${requests.length} de ${meus.length} atendimento(s) neste filtro`
+                : 'Busque por protocolo, ID ou nome do cliente.';
             let html = "";
             requests.forEach(r => {
                 const badge = r.status === "aprovado"
@@ -8425,14 +8565,16 @@
                         : `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock me-1"></i>Pendente</span>`;
                 html += `
                     <tr>
-                        <td class="p-2 font-semibold text-white">${escapeHtml(r.protocolo)}</td>
+                        <td class="p-2 font-semibold text-white">${escapeHtml(r.protocolo)}${r.clientId || r.clientName ? `<small class="priority-client-line">${escapeHtml([r.clientId, r.clientName].filter(Boolean).join(' · '))}</small>` : ''}</td>
                         <td class="p-2">${escapeHtml(r.justificativa)}</td>
                         <td class="p-2">${badge}</td>
                         <td class="p-2">${r.status === 'ajuste_solicitado' ? `<button class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="openEditPriorityModal('${r.id}')">Corrigir lançamento</button>` : `<button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openPriorityApprovalReview('${r.id}',true)">Ver ficha completa</button>`}</td>
                     </tr>
                 `;
             });
-            const empty = analystPriorityStatus === 'aprovado' ? ['Nenhum atendimento aprovado no período', 'Os atendimentos avaliados como aprovados aparecerão aqui.'] : ['Nenhum atendimento encontrado', 'Não existem atendimentos concluídos neste rodízio para o filtro selecionado.'];
+            const empty = analystPriorityQuery.trim()
+                ? ['Nada encontrado para esta busca', `Nenhum atendimento seu combina com "${escapeHtml(analystPriorityQuery.trim())}". Confira o protocolo ou o ID do cliente.`]
+                : analystPriorityStatus === 'aprovado' ? ['Nenhum atendimento aprovado no período', 'Os atendimentos avaliados como aprovados aparecerão aqui.'] : ['Nenhum atendimento encontrado', 'Não existem atendimentos concluídos neste rodízio para o filtro selecionado.'];
             tbody.innerHTML = html || `<tr><td colspan="4"><div class="actuar-empty-state"><i class="fi fi-rr-calendar-cross"></i><strong>${empty[0]}</strong><p>${empty[1]}</p></div></td></tr>`;
         }
 
@@ -8442,12 +8584,13 @@
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const selectedStatus = document.getElementById('priorityApprovalStatus')?.value || 'Todos';
-            const search = (document.getElementById('priorityApprovalSearch')?.value || '').trim().toLocaleLowerCase('pt-BR');
+            // A normalização (acento, caixa, pontuação do ID) vive no módulo, junto da busca.
+            const search = document.getElementById('priorityApprovalSearch')?.value || '';
             const onlyOverSla = document.getElementById('priorityApprovalSla')?.checked;
             const totalPendingCount = priorityRequestsForManager().filter(request => request.status === 'pendente').length;
             const requests = priorityRequestsForManager().filter(request => (selectedStatus === 'Todos' || request.status === selectedStatus)
                 && (!onlyOverSla || (request.status === 'pendente' && Date.now() - Number(request.timestamp || 0) >= 86400000))
-                && (!search || `${request.protocolo} ${usersList[request.userId]?.name || ''}`.toLocaleLowerCase('pt-BR').includes(search)))
+                && PriorityRotation.matchesSearch(request, search, { analystName: usersList[request.userId]?.name }))
                 .sort((a,b) => selectedStatus === 'pendente' || selectedStatus === 'Todos' ? a.timestamp-b.timestamp : b.timestamp-a.timestamp);
             let html = "";
             let pendingCount = 0;
@@ -9403,13 +9546,13 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-fields.js?v=20260814-pessoas-cards-1"></script>
-    <script src="js/attendance-clock.js?v=20260814-pessoas-cards-1"></script>
-    <script src="js/performance-domain.js?v=20260814-pessoas-cards-1"></script>
-    <script src="js/manager-experience.js?v=20260814-pessoas-cards-1"></script>
-    <script src="js/priority-rotation.js?v=20260814-pessoas-cards-1"></script>
-    <script src="js/pieces-operations.js?v=20260814-pessoas-cards-1"></script>
-    <script src="js/pieces-ui.js?v=20260814-pessoas-cards-1"></script>
-    <script src="js/performance-platform.js?v=20260814-pessoas-cards-1"></script>
+    <script src="js/actuar-fields.js?v=20260814-abas-por-equipe-2"></script>
+    <script src="js/attendance-clock.js?v=20260814-abas-por-equipe-2"></script>
+    <script src="js/performance-domain.js?v=20260814-abas-por-equipe-2"></script>
+    <script src="js/manager-experience.js?v=20260814-abas-por-equipe-2"></script>
+    <script src="js/priority-rotation.js?v=20260814-abas-por-equipe-2"></script>
+    <script src="js/pieces-operations.js?v=20260814-abas-por-equipe-2"></script>
+    <script src="js/pieces-ui.js?v=20260814-abas-por-equipe-2"></script>
+    <script src="js/performance-platform.js?v=20260814-abas-por-equipe-2"></script>
 </body>
 </html>

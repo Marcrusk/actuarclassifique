@@ -267,5 +267,38 @@
         };
     }
 
-    return { ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, create, syncParticipants, nextId, canManage, start, assign, complete, skip, pauseParticipant, reactivateParticipant, reorder, setPaused, resolveCurrent, view, snapshot };
+    /* Busca de chamado de prioridade.
+       Quem procura tem na mão o que o cliente falou ao telefone: o protocolo, o ID
+       do cliente ou o nome dele — raramente no formato exato que foi digitado no
+       cadastro. Por isso a comparação ignora acento e caixa, e ainda tenta uma
+       segunda passada só com letras e números, para "TZ-2244", "tz 2244" e "TZ2244"
+       acharem o mesmo chamado. A busca por analista só faz sentido para a gestão;
+       por isso o nome dele entra por `extras`, e não do próprio registro. */
+    function normalizeSearch(value) {
+        return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim();
+    }
+    function compactSearch(value) {
+        return normalizeSearch(value).replace(/[^a-z0-9]/g, '');
+    }
+    function searchFields(request, extras = {}) {
+        const row = request || {};
+        return [row.protocolo, row.clientId, row.clientName, row.demand, row.justificativa, extras.analystName, extras.team].filter(Boolean);
+    }
+    function matchesSearch(request, query, extras = {}) {
+        const termo = normalizeSearch(query);
+        if (!termo) return true;
+        const campos = searchFields(request, extras);
+        if (campos.some(campo => normalizeSearch(campo).includes(termo))) return true;
+        const compacto = compactSearch(query);
+        // Campo a campo: juntar tudo antes de compactar criaria emenda entre um campo
+        // e o outro, e "2244KM" acharia um chamado que não existe.
+        return Boolean(compacto) && campos.some(campo => compactSearch(campo).includes(compacto));
+    }
+    function filterBySearch(requests, query, resolveExtras) {
+        const lista = Array.isArray(requests) ? requests : [];
+        if (!normalizeSearch(query)) return lista;
+        return lista.filter(item => matchesSearch(item, query, typeof resolveExtras === 'function' ? resolveExtras(item) : {}));
+    }
+
+    return { ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, create, syncParticipants, nextId, canManage, start, assign, complete, skip, pauseParticipant, reactivateParticipant, reorder, setPaused, resolveCurrent, view, snapshot, matchesSearch, filterBySearch, normalizeSearch };
 });

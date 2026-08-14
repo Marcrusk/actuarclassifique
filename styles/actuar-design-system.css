@@ -3165,3 +3165,24 @@ body.modal-open { overflow: hidden; }
     .user-form-actions { margin-left: 0; }
     .user-form-actions .actuar-btn { flex: 1; justify-content: center; }
 }
+
+/* --- Busca de chamado de prioridade ---
+   Campo de localizar em três telas (analista, aprovações e lançamentos): mesma
+   caixa, mesma lupa, mesma linha de contagem embaixo. O recuo do ícone vem de
+   .actuar-input-icon, que já vence a base do design system. */
+.priority-search { min-width: 240px; }
+.priority-search .actuar-field-help { min-height: 14px; }
+.priority-page-filters .priority-search,
+.priority-approval-filters .priority-search { grid-column: span 2; }
+small.priority-client-line {
+    display: block;
+    margin-top: 2px;
+    color: var(--actuar-secondary);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+@media (max-width: 768px) {
+    .priority-page-filters .priority-search,
+    .priority-approval-filters .priority-search { grid-column: 1 / -1; }
+}
