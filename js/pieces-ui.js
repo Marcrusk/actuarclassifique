@@ -19,12 +19,14 @@
     function domain() { return window.PiecesOperations; }
     function store() { return typeof getStore === 'function' ? getStore() : null; }
     function users() { return store()?.users || window.defaultUsers || {}; }
+    function userRoles(user) { return Array.isArray(user?.roles) ? user.roles : [user?.role].filter(Boolean); }
     function currentContext() {
         if (typeof isAdminLoggedIn !== 'undefined' && isAdminLoggedIn) return { mode: 'manager', actorId: currentAdminId, user: getCurrentManager?.(), teams: getManagerAuthorizedTeams?.() || ['Sistema', 'Catraca'] };
         if (typeof isPecaLoggedIn !== 'undefined' && isPecaLoggedIn) {
             // O papel vem do cadastro do usuário logado e de mais lugar nenhum: sem
             // atalho de visualização, a tela sempre corresponde a quem entrou.
-            const user = users()[currentPecaUserId];
+            let user = users()[currentPecaUserId];
+            if (user && user.role !== LAB_ROLE && userRoles(user).includes(LAB_ROLE)) user = { ...user, role: LAB_ROLE };
             return { mode: user?.role === LAB_ROLE ? 'lab' : 'logistics', actorId: currentPecaUserId, user, teams: ['Sistema', 'Catraca'] };
         }
         return { mode: 'analyst', actorId: currentActiveUser, user: users()[currentActiveUser], teams: [users()[currentActiveUser]?.team].filter(Boolean) };
@@ -93,16 +95,17 @@
     }
     function defaultTab(mode) { return mode === 'logistics' ? 'operation' : mode === 'lab' ? 'validation' : 'overview'; }
     function operatorCan(area) {
-        const role = currentContext().user?.role;
-        // O Lab embala e posta, mas não emite nota: "cada área mexe só no que é dela"
-        // continua valendo para a parte fiscal, que é da Logística.
+        const user = currentContext().user;
+        const roles = Array.isArray(user?.roles) ? user.roles : [user?.role].filter(Boolean);
+        const role = user?.role;
+        // A permissão operacional agora é a união das roles que o usuário recebeu
+        // dentro da equipe. O vínculo de equipe continua definindo o contexto;
+        // nenhuma role interna do Actask é convertida automaticamente em acesso.
         if (role === LAB_ROLE) return area !== 'Faturamento';
-        if (role === 'Envio/Coleta') return area === 'Expedição';
-        if (!['Faturamento', 'Expedição', 'Logística/Faturamento'].includes(role)) return true;
-        // A Logística emite a nota e lança o rastreio; quem embala e posta é o Lab.
-        // Sem este recorte a Sarah continuava com o chamado na fila e via "Embalar peça".
-        if (role === 'Logística/Faturamento') return area === 'Faturamento';
-        return area === role;
+        if (roles.includes(LAB_ROLE) && area !== 'Faturamento') return true;
+        if (roles.includes('Logística/Faturamento') || roles.includes('Faturamento')) return area === 'Faturamento';
+        if (roles.includes('Envio/Coleta') || roles.includes('Expedição')) return area === 'Expedição';
+        return !roles.length || roles.every(role => !['Toletus Lab', 'Logística/Faturamento', 'Faturamento', 'Envio/Coleta', 'Expedição'].includes(role));
     }
     function canRequestPieces() {
         const context = currentContext();

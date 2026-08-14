@@ -107,9 +107,13 @@
                         </button>
                         <div id="loginPanelAnalyst" class="actuar-login-panel"><div>
                             <form onsubmit="loginAnalyst(event)" class="actuar-login-form">
-                                <div class="actuar-field">
+                                <div class="actuar-field" data-legacy-auth-field>
                                     <label for="analystUserSelect">Usuário</label>
                                     <select id="analystUserSelect" required></select>
+                                </div>
+                                <div class="actuar-field hidden" data-actask-auth-field>
+                                    <label for="analystEmail">E-mail do Actask</label>
+                                    <input type="email" id="analystEmail" autocomplete="username" placeholder="voce@empresa.com" data-actask-auth-input>
                                 </div>
                                 <div class="actuar-field">
                                     <label for="analystPass">Senha cadastrada</label>
@@ -128,9 +132,13 @@
                         </button>
                         <div id="loginPanelAdmin" class="actuar-login-panel"><div>
                             <form onsubmit="loginAdmin(event)" class="actuar-login-form">
-                                <div class="actuar-field">
+                                <div class="actuar-field" data-legacy-auth-field>
                                     <label for="adminUserSelect">Gestor</label>
                                     <select id="adminUserSelect" required></select>
+                                </div>
+                                <div class="actuar-field hidden" data-actask-auth-field>
+                                    <label for="adminEmail">E-mail do Actask</label>
+                                    <input type="email" id="adminEmail" autocomplete="username" placeholder="voce@empresa.com" data-actask-auth-input>
                                 </div>
                                 <div class="actuar-field">
                                     <label for="adminPass">Senha cadastrada</label>
@@ -149,9 +157,13 @@
                         </button>
                         <div id="loginPanelPeca" class="actuar-login-panel"><div>
                             <form onsubmit="loginPeca(event)" class="actuar-login-form">
-                                <div class="actuar-field">
+                                <div class="actuar-field" data-legacy-auth-field>
                                     <label for="pecaUserSelect">Usuário</label>
                                     <select id="pecaUserSelect" required></select>
+                                </div>
+                                <div class="actuar-field hidden" data-actask-auth-field>
+                                    <label for="pecaEmail">E-mail do Actask</label>
+                                    <input type="email" id="pecaEmail" autocomplete="username" placeholder="voce@empresa.com" data-actask-auth-input>
                                 </div>
                                 <div class="actuar-field">
                                     <label for="pecaPass">Senha cadastrada</label>
@@ -408,6 +420,7 @@
                 <button id="btnAnalystAccess" onclick="openAnalystModal()" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-user"></i>Entrar</button>
                 <button id="btnPecaAccess" onclick="openPecaModal()" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-truck-loading"></i>Acesso operacional</button>
                 <button id="btnAdminAccess" onclick="openAdminModal()" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-lock"></i>Modo Gestão</button>
+                <a class="actuar-btn actuar-btn-secondary" href="docs/design-system-actuar.html" target="_blank" rel="noopener"><i class="fi fi-rr-add-document" aria-hidden="true"></i>Design system</a>
             </div>
         </div>
     </section>
@@ -2350,6 +2363,20 @@
         // CONFIGURAÇÕES DO SUPABASE
         const SUPABASE_URL = "https://qmhmriiyzxhshjxttixo.supabase.co";
         const SUPABASE_KEY = "sb_publishable_RyM0bVKx1unGJeXjw_7XUg_iK7GDpo4";
+
+        // CONFIGURAÇÃO PÚBLICA DO ACTASK
+        // O client público do stage é preenchido quando for cadastrado nesse
+        // ambiente. Em main, defina ACTASK_AUTH_ENV="main"; o client_id oficial
+        // "actuar-classifique-main-login" será usado automaticamente.
+        // Nunca coloque client_secret ou AUTH_OIDC_SIGNING_SECRET aqui.
+        window.ACTASK_AUTH_CONFIG = window.ACTASK_AUTH_CONFIG || {
+            enabled: true,
+            environment: window.ACTASK_AUTH_ENV || 'stage',
+            issuer: window.ACTASK_AUTH_ISSUER || (window.ACTASK_AUTH_ENV === 'main' ? 'https://actaskapi.bluefronte.com' : 'https://actaskapistage.bluefronte.com'),
+            clientId: window.ACTASK_AUTH_CLIENT_ID || '',
+            audience: 'actask-public-api',
+            scopes: ['openid', 'profile']
+        };
         
         let supabaseClient = null;
         if (SUPABASE_URL !== "") {
@@ -2379,7 +2406,10 @@
 
         const RECORD_ID = "global_store";
         const PIECES_OPERATION_ROLES = new Set(['Envio/Coleta', 'Faturamento', 'Expedição', 'Logística/Faturamento', 'Toletus Lab']);
-        function isPiecesOperatorRole(role) { return PIECES_OPERATION_ROLES.has(role); }
+        function isPiecesOperatorRole(role) {
+            const roles = Array.isArray(role) ? role : [role];
+            return roles.some(item => PIECES_OPERATION_ROLES.has(item));
+        }
         let currentActiveUser = "alessandro";
         let activeRankingTab = "Sistema";
         let activeMonthKey = "atual";
@@ -4424,7 +4454,8 @@
 
         // Usuários com função Gestor Adm ou Envio/Coleta não entram no ranking (não são analistas avaliados)
         function isRankableUser(u) {
-            return !!u && u.role !== "Gestor Adm" && !isPiecesOperatorRole(u.role);
+            const roles = Array.isArray(u?.roles) ? u.roles : [u?.role];
+            return !!u && u.role !== "Gestor Adm" && !roles.includes('Gestor Adm') && !isPiecesOperatorRole(roles);
         }
 
         function showToast(msg, type = "success") {
@@ -5184,6 +5215,105 @@
             peca: { fill: fillPecaDoor, focus: 'pecaUserSelect' }
         };
 
+        function actaskAuthEnabled() {
+            return window.ActaskAuth?.isConfigured?.() === true;
+        }
+
+        function syncActaskLoginForms() {
+            const enabled = actaskAuthEnabled();
+            document.querySelectorAll('[data-actask-auth-field]').forEach(field => field.classList.toggle('hidden', !enabled));
+            document.querySelectorAll('[data-actask-auth-input]').forEach(input => { input.required = enabled; });
+            document.querySelectorAll('[data-legacy-auth-field] select').forEach(select => {
+                select.required = !enabled;
+                select.closest('.actuar-field')?.classList.toggle('hidden', enabled);
+            });
+            document.querySelector('.actuar-login-gate-help')?.replaceChildren(document.createTextNode(
+                enabled ? 'Use o mesmo e-mail e senha cadastrados no Actask.' : 'Sem senha cadastrada? Peça o primeiro acesso à gestão.'
+            ));
+        }
+
+        function activateActaskIdentity(identity, requestedMode = null) {
+            if (!identity?.id || !identity.teams?.length || !identity.roles?.length) {
+                return { ok: false, message: 'O Actask não retornou uma equipe e uma role funcional para este usuário.' };
+            }
+            if (identity.active === false) return { ok: false, message: 'Este usuário está inativo no Actask.' };
+            const mode = window.ActaskAuth.modeForUser(identity);
+            if (!mode) return { ok: false, message: 'Este usuário não possui uma role habilitada no Actuar Classifique.' };
+            if (requestedMode && requestedMode !== mode) {
+                const labels = { manager: 'Modo Gestão', operations: 'Acesso operacional', analyst: 'modo analista' };
+                return { ok: false, message: `Sua role não permite entrar no ${labels[requestedMode] || 'modo selecionado'}.` };
+            }
+
+            const users = appStore?.users || defaultUsers;
+            const legacyKey = window.ActaskAuth.attachToLegacyUsers(identity, users);
+            if (appStore) appStore.users = users;
+            if (lastSyncedSnapshot) lastSyncedSnapshot.users = deepClone(users);
+            window.actuarAuthenticatedUser = identity;
+            clearSession();
+            isAdminLoggedIn = mode === 'manager';
+            currentAdminId = isAdminLoggedIn ? legacyKey : null;
+            isPecaLoggedIn = mode === 'operations';
+            currentPecaUserId = isPecaLoggedIn ? legacyKey : null;
+            isAnalystLoggedIn = mode === 'analyst';
+            currentActiveUser = legacyKey;
+            if (identity.team && ['Sistema', 'Catraca'].includes(identity.team)) activeRankingTab = identity.team;
+            if (isAdminLoggedIn) {
+                activeAdminTab = 'visao';
+                restoreManagerFilters();
+            }
+            populateDropdowns();
+            syncLoginGate();
+            syncAccessControls();
+            return { ok: true, mode, legacyKey };
+        }
+
+        async function submitActaskLogin(kind) {
+            const email = document.getElementById(`${kind}Email`)?.value.trim();
+            const password = document.getElementById(`${kind}Pass`)?.value || '';
+            try {
+                const identity = await window.ActaskAuth.login(email, password);
+                const activation = activateActaskIdentity(identity, kind === 'admin' ? 'manager' : kind === 'peca' ? 'operations' : 'analyst');
+                if (!activation.ok) {
+                    await window.ActaskAuth.logout();
+                    showLoginError(kind, activation.message);
+                    return false;
+                }
+                document.getElementById(`${kind}Pass`).value = '';
+                closeLoginDoors(null);
+                showToast(`Bem-vindo, ${identity.name.split(' ')[0]}!`);
+                if (activation.mode === 'analyst') await openAttendanceClock(activation.legacyKey);
+                const home = { manager: { name: 'admin', section: 'visao' }, operations: 'pecas', analyst: 'dashboard' }[activation.mode];
+                navigateTo(home);
+                return true;
+            } catch (error) {
+                showLoginError(kind, error?.message || 'Não foi possível entrar no Actask.');
+                return false;
+            }
+        }
+
+        async function restoreActaskSession() {
+            if (!actaskAuthEnabled()) return null;
+            const identity = await window.ActaskAuth.restore();
+            if (!identity) return null;
+            const activation = activateActaskIdentity(identity);
+            if (!activation.ok) {
+                await window.ActaskAuth.logout();
+                await actuarAlert('Acesso não habilitado', activation.message, { tone: 'danger' });
+                return null;
+            }
+            return activation.mode;
+        }
+
+        function restoreLegacySession() {
+            const restored = restoreSession();
+            return restored;
+        }
+
+        function logoutActaskSession() {
+            if (actaskAuthEnabled()) void window.ActaskAuth.logout();
+            delete window.actuarAuthenticatedUser;
+        }
+
         function analystDoorOptions() {
             const usersList = getStore()?.users || defaultUsers;
             return analystOptionIds().map(id => `<option value="${id}">${usersList[id].name} · ${usersList[id].team}</option>`).join('');
@@ -5237,6 +5367,7 @@
             if (!config || !group) return;
             document.getElementById('loginGate')?.classList.remove('hidden');
             document.body.classList.add('actuar-locked');
+            syncActaskLoginForms();
             closeLoginDoors(kind);
             clearLoginError(kind);
             config.fill();
@@ -9209,6 +9340,10 @@
         async function loginAdmin(e) {
             e.preventDefault();
             clearLoginError('admin');
+            if (actaskAuthEnabled()) {
+                await submitActaskLogin('admin');
+                return;
+            }
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const selectedId = document.getElementById('adminUserSelect').value;
@@ -9245,6 +9380,7 @@
         function logoutAdmin() {
             isAdminLoggedIn = false;
             currentAdminId = null;
+            logoutActaskSession();
             clearSession();
             navigateTo('dashboard', { replace: true, root: true });
             showToast('Sessão de gestão encerrada.');
@@ -9332,6 +9468,10 @@
         async function loginAnalyst(e) {
             e.preventDefault();
             clearLoginError('analyst');
+            if (actaskAuthEnabled()) {
+                await submitActaskLogin('analyst');
+                return;
+            }
             const usersList = getStore()?.users || defaultUsers;
             const selectedId = document.getElementById('analystUserSelect').value;
             const pass = document.getElementById('analystPass').value;
@@ -9356,6 +9496,7 @@
             closeAttendanceClock(currentActiveUser);
             isAnalystLoggedIn = false;
             clearSession();
+            logoutActaskSession();
             closeAnalystModal();
             navigateTo('dashboard');
             syncLoginGate();
@@ -9367,6 +9508,10 @@
         async function loginPeca(e) {
             e.preventDefault();
             clearLoginError('peca');
+            if (actaskAuthEnabled()) {
+                await submitActaskLogin('peca');
+                return;
+            }
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const selectedId = document.getElementById('pecaUserSelect').value;
@@ -9401,6 +9546,7 @@
         function logoutPeca() {
             isPecaLoggedIn = false;
             currentPecaUserId = null;
+            logoutActaskSession();
             clearSession();
             navigateTo('dashboard', { replace: true, root: true });
             showToast('Sessão de Envio/Coleta encerrada.');
@@ -9531,8 +9677,10 @@
             // Sem essa cópia, o destino original já estava perdido quando fôssemos usá-lo.
             const rotaPretendida = routeFromLocation();
             await initApp();
-            // Depois de initApp() porque a restauração precisa da base de usuários carregada.
-            const restored = restoreSession();
+            syncActaskLoginForms();
+            // Depois de initApp() porque a identidade externa precisa ser associada às
+            // chaves históricas antes de a primeira tela privada ser desenhada.
+            const restored = actaskAuthEnabled() ? await restoreActaskSession() : restoreLegacySession();
             if (restored) {
                 // Recarregar devolve a mesma tela. "dashboard" é o destino genérico de
                 // quem chega sem rota, inclusive de links antigos: não pode sequestrar a
@@ -9553,6 +9701,7 @@
     <script src="js/priority-rotation.js?v=20260814-abas-por-equipe-2"></script>
     <script src="js/pieces-operations.js?v=20260814-abas-por-equipe-2"></script>
     <script src="js/pieces-ui.js?v=20260814-abas-por-equipe-2"></script>
+    <script src="js/actask-auth.js?v=20260814-pessoas-cards-1"></script>
     <script src="js/performance-platform.js?v=20260814-abas-por-equipe-2"></script>
 </body>
 </html>
