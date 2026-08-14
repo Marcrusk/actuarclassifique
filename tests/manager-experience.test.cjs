@@ -456,3 +456,145 @@ test('no telão o pódio tem quatro lugares; na tela de trabalho continua com tr
     }
     assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?#podiumPresentation \.tv-podium-lanterna/);
 });
+
+test('listagem de pessoas mostra a foto ao lado do nome', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    // Padrão do produto: onde há pessoa listada, há foto redonda junto do nome.
+    const listagens = [
+        ['Pessoas e Acessos', /priorityRotationAvatar\(u, 'is-featured', u\.photo \? '' : 'is-photoless'\)/],
+        ['Ociosidade por analista', /attendance-person">\$\{priorityRotationAvatar\(usuarios\[row\.userId\]/],
+        ['Escala semanal', /attendance-person">\$\{priorityRotationAvatar\(usuarios\[id\]/]
+    ];
+    for (const [nome, padrao] of listagens) assert.match(html, padrao, `listagem sem foto: ${nome}`);
+
+    // Quem ainda não tem foto precisa ser identificável de relance, para a gestão
+    // saber de quem cobrar o cadastro: anel tracejado e o cartão dizendo "Pendente".
+    assert.match(html, /u\.photo \? '' : 'is-photoless'/);
+    assert.match(html, /<dt>Foto<\/dt><dd class="\$\{u\.photo \? '' : 'is-missing'\}">\$\{u\.photo \? 'Cadastrada' : 'Pendente'\}/);
+    assert.match(css, /\.rotation-avatar\.is-photoless \{[^}]*border-style: dashed/);
+    assert.match(css, /\.people-card-meta dd\.is-missing \{[^}]*color: var\(--actuar-muted\)/);
+
+    // E ninguém fica sem identificação: sem foto, o avatar cai nas iniciais.
+    const helper = html.slice(html.indexOf('function priorityRotationAvatar'), html.indexOf('function priorityRotationAvatar') + 520);
+    assert.match(helper, /user\.photo \? `<img/);
+    assert.match(helper, /escapeHtml\(initials\)/);
+});
+
+test('pessoas e acessos: cartões com busca, filtros e cadastro em modal', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    // O formulário não pode mais viver aberto no meio da tela: ele mora no modal.
+    const modal = html.slice(html.indexOf('<div id="userFormModal"'), html.indexOf('<!-- FIM MODAL DE CADASTRO -->'));
+    assert.ok(modal.length > 500, 'modal de cadastro não encontrado');
+    assert.match(modal, /class="user-form-modal hidden"/, 'o modal precisa começar fechado');
+    for (const campo of ['editUserId', 'inputUserName', 'inputUserEmail', 'inputUserRole', 'inputUserTeam',
+        'inputUserPassword', 'inputUserPhotoData', 'inputUserTracked', 'inputUserShiftStart', 'btnSaveUser']) {
+        assert.match(modal, new RegExp(`id="${campo}"`), `campo perdido na migração para o modal: ${campo}`);
+    }
+
+    // Uma porta de entrada para criar e outra para editar, ambas passando pelo modal.
+    assert.match(html, /onclick="openUserForm\(\)"[\s\S]{0,120}Novo usuário/);
+    assert.match(html, /onclick="openUserForm\('\$\{id\}'\)"/);
+    assert.match(html, /function openUserForm\(id\) \{[\s\S]*?if \(id\) startEditUser\(id\)/);
+    assert.match(html, /function closeUserForm\(\) \{[\s\S]*?cancelEditUser\(\)/);
+    // Salvar precisa fechar o modal, senão o formulário fica por cima da lista atualizada.
+    assert.match(html, /const ok = await persistStore\(\);\s*\n\s*if \(ok\) \{\s*\n\s*closeUserForm\(\);/);
+
+    // A lista virou grade de cartões, com busca e filtros próprios.
+    assert.match(html, /<div id="usersManagementTable" class="actuar-people-grid"><\/div>/);
+    assert.ok(!/<tbody id="usersManagementTable"/.test(html), 'a tabela antiga ainda está no HTML');
+    for (const controle of ['usersSearch', 'usersFilterTeam', 'usersFilterStatus']) {
+        assert.match(html, new RegExp(`id="${controle}"[^>]*on(input|change)="renderUsersManagementTable\\(\\)"`),
+            `controle sem re-render: ${controle}`);
+    }
+    assert.match(css, /\.actuar-people-grid \{[^}]*grid-template-columns: repeat\(auto-fill/);
+    // O modal fica acima da ficha de peças (140), como as demais modais do produto.
+    assert.match(css, /\.user-form-modal \{[^}]*z-index: 150/);
+});
+
+test('inativar não pode esconder a pessoa da tela onde ela é reativada', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    // A listagem filtra por departamento, e não por `canManagerViewAnalyst` — essa
+    // embute "está ativo?" e sumia com quem acabou de ser inativado.
+    assert.match(html, /const visiveis = Object\.keys\(usersList\)\.filter\(id => canManagerListUser\(usersList\[id\]\)\);/);
+    const guarda = html.slice(html.indexOf('function canManagerListUser'), html.indexOf('function canManagerListUser') + 400);
+    assert.ok(!/active/.test(guarda), 'a visibilidade da listagem voltou a depender da situação da pessoa');
+    assert.match(guarda, /getManagerAuthorizedTeams\(\)\.includes\(u\.team\)/);
+    // E o domínio continua excluindo inativos de ranking e rodízio, como deve ser.
+    assert.equal(manager.canViewAnalyst(users.admin, { ...users.dyego, active: false }), false);
+});
+
+test('toda ação sobre uma pessoa passa por confirmação explicando o efeito', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const trecho = nome => {
+        const i = html.indexOf(`async function ${nome}(`);
+        assert.ok(i > 0, `função não encontrada: ${nome}`);
+        return html.slice(i, i + 2000);
+    };
+
+    for (const acao of ['toggleUserActive', 'resetUserPassword']) {
+        assert.match(trecho(acao), /await actuarConfirm\(\{/, `ação sem dupla validação: ${acao}`);
+    }
+
+    // Inativar e reativar têm mensagens próprias: a primeira avisa o que se perde,
+    // a segunda o que volta. Só a destrutiva usa o tom vermelho.
+    const toggle = trecho('toggleUserActive');
+    assert.match(toggle, /tone: 'danger'[\s\S]{0,200}Inativar \$\{u\.name\}\?/);
+    assert.match(toggle, /perde o acesso e não consegue mais entrar/);
+    assert.match(toggle, /Para reativar, use o filtro "Inativos"/);
+    assert.match(toggle, /Reativar \$\{u\.name\}\?/);
+    assert.match(toggle, /volta a acessar o sistema com a senha atual/);
+    // Cancelar não pode alterar nada.
+    assert.match(toggle, /if \(!confirmado\) return;\s*\n\s*u\.active = !inativando;/);
+});
+
+test('a busca de pessoas usa o campo com ícone do Design System', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    // Sem .actuar-input-icon a lupa cai por cima do texto: o padding global do
+    // produto é !important e ganha de qualquer recuo escrito à mão.
+    assert.match(html, /class="people-search actuar-input-icon">\s*\n\s*<i class="fi fi-rr-search"[\s\S]{0,300}id="usersSearch"/);
+    assert.match(css, /body\.actuar-app \.actuar-input-icon > input[^{]*\{[^}]*padding-left: 38px !important/);
+    assert.ok(!/\.people-search input \{[^}]*padding/.test(css), 'recuo próprio da busca reintroduz o bug da lupa');
+});
+
+test('ficha de pessoa é patrimônio: não existe exclusão, só inativação', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    // Nenhum caminho pela interface leva a excluir alguém.
+    assert.ok(!/onclick="deleteUser\(/.test(html), 'o botão de excluir pessoa voltou para a tela');
+    const corpo = html.slice(html.indexOf('async function deleteUser('), html.indexOf('async function deleteLog('));
+    assert.ok(!/delete appStore\.users/.test(corpo), 'deleteUser ainda apaga a ficha do store');
+    assert.ok(!/persistStore\(\)/.test(corpo), 'deleteUser ainda grava a remoção');
+    // E se um onclick antigo sobreviver em cache, ele encontra uma recusa explicada.
+    assert.match(corpo, /actuarAlert\(/);
+    assert.match(corpo, /Fichas de pessoas não são excluídas/);
+    assert.match(corpo, /Inativar acesso/);
+
+    // Inativar é o desligamento — e a confirmação precisa dizer isso.
+    const toggle = html.slice(html.indexOf('async function toggleUserActive('), html.indexOf('async function deleteUser('));
+    assert.match(toggle, /A ficha continua aqui/);
+    assert.match(toggle, /nenhuma ficha é excluída/);
+});
+
+test('pessoa inativa não entra por nenhuma das três portas de login', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const trecho = (nome, ate) => html.slice(html.indexOf(nome), html.indexOf(ate));
+
+    // Três logins, três bloqueios — nenhum deles pode depender só do dropdown.
+    assert.match(trecho('async function loginAdmin(', 'function openAnalystModal'), /active === false[\s\S]{0,200}showLoginError\('admin'/);
+    assert.match(trecho('async function loginAnalyst(', 'function openPecaModal'), /user\.active === false\) return showLoginError\('analyst'/);
+    assert.match(trecho('async function loginPeca(', 'function logoutPeca'), /active === false[\s\S]{0,200}showLoginError\('peca'/);
+
+    // O dropdown também não oferece quem está inativo: são duas camadas, não uma.
+    assert.match(html, /filter\(id => usersList\[id\]\.active !== false && isRankableUser\(usersList\[id\]\)\)/);
+
+    // E quem já estava logado cai na próxima recarga: a sessão é reconferida.
+    const sessao = trecho('function restoreSession(', 'function persistSession');
+    assert.match(sessao, /if \(!user \|\| user\.active === false\) \{ clearSession\(\); return false; \}/);
+});

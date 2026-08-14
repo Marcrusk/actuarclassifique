@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260813-tv-lanterna-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260814-pessoas-cards-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -1480,9 +1480,21 @@
             <!-- PAINEL: CADASTROS E USUÁRIOS -->
             <div id="admPanelCadastros" class="hidden space-y-6">
             <!-- CADASTRO / EDIÇÃO DE USUÁRIOS -->
-            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
-                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-user-plus text-primary-500"></i> Cadastrar / Editar Usuário</h3>
-                <form onsubmit="saveUser(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <!-- MODAL DE CADASTRO / EDIÇÃO: o formulário só aparece quando alguém
+                 pede. Deixá-lo sempre aberto empurrava a lista para fora da tela e
+                 fazia todo mundo confundir "ver quem existe" com "criar mais um". -->
+            <div id="userFormModal" class="user-form-modal hidden" role="dialog" aria-modal="true" aria-labelledby="userFormTitle">
+                <div class="user-form-backdrop" onclick="closeUserForm()"></div>
+                <div class="user-form-panel">
+                <header class="user-form-head">
+                    <div class="user-form-head-text">
+                        <span id="userFormBadge" class="user-form-badge">Novo</span>
+                        <h3 id="userFormTitle">Novo usuário</h3>
+                        <p id="userFormSubtitle">Identificação, acesso e — quando fizer sentido — a jornada de ponto.</p>
+                    </div>
+                    <button type="button" class="user-form-close" onclick="closeUserForm()" aria-label="Fechar"><i class="fi fi-rr-cross-small"></i></button>
+                </header>
+                <form onsubmit="saveUser(event)" class="user-form-body grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <input type="hidden" id="editUserId" value="">
                     <div>
                         <label class="block text-xs text-secondary mb-1">Nome do Usuário</label>
@@ -1502,7 +1514,6 @@
                             <option value="Faturamento">Faturamento</option>
                             <option value="Expedição">Expedição</option>
                             <option value="Logística/Faturamento">Logística/Faturamento completo</option>
-                            <option value="Toletus Lab">Toletus Lab (validação e acompanhamento)</option>
                             <option value="Gestor Adm">Gestor Adm</option>
                         </select>
                     </div>
@@ -1510,11 +1521,7 @@
                         <label class="block text-xs text-secondary mb-1">Departamento</label>
                         <select id="inputUserTeam" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
                     </div>
-                    <div class="flex gap-2">
-                        <button type="submit" id="btnSaveUser" class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110">Salvar Usuário</button>
-                        <button type="button" id="btnCancelEdit" onclick="cancelEditUser()" class="hidden bg-surface2 hover:bg-surface3 text-white px-3 py-2.5 rounded-xl text-sm transition-all duration-200 hover:brightness-110"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                    <div>
+                    <div class="md:col-span-2">
                         <label class="block text-xs text-secondary mb-1">Foto do Analista</label>
                         <div class="flex items-center gap-3">
                             <div id="userPhotoPreview" class="w-11 h-11 rounded-full bg-surface2 border border-line flex items-center justify-center text-secondary overflow-hidden shrink-0">
@@ -1548,39 +1555,61 @@
                             <div class="actuar-field shift-days"><label>Dias de jornada</label><div id="inputUserShiftDays" class="shift-days-row" role="group" aria-label="Dias de jornada"></div></div>
                         </div>
                     </fieldset>
-                </form>
-                <p class="text-[10px] text-secondary mt-2"><i class="fa-solid fa-circle-info me-1"></i> A foto é exibida apenas no Dashboard/Resultado Individual do próprio analista e no Pódio por Departamento.</p>
-
-                <!-- LISTA DE USUÁRIOS CADASTRADOS PARA EDIÇÃO -->
-                <div class="mt-6">
-                    <h4 class="text-xs font-bold text-secondary uppercase mb-2">Usuários Cadastrados</h4>
-                    <div id="analystFirstAccess" class="actuar-feedback actuar-feedback-info mb-3">
-                        <i class="fi fi-rr-lock" aria-hidden="true"></i>
-                        <div>
-                            <strong>Primeiro acesso dos analistas</strong>
-                            <p id="analystFirstAccessHint">Gere as senhas iniciais dos analistas de uma vez, ou use <strong>Redefinir senha</strong> na linha da pessoa para qualquer perfil. A senha aparece uma única vez, para você distribuir.</p>
-                            <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm mt-2" onclick="generateAnalystPasswords()">
-                                <i class="fi fi-rr-lock"></i>Gerar senhas de primeiro acesso
-                            </button>
-                            <div id="analystFirstAccessResult" class="hidden"></div>
+                    <footer class="user-form-foot md:col-span-4">
+                        <p class="user-form-note"><i class="fi fi-rr-info"></i> A foto aparece na listagem de pessoas, no resultado individual e no pódio por departamento.</p>
+                        <div class="user-form-actions">
+                            <button type="button" id="btnCancelEdit" onclick="closeUserForm()" class="actuar-btn actuar-btn-secondary">Cancelar</button>
+                            <button type="submit" id="btnSaveUser" class="actuar-btn actuar-btn-primary">Salvar usuário</button>
                         </div>
+                    </footer>
+                </form>
+                </div>
+            </div>
+            <!-- FIM MODAL DE CADASTRO -->
+
+            <!-- LISTAGEM DE PESSOAS: cartões em vez de planilha. O que a gestão
+                 procura aqui é uma pessoa, não uma célula. -->
+            <div class="bg-surface border border-line rounded-2xl card-hover p-6">
+                <header class="people-head">
+                    <div>
+                        <h3 class="people-title"><i class="fi fi-rr-users-alt"></i>Pessoas e acessos</h3>
+                        <p id="peopleCount" class="people-subtitle">Carregando…</p>
                     </div>
-                    <div class="overflow-x-auto max-h-64 overflow-y-auto">
-                        <table class="w-full text-left text-xs text-secondary">
-                            <thead class="bg-bg sticky top-0 uppercase text-[10px]">
-                                <tr>
-                                    <th class="p-2">Nome</th>
-                                    <th class="p-2">E-mail</th>
-                                    <th class="p-2">Função</th>
-                                    <th class="p-2">Departamento</th>
-                                    <th class="p-2 text-center">Status</th>
-                                    <th class="p-2 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="usersManagementTable" class="divide-y divide-line/50"></tbody>
-                        </table>
+                    <button type="button" class="actuar-btn actuar-btn-primary" onclick="openUserForm()">
+                        <i class="fi fi-rr-user-add"></i>Novo usuário
+                    </button>
+                </header>
+
+                <div class="people-toolbar">
+                    <label class="people-search actuar-input-icon">
+                        <i class="fi fi-rr-search" aria-hidden="true"></i>
+                        <input type="search" id="usersSearch" placeholder="Buscar por nome, e-mail, função ou departamento" autocomplete="off" oninput="renderUsersManagementTable()" aria-label="Buscar pessoa">
+                    </label>
+                    <select id="usersFilterTeam" onchange="renderUsersManagementTable()" aria-label="Filtrar por departamento">
+                        <option value="">Todos os departamentos</option>
+                    </select>
+                    <select id="usersFilterStatus" onchange="renderUsersManagementTable()" aria-label="Filtrar por situação">
+                        <option value="">Todas as situações</option>
+                        <option value="active">Ativos</option>
+                        <option value="inactive">Inativos</option>
+                        <option value="nopassword">Sem senha definida</option>
+                        <option value="nophoto">Sem foto</option>
+                    </select>
+                </div>
+
+                <div id="analystFirstAccess" class="actuar-feedback actuar-feedback-info mb-3">
+                    <i class="fi fi-rr-lock" aria-hidden="true"></i>
+                    <div>
+                        <strong>Primeiro acesso dos analistas</strong>
+                        <p id="analystFirstAccessHint">Gere as senhas iniciais dos analistas de uma vez, ou use <strong>Redefinir senha</strong> no cartão da pessoa para qualquer perfil. A senha aparece uma única vez, para você distribuir.</p>
+                        <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm mt-2" onclick="generateAnalystPasswords()">
+                            <i class="fi fi-rr-lock"></i>Gerar senhas de primeiro acesso
+                        </button>
+                        <div id="analystFirstAccessResult" class="hidden"></div>
                     </div>
                 </div>
+
+                <div id="usersManagementTable" class="actuar-people-grid"></div>
             </div>
             </div>
             <!-- FIM PAINEL CADASTROS -->
@@ -6067,36 +6096,120 @@
             if (departamentos.includes(atual)) select.value = atual;
         }
 
+        // O filtro de departamento da listagem vem da mesma lista do domínio que
+        // alimenta o formulário: duas listas de departamento divergiriam na primeira
+        // contratação de uma área nova.
+        function syncUsersFilterTeamOptions() {
+            const select = document.getElementById('usersFilterTeam');
+            if (!select || !window.ManagerExperience) return;
+            const departamentos = ManagerExperience.DEPARTMENTS;
+            if (select.options.length === departamentos.length + 1) return;
+            const atual = select.value;
+            select.innerHTML = `<option value="">Todos os departamentos</option>`
+                + departamentos.map(dep => `<option value="${escapeHtml(dep)}">${escapeHtml(teamLabel(dep))}</option>`).join('');
+            select.value = departamentos.includes(atual) ? atual : '';
+        }
+
+        /* Quem aparece nesta tela é decidido pelo DEPARTAMENTO, nunca pela situação.
+           `canManagerViewAnalyst` embute "está ativo?" na regra — usá-la aqui fazia a
+           pessoa inativada sumir da única tela onde dá para reativá-la. */
+        function canManagerListUser(u) {
+            if (!u) return false;
+            if (!isAdminLoggedIn) return true;
+            if (!isRankableUser(u)) return true;
+            return getManagerAuthorizedTeams().includes(u.team);
+        }
+
+        /* Uma pessoa é um cartão, não uma linha de planilha. Quem abre esta tela está
+           procurando alguém — e reconhece pela foto e pelo nome antes de ler qualquer
+           coluna. Busca e filtros existem para a lista não virar rolagem infinita. */
+        function matchesUserFilters(id, u, termo, time, situacao) {
+            if (time && u.team !== time) return false;
+            const active = u.active !== false;
+            if (situacao === 'active' && !active) return false;
+            if (situacao === 'inactive' && active) return false;
+            if (situacao === 'nopassword' && u.hasPassword) return false;
+            if (situacao === 'nophoto' && u.photo) return false;
+            if (!termo) return true;
+            return [u.name, u.email, u.role, teamLabel(u.team)]
+                .some(campo => String(campo || '').toLowerCase().includes(termo));
+        }
+
         function renderUsersManagementTable() {
             syncDepartmentOptions();
+            syncUsersFilterTeamOptions();
             const store = getStore();
             const usersList = store.users || defaultUsers;
-            let html = "";
-            Object.keys(usersList).forEach(id => {
+            const termo = (document.getElementById('usersSearch')?.value || '').trim().toLowerCase();
+            const time = document.getElementById('usersFilterTeam')?.value || '';
+            const situacao = document.getElementById('usersFilterStatus')?.value || '';
+
+            const visiveis = Object.keys(usersList).filter(id => canManagerListUser(usersList[id]));
+            const filtrados = visiveis.filter(id => matchesUserFilters(id, usersList[id], termo, time, situacao));
+            filtrados.sort((a, b) => String(usersList[a].name || '').localeCompare(String(usersList[b].name || ''), 'pt-BR'));
+
+            const html = filtrados.map(id => {
                 const u = usersList[id];
-                if (isAdminLoggedIn && isRankableUser(u) && !canManagerViewAnalyst(id)) return;
                 const active = u.active !== false;
-                const statusBadge = active
-                    ? `<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Ativo</span>`
-                    : `<span class="text-[10px] bg-red-500/10 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">Inativo</span>`;
-                html += `
-                    <tr class="border-b border-line/40 ${active ? '' : 'opacity-60'}">
-                        <td class="p-2 font-semibold text-white">${u.name}</td>
-                        <td class="p-2">${u.email ? escapeHtml(u.email) : '<span class="text-secondary">Não informado</span>'}</td>
-                        <td class="p-2">${u.role}</td>
-                        <td class="p-2">${teamLabel(u.team)}</td>
-                        <td class="p-2 text-center">${statusBadge}</td>
-                        <td class="p-2 text-right whitespace-nowrap">
-                            ${isRankableUser(u) && canManagerViewAnalyst(id) ? `<button onclick="openManagerAnalyst('${id}','pessoas')" class="text-primary-400 hover:text-primary-300 text-xs font-semibold mr-3"><i class="fi fi-rr-eye me-1"></i>Ver ficha</button>` : ''}
-                            <button onclick="startEditUser('${id}')" class="text-primary-400 hover:text-primary-300 text-xs font-semibold mr-3"><i class="fa-solid fa-pen me-1"></i>Editar</button>
-                            <button onclick="resetUserPassword('${id}')" class="text-primary-400 hover:text-primary-300 text-xs font-semibold mr-3"><i class="fa-solid fa-key me-1"></i>${u.hasPassword ? 'Redefinir senha' : 'Criar senha'}</button>
-                            <button onclick="toggleUserActive('${id}')" class="text-amber-400 hover:text-amber-300 text-xs font-semibold mr-3"><i class="fa-solid fa-power-off me-1"></i>${active ? 'Inativar' : 'Ativar'}</button>
-                            <button onclick="deleteUser('${id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>
-                        </td>
-                    </tr>
+                const podeVerFicha = isRankableUser(u) && canManagerViewAnalyst(id);
+                return `
+                    <article class="people-card ${active ? '' : 'is-inactive'}">
+                        <div class="people-card-top">
+                            ${priorityRotationAvatar(u, 'is-featured', u.photo ? '' : 'is-photoless')}
+                            <div class="people-card-id">
+                                <strong>${escapeHtml(u.name)}</strong>
+                                <span>${escapeHtml(u.role || 'Sem função definida')}</span>
+                            </div>
+                            <span class="people-status ${active ? 'is-on' : 'is-off'}">${active ? 'Ativo' : 'Inativo'}</span>
+                        </div>
+                        <dl class="people-card-meta">
+                            <div><dt>Departamento</dt><dd>${escapeHtml(teamLabel(u.team))}</dd></div>
+                            <div><dt>E-mail</dt><dd class="${u.email ? '' : 'is-missing'}">${u.email ? escapeHtml(u.email) : 'Não informado'}</dd></div>
+                            <div><dt>Acesso</dt><dd class="${u.hasPassword ? '' : 'is-missing'}">${u.hasPassword ? 'Senha definida' : 'Sem senha'}</dd></div>
+                            <div><dt>Foto</dt><dd class="${u.photo ? '' : 'is-missing'}">${u.photo ? 'Cadastrada' : 'Pendente'}</dd></div>
+                        </dl>
+                        <div class="people-card-actions">
+                            <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openUserForm('${id}')"><i class="fi fi-rr-pencil"></i>Editar</button>
+                            ${podeVerFicha ? `<button type="button" class="people-icon-btn" onclick="openManagerAnalyst('${id}','pessoas')" title="Ver ficha" aria-label="Ver ficha de ${escapeHtml(u.name)}"><i class="fi fi-rr-eye"></i></button>` : ''}
+                            <button type="button" class="people-icon-btn" onclick="resetUserPassword('${id}')" title="${u.hasPassword ? 'Redefinir senha' : 'Criar senha'}" aria-label="${u.hasPassword ? 'Redefinir' : 'Criar'} senha de ${escapeHtml(u.name)}"><i class="fi fi-rr-key"></i></button>
+                            <button type="button" class="people-icon-btn ${active ? 'is-warn' : ''}" onclick="toggleUserActive('${id}')" title="${active ? 'Inativar acesso' : 'Reativar acesso'}" aria-label="${active ? 'Inativar' : 'Reativar'} ${escapeHtml(u.name)}"><i class="fi fi-rr-power"></i></button>
+                        </div>
+                    </article>
                 `;
-            });
-            document.getElementById('usersManagementTable').innerHTML = html || `<tr><td colspan="6" class="p-4 text-center text-secondary">Nenhum usuário cadastrado.</td></tr>`;
+            }).join('');
+
+            const vazio = visiveis.length
+                ? `<div class="people-empty"><i class="fi fi-rr-search"></i><strong>Nenhuma pessoa encontrada</strong><p>Ajuste a busca ou os filtros para ver os cadastros.</p></div>`
+                : `<div class="people-empty"><i class="fi fi-rr-users-alt"></i><strong>Nenhum usuário cadastrado</strong><p>Use <strong>Novo usuário</strong> para criar o primeiro acesso.</p></div>`;
+            document.getElementById('usersManagementTable').innerHTML = html || vazio;
+
+            const contador = document.getElementById('peopleCount');
+            if (contador) {
+                const ativos = visiveis.filter(id => usersList[id].active !== false).length;
+                const filtrando = filtrados.length !== visiveis.length;
+                contador.textContent = filtrando
+                    ? `${filtrados.length} de ${visiveis.length} ${visiveis.length === 1 ? 'pessoa' : 'pessoas'}`
+                    : `${visiveis.length} ${visiveis.length === 1 ? 'pessoa' : 'pessoas'} · ${ativos} ${ativos === 1 ? 'ativa' : 'ativas'}`;
+            }
+        }
+
+        /* Abrir e fechar são as duas únicas portas do formulário: quem chama openUserForm
+           sem id está criando, com id está editando. Deixar o formulário aberto por conta
+           própria foi o que fazia "editar" e "cadastrar" se misturarem na mesma tela. */
+        function openUserForm(id) {
+            const modal = document.getElementById('userFormModal');
+            if (!modal) return;
+            cancelEditUser();
+            if (id) startEditUser(id);
+            modal.classList.remove('hidden');
+            document.body.classList.add('modal-open');
+            setTimeout(() => document.getElementById('inputUserName')?.focus(), 40);
+        }
+
+        function closeUserForm() {
+            document.getElementById('userFormModal')?.classList.add('hidden');
+            document.body.classList.remove('modal-open');
+            cancelEditUser();
         }
 
         function onUserPhotoSelected(event) {
@@ -6163,8 +6276,8 @@
                 document.getElementById('userPhotoPreview').innerHTML = '<i class="fi fi-rr-user text-sm"></i>';
                 document.getElementById('btnRemoveUserPhoto').classList.add('hidden');
             }
-            document.getElementById('btnSaveUser').innerText = "Atualizar Usuário";
-            document.getElementById('btnCancelEdit').classList.remove('hidden');
+            document.getElementById('btnSaveUser').innerText = "Salvar alterações";
+            setUserFormHeading('Editar', escapeHtml(u.name), 'Alterações valem para o próximo acesso desta pessoa.');
             onUserRoleChange(u.role);
             fillShiftForm(id);
         }
@@ -6232,10 +6345,19 @@
             document.getElementById('inputUserTeam').value = "Sistema";
             document.getElementById('inputUserPassword').value = "";
             removeUserPhoto();
-            document.getElementById('btnSaveUser').innerText = "Salvar Usuário";
-            document.getElementById('btnCancelEdit').classList.add('hidden');
+            document.getElementById('btnSaveUser').innerText = "Salvar usuário";
+            setUserFormHeading('Novo', 'Novo usuário', 'Identificação, acesso e — quando fizer sentido — a jornada de ponto.');
             onUserRoleChange("Analista de sistema");
             fillShiftForm(null);
+        }
+
+        function setUserFormHeading(badge, titulo, subtitulo) {
+            const chip = document.getElementById('userFormBadge');
+            const title = document.getElementById('userFormTitle');
+            const sub = document.getElementById('userFormSubtitle');
+            if (chip) chip.textContent = badge;
+            if (title) title.innerHTML = titulo;
+            if (sub) sub.textContent = subtitulo;
         }
 
         async function saveUser(e) {
@@ -6295,40 +6417,65 @@
 
             const ok = await persistStore();
             if (ok) {
-                cancelEditUser();
+                closeUserForm();
                 populateDropdowns();
                 render();
             }
         }
 
+        /* Inativar tira a pessoa do ranking, do rodízio e do login de uma vez só. É
+           destrutivo o bastante para não acontecer por um clique errado no ícone —
+           e a confirmação precisa dizer o que muda, não só perguntar "tem certeza?". */
         async function toggleUserActive(id) {
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const u = usersList[id];
             if (!u) return;
-            u.active = u.active === false ? true : false;
+            const inativando = u.active !== false;
+            const mede = isRankableUser(u);
+
+            const confirmado = inativando
+                ? await actuarConfirm({
+                    tone: 'danger', icon: 'power',
+                    title: `Inativar ${u.name}?`,
+                    message: `${u.name} perde o acesso e não consegue mais entrar no sistema.`
+                        + (mede ? ` Sai do ranking, do rodízio de prioridades e da escala de ponto do departamento ${teamLabel(u.team)}.` : '')
+                        + ' A ficha continua aqui: chamados, pontuações e comentários que ela assinou seguem rastreáveis.'
+                        + ' Esta é a forma de desligar alguém — nenhuma ficha é excluída. Para reativar, use o filtro "Inativos".',
+                    confirmLabel: 'Inativar acesso'
+                })
+                : await actuarConfirm({
+                    icon: 'power',
+                    title: `Reativar ${u.name}?`,
+                    message: `${u.name} volta a acessar o sistema com a senha atual`
+                        + (mede ? ` e reaparece no ranking, no rodízio e na escala de ${teamLabel(u.team)}.` : '.'),
+                    confirmLabel: 'Reativar acesso'
+                });
+            if (!confirmado) return;
+
+            u.active = !inativando;
             const ok = await persistStore();
-            if (ok) showToast(`Usuário ${u.active ? 'ativado' : 'inativado'} com sucesso.`);
+            if (ok) showToast(`${u.name} ${u.active ? 'reativado' : 'inativado'} com sucesso.`);
             populateDropdowns();
             render();
         }
 
+        /* A ficha de uma pessoa é o que dá nome a tudo que ela produziu: chamados
+           corrigidos, pontuações fechadas, comentários de conclusão, decisões de
+           gestão. Apagá-la transformaria esse histórico em registro órfão — perda de
+           patrimônio da empresa, não uma limpeza de cadastro. Quem sai da empresa é
+           INATIVADO: perde o acesso e some das listas de trabalho, e o que assinou
+           continua rastreável. A função fica como barreira: se algum onclick antigo
+           sobreviver em cache, ele encontra uma recusa, e não uma exclusão. */
         async function deleteUser(id) {
-            const store = getStore();
-            const usersList = store.users || defaultUsers;
-            const u = usersList[id];
-            if (!u) return;
-            if (!await actuarConfirm({
-                tone: 'danger', icon: 'trash',
-                title: `Excluir ${u.name}?`,
-                message: 'O usuário é removido em definitivo. Esta ação não pode ser desfeita — considere inativar em vez de excluir.',
-                confirmLabel: 'Excluir usuário'
-            })) return;
-            delete appStore.users[id];
-            const ok = await persistStore();
-            if (ok) showToast("Usuário excluído permanentemente.");
-            populateDropdowns();
-            render();
+            const u = (getStore()?.users || defaultUsers)[id];
+            await actuarAlert(
+                'Fichas de pessoas não são excluídas',
+                `${u ? u.name : 'Esta pessoa'} assina chamados, pontuações e comentários que precisam continuar rastreáveis`
+                + ' mesmo depois que ela deixa a empresa. Use "Inativar acesso": a pessoa perde o login e sai das listas'
+                + ' de trabalho, e o histórico permanece intacto.',
+                { icon: 'shield-check' }
+            );
         }
 
         async function deleteLog(logId) {
@@ -9256,13 +9403,13 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-fields.js?v=20260813-tv-lanterna-1"></script>
-    <script src="js/attendance-clock.js?v=20260813-tv-lanterna-1"></script>
-    <script src="js/performance-domain.js?v=20260813-tv-lanterna-1"></script>
-    <script src="js/manager-experience.js?v=20260813-tv-lanterna-1"></script>
-    <script src="js/priority-rotation.js?v=20260813-tv-lanterna-1"></script>
-    <script src="js/pieces-operations.js?v=20260813-tv-lanterna-1"></script>
-    <script src="js/pieces-ui.js?v=20260813-tv-lanterna-1"></script>
-    <script src="js/performance-platform.js?v=20260813-tv-lanterna-1"></script>
+    <script src="js/actuar-fields.js?v=20260814-pessoas-cards-1"></script>
+    <script src="js/attendance-clock.js?v=20260814-pessoas-cards-1"></script>
+    <script src="js/performance-domain.js?v=20260814-pessoas-cards-1"></script>
+    <script src="js/manager-experience.js?v=20260814-pessoas-cards-1"></script>
+    <script src="js/priority-rotation.js?v=20260814-pessoas-cards-1"></script>
+    <script src="js/pieces-operations.js?v=20260814-pessoas-cards-1"></script>
+    <script src="js/pieces-ui.js?v=20260814-pessoas-cards-1"></script>
+    <script src="js/performance-platform.js?v=20260814-pessoas-cards-1"></script>
 </body>
 </html>

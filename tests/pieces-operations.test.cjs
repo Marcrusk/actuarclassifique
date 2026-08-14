@@ -791,7 +791,8 @@ test('confirmação usa o diálogo do sistema, não o do navegador', () => {
     assert.match(html, /id="actuarConfirmDialog"/);
 
     // Toda decisão destrutiva precisa de tom próprio e rótulo que diga o que vai acontecer.
-    for (const rotulo of ['Excluir usuário', 'Excluir lançamento', 'Excluir protocolo', 'Fechar mês']) {
+    // "Excluir usuário" saiu da lista de propósito: ficha de pessoa não se exclui.
+    for (const rotulo of ['Excluir lançamento', 'Excluir protocolo', 'Fechar mês']) {
         assert.ok(html.includes(`confirmLabel: '${rotulo}'`), `ação destrutiva sem rótulo próprio: ${rotulo}`);
     }
     assert.ok((html.match(/tone: 'danger'/g) || []).length >= 5, 'ações destrutivas deveriam usar o tom de perigo');

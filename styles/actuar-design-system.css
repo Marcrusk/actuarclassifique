@@ -3084,3 +3084,84 @@ body.actuar-app .actuar-field-with-action > input:not([type="checkbox"]):not([ty
     #podiumPresentation .tv-podium-lanterna .podium-lanterna-tag { animation: none; opacity: 1; transform: none; }
     #podiumPresentation .tv-podium-lanterna .podium-lanterna-tag { transform: translateX(-50%); }
 }
+
+/* Padrão de identificação de pessoa: foto redonda ao lado do nome, em qualquer
+   listagem do produto. Quem ainda não tem foto aparece com as iniciais e o anel
+   tracejado — assim dá para varrer a lista e ver quem falta cadastrar. */
+.rotation-avatar.is-photoless { border-style: dashed; border-color: var(--actuar-muted); color: var(--actuar-muted); }
+
+/* PESSOAS E ACESSOS — a listagem deixou de ser planilha. Cada pessoa é um cartão
+   com foto, função e situação visíveis de relance; o formulário virou modal para
+   não competir com a lista pelo espaço da tela. */
+.people-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.people-title { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--actuar-foreground); font-size: 15px; font-weight: 700; }
+.people-title i { color: var(--actuar-primary); }
+.people-subtitle { margin: 3px 0 0; color: var(--actuar-secondary); font-size: 11px; }
+
+/* A busca usa .actuar-input-icon, o padrão do produto para campo com ícone: é a
+   única regra que vence o `padding !important` global e mantém a lupa fora do
+   texto. Escrever um recuo próprio aqui repetiria o bug já corrigido em peças. */
+.people-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) auto auto; gap: 8px; margin-bottom: 14px; align-items: center; }
+.people-search { min-width: 0; }
+body.actuar-app .people-toolbar input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body.actuar-app .people-toolbar select { min-height: 38px; font-size: 12px; }
+.people-toolbar select { max-width: 220px; }
+.people-search input::-webkit-search-cancel-button { filter: grayscale(1) opacity(.6); cursor: pointer; }
+.people-search input:focus-visible, .people-toolbar select:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: 1px; }
+
+.actuar-people-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 12px; }
+.people-card { display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1px solid var(--actuar-border); border-radius: 12px; background: var(--actuar-surface); transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.people-card:hover { border-color: var(--actuar-primary); box-shadow: 0 6px 18px rgba(16, 24, 40, .1); transform: translateY(-1px); }
+.people-card.is-inactive { opacity: .62; }
+.people-card-top { display: flex; align-items: center; gap: 10px; }
+.people-card-id { display: grid; gap: 1px; min-width: 0; flex: 1; }
+.people-card-id strong { color: var(--actuar-foreground); font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people-card-id span { color: var(--actuar-secondary); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people-status { flex: 0 0 auto; padding: 2px 8px; border-radius: 999px; font-size: 9px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+.people-status.is-on { border: 1px solid color-mix(in srgb, #087a4b 32%, transparent); background: color-mix(in srgb, #087a4b 12%, transparent); color: #087a4b; }
+.people-status.is-off { border: 1px solid color-mix(in srgb, #b42318 32%, transparent); background: color-mix(in srgb, #b42318 12%, transparent); color: #b42318; }
+
+.people-card-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; margin: 0; padding: 10px 0 0; border-top: 1px solid var(--actuar-border); }
+.people-card-meta dt { color: var(--actuar-muted); font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.people-card-meta dd { margin: 1px 0 0; color: var(--actuar-foreground); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people-card-meta dd.is-missing { color: var(--actuar-muted); font-style: italic; }
+
+.people-card-actions { display: flex; align-items: center; gap: 6px; margin-top: auto; }
+.people-card-actions .actuar-btn { margin-right: auto; }
+.people-icon-btn { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface-subtle); color: var(--actuar-secondary); font-size: 12px; cursor: pointer; transition: color .16s ease, border-color .16s ease, background .16s ease; }
+.people-icon-btn:hover { border-color: var(--actuar-primary); background: var(--actuar-primary-soft); color: var(--actuar-primary); }
+.people-icon-btn.is-warn:hover { border-color: #b54708; background: color-mix(in srgb, #b54708 10%, transparent); color: #b54708; }
+.people-icon-btn.is-danger:hover { border-color: #b42318; background: color-mix(in srgb, #b42318 10%, transparent); color: #b42318; }
+.people-icon-btn:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: 1px; }
+
+.people-empty { grid-column: 1 / -1; display: grid; justify-items: center; gap: 4px; padding: 34px 18px; border: 1px dashed var(--actuar-border); border-radius: 12px; color: var(--actuar-secondary); text-align: center; }
+.people-empty i { color: var(--actuar-muted); font-size: 20px; }
+.people-empty strong { color: var(--actuar-foreground); font-size: 13px; }
+.people-empty p { margin: 0; font-size: 11px; }
+
+/* Modal do cadastro. Mesmo empilhamento das demais modais do produto (150), acima
+   da ficha (140), para nunca abrir atrás de outra camada. */
+.user-form-modal { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; padding: 20px; }
+.user-form-modal.hidden { display: none; }
+.user-form-backdrop { position: absolute; inset: 0; background: rgba(16, 24, 40, .55); backdrop-filter: blur(2px); }
+.user-form-panel { position: relative; display: flex; flex-direction: column; width: min(880px, calc(100vw - 32px)); max-height: calc(100vh - 40px); border: 1px solid var(--actuar-border); border-radius: 14px; background: var(--actuar-surface); box-shadow: 0 24px 60px rgba(16, 24, 40, .3); overflow: hidden; }
+.user-form-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 20px 14px; border-bottom: 1px solid var(--actuar-border); }
+.user-form-head-text { min-width: 0; }
+.user-form-badge { display: inline-block; margin-bottom: 5px; padding: 2px 8px; border-radius: 999px; background: var(--actuar-primary-soft); color: var(--actuar-primary); font-size: 9px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.user-form-head h3 { margin: 0; color: var(--actuar-foreground); font-size: 17px; font-weight: 700; }
+.user-form-head p { margin: 3px 0 0; color: var(--actuar-secondary); font-size: 11px; }
+.user-form-close { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface-subtle); color: var(--actuar-secondary); font-size: 15px; cursor: pointer; }
+.user-form-close:hover { border-color: var(--actuar-primary); color: var(--actuar-primary); }
+.user-form-body { padding: 18px 20px; overflow-y: auto; }
+.user-form-foot { position: sticky; bottom: -18px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 4px -20px -18px; padding: 13px 20px; border-top: 1px solid var(--actuar-border); background: var(--actuar-surface); }
+.user-form-note { margin: 0; max-width: 46ch; color: var(--actuar-muted); font-size: 10px; }
+.user-form-note i { margin-right: 4px; }
+.user-form-actions { display: flex; gap: 8px; margin-left: auto; }
+body.modal-open { overflow: hidden; }
+
+@media (max-width: 720px) {
+    .people-toolbar { grid-template-columns: 1fr; }
+    .user-form-foot { flex-direction: column; align-items: stretch; }
+    .user-form-actions { margin-left: 0; }
+    .user-form-actions .actuar-btn { flex: 1; justify-content: center; }
+}
