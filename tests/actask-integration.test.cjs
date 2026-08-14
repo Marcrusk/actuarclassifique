@@ -36,4 +36,5 @@ test('roles múltiplas do Actask são a união das permissões da operação de 
     assert.match(piecesUi, /Array\.isArray\(user\?\.roles\) \? user\.roles/);
     assert.match(piecesUi, /roles\.includes\('Logística\/Faturamento'\) \|\| roles\.includes\('Faturamento'\)/);
     assert.match(piecesUi, /roles\.includes\('Envio\/Coleta'\) \|\| roles\.includes\('Expedição'\)/);
+    assert.match(piecesUi, /user\?\.identitySource === 'actask' && !roles\.length/);
 });

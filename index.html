@@ -2388,9 +2388,9 @@
         const SUPABASE_KEY = "sb_publishable_RyM0bVKx1unGJeXjw_7XUg_iK7GDpo4";
 
         // CONFIGURAÇÃO PÚBLICA DO ACTASK
-        // O client público do stage é preenchido quando for cadastrado nesse
-        // ambiente. Em main, defina ACTASK_AUTH_ENV="main"; o client_id oficial
-        // "actuar-classifique-main-login" será usado automaticamente.
+        // O seletor de equipes usa os endpoints /auth sem client_id. Em main,
+        // defina ACTASK_AUTH_ENV="main"; o client_id oficial
+        // "actuar-classifique-main-login" fica disponível para o fallback OAuth.
         // Nunca coloque client_secret ou AUTH_OIDC_SIGNING_SECRET aqui.
         window.ACTASK_AUTH_CONFIG = window.ACTASK_AUTH_CONFIG || {
             enabled: true,
@@ -5290,6 +5290,7 @@
                 select.disabled = true;
                 select.innerHTML = '<option value="">Selecione uma equipe primeiro</option>';
                 if (help) help.textContent = 'As equipes e os usuários são carregados do Actask.';
+                syncActaskSelectedUser();
                 return;
             }
             select.disabled = false;
@@ -5298,6 +5299,7 @@
                 : '<option value="">Nenhum usuário disponível</option>';
             if (previous && team.users[Number(previous)]) select.value = previous;
             if (help) help.textContent = `${team.name} · ${actaskTeamTypeLabel(team.teamType)} · ${team.loginTarget === 'actask' ? 'acesso interno do Actask' : 'acesso externo validado pelo Actask'}`;
+            syncActaskSelectedUser();
         }
 
         function syncActaskSelectedUser() {

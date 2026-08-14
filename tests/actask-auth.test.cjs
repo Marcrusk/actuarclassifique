@@ -179,6 +179,58 @@ test('login selecionado aproveita identidade e roles quando o Actask as devolve'
     assert.deepEqual(user.roles, ['Expedição']);
     assert.equal(user.mode, 'operations');
     assert.equal(user.loginTarget, 'actask');
+    assert.equal(ActaskAuth.getSession().sessionToken, 'actask-session');
+    assert.equal(JSON.stringify(global.sessionStorage.dump()).includes('senha-secreta'), false);
+});
+
+test('login selecionado limita identidade e roles à equipe escolhida', async () => {
+    configure();
+    global.fetch = async () => response({
+        session_token: 'actask-session',
+        user: {
+            id: 'user-1',
+            name: 'Ana Actask',
+            teams: [
+                { id: 'team-other', name: 'Gestão', team_type: 'management', functional_roles: [{ id: 'gestor_adm', name: 'Gestor Adm' }] },
+                { id: 'team-1', name: 'Operação', team_type: 'operational', functional_roles: [{ id: 'expedicao', name: 'Expedição' }] }
+            ]
+        }
+    });
+
+    const user = await ActaskAuth.loginSelected(
+        { id: 'team-1', name: 'Operação', teamType: 'operational', loginTarget: 'actask', functionalRoles: [] },
+        { id: 'user-1', name: 'Ana Actask', membershipRole: 'member', functionalRoles: [] },
+        'senha-secreta'
+    );
+
+    assert.deepEqual(user.roles, ['Expedição']);
+    assert.equal(user.mode, 'operations');
+    assert.deepEqual(user.teams.map(team => team.name), ['Operação']);
+});
+
+test('sessão interna selecionada é restaurada pelo endpoint /auth/me', async () => {
+    configure();
+    global.sessionStorage.setItem('actuar-classifique-actask-directory-session-v1', JSON.stringify({
+        sessionToken: 'actask-session',
+        selectedTeamId: 'team-1',
+        loginTarget: 'actask'
+    }));
+    const requests = [];
+    global.fetch = async (url, options = {}) => {
+        requests.push({ url, options });
+        return response({
+            id: 'user-1',
+            name: 'Ana Actask',
+            teams: [{ id: 'team-1', name: 'Operação', team_type: 'operational', functional_roles: [{ id: 'expedicao', name: 'Expedição' }] }]
+        });
+    };
+
+    const user = await ActaskAuth.restore();
+
+    assert.equal(requests[0].url, 'https://actaskapistage.bluefronte.com/auth/me');
+    assert.equal(requests[0].options.headers['X-Session-Token'], 'actask-session');
+    assert.equal(user.mode, 'operations');
+    assert.equal(ActaskAuth.getSession().sessionToken, 'actask-session');
 });
 
 test('login envia o contrato público do Actask e não persiste a senha', async () => {
@@ -275,6 +327,22 @@ test('logout revoga refresh token e limpa a sessão local', async () => {
     await ActaskAuth.logout();
     assert.equal(requests[0].url, 'https://actaskapistage.bluefronte.com/oauth/revoke');
     assert.match(String(requests[0].options.body), /token=refresh-1/);
+    assert.equal(ActaskAuth.getSession(), null);
+});
+
+test('logout interno selecionado revoga a sessão pelo endpoint do Actask', async () => {
+    configure();
+    const requests = [];
+    global.sessionStorage.setItem('actuar-classifique-actask-directory-session-v1', JSON.stringify({ sessionToken: 'actask-session' }));
+    global.fetch = async (url, options = {}) => {
+        requests.push({ url, options });
+        return response({});
+    };
+
+    await ActaskAuth.logout();
+
+    assert.equal(requests[0].url, 'https://actaskapistage.bluefronte.com/auth/logout');
+    assert.equal(requests[0].options.headers['X-Session-Token'], 'actask-session');
     assert.equal(ActaskAuth.getSession(), null);
 });
 

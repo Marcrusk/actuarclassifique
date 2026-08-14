@@ -9,6 +9,7 @@
     const MAIN_ISSUER = 'https://actaskapi.bluefronte.com';
     const PUBLIC_AUDIENCE = 'actask-public-api';
     const SESSION_KEY = 'actuar-classifique-actask-session-v1';
+    const DIRECTORY_SESSION_KEY = 'actuar-classifique-actask-directory-session-v1';
     const DEFAULT_SCOPES = ['openid', 'profile'];
     const PIECES_ROLES = new Set(['Envio/Coleta', 'Faturamento', 'Expedição', 'Logística/Faturamento', 'Toletus Lab']);
     const ROLE_PRIORITY = [
@@ -72,6 +73,29 @@
         try { storage.removeItem(SESSION_KEY); } catch (_) { /* nada a limpar */ }
     }
 
+    function readStoredDirectorySession() {
+        const storage = getStorage();
+        if (!storage) return null;
+        try {
+            const value = storage.getItem(DIRECTORY_SESSION_KEY);
+            return value ? JSON.parse(value) : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function writeStoredDirectorySession(session) {
+        const storage = getStorage();
+        if (!storage) return;
+        try { storage.setItem(DIRECTORY_SESSION_KEY, JSON.stringify(session)); } catch (_) { /* sessão local indisponível */ }
+    }
+
+    function clearStoredDirectorySession() {
+        const storage = getStorage();
+        if (!storage) return;
+        try { storage.removeItem(DIRECTORY_SESSION_KEY); } catch (_) { /* nada a limpar */ }
+    }
+
     function normalizeIssuer(value) {
         return String(value || '').trim().replace(/\/$/, '');
     }
@@ -105,6 +129,8 @@
             loginOptionsEndpoint: supplied.loginOptionsEndpoint || `${issuer}/auth/login-options`,
             selectedLoginEndpoint: supplied.selectedLoginEndpoint || `${issuer}/auth/login-selected`,
             selectedExternalLoginEndpoint: supplied.selectedExternalLoginEndpoint || `${issuer}/auth/login-selected-external`,
+            meEndpoint: supplied.meEndpoint || `${issuer}/auth/me`,
+            logoutEndpoint: supplied.logoutEndpoint || `${issuer}/auth/logout`,
             loginEndpoint: supplied.loginEndpoint || `${issuer}/oauth/login`,
             tokenEndpoint: supplied.tokenEndpoint || `${issuer}/oauth/token`,
             userinfoEndpoint: supplied.userinfoEndpoint || `${issuer}/oauth/userinfo`,
@@ -243,6 +269,12 @@
         return ROLE_PRIORITY.find(role => roles.includes(role)) || roles[0] || '';
     }
 
+    function sameTeamId(left, right) {
+        if (left === null || left === undefined) return right === null || right === undefined;
+        if (right === null || right === undefined) return false;
+        return String(left) === String(right);
+    }
+
     function modeForUser(user) {
         if (!user) return null;
         if (user.roles?.includes('Gestor Adm') || user.role === 'Gestor Adm') return 'manager';
@@ -293,12 +325,40 @@
         return user;
     }
 
+    function scopeIdentityToTeam(identity, selectedTeamId) {
+        if (!identity?.id || !Array.isArray(identity.teams)) return null;
+        const selectedTeam = identity.teams.find(team => sameTeamId(team.id, selectedTeamId));
+        if (!selectedTeam) return null;
+        const scoped = normalizeUser({
+            ...identity,
+            sub: identity.id,
+            teams: [selectedTeam]
+        });
+        if (!scoped.id) return null;
+        scoped.selectedTeamId = selectedTeamId;
+        return scoped;
+    }
+
     function identityFromSelection(team, selectedUser, responsePayload = {}) {
         const returnedUser = responsePayload?.user || responsePayload?.identity || responsePayload;
-        if (returnedUser?.sub || returnedUser?.id && returnedUser?.teams) {
+        if ((returnedUser?.sub || returnedUser?.id) && Array.isArray(returnedUser?.teams)) {
+            const returnedTeams = returnedUser.teams;
+            const selectedReturnedTeam = returnedTeams.find(returnedTeam => sameTeamId(returnedTeam?.id, team.id));
             const identity = normalizeUser({
                 ...returnedUser,
-                sub: returnedUser.sub || returnedUser.id
+                sub: returnedUser.sub || returnedUser.id,
+                teams: [selectedReturnedTeam || {
+                    id: team.id,
+                    name: team.name,
+                    code: team.code,
+                    color: team.color,
+                    team_type: team.teamType,
+                    role: selectedUser.membershipRole,
+                    is_primary: true,
+                    functional_roles: selectedUser.functionalRoles.length
+                        ? selectedUser.functionalRoles
+                        : team.functionalRoles
+                }]
             });
             if (identity.id) return identity;
         }
@@ -418,6 +478,14 @@
         if (!identity.id) throw new ActaskAuthError('O Actask não retornou o usuário selecionado.', 'invalid_userinfo');
         identity.selectedTeamId = team.id;
         identity.loginTarget = team.loginTarget;
+        if (team.loginTarget === 'actask' && payload?.session_token) {
+            writeStoredDirectorySession({
+                sessionToken: String(payload.session_token),
+                selectedTeamId: team.id,
+                loginTarget: team.loginTarget,
+                user: identity
+            });
+        }
         return identity;
     }
 
@@ -447,6 +515,19 @@
         return identity;
     }
 
+    async function fetchSelectedUser(sessionToken) {
+        if (!sessionToken) throw new ActaskAuthError('Sessão do Actask ausente.', 'missing_session_token');
+        const config = getConfig();
+        const fetcher = requireFetch();
+        const response = await fetcher(config.meEndpoint, {
+            headers: { Accept: 'application/json', 'X-Session-Token': sessionToken }
+        });
+        const claims = await parseResponse(response);
+        const identity = normalizeUser({ ...claims, sub: claims?.sub || claims?.id });
+        if (!identity.id) throw new ActaskAuthError('O Actask não retornou o identificador do usuário.', 'invalid_userinfo');
+        return identity;
+    }
+
     async function refresh() {
         if (!isConfigured()) throw configurationError();
         const stored = readStoredSession();
@@ -471,19 +552,34 @@
 
     async function restore() {
         const stored = readStoredSession();
-        if (!stored?.accessToken) return null;
-        try {
-            const identity = Number(stored.accessExpiresAt || 0) - Date.now() < 30_000
-                ? await refresh()
-                : await fetchUserinfo(stored.accessToken);
-            const current = readStoredSession();
-            if (current) {
-                current.user = identity;
-                writeStoredSession(current);
+        if (stored?.accessToken) {
+            try {
+                const identity = Number(stored.accessExpiresAt || 0) - Date.now() < 30_000
+                    ? await refresh()
+                    : await fetchUserinfo(stored.accessToken);
+                const current = readStoredSession();
+                if (current) {
+                    current.user = identity;
+                    writeStoredSession(current);
+                }
+                return identity;
+            } catch (error) {
+                if (error?.status === 401 || error?.code === 'invalid_grant' || error?.code === 'refresh_unavailable') clearStoredSession();
+                return null;
             }
-            return identity;
-        } catch (error) {
-            if (error?.status === 401 || error?.code === 'invalid_grant' || error?.code === 'refresh_unavailable') clearStoredSession();
+        }
+
+        const directorySession = readStoredDirectorySession();
+        if (!directorySession?.sessionToken) return null;
+        try {
+            const identity = await fetchSelectedUser(directorySession.sessionToken);
+            const scoped = scopeIdentityToTeam(identity, directorySession.selectedTeamId);
+            if (!scoped) throw new ActaskAuthError('A equipe selecionada não está mais disponível.', 'invalid_selection');
+            scoped.loginTarget = directorySession.loginTarget || 'actask';
+            writeStoredDirectorySession({ ...directorySession, user: scoped });
+            return scoped;
+        } catch (_) {
+            clearStoredDirectorySession();
             return null;
         }
     }
@@ -501,18 +597,33 @@
         } catch (_) { /* logout local continua mesmo se a rede estiver indisponível */ }
     }
 
+    async function revokeDirectorySession(token) {
+        if (!token || !isDirectoryConfigured()) return;
+        const config = getConfig();
+        try {
+            const fetcher = requireFetch();
+            await fetcher(config.logoutEndpoint, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-Session-Token': token }
+            });
+        } catch (_) { /* logout local continua mesmo se a rede estiver indisponível */ }
+    }
+
     async function logout() {
         const stored = readStoredSession();
+        const directorySession = readStoredDirectorySession();
         clearStoredSession();
+        clearStoredDirectorySession();
         if (stored?.refreshToken) await revokeToken(stored.refreshToken, 'refresh_token');
+        if (directorySession?.sessionToken) await revokeDirectorySession(directorySession.sessionToken);
     }
 
     function getSession() {
-        return readStoredSession();
+        return readStoredSession() || readStoredDirectorySession();
     }
 
     function getUser() {
-        return readStoredSession()?.user || null;
+        return getSession()?.user || null;
     }
 
     return {
