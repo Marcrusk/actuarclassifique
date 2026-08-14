@@ -66,6 +66,173 @@ test('userinfo normaliza equipes, mantém roles funcionais e ignora categorias',
     assert.equal(user.isPiecesOperator, true);
 });
 
+test('diretório público normaliza equipes, tipo e usuários sem credenciais', async () => {
+    configure();
+    const requests = [];
+    global.fetch = async (url, options = {}) => {
+        requests.push({ url, options });
+        return response({
+            teams: [{
+                id: 'team-1',
+                name: 'Suporte Catraca',
+                code: 'SCTC',
+                color: '#6366f1',
+                team_type: 'analyst',
+                login_target: 'external',
+                users: [{
+                    id: 'user-1',
+                    name: 'Ana Actask',
+                    initials: 'AA',
+                    role: 'member',
+                    has_password: true,
+                    functional_roles: [{ id: 'analista_catraca', name: 'Analista de catraca' }]
+                }]
+            }]
+        });
+    };
+
+    const teams = await ActaskAuth.loadLoginOptions();
+    assert.equal(requests[0].url, 'https://actaskapistage.bluefronte.com/auth/login-options');
+    assert.equal(requests[0].options.method, undefined);
+    assert.deepEqual(teams[0], {
+        id: 'team-1',
+        name: 'Suporte Catraca',
+        code: 'SCTC',
+        color: '#6366f1',
+        teamType: 'analyst',
+        loginTarget: 'external',
+        functionalRoles: [],
+        users: [{
+            id: 'user-1',
+            name: 'Ana Actask',
+            initials: 'AA',
+            membershipRole: 'member',
+            functionalRoles: ['Analista de catraca'],
+            hasPassword: true
+        }]
+    });
+});
+
+test('login por equipe e usuário usa a validação externa do Actask', async () => {
+    configure();
+    const requests = [];
+    global.fetch = async (url, options = {}) => {
+        requests.push({ url, options });
+        return response({ authenticated: true });
+    };
+
+    const user = await ActaskAuth.loginSelected(
+        {
+            id: 'team-1',
+            name: 'Suporte Catraca',
+            teamType: 'analyst',
+            loginTarget: 'external',
+            functionalRoles: []
+        },
+        {
+            id: 'user-1',
+            name: 'Ana Actask',
+            membershipRole: 'member',
+            functionalRoles: []
+        },
+        'senha-secreta'
+    );
+
+    assert.equal(requests[0].url, 'https://actaskapistage.bluefronte.com/auth/login-selected-external');
+    assert.deepEqual(JSON.parse(requests[0].options.body), {
+        user_id: 'user-1',
+        team_id: 'team-1',
+        password: 'senha-secreta'
+    });
+    assert.equal(user.id, 'user-1');
+    assert.equal(user.team, 'Suporte Catraca');
+    assert.equal(user.mode, 'analyst');
+    assert.equal(user.selectedTeamId, 'team-1');
+    assert.equal(JSON.stringify(global.sessionStorage.dump()).includes('senha-secreta'), false);
+});
+
+test('login selecionado aproveita identidade e roles quando o Actask as devolve', async () => {
+    configure();
+    global.fetch = async () => response({
+        session_token: 'actask-session',
+        user: {
+            id: 'user-1',
+            name: 'Ana Actask',
+            email: 'ana@example.com',
+            teams: [{
+                id: 'team-1',
+                name: 'Operação',
+                team_type: 'operational',
+                role: 'member',
+                is_primary: true,
+                functional_roles: [{ id: 'expedicao', name: 'Expedição' }]
+            }]
+        }
+    });
+
+    const user = await ActaskAuth.loginSelected(
+        { id: 'team-1', name: 'Operação', teamType: 'operational', loginTarget: 'actask', functionalRoles: [] },
+        { id: 'user-1', name: 'Ana Actask', membershipRole: 'member', functionalRoles: [] },
+        'senha-secreta'
+    );
+
+    assert.deepEqual(user.roles, ['Expedição']);
+    assert.equal(user.mode, 'operations');
+    assert.equal(user.loginTarget, 'actask');
+    assert.equal(ActaskAuth.getSession().sessionToken, 'actask-session');
+    assert.equal(JSON.stringify(global.sessionStorage.dump()).includes('senha-secreta'), false);
+});
+
+test('login selecionado limita identidade e roles à equipe escolhida', async () => {
+    configure();
+    global.fetch = async () => response({
+        session_token: 'actask-session',
+        user: {
+            id: 'user-1',
+            name: 'Ana Actask',
+            teams: [
+                { id: 'team-other', name: 'Gestão', team_type: 'management', functional_roles: [{ id: 'gestor_adm', name: 'Gestor Adm' }] },
+                { id: 'team-1', name: 'Operação', team_type: 'operational', functional_roles: [{ id: 'expedicao', name: 'Expedição' }] }
+            ]
+        }
+    });
+
+    const user = await ActaskAuth.loginSelected(
+        { id: 'team-1', name: 'Operação', teamType: 'operational', loginTarget: 'actask', functionalRoles: [] },
+        { id: 'user-1', name: 'Ana Actask', membershipRole: 'member', functionalRoles: [] },
+        'senha-secreta'
+    );
+
+    assert.deepEqual(user.roles, ['Expedição']);
+    assert.equal(user.mode, 'operations');
+    assert.deepEqual(user.teams.map(team => team.name), ['Operação']);
+});
+
+test('sessão interna selecionada é restaurada pelo endpoint /auth/me', async () => {
+    configure();
+    global.sessionStorage.setItem('actuar-classifique-actask-directory-session-v1', JSON.stringify({
+        sessionToken: 'actask-session',
+        selectedTeamId: 'team-1',
+        loginTarget: 'actask'
+    }));
+    const requests = [];
+    global.fetch = async (url, options = {}) => {
+        requests.push({ url, options });
+        return response({
+            id: 'user-1',
+            name: 'Ana Actask',
+            teams: [{ id: 'team-1', name: 'Operação', team_type: 'operational', functional_roles: [{ id: 'expedicao', name: 'Expedição' }] }]
+        });
+    };
+
+    const user = await ActaskAuth.restore();
+
+    assert.equal(requests[0].url, 'https://actaskapistage.bluefronte.com/auth/me');
+    assert.equal(requests[0].options.headers['X-Session-Token'], 'actask-session');
+    assert.equal(user.mode, 'operations');
+    assert.equal(ActaskAuth.getSession().sessionToken, 'actask-session');
+});
+
 test('login envia o contrato público do Actask e não persiste a senha', async () => {
     configure();
     const requests = [];
@@ -160,6 +327,22 @@ test('logout revoga refresh token e limpa a sessão local', async () => {
     await ActaskAuth.logout();
     assert.equal(requests[0].url, 'https://actaskapistage.bluefronte.com/oauth/revoke');
     assert.match(String(requests[0].options.body), /token=refresh-1/);
+    assert.equal(ActaskAuth.getSession(), null);
+});
+
+test('logout interno selecionado revoga a sessão pelo endpoint do Actask', async () => {
+    configure();
+    const requests = [];
+    global.sessionStorage.setItem('actuar-classifique-actask-directory-session-v1', JSON.stringify({ sessionToken: 'actask-session' }));
+    global.fetch = async (url, options = {}) => {
+        requests.push({ url, options });
+        return response({});
+    };
+
+    await ActaskAuth.logout();
+
+    assert.equal(requests[0].url, 'https://actaskapistage.bluefronte.com/auth/logout');
+    assert.equal(requests[0].options.headers['X-Session-Token'], 'actask-session');
     assert.equal(ActaskAuth.getSession(), null);
 });
 

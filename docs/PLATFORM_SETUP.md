@@ -97,39 +97,41 @@ npm run build
 
 ## Integração com o Actask
 
-A autenticação do Actuar Classifique usa o cliente público OAuth do Actask quando
-`ACTASK_AUTH_CONFIG.clientId` estiver configurado. O fluxo é o login externo
-direto do Actask: `POST /oauth/login`, `GET /oauth/userinfo`, renovação por
-`POST /oauth/token` e revogação por `POST /oauth/revoke`. O frontend nunca recebe
-`client_secret`, não guarda a senha e mantém os tokens somente em
-`sessionStorage`.
+O login exibido pelo Actuar usa o diretório público do Actask:
+`GET /auth/login-options` lista as equipes ativas e seus usuários habilitados.
+Após a seleção, o frontend envia somente `user_id`, `team_id` e a senha para
+`POST /auth/login-selected` (equipe interna) ou
+`POST /auth/login-selected-external` (equipe externa). A senha não é guardada e
+o frontend nunca recebe `client_secret`.
 
-O `sub` do Actask é a identidade estável. Para manter os registros históricos,
-o Actuar associa essa identidade a `actaskId` e, quando possível, à chave
-legada por e-mail. A role efetiva e as permissões da Operação de peças são
-derivadas de `teams[].functional_roles`; as categorias `Analista`, `Gestão` e
-`Operacional` não são tratadas como roles de negócio.
+O `sub` do Actask é a identidade estável quando o endpoint retorna o usuário.
+Para manter os registros históricos, o Actuar associa essa identidade a
+`actaskId` e, quando possível, à chave legada por e-mail. A role efetiva e as
+permissões da Operação de peças vêm de `functional_roles`; `team_type` apenas
+define a categoria da equipe (`Analista`, `Gestão` ou `Operacional`). O campo
+`role` de associação à equipe não é tratado como permissão funcional.
 
-No stage, configure o client público cadastrado:
+No stage, configure o issuer do diretório:
 
 ```js
 window.ACTASK_AUTH_CONFIG = {
     enabled: true,
     environment: 'stage',
     issuer: 'https://actaskapistage.bluefronte.com',
-    clientId: '<client público stage>',
-    redirectUri: '<redirect URI cadastrada no stage>',
+    clientId: '',
     audience: 'actask-public-api',
     scopes: ['openid', 'profile']
 };
 ```
 
-Na promoção para main, use `https://actaskapi.bluefronte.com` e o client
-`actuar-classifique-main-login`, mantendo a redirect URI cadastrada exatamente
-igual ao valor enviado no login.
+Na promoção para main, use `https://actaskapi.bluefronte.com`. O client
+`actuar-classifique-main-login` e a redirect URI cadastrada continuam sendo
+necessários somente para o fallback OAuth anterior.
 
-O `userinfo` atual não é um diretório completo. Enquanto o Actask não oferecer
-um endpoint público autenticado com escopo específico para leitura de usuários,
-a listagem administrativa do Actuar permanece uma projeção histórica; não use
-`client_credentials` diretamente no navegador e não trate `/auth/login-options`
-como fonte de roles funcionais.
+No contrato atual do stage, `login-selected-external` retorna apenas
+`authenticated`. Portanto, uma equipe operacional externa sem
+`functional_roles` retornadas é recusada pelo Actuar. O Actask deve retornar o
+usuário/roles nessa resposta ou disponibilizar uma sessão/consulta autenticada
+para que o Actuar possa aplicar as permissões individuais. O endpoint de login
+também não substitui uma administração completa de usuários; não use
+`client_credentials` diretamente no navegador.

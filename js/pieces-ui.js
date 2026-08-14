@@ -101,6 +101,7 @@
         // A permissão operacional agora é a união das roles que o usuário recebeu
         // dentro da equipe. O vínculo de equipe continua definindo o contexto;
         // nenhuma role interna do Actask é convertida automaticamente em acesso.
+        if (currentContext().mode === 'logistics' && user?.identitySource === 'actask' && !roles.length) return false;
         if (role === LAB_ROLE) return area !== 'Faturamento';
         if (roles.includes(LAB_ROLE) && area !== 'Faturamento') return true;
         if (roles.includes('Logística/Faturamento') || roles.includes('Faturamento')) return area === 'Faturamento';
