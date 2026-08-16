@@ -8,6 +8,8 @@ const actaskAuth = fs.readFileSync('js/actask-auth.js', 'utf8');
 
 test('shell expõe configuração stage/main sem segredo e carrega o adaptador Actask', () => {
     assert.match(html, /window\.ACTASK_AUTH_CONFIG = window\.ACTASK_AUTH_CONFIG \|\|/);
+    assert.match(html, /const ACTASK_DEFAULT_ENV = window\.ACTASK_AUTH_ENV \|\|/);
+    assert.match(html, /window\.location\.hostname === 'actuarclassifique\.vercel\.app' \? 'main' : 'stage'/);
     assert.match(html, /https:\/\/actaskapistage\.bluefronte\.com/);
     assert.match(html, /actuar-classifique-main-login/);
     assert.match(html, /js\/actask-auth\.js\?v=/);
