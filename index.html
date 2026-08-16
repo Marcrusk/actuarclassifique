@@ -2388,13 +2388,17 @@
 
         // CONFIGURAÇÃO PÚBLICA DO ACTASK
         // O diretório usa os endpoints /auth; equipes externas concluem o
-        // login conectado com PKCE. Em main, defina ACTASK_AUTH_ENV="main";
-        // o client_id oficial é "actuar-classifique-main-login".
+        // login conectado com PKCE. A URL oficial do Actuar usa main; previews
+        // e ambientes locais continuam usando stage, salvo override explícito.
+        // O client_id público de main é "actuar-classifique-main-login".
+        const ACTASK_DEFAULT_ENV = window.ACTASK_AUTH_ENV || (
+            window.location.hostname === 'actuarclassifique.vercel.app' ? 'main' : 'stage'
+        );
         // Nunca coloque client_secret ou AUTH_OIDC_SIGNING_SECRET aqui.
         window.ACTASK_AUTH_CONFIG = window.ACTASK_AUTH_CONFIG || {
             enabled: true,
-            environment: window.ACTASK_AUTH_ENV || 'stage',
-            issuer: window.ACTASK_AUTH_ISSUER || (window.ACTASK_AUTH_ENV === 'main' ? 'https://actaskapi.bluefronte.com' : 'https://actaskapistage.bluefronte.com'),
+            environment: ACTASK_DEFAULT_ENV,
+            issuer: window.ACTASK_AUTH_ISSUER || (ACTASK_DEFAULT_ENV === 'main' ? 'https://actaskapi.bluefronte.com' : 'https://actaskapistage.bluefronte.com'),
             clientId: window.ACTASK_AUTH_CLIENT_ID || '',
             audience: 'actask-public-api',
             scopes: ['openid', 'profile']
