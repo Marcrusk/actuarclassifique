@@ -99,10 +99,12 @@ npm run build
 
 O login exibido pelo Actuar usa o diretório público do Actask:
 `GET /auth/login-options` lista as equipes ativas e seus usuários habilitados.
-Após a seleção, o frontend envia somente `user_id`, `team_id` e a senha para
+Após a seleção, o frontend envia `user_id`, `team_id` e a senha para
 `POST /auth/login-selected` (equipe interna) ou
-`POST /auth/login-selected-external` (equipe externa). A senha não é guardada e
-o frontend nunca recebe `client_secret`.
+`POST /auth/login-selected-external` (equipe externa). No segundo caso, o
+frontend também envia os parâmetros públicos OAuth/PKCE, recebe um código de
+uso único, troca-o em `/oauth/token` e consulta `/oauth/userinfo`. A senha não é
+guardada e o frontend nunca recebe `client_secret`.
 
 O `sub` do Actask é a identidade estável quando o endpoint retorna o usuário.
 Para manter os registros históricos, o Actuar associa essa identidade a
@@ -111,27 +113,26 @@ permissões da Operação de peças vêm de `functional_roles`; `team_type` apen
 define a categoria da equipe (`Analista`, `Gestão` ou `Operacional`). O campo
 `role` de associação à equipe não é tratado como permissão funcional.
 
-No stage, configure o issuer do diretório:
+No Stage, configure o issuer do diretório:
 
 ```js
 window.ACTASK_AUTH_CONFIG = {
     enabled: true,
     environment: 'stage',
     issuer: 'https://actaskapistage.bluefronte.com',
-    clientId: '',
+    clientId: 'actuar-classifique-stage-login',
     audience: 'actask-public-api',
     scopes: ['openid', 'profile']
 };
 ```
 
-Na promoção para main, use `https://actaskapi.bluefronte.com`. O client
-`actuar-classifique-main-login` e a redirect URI cadastrada continuam sendo
-necessários somente para o fallback OAuth anterior.
+Na promoção para main, use `https://actaskapi.bluefronte.com` e o client
+`actuar-classifique-main-login`, registrado com a redirect URI exata
+`https://actuarclassifique.vercel.app/`.
 
-No contrato atual do stage, `login-selected-external` retorna apenas
-`authenticated`. Portanto, uma equipe operacional externa sem
-`functional_roles` retornadas é recusada pelo Actuar. O Actask deve retornar o
-usuário/roles nessa resposta ou disponibilizar uma sessão/consulta autenticada
-para que o Actuar possa aplicar as permissões individuais. O endpoint de login
-também não substitui uma administração completa de usuários; não use
-`client_credentials` diretamente no navegador.
+O `userinfo` devolve `team_type` e `functional_roles` por equipe. O Actuar usa
+esses dados para entrar diretamente no modo de analista, gestão ou operação de
+peças. No Stage, o workflow registra o cliente público e exige o secret interno
+`STAGE_AUTH_OIDC_SIGNING_SECRET`; esse secret nunca vai para o frontend. O
+endpoint de login também não substitui uma administração completa de usuários;
+não use `client_credentials` diretamente no navegador.

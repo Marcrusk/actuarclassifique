@@ -11,7 +11,9 @@ enviada na validação selecionada e nunca é persistida no navegador.
 | --- | --- | --- | --- |
 | Equipes e usuários para o login | `GET /auth/login-options` | `https://actaskapistage.bluefronte.com/auth/login-options` | `https://actaskapi.bluefronte.com/auth/login-options` |
 | Login de equipe interna | `POST /auth/login-selected` | `https://actaskapistage.bluefronte.com/auth/login-selected` | `https://actaskapi.bluefronte.com/auth/login-selected` |
-| Validação de equipe externa | `POST /auth/login-selected-external` | `https://actaskapistage.bluefronte.com/auth/login-selected-external` | `https://actaskapi.bluefronte.com/auth/login-selected-external` |
+| Login conectado de equipe externa | `POST /auth/login-selected-external` | `https://actaskapistage.bluefronte.com/auth/login-selected-external` | `https://actaskapi.bluefronte.com/auth/login-selected-external` |
+| Troca do código PKCE | `POST /oauth/token` | `https://actaskapistage.bluefronte.com/oauth/token` | `https://actaskapi.bluefronte.com/oauth/token` |
+| Identidade e equipes do usuário | `GET /oauth/userinfo` | `https://actaskapistage.bluefronte.com/oauth/userinfo` | `https://actaskapi.bluefronte.com/oauth/userinfo` |
 
 O corpo das duas validações selecionadas é:
 
@@ -23,11 +25,37 @@ O corpo das duas validações selecionadas é:
 }
 ```
 
+Para uma equipe externa, o Actuar acrescenta os parâmetros públicos do fluxo
+OAuth/PKCE ao mesmo `POST`:
+
+```json
+{
+    "user_id": "<id do usuário escolhido>",
+    "team_id": "<id da equipe escolhida>",
+    "password": "<senha>",
+    "client_id": "actuar-classifique-stage-login",
+    "redirect_uri": "https://actuarclassifique.vercel.app/",
+    "response_type": "code",
+    "scope": "openid profile",
+    "state": "<valor aleatório>",
+    "code_challenge": "<SHA-256 do code_verifier em base64url>",
+    "code_challenge_method": "S256",
+    "audience": "actask-public-api"
+}
+```
+
+O endpoint valida a equipe, o usuário e a senha e devolve um `redirect_url`
+com um código OAuth de uso único. O Actuar troca esse código por tokens em
+`/oauth/token`, consulta `/oauth/userinfo` e mantém a identidade limitada à
+equipe escolhida. Nenhum access token, refresh token ou senha é colocado na
+URL.
+
 O Actuar escolhe o endpoint pela propriedade `login_target` da equipe. Para
 `actask`, usa o login interno; para `external`, usa a validação externa. A
 resposta interna pode trazer `session_token` e o usuário serializado. A
-resposta externa atualmente usada no stage retorna somente
-`{"authenticated": true}` e não cria uma sessão do Actask.
+Para compatibilidade, o endpoint externo ainda aceita o corpo antigo sem os
+parâmetros OAuth e retorna somente `{"authenticated": true}`. O Actuar usa o
+corpo OAuth acima, que retorna o `redirect_url` para concluir o login conectado.
 
 O adaptador ainda mantém o fluxo OAuth público (`/oauth/login`,
 `/oauth/userinfo`, `/oauth/token` e `/oauth/revoke`) para compatibilidade com a
@@ -45,15 +73,20 @@ window.ACTASK_AUTH_CONFIG = {
     enabled: true,
     environment: 'stage',
     issuer: 'https://actaskapistage.bluefronte.com',
-    clientId: '',
+    clientId: 'actuar-classifique-stage-login',
     audience: 'actask-public-api',
     scopes: ['openid', 'profile']
 };
 ```
 
-Para main, troque o issuer para `https://actaskapi.bluefronte.com`. Se o
-fallback OAuth for habilitado, use `actuar-classifique-main-login` e a redirect
-URI de produção `https://actuarclassifique.vercel.app/`.
+Para main, troque o issuer para `https://actaskapi.bluefronte.com` e use
+`actuar-classifique-main-login`. O cliente público deve estar registrado no
+Actask com a redirect URI exata `https://actuarclassifique.vercel.app/`.
+
+No Stage, o backend precisa estar com `AUTH_EXTERNAL_ENABLED=true`, possuir
+`AUTH_OIDC_SIGNING_SECRET` configurado somente no servidor e ter o cliente
+`actuar-classifique-stage-login` registrado. O workflow de Stage registra esse
+cliente idempotentemente.
 
 ## Identidade e permissões
 
@@ -78,13 +111,10 @@ vêm de `functional_roles` no usuário/equipe retornado pelo Actask. O campo
 `role` presente no item do diretório é apenas o papel de associação à equipe e
 não deve ser convertido automaticamente em permissão.
 
-No stage, `/auth/login-selected-external` não retorna o usuário serializado nem
-as roles funcionais. Assim, um login externo de equipe analista consegue ser
-classificado pelo `team_type`, mas o Actuar recusa uma equipe operacional sem
-roles funcionais para evitar liberar a operação indevidamente. Para liberar
-esse cenário, o Actask deve incluir o usuário/roles na resposta externa ou
-fornecer uma sessão/endpoint autenticado que permita recuperar a identidade da
-seleção.
+O código OAuth do login conectado consulta `/oauth/userinfo` com escopo
+`openid profile`. Essa resposta inclui as equipes ativas do usuário e as
+`functional_roles` de cada vínculo; por isso o Actuar consegue selecionar o
+modo e liberar as telas de peças conforme a equipe e as funções efetivas.
 
 O diretório de login também não substitui a administração completa de usuários.
 Para telas administrativas, o Actask ainda precisa fornecer endpoint e escopo
