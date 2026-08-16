@@ -36,6 +36,7 @@ function configure() {
 test.afterEach(() => {
     delete global.sessionStorage;
     delete global.ACTASK_AUTH_CONFIG;
+    delete global.location;
     delete global.fetch;
 });
 
@@ -149,6 +150,83 @@ test('login por equipe e usuário usa a validação externa do Actask', async ()
     assert.equal(user.mode, 'analyst');
     assert.equal(user.selectedTeamId, 'team-1');
     assert.equal(JSON.stringify(global.sessionStorage.dump()).includes('senha-secreta'), false);
+});
+
+test('login externo troca o handoff PKCE e restaura o modo da equipe selecionada', async () => {
+    configure();
+    const requests = [];
+    global.fetch = async (url, options = {}) => {
+        requests.push({ url, options });
+        if (url.endsWith('/auth/login-selected-external')) {
+            return response({
+                authenticated: true,
+                redirect_url: 'https://actuarclassifique-stage.example.com/?code=one-time-code&state=state-1&actask_team_id=team-1'
+            });
+        }
+        if (url.endsWith('/oauth/token')) {
+            return response({
+                access_token: 'access-1',
+                refresh_token: 'refresh-1',
+                expires_in: 900,
+                refresh_expires_in: 2592000,
+                scope: 'openid profile'
+            });
+        }
+        return response({
+            sub: 'user-1',
+            name: 'Ana Actask',
+            email: 'ana@example.com',
+            teams: [{
+                id: 'team-1',
+                name: 'Operação',
+                team_type: 'operational',
+                functional_roles: [{ id: 'expedicao', name: 'Expedição' }]
+            }]
+        });
+    };
+
+    const user = await ActaskAuth.loginSelectedExternal(
+        { id: 'team-1', name: 'Operação', teamType: 'operational', loginTarget: 'external' },
+        { id: 'user-1', name: 'Ana Actask' },
+        'senha-secreta'
+    );
+
+    assert.equal(requests[0].url, 'https://actaskapistage.bluefronte.com/auth/login-selected-external');
+    const handoffBody = JSON.parse(requests[0].options.body);
+    assert.equal(handoffBody.user_id, 'user-1');
+    assert.equal(handoffBody.team_id, 'team-1');
+    assert.equal(handoffBody.client_id, 'actuar-classifique-stage-login');
+    assert.equal(handoffBody.code_challenge_method, 'S256');
+    assert.equal(requests[1].url, 'https://actaskapistage.bluefronte.com/oauth/token');
+    assert.match(String(requests[1].options.body), /grant_type=authorization_code/);
+    assert.equal(user.mode, 'operations');
+    assert.equal(user.selectedTeamId, 'team-1');
+    assert.equal(ActaskAuth.getSession().accessToken, 'access-1');
+    assert.equal(JSON.stringify(global.sessionStorage.dump()).includes('senha-secreta'), false);
+});
+
+test('callback OAuth do Actask consome o código da URL e limpa os parâmetros', async () => {
+    configure();
+    global.location = {
+        href: 'https://actuarclassifique-stage.example.com/?code=one-time-code&state=state-1&actask_team_id=team-1#actask_code_verifier=verifier-1'
+    };
+    const requests = [];
+    global.fetch = async (url, options = {}) => {
+        requests.push({ url, options });
+        if (url.endsWith('/oauth/token')) return response({ access_token: 'access-2', refresh_token: 'refresh-2', expires_in: 900, refresh_expires_in: 2592000, scope: 'openid profile' });
+        return response({
+            sub: 'user-1',
+            name: 'Ana Actask',
+            teams: [{ id: 'team-1', name: 'Catraca', team_type: 'analyst', functional_roles: [{ id: 'analista_catraca', name: 'Analista de catraca' }] }]
+        });
+    };
+
+    const user = await ActaskAuth.consumeOAuthCallback();
+
+    assert.equal(user.mode, 'analyst');
+    assert.equal(user.selectedTeamId, 'team-1');
+    assert.match(String(requests[0].options.body), /code=one-time-code/);
+    assert.equal(ActaskAuth.getSession().accessToken, 'access-2');
 });
 
 test('login selecionado aproveita identidade e roles quando o Actask as devolve', async () => {

@@ -2387,9 +2387,9 @@
         const SUPABASE_KEY = "sb_publishable_RyM0bVKx1unGJeXjw_7XUg_iK7GDpo4";
 
         // CONFIGURAÇÃO PÚBLICA DO ACTASK
-        // O seletor de equipes usa os endpoints /auth sem client_id. Em main,
-        // defina ACTASK_AUTH_ENV="main"; o client_id oficial
-        // "actuar-classifique-main-login" fica disponível para o fallback OAuth.
+        // O diretório usa os endpoints /auth; equipes externas concluem o
+        // login conectado com PKCE. Em main, defina ACTASK_AUTH_ENV="main";
+        // o client_id oficial é "actuar-classifique-main-login".
         // Nunca coloque client_secret ou AUTH_OIDC_SIGNING_SECRET aqui.
         window.ACTASK_AUTH_CONFIG = window.ACTASK_AUTH_CONFIG || {
             enabled: true,
@@ -5400,7 +5400,9 @@
             }
             if (submit) submit.disabled = true;
             try {
-                const identity = await window.ActaskAuth.loginSelected(team, user, passwordInput.value);
+                const identity = team.loginTarget === 'external'
+                    ? await window.ActaskAuth.loginSelectedExternal(team, user, passwordInput.value)
+                    : await window.ActaskAuth.loginSelected(team, user, passwordInput.value);
                 const activation = activateActaskIdentity(identity);
                 if (!activation.ok) {
                     setActaskDirectoryError(activation.message);
@@ -9834,7 +9836,27 @@
             syncActaskLoginForms();
             // Depois de initApp() porque a identidade externa precisa ser associada às
             // chaves históricas antes de a primeira tela privada ser desenhada.
-            const restored = actaskAuthEnabled() ? await restoreActaskSession() : restoreLegacySession();
+            let restored = null;
+            if (actaskAuthEnabled()) {
+                try {
+                    const callbackIdentity = await window.ActaskAuth.consumeOAuthCallback();
+                    if (callbackIdentity) {
+                        const activation = activateActaskIdentity(callbackIdentity);
+                        if (!activation.ok) {
+                            await window.ActaskAuth.logout();
+                            setActaskDirectoryError(activation.message);
+                        } else {
+                            restored = activation.mode;
+                        }
+                    } else {
+                        restored = await restoreActaskSession();
+                    }
+                } catch (error) {
+                    setActaskDirectoryError(error?.message || 'Não foi possível concluir o login conectado.');
+                }
+            } else {
+                restored = restoreLegacySession();
+            }
             if (restored) {
                 // Recarregar devolve a mesma tela. "dashboard" é o destino genérico de
                 // quem chega sem rota, inclusive de links antigos: não pode sequestrar a

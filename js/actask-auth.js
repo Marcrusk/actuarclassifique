@@ -10,6 +10,7 @@
     const PUBLIC_AUDIENCE = 'actask-public-api';
     const SESSION_KEY = 'actuar-classifique-actask-session-v1';
     const DIRECTORY_SESSION_KEY = 'actuar-classifique-actask-directory-session-v1';
+    const OAUTH_HANDOFF_KEY = 'actuar-classifique-actask-oauth-handoff-v1';
     const DEFAULT_SCOPES = ['openid', 'profile'];
     const PIECES_ROLES = new Set(['Envio/Coleta', 'Faturamento', 'Expedição', 'Logística/Faturamento', 'Toletus Lab']);
     const ROLE_PRIORITY = [
@@ -96,6 +97,29 @@
         try { storage.removeItem(DIRECTORY_SESSION_KEY); } catch (_) { /* nada a limpar */ }
     }
 
+    function readStoredOAuthHandoff() {
+        const storage = getStorage();
+        if (!storage) return null;
+        try {
+            const value = storage.getItem(OAUTH_HANDOFF_KEY);
+            return value ? JSON.parse(value) : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function writeStoredOAuthHandoff(handoff) {
+        const storage = getStorage();
+        if (!storage) return;
+        try { storage.setItem(OAUTH_HANDOFF_KEY, JSON.stringify(handoff)); } catch (_) { /* sessão local indisponível */ }
+    }
+
+    function clearStoredOAuthHandoff() {
+        const storage = getStorage();
+        if (!storage) return;
+        try { storage.removeItem(OAUTH_HANDOFF_KEY); } catch (_) { /* nada a limpar */ }
+    }
+
     function normalizeIssuer(value) {
         return String(value || '').trim().replace(/\/$/, '');
     }
@@ -112,7 +136,7 @@
             : {};
         const environment = supplied.environment || root.ACTASK_AUTH_ENV || 'stage';
         const issuer = normalizeIssuer(supplied.issuer || root.ACTASK_AUTH_ISSUER || (environment === 'main' ? MAIN_ISSUER : STAGE_ISSUER));
-        const clientId = String(supplied.clientId || root.ACTASK_AUTH_CLIENT_ID || (environment === 'main' ? 'actuar-classifique-main-login' : '')).trim();
+        const clientId = String(supplied.clientId || root.ACTASK_AUTH_CLIENT_ID || (environment === 'main' ? 'actuar-classifique-main-login' : 'actuar-classifique-stage-login')).trim();
         const scopes = Array.isArray(supplied.scopes)
             ? supplied.scopes.filter(Boolean)
             : String(supplied.scopes || root.ACTASK_AUTH_SCOPES || DEFAULT_SCOPES.join(' ')).split(/\s+/).filter(Boolean);
@@ -175,6 +199,58 @@
     function requireFetch() {
         if (typeof root.fetch !== 'function') throw new ActaskAuthError('A integração do Actask não encontrou o recurso de rede do navegador.', 'fetch_unavailable');
         return root.fetch.bind(root);
+    }
+
+    function base64Url(bytes) {
+        let binary = '';
+        for (const byte of bytes) binary += String.fromCharCode(byte);
+        const encode = root.btoa || (value => Buffer.from(value, 'binary').toString('base64'));
+        return encode(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function randomToken() {
+        if (!root.crypto?.getRandomValues) {
+            throw new ActaskAuthError('O navegador não oferece um gerador seguro para concluir o login.', 'crypto_unavailable');
+        }
+        return base64Url(root.crypto.getRandomValues(new Uint8Array(32)));
+    }
+
+    async function sha256Base64Url(value) {
+        if (!root.crypto?.subtle) {
+            throw new ActaskAuthError('O navegador não oferece criptografia segura para concluir o login.', 'crypto_unavailable');
+        }
+        const digest = await root.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+        return base64Url(new Uint8Array(digest));
+    }
+
+    async function createOAuthHandoff(teamId) {
+        const config = getConfig();
+        if (!isConfigured()) throw configurationError();
+        const codeVerifier = randomToken();
+        const handoff = {
+            client_id: config.clientId,
+            redirect_uri: config.redirectUri,
+            response_type: 'code',
+            scope: config.scopes.join(' '),
+            state: randomToken(),
+            code_challenge: await sha256Base64Url(codeVerifier),
+            code_challenge_method: 'S256',
+            audience: config.audience,
+            team_id: teamId || null,
+            codeVerifier
+        };
+        writeStoredOAuthHandoff({
+            state: handoff.state,
+            codeVerifier,
+            redirectUri: handoff.redirect_uri,
+            teamId: handoff.team_id
+        });
+        return handoff;
+    }
+
+    function oauthRequestBody(handoff) {
+        const { codeVerifier: _codeVerifier, ...body } = handoff;
+        return body;
     }
 
     function normalizeText(value) {
@@ -489,7 +565,7 @@
         return identity;
     }
 
-    function createSession(tokens, identity) {
+    function createSession(tokens, identity, selectedTeamId = null) {
         const now = Date.now();
         return {
             accessToken: tokens.access_token,
@@ -498,6 +574,7 @@
             accessExpiresAt: now + (Number(tokens.expires_in || 900) * 1000),
             refreshExpiresAt: tokens.refresh_expires_in ? now + (Number(tokens.refresh_expires_in) * 1000) : null,
             scope: tokens.scope || '',
+            selectedTeamId: selectedTeamId || null,
             user: identity
         };
     }
@@ -512,6 +589,104 @@
         const claims = await parseResponse(response);
         const identity = normalizeUser(claims);
         if (!identity.id) throw new ActaskAuthError('O Actask não retornou o identificador do usuário.', 'invalid_userinfo');
+        return identity;
+    }
+
+    async function exchangeAuthorizationCode(code, codeVerifier, redirectUri, selectedTeamId = null) {
+        if (!code || !codeVerifier || !redirectUri) {
+            throw new ActaskAuthError('Resposta de autenticação inválida.', 'invalid_callback');
+        }
+        const config = getConfig();
+        const fetcher = requireFetch();
+        const response = await fetcher(config.tokenEndpoint, {
+            method: 'POST',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                grant_type: 'authorization_code',
+                client_id: config.clientId,
+                code,
+                redirect_uri: redirectUri,
+                code_verifier: codeVerifier,
+                audience: config.audience
+            })
+        });
+        const tokens = await parseResponse(response);
+        if (!tokens.access_token) throw new ActaskAuthError('O Actask não retornou uma sessão válida.', 'invalid_token_response');
+        const identity = await fetchUserinfo(tokens.access_token);
+        const scoped = selectedTeamId
+            ? scopeIdentityToTeam(identity, selectedTeamId)
+            : identity;
+        if (!scoped) throw new ActaskAuthError('A equipe selecionada não está mais disponível.', 'invalid_selection');
+        scoped.selectedTeamId = selectedTeamId || null;
+        scoped.loginTarget = 'external';
+        writeStoredSession(createSession(tokens, scoped, selectedTeamId));
+        clearStoredDirectorySession();
+        clearStoredOAuthHandoff();
+        return scoped;
+    }
+
+    async function loginSelectedExternal(team, selectedUser, password) {
+        if (!isDirectoryConfigured()) throw configurationError();
+        if (!team?.id && team?.id !== null) throw new ActaskAuthError('Selecione uma equipe.', 'invalid_selection');
+        if (!selectedUser?.id) throw new ActaskAuthError('Selecione um usuário.', 'invalid_selection');
+        if (!String(password || '')) throw new ActaskAuthError('Informe a senha.', 'invalid_request');
+        const config = getConfig();
+        const handoff = await createOAuthHandoff(team.id);
+        const fetcher = requireFetch();
+        try {
+            const response = await fetcher(config.selectedExternalLoginEndpoint, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: selectedUser.id,
+                    team_id: team.id,
+                    password,
+                    ...oauthRequestBody(handoff)
+                })
+            });
+            const payload = await parseResponse(response);
+            if (payload?.authenticated === false || !payload?.redirect_url) {
+                throw new ActaskAuthError('O Actask não retornou um destino seguro para concluir o login.', 'invalid_handoff');
+            }
+            const callback = new URL(payload.redirect_url);
+            const code = callback.searchParams.get('code');
+            return exchangeAuthorizationCode(code, handoff.codeVerifier, config.redirectUri, team.id);
+        } catch (error) {
+            clearStoredOAuthHandoff();
+            throw error;
+        }
+    }
+
+    async function consumeOAuthCallback() {
+        if (!root.location?.href) return null;
+        const callback = new URL(root.location.href);
+        const code = callback.searchParams.get('code');
+        const state = callback.searchParams.get('state');
+        const error = callback.searchParams.get('error');
+        if (!code && !error) return null;
+        if (error) throw new ActaskAuthError('O login conectado foi recusado.', 'oauth_callback_error');
+
+        const stored = readStoredOAuthHandoff();
+        const fragment = new URLSearchParams(callback.hash.replace(/^#/, ''));
+        const codeVerifier = fragment.get('actask_code_verifier') || stored?.codeVerifier;
+        if (!code || !state || !codeVerifier) {
+            throw new ActaskAuthError('Resposta de autenticação inválida.', 'invalid_callback');
+        }
+        if (stored?.state && stored.state !== state) {
+            throw new ActaskAuthError('Resposta de autenticação inválida.', 'invalid_state');
+        }
+
+        const selectedTeamId = callback.searchParams.get('actask_team_id') || stored?.teamId || null;
+        const config = getConfig();
+        const identity = await exchangeAuthorizationCode(code, codeVerifier, config.redirectUri, selectedTeamId);
+        if (root.history?.replaceState) {
+            const cleanUrl = new URL(callback.toString());
+            cleanUrl.searchParams.delete('code');
+            cleanUrl.searchParams.delete('state');
+            cleanUrl.searchParams.delete('actask_team_id');
+            cleanUrl.hash = '';
+            root.history.replaceState({}, root.document?.title || '', cleanUrl.toString());
+        }
         return identity;
     }
 
@@ -546,23 +721,36 @@
         const tokens = await parseResponse(response);
         if (!tokens.access_token) throw new ActaskAuthError('O Actask não retornou uma sessão renovada.', 'invalid_refresh_response');
         const identity = await fetchUserinfo(tokens.access_token);
-        writeStoredSession(createSession(tokens, identity));
-        return identity;
+        const scoped = stored.selectedTeamId
+            ? scopeIdentityToTeam(identity, stored.selectedTeamId)
+            : identity;
+        if (!scoped) throw new ActaskAuthError('A equipe selecionada não está mais disponível.', 'invalid_selection');
+        scoped.selectedTeamId = stored.selectedTeamId || null;
+        scoped.loginTarget = stored.user?.loginTarget || 'external';
+        writeStoredSession(createSession(tokens, scoped, stored.selectedTeamId));
+        return scoped;
     }
 
     async function restore() {
         const stored = readStoredSession();
         if (stored?.accessToken) {
             try {
-                const identity = Number(stored.accessExpiresAt || 0) - Date.now() < 30_000
+                const freshIdentity = Number(stored.accessExpiresAt || 0) - Date.now() < 30_000
                     ? await refresh()
                     : await fetchUserinfo(stored.accessToken);
                 const current = readStoredSession();
                 if (current) {
+                    const identity = current.selectedTeamId
+                        ? scopeIdentityToTeam(freshIdentity, current.selectedTeamId)
+                        : freshIdentity;
+                    if (!identity) throw new ActaskAuthError('A equipe selecionada não está mais disponível.', 'invalid_selection');
+                    identity.selectedTeamId = current.selectedTeamId || null;
+                    identity.loginTarget = current.user?.loginTarget || 'external';
                     current.user = identity;
                     writeStoredSession(current);
+                    return identity;
                 }
-                return identity;
+                return freshIdentity;
             } catch (error) {
                 if (error?.status === 401 || error?.code === 'invalid_grant' || error?.code === 'refresh_unavailable') clearStoredSession();
                 return null;
@@ -614,6 +802,7 @@
         const directorySession = readStoredDirectorySession();
         clearStoredSession();
         clearStoredDirectorySession();
+        clearStoredOAuthHandoff();
         if (stored?.refreshToken) await revokeToken(stored.refreshToken, 'refresh_token');
         if (directorySession?.sessionToken) await revokeDirectorySession(directorySession.sessionToken);
     }
@@ -631,6 +820,7 @@
         CATEGORY_ROLE_IDS,
         DEFAULT_SCOPES,
         MAIN_ISSUER,
+        consumeOAuthCallback,
         PIECES_ROLES,
         PUBLIC_AUDIENCE,
         ROLE_ALIASES,
@@ -642,6 +832,7 @@
         getUser,
         isConfigured,
         isDirectoryConfigured,
+        loginSelectedExternal,
         loadLoginOptions,
         loginSelected,
         login,
