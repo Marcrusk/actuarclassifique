@@ -250,6 +250,161 @@
         </div>
     </div>
 
+    <!-- ==========================================================================
+         PORTAL DE PRIORIDADES — PORTA EXTERNA
+         Mesma aplicação, experiência própria: sem sidebar, sem cabeçalho interno e sem
+         portão de login. Reaproveita a linguagem da tela de acesso (marca à esquerda,
+         ação à direita) para parecer o que é — uma área legítima da Actuar, não um
+         formulário avulso.
+         ========================================================================== -->
+    <section id="viewPortal" class="hidden actuar-portal" aria-labelledby="portalTitle">
+        <header class="actuar-portal-header">
+            <img class="actuar-group-logo" src="assets/actuar/logos/actuar-group.svg" alt="Actuar Group">
+            <span class="actuar-portal-tag">Portal de Prioridades</span>
+            <div id="portalIdentity" class="actuar-portal-identity hidden">
+                <span id="portalIdentityName"></span>
+                <button type="button" class="actuar-btn actuar-btn-ghost actuar-btn-sm" onclick="portalSignOut()">Encerrar acesso</button>
+            </div>
+        </header>
+
+        <!-- ETAPA 1: ACESSO -->
+        <div id="portalAccess" class="actuar-portal-shell">
+            <h1 id="portalTitle">Registrar atendimento prioritário</h1>
+            <p class="actuar-portal-lead">Identifique-se para descrever a situação do cliente que precisa de análise prioritária.</p>
+            <form onsubmit="return portalEnter(event)" class="actuar-portal-form" aria-describedby="portalAccessError">
+                <div class="actuar-field">
+                    <label for="portalCollaborator">Colaborador</label>
+                    <select id="portalCollaborator" required></select>
+                </div>
+                <div class="actuar-field">
+                    <span class="actuar-field-label" id="portalPinLabel">PIN de acesso</span>
+                    <!-- Quatro caixas em vez de um campo livre: o PIN tem tamanho fixo, e a
+                         forma do campo já conta isso. Cada caixa é um input de verdade, para
+                         o teclado numérico do celular aparecer e o leitor de tela anunciar
+                         a posição. -->
+                    <div class="actuar-otp" role="group" aria-labelledby="portalPinLabel" onpaste="portalPinPaste(event)">
+                        <input class="actuar-otp-box" id="portalPin1" inputmode="numeric" autocomplete="one-time-code" maxlength="1" aria-label="Dígito 1 de 4" oninput="portalPinInput(1)" onkeydown="portalPinKey(event, 1)" required>
+                        <input class="actuar-otp-box" id="portalPin2" inputmode="numeric" autocomplete="off" maxlength="1" aria-label="Dígito 2 de 4" oninput="portalPinInput(2)" onkeydown="portalPinKey(event, 2)" required>
+                        <input class="actuar-otp-box" id="portalPin3" inputmode="numeric" autocomplete="off" maxlength="1" aria-label="Dígito 3 de 4" oninput="portalPinInput(3)" onkeydown="portalPinKey(event, 3)" required>
+                        <input class="actuar-otp-box" id="portalPin4" inputmode="numeric" autocomplete="off" maxlength="1" aria-label="Dígito 4 de 4" oninput="portalPinInput(4)" onkeydown="portalPinKey(event, 4)" required>
+                    </div>
+                </div>
+                <p class="actuar-login-error" id="portalAccessError" role="alert" hidden></p>
+                <!-- Sem botão: completar os quatro dígitos JÁ é a intenção de entrar. Um botão
+                     depois disso seria confirmar o que a pessoa acabou de dizer. Errando, as
+                     caixas se limpam e o foco volta para a primeira — tenta de novo ali mesmo. -->
+                <small class="actuar-portal-foot">O acesso é liberado assim que os quatro dígitos estiverem corretos.</small>
+                <small class="actuar-portal-foot">Acesso destinado às equipes autorizadas da Actuar Group.</small>
+            </form>
+        </div>
+
+        <!-- ETAPA 2: SOLICITAÇÃO -->
+        <div id="portalForm" class="actuar-portal-panel hidden">
+            <div class="actuar-portal-greeting">
+                <h2 id="portalGreeting">Solicitar atendimento prioritário</h2>
+                <p>Informe o contexto do cliente para a equipe analisar e direcionar o atendimento corretamente.</p>
+            </div>
+            <!-- Três passos curtos em vez de um paredão de campos: identificar o cliente,
+                 decidir o destino e só então descrever a situação, que é o campo longo.
+                 Cada passo valida antes de avançar, então o erro aparece perto de onde nasceu. -->
+            <ol class="actuar-portal-steps" aria-label="Etapas do registro">
+                <li data-step="1" class="is-current"><span>1</span>Cliente</li>
+                <li data-step="2"><span>2</span>Destino</li>
+                <li data-step="3"><span>3</span>Situação</li>
+            </ol>
+
+            <form onsubmit="return portalSubmit(event)" class="actuar-portal-request">
+                <section class="actuar-portal-step" data-step="1">
+                    <h3>Quem é o cliente</h3>
+                    <p class="actuar-portal-hint">Identifique a empresa e o contato para a equipe conseguir retornar.</p>
+                    <div class="actuar-portal-grid">
+                        <div class="actuar-field">
+                            <label for="portalBrand">Empresa do cliente</label>
+                            <select id="portalBrand" required>
+                                <option value="">Selecione</option>
+                                <option>Actuar</option>
+                                <option>Ediz</option>
+                                <option>Toletus</option>
+                                <option>Fácil Fit</option>
+                            </select>
+                        </div>
+                        <div class="actuar-field">
+                            <label for="portalClientId">ID de atendimento</label>
+                            <input id="portalClientId" data-field="clientId" required>
+                        </div>
+                        <div class="actuar-field">
+                            <label for="portalClientName">Nome do cliente</label>
+                            <input id="portalClientName" placeholder="Academia Modelo" required>
+                        </div>
+                        <div class="actuar-field">
+                            <label for="portalPhone">Telefone de contato</label>
+                            <input id="portalPhone" data-field="phone" required>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="actuar-portal-step hidden" data-step="2">
+                    <h3>Destino do atendimento</h3>
+                    <p class="actuar-portal-hint">Escolha a equipe responsável por essa situação.</p>
+                    <div class="actuar-portal-choice" role="radiogroup" aria-label="Equipe responsável">
+                        <button type="button" class="actuar-portal-option" data-team="Sistema" onclick="portalPickTeam('Sistema')" role="radio" aria-checked="false">
+                            <i class="fi fi-rr-laptop" aria-hidden="true"></i>
+                            <strong>Sistema</strong>
+                            <small>Software, acesso, aplicativo, integração</small>
+                        </button>
+                        <button type="button" class="actuar-portal-option" data-team="Catraca" onclick="portalPickTeam('Catraca')" role="radio" aria-checked="false">
+                            <i class="fi fi-rr-shield-check" aria-hidden="true"></i>
+                            <strong>Catraca</strong>
+                            <small>Equipamento, catraca, controle de acesso físico</small>
+                        </button>
+                    </div>
+                    <p id="portalTeamStatus" class="actuar-portal-queue" aria-live="polite"></p>
+                </section>
+
+                <section class="actuar-portal-step hidden" data-step="3">
+                    <h3>O que está acontecendo</h3>
+                    <p class="actuar-portal-hint">Quanto mais claro o contexto, menos idas e vindas depois.</p>
+                    <div class="actuar-field">
+                        <label for="portalNeed">O que o cliente precisa</label>
+                        <textarea id="portalNeed" rows="5" placeholder="Descreva a situação e o que o cliente precisa resolver." required></textarea>
+                    </div>
+                    <!-- Confere o que já foi preenchido sem obrigar a voltar: o resumo é a
+                         revisão, e cada linha leva de volta ao passo que a originou. -->
+                    <div id="portalRecap" class="actuar-portal-recap"></div>
+                </section>
+
+                <p class="actuar-login-error" id="portalFormError" role="alert" hidden></p>
+                <p class="actuar-portal-note hidden" id="portalStepNote">A solicitação será encaminhada para análise da equipe responsável.</p>
+                <div class="actuar-portal-actions">
+                    <button type="button" id="portalBackButton" class="actuar-btn actuar-btn-secondary hidden" onclick="portalGoStep(-1)"><i class="fi fi-rr-arrow-left"></i>Voltar</button>
+                    <button type="button" id="portalNextButton" class="actuar-btn actuar-btn-primary actuar-btn-lg" onclick="portalGoStep(1)">Continuar<i class="fi fi-rr-arrow-right"></i></button>
+                    <button type="submit" id="portalSubmitButton" class="actuar-btn actuar-btn-primary actuar-btn-lg hidden"><i class="fi fi-rr-paper-plane"></i>Enviar solicitação</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ETAPA 3: CONFIRMAÇÃO -->
+        <div id="portalSuccess" class="actuar-portal-panel actuar-portal-success hidden" role="status" aria-live="polite">
+            <div class="actuar-portal-check" aria-hidden="true">
+                <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l8 8 15-16"/></svg>
+            </div>
+            <h2 id="portalSuccessTitle" tabindex="-1">Prioridade enviada</h2>
+            <p>Sua solicitação foi registrada e encaminhada para análise da equipe responsável.</p>
+            <div class="actuar-portal-protocol">
+                <small>Protocolo</small>
+                <strong id="portalProtocol" class="num-mono"></strong>
+                <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" id="portalCopyButton" onclick="portalCopyProtocol()"><i class="fi fi-rr-copy"></i>Copiar protocolo</button>
+            </div>
+            <dl class="actuar-portal-receipt">
+                <div><dt>Status</dt><dd id="portalSuccessStatus"></dd></div>
+                <div><dt>Cliente</dt><dd id="portalSuccessClient"></dd></div>
+                <div><dt>Equipe</dt><dd id="portalSuccessTeam"></dd></div>
+            </dl>
+            <p class="actuar-portal-note">Guarde este protocolo para acompanhar as próximas atualizações.</p>
+            <button type="button" class="actuar-btn actuar-btn-primary" onclick="portalNewRequest()"><i class="fi fi-rr-add-document"></i>Registrar outra prioridade</button>
+        </div>
+    </section>
+
     <!-- SHELL GLOBAL ACTUAR -->
     <header id="globalHeader" class="actuar-global-header">
         <a class="actuar-brand" href="#/dashboard" onclick="navigateTo('dashboard'); return false;" aria-label="Ir para o início do módulo Performance do Atendimento">
@@ -629,6 +784,7 @@
                                     <th class="p-2">Protocolo</th>
                                     <th class="p-2">Justificativa</th>
                                     <th class="p-2">Status</th>
+                                    <th class="p-2">Pontos</th>
                                     <th class="p-2">Ação</th>
                                 </tr>
                             </thead>
@@ -665,9 +821,11 @@
                         <table class="w-full text-left text-xs text-secondary">
                             <thead class="bg-bg sticky top-0 uppercase text-[10px]">
                                 <tr>
+                                    <th class="p-2">Data</th>
                                     <th class="p-2">Protocolo</th>
                                     <th class="p-2">Justificativa</th>
                                     <th class="p-2">Status</th>
+                                    <th class="p-2">Pontos</th>
                                 </tr>
                             </thead>
                             <tbody id="myTransferRequestsTable" class="divide-y divide-line/50"></tbody>
@@ -1916,9 +2074,20 @@
 
             <!-- PAINEL: TRANSFERÊNCIAS -->
             <div id="admPanelTransferencias" class="hidden space-y-6">
+                <!-- Mesmo desenho da Aprovação de Prioridades: atalhos por status, filtros,
+                     busca e contador. Antes era uma tabela sem recorte nenhum — com o volume
+                     de um ciclo, achar uma transferência específica virava rolagem no olho. -->
+                <section id="transferApprovalSummary" class="priority-approval-summary"></section>
                 <div class="bg-surface border border-line rounded-2xl card-hover p-6">
-                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-right-left text-primary-400"></i> Validação de Transferências</h3>
-                    <p class="text-xs text-secondary mb-4">Analise o protocolo e a justificativa enviada pelo analista. Ao aprovar, <strong class="text-emerald-400">1 ponto</strong> é creditado automaticamente na pontuação geral.</p>
+                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-right-left text-primary-400"></i> Aprovação de Transferências</h3>
+                    <p class="text-xs text-secondary mb-4">Revise o protocolo e a justificativa enviada pelo analista e decida o que entra na pontuação. Ao aprovar, <strong class="text-emerald-400">1 ponto</strong> é creditado automaticamente.</p>
+                    <div class="priority-approval-filters">
+                        <div class="actuar-field"><label for="transferApprovalStatus">Status</label><select id="transferApprovalStatus" onchange="renderAdminTransferRequests()"><option value="Todos">Todos os status</option><option value="pendente">Pendentes</option><option value="aprovado">Aprovadas</option><option value="reprovado">Reprovadas</option></select></div>
+                        <div class="actuar-field"><label for="transferApprovalAnalyst">Analista</label><select id="transferApprovalAnalyst" onchange="renderAdminTransferRequests()"></select></div>
+                        <div class="actuar-field priority-approval-search"><label for="transferApprovalSearch">Localizar chamado</label><div class="actuar-input-icon"><i class="fi fi-rr-search" aria-hidden="true"></i><input id="transferApprovalSearch" type="search" oninput="renderAdminTransferRequests()" placeholder="Protocolo, justificativa ou analista"></div></div>
+                        <label class="actuar-checkbox-field priority-sla-filter"><input id="transferApprovalSla" type="checkbox" onchange="renderAdminTransferRequests()"><span>Somente acima de 24h</span></label>
+                    </div>
+                    <p id="transferApprovalCount" class="text-xs text-secondary mb-2"></p>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-secondary">
                             <thead class="bg-bg text-secondary uppercase text-[10px]">
@@ -1974,6 +2143,23 @@
                             <option value="DELETED">Excluído</option>
                         </select>
                     </div>
+                    <!-- Período por escolha, não por digitação. Dois campos dd/mm/yyyy exigiam
+                         saber a data exata de algo que a pessoa lembra como "semana passada".
+                         O intervalo exato continua disponível, mas deixa de ser o caminho padrão. -->
+                    <div class="actuar-field history-filter-period">
+                        <label for="admHistoryPeriod">Período</label>
+                        <select id="admHistoryPeriod" onchange="applyHistoryFilters()">
+                            <option value="all">Todo o histórico</option>
+                            <option value="today">Hoje</option>
+                            <option value="7">Últimos 7 dias</option>
+                            <option value="30">Últimos 30 dias</option>
+                            <option value="month">Este mês</option>
+                            <option value="custom">Intervalo exato…</option>
+                        </select>
+                    </div>
+                    <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="clearHistoryFilters()"><i class="fi fi-rr-cross-circle"></i>Limpar</button>
+                </div>
+                <div id="admHistoryCustomRange" class="history-custom-range hidden">
                     <div class="actuar-field">
                         <label for="admHistoryFrom">De</label>
                         <input type="date" id="admHistoryFrom" onchange="applyHistoryFilters()">
@@ -1982,9 +2168,11 @@
                         <label for="admHistoryTo">Até</label>
                         <input type="date" id="admHistoryTo" onchange="applyHistoryFilters()">
                     </div>
-                    <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="clearHistoryFilters()"><i class="fi fi-rr-cross-circle"></i>Limpar</button>
+                    <span id="admHistoryRangeLabel" class="history-range-label"></span>
                 </div>
-                <p id="admHistorySummary" class="text-xs text-secondary mt-3 mb-2"></p>
+                <!-- O recorte precisa se explicar antes da tabela: quantos registros, quanto
+                     de ponto e de quando são. Uma frase corrida no meio da tela não era lida. -->
+                <section id="admHistorySummary" class="history-summary" aria-live="polite"></section>
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs text-secondary">
@@ -2435,14 +2623,17 @@
                 isAdminLoggedIn = true; currentAdminId = saved.userId;
                 activeAdminTab = activeAdminTab || 'visao';
                 restoreManagerFilters();
+                updateProfileUI();
                 return 'manager';
             }
             if (saved.kind === 'operations' && isPiecesOperatorRole(user.role)) {
                 isPecaLoggedIn = true; currentPecaUserId = saved.userId;
+                updateProfileUI();
                 return 'operations';
             }
             if (saved.kind === 'analyst' && isRankableUser(user)) {
                 isAnalystLoggedIn = true; currentActiveUser = saved.userId;
+                updateProfileUI();
                 return 'analyst';
             }
             clearSession();
@@ -2940,11 +3131,49 @@
                 .sort((a,b) => b.timestamp-a.timestamp);
             const contador = document.getElementById('priorityLaunchCount');
             if (contador) contador.textContent = busca.trim() ? `${rows.length} de ${base.length} chamado(s) neste filtro` : 'Busque por protocolo, cliente ou analista.';
-            const statusLabel = { pendente: 'Aguardando aprovação', aprovado: 'Aprovado', reprovado: 'Reprovado', ajuste_solicitado: 'Precisa de ajuste' };
             const emptyCopy = busca.trim()
                 ? ['Nada encontrado para esta busca', `Nenhum chamado combina com "${escapeHtml(busca.trim())}" nos filtros atuais.`]
                 : priorityLaunchStatus === 'aprovado' ? ['Nenhum atendimento aprovado no período', 'Os atendimentos avaliados como aprovados aparecerão aqui.'] : ['Nenhum atendimento encontrado', 'Não existem atendimentos concluídos neste rodízio para o período selecionado.'];
-            body.innerHTML = rows.length ? rows.map(item => `<tr class="${item.status==='ajuste_solicitado'?'priority-row-adjustment':''}"><td>${formatRotationTime(item.timestamp,true)}</td><td>${escapeHtml(users[item.userId]?.name || '—')}</td><td><strong>${escapeHtml(item.protocolo)}</strong>${item.clientId || item.clientName ? `<small class="priority-client-line">${escapeHtml([item.clientId, item.clientName].filter(Boolean).join(' · '))}</small>` : ''}</td><td>${teamLabel(users[item.userId]?.team || item.rotationTeam || 'Sistema')}</td><td>${item.rotationAttendanceId ? '<span class="actuar-badge actuar-badge-primary">Rodízio</span>' : '<span class="actuar-badge actuar-badge-neutral">Fora do rodízio</span>'}</td><td>${escapeHtml(statusLabel[item.status] || item.status)}</td><td class="num-col">${priorityGrantedPoints(item)} pts</td><td><button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openPriorityApprovalReview('${item.id}',true)">Ver ficha completa</button></td></tr>`).join('') : `<tr><td colspan="8">${managerEmpty(emptyCopy[0], emptyCopy[1])}</td></tr>`;
+            body.innerHTML = rows.length ? rows.map(item => `<tr class="${priorityRowClass(item.status)}"><td>${escapeHtml(formatRotationTime(item.timestamp,true))}</td><td>${escapeHtml(users[item.userId]?.name || '—')}</td><td><strong>${escapeHtml(item.protocolo)}</strong>${item.clientId || item.clientName ? `<small class="priority-client-line">${escapeHtml([item.clientId, item.clientName].filter(Boolean).join(' · '))}</small>` : ''}</td><td><span class="ranking-team-badge">${escapeHtml(teamLabel(users[item.userId]?.team || item.rotationTeam || 'Sistema'))}</span></td><td>${item.rotationAttendanceId ? '<span class="actuar-badge actuar-badge-primary"><i class="fi fi-rr-refresh" aria-hidden="true"></i>Rodízio</span>' : '<span class="actuar-badge actuar-badge-neutral"><i class="fi fi-rr-flag" aria-hidden="true"></i>Fora do rodízio</span>'}</td><td><span class="priority-status-cell">${priorityStatusTag(item.status, { waiting: true })}${item.status === 'ajuste_solicitado' && item.adjustmentReason ? `<small class="priority-reason priority-reason--primary">${escapeHtml(item.adjustmentReason)}</small>` : ''}${item.status === 'reprovado' && item.rejectReason ? `<small class="priority-reason priority-reason--danger">${escapeHtml(item.rejectReason)}</small>` : ''}</span></td><td class="num-col">${priorityPointsCell(priorityGrantedPoints(item))}</td><td><button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openPriorityApprovalReview('${item.id}',true)">Ver ficha completa</button></td></tr>`).join('') : `<tr><td colspan="8">${managerEmpty(emptyCopy[0], emptyCopy[1])}</td></tr>`;
+        }
+
+        /* Tag de status compartilhada pelas listagens e aprovações de prioridades e
+           transferências. O rótulo, o tom e o ícone vêm do domínio (PriorityRotation.statusMeta):
+           antes cada tela mantinha o próprio mapa, e o mesmo estado aparecia com nome e cor
+           diferentes dependendo de quem olhava — a gestão dizia "Aguardando aprovação" e o
+           analista "Pendente". O tom é nome de token do Design System, não cor: trocar a
+           paleta é mexer num lugar só. */
+        function priorityStatusMeta(status) {
+            return window.PriorityRotation?.statusMeta
+                ? PriorityRotation.statusMeta(status)
+                : { label: String(status || 'Sem status'), short: 'Sem status', tone: 'neutral', icon: 'fi-rr-interrogation', waitingOn: null };
+        }
+
+        function priorityStatusTag(status, options = {}) {
+            const meta = priorityStatusMeta(status);
+            const espera = options.waiting && meta.waitingOn ? ` title="Aguardando a ${meta.waitingOn}"` : '';
+            return `<span class="actuar-badge actuar-badge-${meta.tone}"${espera}><i class="fi ${meta.icon}" aria-hidden="true"></i>${escapeHtml(options.short ? meta.short : meta.label)}</span>`;
+        }
+
+        function priorityPointsCell(points) {
+            const valor = Number(points || 0);
+            return valor > 0
+                ? `<span class="priority-points priority-points--granted">+${valor}<small>pts</small></span>`
+                : `<span class="priority-points priority-points--none">0<small>pts</small></span>`;
+        }
+
+        function priorityRowClass(status) {
+            return `priority-row priority-row--${priorityStatusMeta(status).tone}`;
+        }
+
+        /* Isola a montagem de um painel da gestão. O que quebra vira aviso e console, não
+           uma tela congelada: a seção pedida continua abrindo mesmo com um painel defeituoso. */
+        function renderManagerPanel(nome, montar) {
+            try { montar(); }
+            catch (erro) {
+                console.error(`Falha ao montar o painel de ${nome}:`, erro);
+                showToast(`Não foi possível carregar ${nome}.`, 'error');
+            }
         }
 
         function managerEmpty(title, message) {
@@ -3210,9 +3439,21 @@
                 <footer class="rotation-ops-footer"><div class="rotation-ops-meta"><span><strong>${view.queue.length}</strong> ativo${view.queue.length === 1 ? '' : 's'}</span><i aria-hidden="true"></i><span><strong>${view.paused.length}</strong> pausado${view.paused.length === 1 ? '' : 's'}</span><i aria-hidden="true"></i><span>Atualizado agora</span></div><div class="rotation-ops-footer-actions"><button class="actuar-btn actuar-btn-primary actuar-btn-sm" type="button" onclick="openManagerPriorityRotation('${team}')">Ver fila completa</button><button class="rotation-ops-history-link" type="button" onclick="openPriorityRotationHistory()">Ver histórico</button></div></footer>`;
         }
 
+        /* Com data, delega ao formato do sistema (ActuarFields.formatMoment): "hoje, 14:32",
+           "ontem, 09:10", "18 ago, 14:32". Trocar aqui alcança de uma vez os onze pontos que
+           mostravam 18/08/2026 14:32. Só a hora continua sendo hora — no rodízio, o que
+           importa é o relógio, não a distância até agora. */
         function formatRotationTime(value, withDate = false) {
             if (!value) return 'Horário não informado';
-            return new Intl.DateTimeFormat('pt-BR', withDate ? { dateStyle: 'short', timeStyle: 'short' } : { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+            if (!withDate) return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+            return window.ActuarFields?.formatMoment
+                ? ActuarFields.formatMoment(value)
+                : new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+        }
+
+        // A precisão exata que o formato relativo dispensa fica no title, ao alcance do mouse.
+        function fullMomentTitle(value) {
+            return window.ActuarFields?.formatFull ? ActuarFields.formatFull(value) : '';
         }
 
         function priorityRotationElapsed(value) {
@@ -3788,6 +4029,11 @@
         const ROUTE_META = {
             overview: { title: 'Visão geral', description: 'Resumo da sua equipe, ciclo, solicitações e pontuação confirmada.' },
             dashboard: { title: 'Dashboard individual', description: 'Acompanhe indicadores, pontuação e solicitações do analista selecionado.' },
+            /* Porta externa. Vive na mesma aplicação, mas fora dela: sem sidebar, sem
+               cabeçalho interno e sem o portão de login. Quem abre o link não é usuário do
+               ActuarClassifique — é alguém do Comercial ou do Administrativo registrando uma
+               situação de cliente. */
+            'portal-prioridades': { title: 'Portal de Prioridades', description: 'Registre uma situação que precisa de análise prioritária da equipe de atendimento.' },
             priorities: { title: 'Prioridades', description: 'Acompanhe o rodízio, registre atendimentos e consulte seus lançamentos.' },
             ranking: { title: 'Ranking geral', description: 'Compare o desempenho das equipes e consulte a classificação consolidada.' },
             envio: { title: 'Envio', description: 'Acompanhe as peças enviadas ao cliente, do despacho à entrega.' },
@@ -3942,11 +4188,27 @@
                 window.history.replaceState({ ...state, actuarRoute: currentRoute, actuarBackRoute: null, actuarDepth: 0 }, '', routeUrl(currentRoute));
             }
 
-            render();
+            /* Desenhar é uma etapa da troca de rota, não a troca inteira. Enquanto render()
+               podia abortar applyRoute, uma tela quebrada impedia a navegação: a seção não
+               trocava, o menu não fechava e nada explicava o porquê. Agora a rota se aplica
+               de qualquer forma — a seção certa aparece, ainda que um painel dela falhe. */
+            try {
+                render();
+            } catch (erro) {
+                console.error('Falha ao desenhar a tela:', erro);
+                showToast('Parte desta tela não pôde ser carregada. Atualize a página se algo estiver faltando.', 'error');
+            }
             if (['dashboard', 'priorities', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'pecas'].includes(currentRoute.name)) {
                 switchPublicTabView(currentRoute.name);
                 if (currentRoute.name === 'priorities') focusPrioritySection(currentRoute.section);
             }
+            /* O portal não convive com o shell: cabeçalho, faixa do menu e barra de páginas
+               somem, e a tela ocupa tudo. Sem isso, quem abre o link externo vê pedaços da
+               plataforma interna que não são dele. */
+            const noPortal = isPortalRoute();
+            document.getElementById('viewPortal')?.classList.toggle('hidden', !noPortal);
+            document.body.classList.toggle('actuar-portal-mode', noPortal);
+            if (noPortal) renderPortal();
             if (currentRoute.name === 'admin' && currentRoute.section) switchAdminTabView(currentRoute.section);
             if (currentRoute.name === 'profile') renderProfileScreen(currentRoute.section);
             updateShell();
@@ -4020,10 +4282,18 @@
             }
         }
 
+        /* Identidade vem da SESSÃO, e de mais lugar nenhum.
+           O `currentActiveUser` é o analista em contexto — o que está selecionado no painel,
+           ou o que o gestor foi consultar. Usá-lo como reserva fazia o cabeçalho anunciar
+           a foto de um analista como se fosse a sua: no boot ele já vale antes de
+           restoreSession() rodar, então o gestor via a cara de outra pessoa até clicar no
+           menu, que redesenhava com a identidade certa.
+           Sem sessão não há identidade: melhor o ícone neutro do que o rosto errado. */
         function getCurrentProfileUserId() {
             if (isAdminLoggedIn && currentAdminId) return currentAdminId;
             if (isPecaLoggedIn && currentPecaUserId) return currentPecaUserId;
-            return currentActiveUser;
+            if (isAnalystLoggedIn && currentActiveUser) return currentActiveUser;
+            return null;
         }
 
         function getCurrentProfileUser() {
@@ -4046,7 +4316,21 @@
 
         function updateProfileUI() {
             const user = getCurrentProfileUser();
-            if (!user) return;
+            /* Sem sessão o cabeçalho volta ao ícone neutro. Antes ele simplesmente mantinha
+               o que estava pintado, então o rosto de quem saiu continuava no lugar. */
+            if (!user) {
+                ['headerProfileAvatar', 'menuProfileAvatar'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerHTML = '<i class="fi fi-rr-user"></i>';
+                });
+                const nomeVazio = document.getElementById('menuProfileName');
+                const idVazio = document.getElementById('menuProfileIdentifier');
+                const papelVazio = document.getElementById('menuProfileRole');
+                if (nomeVazio) nomeVazio.textContent = 'Sem sessão';
+                if (idVazio) idVazio.textContent = 'Entre para acessar o seu perfil';
+                if (papelVazio) papelVazio.textContent = 'Visitante';
+                return;
+            }
             ['headerProfileAvatar', 'menuProfileAvatar'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = profileAvatarMarkup(user);
@@ -4629,6 +4913,7 @@
                 // A auditoria de exclusão viaja junto: chave não declarada aqui é descartada
                 // pelo merge, que parte sempre do dado do servidor.
                 deletedPieceOperations: diffKeyedArray(base.deletedPieceOperations, local.deletedPieceOperations),
+                externalRequests: diffKeyedArray(base.externalRequests, local.externalRequests),
                 priorityRotations: { changed: changedRotations, expectedVersions: expectedRotationVersions },
                 // Jornada por usuário; ponto por dia e usuário; escala por semana e time.
                 workProfiles: diffNestedMap(base.workProfiles, local.workProfiles, 1),
@@ -4668,6 +4953,7 @@
             });
             merged.pieceOperations = applyKeyedArrayDiff(merged.pieceOperations, diff.pieceOperations);
             merged.deletedPieceOperations = applyKeyedArrayDiff(merged.deletedPieceOperations, diff.deletedPieceOperations);
+            merged.externalRequests = applyKeyedArrayDiff(merged.externalRequests, diff.externalRequests);
             merged.priorityRotations ||= {};
             Object.entries(diff.priorityRotations?.changed || {}).forEach(([team, nextRotation]) => {
                 const expected = diff.priorityRotations.expectedVersions[team];
@@ -4747,6 +5033,7 @@
                     transferRequests: [],
                     pieceOperations: [],
                     deletedPieceOperations: [],
+                    externalRequests: [],
                     priorityRotations: {},
                     workProfiles: {},
                     timeClock: {},
@@ -4759,6 +5046,7 @@
                 if (!appStore.transferRequests) appStore.transferRequests = [];
                 appStore.pieceOperations = window.PiecesOperations ? PiecesOperations.bootstrap(appStore, appStore.users || defaultUsers) : (appStore.pieceOperations || []);
                 if (!appStore.deletedPieceOperations) appStore.deletedPieceOperations = [];
+                if (!appStore.externalRequests) appStore.externalRequests = [];
                 if (!appStore.priorityRotations) appStore.priorityRotations = {};
                 // Ponto e pausas: base vazia em store antigo, para o módulo nunca
                 // precisar testar existência antes de ler.
@@ -5213,11 +5501,388 @@
             if (activeAdminTab === 'historico') renderAdminLogs();
         }
 
+        /* ==========================================================================
+           PORTAL DE PRIORIDADES
+           Porta externa para Comercial e Administrativo registrarem uma situação de
+           cliente sem ter conta no ActuarClassifique. O que entra aqui não vira fluxo
+           paralelo: alimenta o mesmo rodízio, com o mesmo briefing que a gestão preenche
+           à mão hoje (demand, clientName, clientId, phone, instructions).
+           ========================================================================== */
+
+        /* PIN provisório, combinado com o time. Fica isolado aqui de propósito: é o único
+           ponto a trocar quando a validação for para o banco, como já acontece com a senha
+           dos usuários (verify_login). Enquanto morar no navegador, qualquer pessoa com o
+           devtools aberto o enxerga — serve para evitar acesso casual, não para autenticar. */
+        const PORTAL_PIN = '1212';
+        const PORTAL_SESSION_KEY = 'actuar-portal-session-v1';
+        const PORTAL_SESSION_HOURS = 12;
+        const PORTAL_TEAMS = ['Sistema', 'Catraca'];
+
+        /* Lista predefinida, em um lugar só. O portal não aceita texto livre no nome: quem
+           registra precisa ser alguém conhecido, ainda que sem conta na plataforma. */
+        const PORTAL_COLLABORATORS = [
+            { id: 'joao_almeida', name: 'João Almeida', department: 'Comercial', role: 'Closer', active: true },
+            { id: 'marina_sdr', name: 'Marina Rocha', department: 'Comercial', role: 'SDR', active: true },
+            { id: 'paulo_fin', name: 'Paulo Meneses', department: 'Financeiro', role: 'Financeiro', active: true },
+            { id: 'clara_adm', name: 'Clara Dias', department: 'Administrativo', role: 'Administrativo', active: true },
+            { id: 'rafael_imp', name: 'Rafael Nunes', department: 'Implantação', role: 'Implantação', active: true }
+        ];
+
+        let portalSession = null;
+        let portalTeam = null;
+        let portalSending = false;
+
+        function isPortalRoute() { return currentRoute?.name === 'portal-prioridades'; }
+        function portalCollaborators() { return PORTAL_COLLABORATORS.filter(item => item.active !== false); }
+        function portalCollaborator(id) { return PORTAL_COLLABORATORS.find(item => item.id === id) || null; }
+
+        function readPortalSession() {
+            try {
+                const salvo = JSON.parse(sessionStorage.getItem(PORTAL_SESSION_KEY) || 'null');
+                if (!salvo || !portalCollaborator(salvo.id)) return null;
+                // Sessão de turno: expira sozinha, para o portal não ficar aberto no dia seguinte.
+                if (Date.now() - Number(salvo.at || 0) > PORTAL_SESSION_HOURS * 3600000) return null;
+                return salvo;
+            } catch (_) { return null; }
+        }
+
+        function writePortalSession(session) {
+            try { sessionStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify(session)); } catch (_) { /* sessão só nesta aba */ }
+        }
+
+        // Protocolo legível, por ano. Nunca o id interno: ele não diz nada a quem recebe.
+        function portalNextProtocol() {
+            const ano = new Date().getFullYear();
+            const daAno = (getStore()?.externalRequests || []).filter(item => String(item.protocol || '').includes(`-${ano}-`));
+            return `PRI-${ano}-${String(daAno.length + 1).padStart(5, '0')}`;
+        }
+
+        function portalShowError(id, mensagem) {
+            const caixa = document.getElementById(id);
+            if (!caixa) return;
+            caixa.textContent = mensagem || '';
+            caixa.hidden = !mensagem;
+        }
+
+        function renderPortal() {
+            if (!isPortalRoute()) return;
+            portalSession = portalSession || readPortalSession();
+            const select = document.getElementById('portalCollaborator');
+            if (select && !select.options.length) {
+                /* Começa vazio de propósito. Sem o botão de acessar, completar o PIN entra na
+                   hora — e com um nome já escolhido por padrão, a pessoa entraria como o
+                   primeiro da lista sem perceber. A identidade tem de ser um ato. */
+                select.innerHTML = '<option value="">Selecione o seu nome</option>'
+                    + portalCollaborators()
+                        .map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} · ${escapeHtml(item.department)}</option>`).join('');
+                // Escolhido o nome, o foco vai para o PIN: o próximo passo sem um clique extra.
+                select.addEventListener('change', () => { if (select.value) portalPinBox(1)?.focus(); });
+            }
+            const identificado = Boolean(portalSession);
+            document.getElementById('portalAccess')?.classList.toggle('hidden', identificado);
+            document.getElementById('portalIdentity')?.classList.toggle('hidden', !identificado);
+            if (identificado) {
+                const pessoa = portalCollaborator(portalSession.id);
+                const nome = document.getElementById('portalIdentityName');
+                if (nome) nome.textContent = `${pessoa.name} · ${pessoa.department}`;
+                const saudacao = document.getElementById('portalGreeting');
+                if (saudacao) saudacao.textContent = `Olá, ${pessoa.name.split(' ')[0]}. Vamos registrar sua solicitação.`;
+                if (document.getElementById('portalSuccess')?.classList.contains('hidden')) {
+                    document.getElementById('portalForm')?.classList.remove('hidden');
+                }
+                if (window.ActuarFields?.bind) ActuarFields.bind(document.getElementById('portalForm'));
+                portalRenderStep();
+            } else {
+                document.getElementById('portalForm')?.classList.add('hidden');
+                document.getElementById('portalSuccess')?.classList.add('hidden');
+            }
+        }
+
+        /* Caixas do PIN. Cada uma aceita um dígito e passa o foco adiante; apagar volta.
+           Colar o código inteiro preenche todas — é como as pessoas realmente recebem um
+           código, e obrigar a digitar dígito a dígito seria atrito inventado. */
+        const PORTAL_PIN_BOXES = 4;
+        function portalPinBox(posicao) { return document.getElementById(`portalPin${posicao}`); }
+        function portalPinValue() {
+            return Array.from({ length: PORTAL_PIN_BOXES }, (_, i) => portalPinBox(i + 1)?.value || '').join('');
+        }
+        function portalPinClear(focar = true) {
+            for (let i = 1; i <= PORTAL_PIN_BOXES; i += 1) { const caixa = portalPinBox(i); if (caixa) caixa.value = ''; }
+            document.querySelector('.actuar-otp')?.classList.remove('is-invalid');
+            if (focar) portalPinBox(1)?.focus();
+        }
+
+        function portalPinInput(posicao) {
+            const caixa = portalPinBox(posicao);
+            if (!caixa) return;
+            // Só dígito entra: letra colada ou digitada por engano não trava a caixa.
+            caixa.value = caixa.value.replace(/\D/g, '').slice(0, 1);
+            portalShowError('portalAccessError', '');
+            document.querySelector('.actuar-otp')?.classList.remove('is-invalid');
+            if (caixa.value && posicao < PORTAL_PIN_BOXES) portalPinBox(posicao + 1)?.focus();
+            if (portalPinValue().length === PORTAL_PIN_BOXES) portalTryEnter();
+        }
+
+        function portalPinKey(event, posicao) {
+            if (event.key === 'Backspace' && !portalPinBox(posicao)?.value && posicao > 1) {
+                event.preventDefault();
+                const anterior = portalPinBox(posicao - 1);
+                if (anterior) { anterior.value = ''; anterior.focus(); }
+                return;
+            }
+            if (event.key === 'ArrowLeft' && posicao > 1) { event.preventDefault(); portalPinBox(posicao - 1)?.focus(); }
+            if (event.key === 'ArrowRight' && posicao < PORTAL_PIN_BOXES) { event.preventDefault(); portalPinBox(posicao + 1)?.focus(); }
+        }
+
+        function portalPinPaste(event) {
+            const texto = (event.clipboardData?.getData('text') || '').replace(/\D/g, '').slice(0, PORTAL_PIN_BOXES);
+            if (!texto) return;
+            event.preventDefault();
+            for (let i = 0; i < PORTAL_PIN_BOXES; i += 1) { const caixa = portalPinBox(i + 1); if (caixa) caixa.value = texto[i] || ''; }
+            portalPinBox(Math.min(texto.length, PORTAL_PIN_BOXES))?.focus();
+            if (texto.length === PORTAL_PIN_BOXES) portalTryEnter();
+        }
+
+        // Completar as quatro caixas já é a intenção de entrar: pedir um clique a mais seria
+        // burocracia. O botão continua ali para quem navega por teclado ou volta atrás.
+        function portalTryEnter() {
+            const form = document.querySelector('.actuar-portal-form');
+            if (form) portalEnter({ preventDefault() {}, target: form });
+        }
+
+        function portalEnter(event) {
+            event.preventDefault();
+            portalShowError('portalAccessError', '');
+            const id = document.getElementById('portalCollaborator')?.value;
+            const pin = portalPinValue();
+            const pessoa = portalCollaborator(id);
+            if (!pessoa) {
+                // Sem nome não há por que julgar o PIN: o que falta é a identidade.
+                portalShowError('portalAccessError', 'Selecione o seu nome na lista antes de informar o PIN.');
+                portalPinClear(false);
+                document.getElementById('portalCollaborator')?.focus();
+                return false;
+            }
+            if (pin.length < PORTAL_PIN_BOXES) { portalShowError('portalAccessError', 'Informe os quatro dígitos do PIN.'); portalPinBox(pin.length + 1)?.focus(); return false; }
+            if (pin !== PORTAL_PIN) {
+                // Mensagem única: dizer o que estava errado ajudaria a descobrir o PIN.
+                portalShowError('portalAccessError', 'PIN incorreto. Confira o código informado e tente novamente.');
+                document.querySelector('.actuar-otp')?.classList.add('is-invalid');
+                portalPinClear();
+                return false;
+            }
+            portalSession = { id: pessoa.id, at: Date.now() };
+            writePortalSession(portalSession);
+            portalPinClear(false);
+            renderPortal();
+            return false;
+        }
+
+        function portalSignOut() {
+            try { sessionStorage.removeItem(PORTAL_SESSION_KEY); } catch (_) { /* nada a limpar */ }
+            portalSession = null;
+            portalTeam = null;
+            document.getElementById('portalSuccess')?.classList.add('hidden');
+            renderPortal();
+        }
+
+        /* Navegação por etapas. Cada passo só libera o seguinte quando o que ele pede está
+           preenchido — o erro aparece perto de onde nasceu, e ninguém chega ao fim para
+           descobrir que faltava algo lá no começo. */
+        let portalStep = 1;
+        const PORTAL_STEPS = 3;
+
+        function portalStepFields(step) {
+            if (step === 1) return ['portalBrand', 'portalClientId', 'portalClientName', 'portalPhone'];
+            if (step === 3) return ['portalNeed'];
+            return [];
+        }
+
+        function portalValidateStep(step) {
+            if (step === 2) {
+                if (!portalTeam) return 'Escolha se o atendimento é de Sistema ou Catraca.';
+                return '';
+            }
+            for (const id of portalStepFields(step)) {
+                const campo = document.getElementById(id);
+                if (!campo || campo.value.trim()) continue;
+                campo.focus();
+                return 'Preencha os campos deste passo para continuar.';
+            }
+            // As regras de formato (ID com duas letras e quatro números, telefone) são do
+            // Design System: não existe validação paralela aqui.
+            const escopo = document.querySelector(`.actuar-portal-step[data-step="${step}"]`);
+            const checagem = window.ActuarFields?.check ? ActuarFields.check(escopo) : { valid: true, errors: [] };
+            return checagem.valid ? '' : checagem.errors[0].message;
+        }
+
+        function portalRenderStep() {
+            document.querySelectorAll('.actuar-portal-step').forEach(secao => {
+                secao.classList.toggle('hidden', Number(secao.dataset.step) !== portalStep);
+            });
+            document.querySelectorAll('.actuar-portal-steps li').forEach(item => {
+                const numero = Number(item.dataset.step);
+                item.classList.toggle('is-current', numero === portalStep);
+                item.classList.toggle('is-done', numero < portalStep);
+            });
+            const ultimo = portalStep === PORTAL_STEPS;
+            document.getElementById('portalBackButton')?.classList.toggle('hidden', portalStep === 1);
+            document.getElementById('portalNextButton')?.classList.toggle('hidden', ultimo);
+            document.getElementById('portalSubmitButton')?.classList.toggle('hidden', !ultimo);
+            /* "Passo 2 de 3" no meio dos botões era ruído: o indicador do topo já diz isso.
+               A nota fica só onde acrescenta — no passo em que a pessoa vai enviar. */
+            document.getElementById('portalStepNote')?.classList.toggle('hidden', !ultimo);
+            if (ultimo) portalRenderRecap();
+            // O foco vai para o começo do passo: quem navega por teclado não recomeça do topo.
+            document.querySelector(`.actuar-portal-step[data-step="${portalStep}"] h3`)?.focus?.();
+        }
+
+        function portalRenderRecap() {
+            const caixa = document.getElementById('portalRecap');
+            if (!caixa) return;
+            const valor = id => document.getElementById(id)?.value?.trim() || '—';
+            const linha = (rotulo, texto, passo) =>
+                `<div><small>${escapeHtml(rotulo)}</small><span>${escapeHtml(texto)}</span><button type="button" onclick="portalJumpStep(${passo})">Editar</button></div>`;
+            caixa.innerHTML = linha('Cliente', `${valor('portalClientId')} · ${valor('portalClientName')}`, 1)
+                + linha('Empresa', valor('portalBrand'), 1)
+                + linha('Contato', valor('portalPhone'), 1)
+                + linha('Destino', portalTeam ? teamLabel(portalTeam) : '—', 2);
+        }
+
+        function portalJumpStep(step) {
+            portalStep = Math.min(Math.max(1, step), PORTAL_STEPS);
+            portalShowError('portalFormError', '');
+            portalRenderStep();
+        }
+
+        function portalGoStep(direcao) {
+            portalShowError('portalFormError', '');
+            if (direcao > 0) {
+                const erro = portalValidateStep(portalStep);
+                if (erro) { portalShowError('portalFormError', erro); return; }
+            }
+            portalJumpStep(portalStep + direcao);
+        }
+
+        function portalPickTeam(team) {
+            if (!PORTAL_TEAMS.includes(team)) return;
+            portalTeam = team;
+            document.querySelectorAll('.actuar-portal-option').forEach(botao => {
+                const ativo = botao.dataset.team === team;
+                botao.classList.toggle('is-active', ativo);
+                botao.setAttribute('aria-checked', String(ativo));
+            });
+            /* Diz de imediato o que vai acontecer com a solicitação. É a diferença entre
+               "escolhi uma opção" e "sei para onde isso vai". */
+            /* Quem registra precisa saber PARA ONDE a solicitação vai, não QUEM vai atender.
+               Nome de analista, posição na fila e estado do rodízio são dados internos: o
+               portal é de fora, e nomear pessoas aqui seria expor a operação a quem só
+               precisa descrever o problema do cliente. */
+            const status = document.getElementById('portalTeamStatus');
+            if (status) status.textContent = `A solicitação será encaminhada para a equipe de ${teamLabel(team)}.`;
+            // Escolher já é decidir: segurar a pessoa num passo de um clique só seria atrito.
+            if (portalStep === 2) setTimeout(() => portalGoStep(1), 260);
+        }
+
+        async function portalSubmit(event) {
+            event.preventDefault();
+            if (portalSending) return false;
+            portalShowError('portalFormError', '');
+            if (!portalSession) { portalShowError('portalFormError', 'Sua sessão expirou. Entre novamente para registrar.'); renderPortal(); return false; }
+
+            const campos = ActuarFields.check(document.getElementById('portalForm'));
+            if (!campos.valid) { portalShowError('portalFormError', campos.errors[0].message); return false; }
+
+            const dados = {
+                brand: document.getElementById('portalBrand').value,
+                clientId: document.getElementById('portalClientId').value.trim().toUpperCase(),
+                clientName: document.getElementById('portalClientName').value.trim(),
+                phone: document.getElementById('portalPhone').value.trim(),
+                need: document.getElementById('portalNeed').value.trim()
+            };
+            if (!portalTeam) { portalShowError('portalFormError', 'Escolha se o atendimento é de Sistema ou Catraca.'); return false; }
+            if (!dados.brand || !dados.clientId || !dados.clientName || !dados.phone || !dados.need) {
+                portalShowError('portalFormError', 'Preencha todos os campos antes de enviar.');
+                return false;
+            }
+
+            const botao = document.getElementById('portalSubmitButton');
+            portalSending = true;
+            botao.disabled = true;
+            botao.innerHTML = '<i class="fi fi-rr-spinner actuar-portal-spin" aria-hidden="true"></i>Enviando solicitação…';
+
+            const pessoa = portalCollaborator(portalSession.id);
+            const protocolo = portalNextProtocol();
+            const registro = {
+                id: uid(),
+                protocol: protocolo,
+                ...dados,
+                team: portalTeam,
+                requesterId: pessoa.id,
+                requesterName: pessoa.name,
+                requesterDepartment: pessoa.department,
+                requesterRole: pessoa.role,
+                status: 'aguardando_triagem',
+                createdAt: Date.now(),
+                events: [{ type: 'created', at: Date.now(), by: pessoa.name, text: 'Solicitação registrada pelo Portal de Prioridades.' }]
+            };
+
+            const anterior = deepClone(getStore().externalRequests || []);
+            try {
+                appStore.externalRequests = [...anterior, registro];
+                const ok = await persistStore();
+                if (!ok) throw new Error(lastPersistError || 'Não foi possível registrar a solicitação.');
+                portalShowSuccess(registro);
+            } catch (erro) {
+                // Nada de protocolo falso nem tela de sucesso: os dados ficam onde estão.
+                appStore.externalRequests = anterior;
+                portalShowError('portalFormError', erro.message || 'Não foi possível enviar a solicitação. Seus dados foram preservados — verifique a conexão e tente novamente.');
+            } finally {
+                portalSending = false;
+                botao.disabled = false;
+                botao.innerHTML = '<i class="fi fi-rr-paper-plane"></i>Enviar solicitação';
+            }
+            return false;
+        }
+
+        function portalShowSuccess(registro) {
+            document.getElementById('portalForm')?.classList.add('hidden');
+            document.getElementById('portalProtocol').textContent = registro.protocol;
+            document.getElementById('portalSuccessStatus').textContent = 'Aguardando triagem';
+            document.getElementById('portalSuccessClient').textContent = `${registro.clientId} · ${registro.clientName}`;
+            document.getElementById('portalSuccessTeam').textContent = teamLabel(registro.team);
+            const painel = document.getElementById('portalSuccess');
+            painel.classList.remove('hidden');
+            // O foco vai para o título: quem usa leitor de tela precisa saber que deu certo.
+            requestAnimationFrame(() => document.getElementById('portalSuccessTitle')?.focus());
+        }
+
+        async function portalCopyProtocol() {
+            const botao = document.getElementById('portalCopyButton');
+            const texto = document.getElementById('portalProtocol')?.textContent || '';
+            try { await navigator.clipboard.writeText(texto); } catch (_) { /* sem permissão: o texto continua visível */ }
+            botao.innerHTML = '<i class="fi fi-rr-check"></i>Protocolo copiado';
+            setTimeout(() => { botao.innerHTML = '<i class="fi fi-rr-copy"></i>Copiar protocolo'; }, 2200);
+        }
+
+        function portalNewRequest() {
+            document.getElementById('portalSuccess')?.classList.add('hidden');
+            document.querySelector('.actuar-portal-request')?.reset();
+            portalTeam = null;
+            document.querySelectorAll('.actuar-portal-option').forEach(botao => { botao.classList.remove('is-active'); botao.setAttribute('aria-checked', 'false'); });
+            const status = document.getElementById('portalTeamStatus');
+            if (status) status.textContent = '';
+            portalShowError('portalFormError', '');
+            portalJumpStep(1);
+            renderPortal();
+        }
+
         function hasAnySession() { return isAnalystLoggedIn || isAdminLoggedIn || isPecaLoggedIn; }
         function syncLoginGate() {
             const gate = document.getElementById('loginGate');
             if (!gate) return;
-            const locked = !hasAnySession();
+            // O portal externo é público por desenho: exigir sessão ali negaria a própria razão dele.
+            const locked = !hasAnySession() && !isPortalRoute();
             gate.classList.toggle('hidden', !locked);
             document.body.classList.toggle('actuar-locked', locked);
         }
@@ -5494,6 +6159,16 @@
 
         function render() {
             syncLoginGate();
+            /* Porta externa: a aplicação interna não é montada. Esconder por CSS não bastaria
+               — ranking, dashboards e nomes de analistas continuariam no DOM, visíveis no
+               código-fonte da página para quem tem só o link do portal. */
+            if (isPortalRoute()) {
+                ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin', 'viewProfile', 'viewPlatform']
+                    .forEach(id => document.getElementById(id)?.classList.add('hidden'));
+                document.getElementById('globalNavBody')?.replaceChildren();
+                renderPortal();
+                return;
+            }
             syncAccessControls();
             // Antes dos painéis: eles preenchem os contadores do menu logo em seguida.
             renderGlobalNav();
@@ -5547,12 +6222,15 @@
                 syncManagerSectionViews();
                 if (analistaNaGestao) renderAnalystDashboard(user, usersList, metrics);
                 document.getElementById('loggedAdminName').innerText = getCurrentManager()?.name || "Gestor";
-                renderAdminLogs();
-                renderUsersManagementTable();
-                renderAdminPriorityRequests();
-                renderAdminTransferRequests();
-                renderManagerExperience();
-                if (activeAdminTab === 'pecas') renderPiecesExperience();
+                /* Cada painel monta por sua conta. Antes, um erro em qualquer um deles abortava
+                   o render() inteiro no meio: os painéis seguintes nunca eram desenhados, a
+                   troca de seção não acontecia e a falha não aparecia em lugar nenhum. */
+                renderManagerPanel('histórico', renderAdminLogs);
+                renderManagerPanel('pessoas e acessos', renderUsersManagementTable);
+                renderManagerPanel('aprovações de prioridade', renderAdminPriorityRequests);
+                renderManagerPanel('transferências', renderAdminTransferRequests);
+                renderManagerPanel('experiência gerencial', renderManagerExperience);
+                if (activeAdminTab === 'pecas') renderManagerPanel('peças', renderPiecesExperience);
                 window.updatePiecesPendingBadge?.();
             } else if (currentRoute.name === 'pecas') {
                 document.getElementById('viewAgent').classList.add('hidden');
@@ -6242,7 +6920,7 @@
             DELETED: { label: 'Excluído', tone: 'text-red-300', row: 'bg-red-500/10' }
         };
 
-        let historyFilters = { search: '', userId: 'Todos', type: 'Todos', from: '', to: '' };
+        let historyFilters = { search: '', userId: 'Todos', type: 'Todos', period: 'all', from: '', to: '' };
 
         function historyRows() {
             const store = getStore();
@@ -6290,10 +6968,30 @@
             return rows.sort((a, b) => b.timestamp - a.timestamp);
         }
 
+        /* Traduz o período escolhido em um intervalo. O dia é fechado nas duas pontas: com
+           'De' e 'Até' no mesmo dia, um corte à meia-noite devolveria lista vazia. */
+        function historyRange(filtros = historyFilters, agora = new Date()) {
+            const inicioDoDia = data => new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
+            const fimDoDia = data => inicioDoDia(data) + 86400000 - 1;
+            if (filtros.period === 'today') return { de: inicioDoDia(agora), ate: fimDoDia(agora) };
+            if (filtros.period === '7' || filtros.period === '30') {
+                const dias = Number(filtros.period);
+                // "Últimos 7 dias" inclui hoje: são 7 dias de calendário, não 7 × 24h para trás.
+                return { de: inicioDoDia(agora) - (dias - 1) * 86400000, ate: fimDoDia(agora) };
+            }
+            if (filtros.period === 'month') return { de: new Date(agora.getFullYear(), agora.getMonth(), 1).getTime(), ate: fimDoDia(agora) };
+            if (filtros.period === 'custom') {
+                return {
+                    de: filtros.from ? new Date(`${filtros.from}T00:00:00`).getTime() : null,
+                    ate: filtros.to ? new Date(`${filtros.to}T23:59:59`).getTime() : null
+                };
+            }
+            return { de: null, ate: null };
+        }
+
         function filteredHistoryRows() {
             const termo = historyFilters.search.trim().toLowerCase();
-            const de = historyFilters.from ? new Date(`${historyFilters.from}T00:00:00`).getTime() : null;
-            const ate = historyFilters.to ? new Date(`${historyFilters.to}T23:59:59`).getTime() : null;
+            const { de, ate } = historyRange();
             return historyRows().filter(row => {
                 if (historyFilters.type !== 'Todos' && row.type !== historyFilters.type) return false;
                 if (historyFilters.userId !== 'Todos' && row.userId !== historyFilters.userId) return false;
@@ -6309,16 +7007,22 @@
                 search: document.getElementById('admHistorySearch')?.value || '',
                 userId: document.getElementById('admHistoryUser')?.value || 'Todos',
                 type: document.getElementById('admHistoryType')?.value || 'Todos',
+                period: document.getElementById('admHistoryPeriod')?.value || 'all',
                 from: document.getElementById('admHistoryFrom')?.value || '',
                 to: document.getElementById('admHistoryTo')?.value || ''
             };
+            // O intervalo exato só ocupa espaço quando é pedido.
+            document.getElementById('admHistoryCustomRange')?.classList.toggle('hidden', historyFilters.period !== 'custom');
             renderAdminLogs();
         }
 
         function clearHistoryFilters() {
-            historyFilters = { search: '', userId: 'Todos', type: 'Todos', from: '', to: '' };
+            historyFilters = { search: '', userId: 'Todos', type: 'Todos', period: 'all', from: '', to: '' };
             ['admHistorySearch', 'admHistoryFrom', 'admHistoryTo'].forEach(id => { const campo = document.getElementById(id); if (campo) campo.value = ''; });
             ['admHistoryUser', 'admHistoryType'].forEach(id => { const campo = document.getElementById(id); if (campo) campo.value = 'Todos'; });
+            const periodo = document.getElementById('admHistoryPeriod');
+            if (periodo) periodo.value = 'all';
+            document.getElementById('admHistoryCustomRange')?.classList.add('hidden');
             renderAdminLogs();
         }
 
@@ -6343,23 +7047,45 @@
 
             const resumo = document.getElementById('admHistorySummary');
             if (resumo) {
-                const saldo = linhas.reduce((soma, row) => soma + row.points, 0);
-                resumo.textContent = linhas.length === total
-                    ? `${total} registro(s) · saldo de ${saldo} ponto(s).`
-                    : `${linhas.length} de ${total} registro(s) · saldo de ${saldo} ponto(s) no recorte.`;
+                /* Créditos e estornos separados, não só o saldo: um saldo de +40 pode ser
+                   +40 limpo ou +90 com −50 de estorno no meio, e a diferença importa numa
+                   tela de auditoria. */
+                const creditos = linhas.filter(row => row.points > 0).reduce((soma, row) => soma + row.points, 0);
+                const estornos = linhas.filter(row => row.points < 0).reduce((soma, row) => soma + row.points, 0);
+                const marcas = linhas.map(row => row.timestamp).filter(Boolean);
+                const intervalo = marcas.length
+                    ? (Math.max(...marcas) === Math.min(...marcas)
+                        ? ActuarFields.formatDay(Math.max(...marcas))
+                        : `${ActuarFields.formatDay(Math.min(...marcas))} — ${ActuarFields.formatDay(Math.max(...marcas))}`)
+                    : 'sem período';
+                const card = (rotulo, valor, detalhe, tom = '') =>
+                    `<article class="history-stat${tom}"><small>${escapeHtml(rotulo)}</small><strong>${escapeHtml(valor)}</strong><span>${escapeHtml(detalhe)}</span></article>`;
+                resumo.innerHTML = card('Registros', String(linhas.length), linhas.length === total ? 'todo o histórico' : `de ${total} no total`)
+                    + card('Saldo do recorte', `${creditos + estornos > 0 ? '+' : ''}${creditos + estornos}`, 'pontos', ' is-total')
+                    + card('Créditos', `+${creditos}`, 'somados', ' is-credit')
+                    + card('Estornos', String(estornos), estornos ? 'retirados' : 'nenhum', estornos ? ' is-debit' : '')
+                    + card('Período', intervalo, 'coberto pelo recorte');
+            }
+
+            // O rótulo do intervalo exato conta em palavras o que os dois campos dizem em números.
+            const rotuloIntervalo = document.getElementById('admHistoryRangeLabel');
+            if (rotuloIntervalo) {
+                const { de, ate } = historyRange();
+                rotuloIntervalo.textContent = de || ate
+                    ? `Mostrando ${de ? ActuarFields.formatDay(de) : 'o início'} até ${ate ? ActuarFields.formatDay(ate) : 'hoje'}.`
+                    : 'Escolha as duas pontas do intervalo.';
             }
 
             const html = linhas.map(row => {
                 const meta = HISTORY_TYPES[row.type] || { label: row.type, tone: 'text-secondary' };
-                const quando = row.timestamp
-                    ? `${new Date(row.timestamp).toLocaleDateString('pt-BR')} ${new Date(row.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
-                    : '—';
+                // Formato do sistema: relativo enquanto é recente, data quando envelhece.
+                const quando = row.timestamp ? ActuarFields.formatMoment(row.timestamp) : '—';
                 const acao = row.removable && isCurrentMonth
                     ? `<button onclick="deleteLog('${escapeHtml(row.id)}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>`
                     : `<span class="text-[10px] text-secondary">${escapeHtml(row.removable ? 'Mês fechado' : row.note || 'Registro preservado')}</span>`;
                 return `
                     <tr class="${meta.row || ''}">
-                        <td class="p-3 text-secondary whitespace-nowrap">${escapeHtml(quando)}</td>
+                        <td class="p-3 text-secondary whitespace-nowrap" title="${escapeHtml(fullMomentTitle(row.timestamp))}">${escapeHtml(quando)}</td>
                         <td class="p-3 font-semibold text-white">${row.userId ? `<button onclick="openManagerAnalyst('${escapeHtml(row.userId)}','historico')">${escapeHtml(row.userName)}</button>` : escapeHtml(row.userName)}</td>
                         <td class="p-3 font-bold ${meta.tone}">${escapeHtml(meta.label)}</td>
                         <td class="p-3">${row.detail}</td>
@@ -6938,7 +7664,14 @@
         }
 
         function toggleNavGroup(id) {
-            globalNavManualGroup = globalNavManualGroup === id ? null : id;
+            /* Compara com o que está aberto de fato, não com o último clique: o grupo da rota
+               abre sozinho, sem passar por aqui. Sem isso, o primeiro clique no grupo em que
+               você já está não fechava nada. O '' é o fechamento explícito — `null` deixaria a
+               rota reabrir o grupo no mesmo instante. */
+            const abertoAgora = window.ActuarNavigation
+                ? ActuarNavigation.expandedFor(currentNavTree(), currentRoute, globalNavManualGroup)
+                : globalNavManualGroup;
+            globalNavManualGroup = abertoAgora === id ? '' : id;
             renderGlobalNav();
             // Depois de redesenhar, o foco volta para o mesmo cabeçalho de grupo.
             document.querySelector(`[aria-controls="navGroup_${id}"]`)?.focus();
@@ -6948,9 +7681,18 @@
             // O grupo aberto passa a ser o da rota nova; expansões abertas "só para
             // espiar" não ficam guardadas e acumulando.
             globalNavManualGroup = null;
-            navigateTo(section ? { name, section } : { name });
-            // Menu temporário: some depois da escolha. Expandir um grupo não fecha.
-            closeGlobalNav();
+            try {
+                navigateTo(section ? { name, section } : { name });
+            } catch (erro) {
+                /* Uma tela que quebra ao montar não pode prender a navegação inteira: antes,
+                   o erro subia por aqui e o closeGlobalNav() da linha seguinte nunca rodava —
+                   a tela não trocava E o menu ficava aberto, sem nenhum aviso. */
+                console.error('Falha ao abrir a seção:', erro);
+                showToast('Não foi possível abrir esta seção. Atualize a página e tente novamente.', 'error');
+            } finally {
+                // Menu temporário: some depois da escolha, dando certo ou não.
+                closeGlobalNav();
+            }
             return false;
         }
 
@@ -8971,19 +9713,21 @@
                 : 'Busque por protocolo, ID ou nome do cliente.';
             let html = "";
             requests.forEach(r => {
-                const badge = r.status === "aprovado"
-                    ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check me-1"></i>Aprovado (+50 pts)</span>`
-                    : r.status === "ajuste_solicitado"
-                        ? `<span class="text-amber-400 font-bold"><i class="fi fi-rr-edit me-1"></i>Precisa de ajuste</span><div class="text-[10px] text-amber-300 mt-1">Este lançamento precisa de ajustes antes de ser revisado novamente.${r.adjustmentReason ? ` ${escapeHtml(r.adjustmentReason)}` : ''}</div>`
-                    : r.status === "reprovado"
-                        ? `<span class="text-red-400 font-bold"><i class="fa-solid fa-circle-xmark me-1"></i>Reprovado</span>` +
-                          (r.rejectReason ? `<div class="text-[10px] text-red-300 mt-1"><i class="fa-solid fa-comment-dots me-1"></i>Motivo da gestão: ${escapeHtml(r.rejectReason)}</div>` : '')
-                        : `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock me-1"></i>Pendente</span>`;
+                /* As cores saíram das classes cruas do Tailwind para os tokens do Design
+                   System, via a mesma tag da gestão: o mesmo estado passa a ter o mesmo nome
+                   e a mesma cor nas duas telas. O motivo vira bloco recuado em vez de texto
+                   colorido solto embaixo da etiqueta. */
+                const motivo = r.status === 'ajuste_solicitado'
+                    ? `<small class="priority-reason priority-reason--primary">Ajuste antes de voltar para revisão.${r.adjustmentReason ? ` ${escapeHtml(r.adjustmentReason)}` : ''}</small>`
+                    : r.status === 'reprovado' && r.rejectReason
+                        ? `<small class="priority-reason priority-reason--danger">Motivo da gestão: ${escapeHtml(r.rejectReason)}</small>`
+                        : '';
                 html += `
-                    <tr>
+                    <tr class="${priorityRowClass(r.status)}">
                         <td class="p-2 font-semibold text-white">${escapeHtml(r.protocolo)}${r.clientId || r.clientName ? `<small class="priority-client-line">${escapeHtml([r.clientId, r.clientName].filter(Boolean).join(' · '))}</small>` : ''}</td>
                         <td class="p-2">${escapeHtml(r.justificativa)}</td>
-                        <td class="p-2">${badge}</td>
+                        <td class="p-2"><span class="priority-status-cell">${priorityStatusTag(r.status, { waiting: true })}${motivo}</span></td>
+                        <td class="p-2 num-col">${priorityPointsCell(priorityGrantedPoints(r))}</td>
                         <td class="p-2">${r.status === 'ajuste_solicitado' ? `<button class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="openEditPriorityModal('${r.id}')">Corrigir lançamento</button>` : `<button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openPriorityApprovalReview('${r.id}',true)">Ver ficha completa</button>`}</td>
                     </tr>
                 `;
@@ -8991,7 +9735,7 @@
             const empty = analystPriorityQuery.trim()
                 ? ['Nada encontrado para esta busca', `Nenhum atendimento seu combina com "${escapeHtml(analystPriorityQuery.trim())}". Confira o protocolo ou o ID do cliente.`]
                 : analystPriorityStatus === 'aprovado' ? ['Nenhum atendimento aprovado no período', 'Os atendimentos avaliados como aprovados aparecerão aqui.'] : ['Nenhum atendimento encontrado', 'Não existem atendimentos concluídos neste rodízio para o filtro selecionado.'];
-            tbody.innerHTML = html || `<tr><td colspan="4"><div class="actuar-empty-state"><i class="fi fi-rr-calendar-cross"></i><strong>${empty[0]}</strong><p>${empty[1]}</p></div></td></tr>`;
+            tbody.innerHTML = html || `<tr><td colspan="5"><div class="actuar-empty-state"><i class="fi fi-rr-calendar-cross"></i><strong>${empty[0]}</strong><p>${empty[1]}</p></div></td></tr>`;
         }
 
         function renderAdminPriorityRequests() {
@@ -9098,7 +9842,7 @@
             document.getElementById('priorityApprovalReviewSubtitle').textContent = `${teamLabel(record.team)} · ${new Date(record.startedAt).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}`;
             document.getElementById('priorityApprovalReviewBody').innerHTML = `<section class="priority-detail-identity"><div>${priorityRotationAvatar(user)}<span><small>Analista</small><strong>${escapeHtml(user?.name || '—')}</strong><p>${teamLabel(record.team)}</p></span></div><dl><div><dt>Data e período</dt><dd>${priorityAttendanceDateRange(record)}</dd></div><div><dt>Posição no rodízio</dt><dd>${record.position ? `${record.position}ª posição` : 'Não registrada'}</dd></div><div><dt>Origem</dt><dd>${record.origin}</dd></div><div><dt>Situação final</dt><dd>${priorityStatusLabel(request.status)}</dd></div></dl></section><section class="priority-detail-request"><header><div><small>Prioridade registrada</small><h3>Protocolo ${escapeHtml(request.protocolo)}</h3></div><span>${formatRotationTime(request.timestamp,true)}</span></header>${briefing.clientName ? `<dl><div><dt>Cliente</dt><dd>${escapeHtml(briefing.clientName)}</dd></div><div><dt>Registro relacionado</dt><dd>${escapeHtml(briefing.clientId || '—')}</dd></div><div><dt>Contato</dt><dd>${escapeHtml(briefing.phone || '—')}</dd></div><div><dt>Tipo</dt><dd>Prioridade de atendimento</dd></div></dl><div><small>Descrição da demanda</small><p>${escapeHtml(briefing.demand || '—')}</p></div><div><small>Instruções recebidas</small><p>${escapeHtml(briefing.instructions || '—')}</p></div>` : ''}<div class="priority-analyst-justification"><small>Justificativa do analista</small><blockquote>${escapeHtml(request.justificativa || '—')}</blockquote></div><div class="priority-evidence-empty"><i class="fi fi-rr-clip"></i><span><strong>Evidências e anexos</strong><small>Nenhum anexo foi registrado neste lançamento.</small></span></div></section>${renderPriorityEvaluationBlock(request)}<section class="priority-operation-explanation"><small>Relação com o rodízio</small><p>${escapeHtml(operationSummary)}</p></section>${renderPriorityAudit(request,record)}${managerAllowed && !readOnly && request.status === 'pendente' ? '<div class="actuar-field priority-review-note"><label for="priorityReviewObservation">Texto de fechamento da gestão</label><textarea id="priorityReviewObservation" rows="4" placeholder="Obrigatório para devolver ou reprovar; recomendado ao aprovar"></textarea></div>' : ''}`;
             let actions = `<button class="actuar-btn actuar-btn-secondary" onclick="closePriorityApprovalReview()">Voltar</button>`;
-            if (managerAllowed && !readOnly && request.status === 'pendente') actions += `<button class="actuar-btn actuar-btn-secondary" onclick="decidePriorityReview('adjustment')">Devolver para ajuste</button><button class="actuar-btn actuar-btn-danger" onclick="decidePriorityReview('reject')">Reprovar</button><button class="actuar-btn actuar-btn-primary" onclick="decidePriorityReview('approve')">Aprovar prioridade</button>`;
+            if (managerAllowed && !readOnly && request.status === 'pendente') actions += `<button class="actuar-btn actuar-btn-secondary" onclick="decidePriorityReview('adjustment')">Devolver para ajuste</button><button class="actuar-btn actuar-btn-danger" onclick="decidePriorityReview('reject')">Reprovar</button><button class="actuar-btn actuar-btn-success" onclick="decidePriorityReview('approve')">Aprovar prioridade</button>`;
             else if (managerAllowed && ['aprovado','reprovado'].includes(request.status)) actions += `<button class="actuar-btn actuar-btn-secondary" onclick="openPriorityComplementModal('${request.id}')">Complementar parecer</button>${canReviewPriorityDecision() ? `<button class="actuar-btn actuar-btn-primary" onclick="openPriorityDecisionReviewModal('${request.id}')">Revisar decisão</button>` : ''}`;
             document.getElementById('priorityApprovalReviewFooter').innerHTML = `<div class="priority-review-actions">${actions}</div>`;
             document.getElementById('priorityApprovalReviewDrawer').classList.remove('hidden');
@@ -9456,75 +10200,140 @@
             const requests = (store.transferRequests || []).filter(r => r.userId === currentActiveUser).slice().reverse();
             let html = "";
             requests.forEach(r => {
-                const badge = r.status === "aprovado"
-                    ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check me-1"></i>Aprovado (+1 pt)</span>`
-                    : r.status === "reprovado"
-                        ? `<span class="text-red-400 font-bold"><i class="fa-solid fa-circle-xmark me-1"></i>Reprovado</span>` +
-                          (r.rejectReason ? `<div class="text-[10px] text-red-300 mt-1"><i class="fa-solid fa-comment-dots me-1"></i>Motivo da gestão: ${r.rejectReason}</div>` : '')
-                        : `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock me-1"></i>Pendente</span>`;
+                /* A mesma tag da aprovação: o analista vê o estado com o nome e a cor que a
+                   gestão usa. Também fecha um escape que faltava — protocolo, justificativa e
+                   motivo entravam crus no template. */
                 html += `
-                    <tr>
-                        <td class="p-2 font-semibold text-white">${r.protocolo}</td>
-                        <td class="p-2">${r.justificativa}</td>
-                        <td class="p-2">${badge}</td>
+                    <tr class="${priorityRowClass(r.status)}">
+                        <td class="p-2 text-secondary whitespace-nowrap">${escapeHtml(formatRotationTime(r.timestamp, true))}</td>
+                        <td class="p-2 font-semibold text-white">${escapeHtml(r.protocolo)}</td>
+                        <td class="p-2">${escapeHtml(r.justificativa)}</td>
+                        <td class="p-2"><span class="priority-status-cell">${priorityStatusTag(r.status, { waiting: true })}${r.status === 'reprovado' && r.rejectReason ? `<small class="priority-reason priority-reason--danger">Motivo da gestão: ${escapeHtml(r.rejectReason)}</small>` : ''}</span></td>
+                        <td class="p-2 num-col">${priorityPointsCell(r.status === 'aprovado' ? 1 : 0)}</td>
                     </tr>
                 `;
             });
-            tbody.innerHTML = html || `<tr><td colspan="3" class="p-3 text-center text-secondary">Nenhuma transferência enviada ainda.</td></tr>`;
+            tbody.innerHTML = html || `<tr><td colspan="5" class="p-3 text-center text-secondary">Nenhuma transferência enviada ainda.</td></tr>`;
+        }
+
+        /* Aprovação de Transferências: mesma régua da Aprovação de Prioridades — recorte por
+           status, por analista, busca e SLA — para a gestão não precisar aprender duas telas
+           que decidem a mesma coisa. As tags vêm do domínio, então "pendente" tem o mesmo nome
+           e a mesma cor nas duas aprovações; antes eram classes cruas do Tailwind com tom próprio. */
+        function transferApprovalRows() {
+            const store = getStore();
+            const usersList = store?.users || defaultUsers;
+            const status = document.getElementById('transferApprovalStatus')?.value || 'Todos';
+            const analista = document.getElementById('transferApprovalAnalyst')?.value || 'Todos';
+            const busca = document.getElementById('transferApprovalSearch')?.value || '';
+            const soAtrasadas = document.getElementById('transferApprovalSla')?.checked;
+
+            const visiveis = (store?.transferRequests || []).filter(request => {
+                const user = usersList[request.userId];
+                return user && canManagerViewAnalyst(request.userId);
+            });
+
+            const recortadas = visiveis.filter(request => {
+                if (status !== 'Todos' && request.status !== status) return false;
+                if (analista !== 'Todos' && request.userId !== analista) return false;
+                // O SLA só faz sentido em quem ainda espera decisão.
+                if (soAtrasadas && !(request.status === 'pendente' && Date.now() - Number(request.timestamp || 0) >= 86400000)) return false;
+                return true;
+            });
+
+            // A mesma normalização da busca de prioridades: ignora acento, caixa e pontuação.
+            const filtradas = window.PriorityRotation?.filterBySearch
+                ? PriorityRotation.filterBySearch(recortadas, busca, request => ({ analystName: usersList[request.userId]?.name, justificativa: request.justificativa }))
+                : recortadas;
+
+            /* Quem espera decisão vem primeiro: a fila existe para ser resolvida, e ordenar
+               só por data enterrava um pendente antigo no meio de dezenas de já decididas.
+               Dentro de "aguardando", o mais antigo lidera — é quem espera há mais tempo.
+               Nas já decididas, a mais recente lidera, porque ali a consulta é do que acabou
+               de acontecer. */
+            const ordemStatus = { pendente: 0, aprovado: 1, reprovado: 2 };
+            const posicao = request => (ordemStatus[request.status] ?? 3);
+            return {
+                visiveis,
+                linhas: filtradas.slice().sort((a, b) => posicao(a) - posicao(b)
+                    || (a.status === 'pendente' ? a.timestamp - b.timestamp : b.timestamp - a.timestamp))
+            };
+        }
+
+        function populateTransferAnalystFilter() {
+            const select = document.getElementById('transferApprovalAnalyst');
+            if (!select) return;
+            const usersList = getStore()?.users || defaultUsers;
+            // Só quem tem transferência registrada: filtrar por alguém sem nenhuma devolveria
+            // sempre lista vazia.
+            const presentes = [...new Set(transferApprovalRows().visiveis.map(request => request.userId))]
+                .map(id => ({ id, name: usersList[id]?.name || id }))
+                .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+            const atual = select.value || 'Todos';
+            select.innerHTML = `<option value="Todos">Todos</option>${presentes.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}`;
+            select.value = presentes.some(item => item.id === atual) ? atual : 'Todos';
+        }
+
+        function renderTransferApprovalSummary(visiveis) {
+            const alvo = document.getElementById('transferApprovalSummary');
+            if (!alvo) return;
+            const contagem = { pendente: 0, aprovado: 0, reprovado: 0 };
+            visiveis.forEach(request => { if (contagem[request.status] !== undefined) contagem[request.status] += 1; });
+            const atalho = (status, rotulo) => `<button onclick="setTransferApprovalStatus('${status}')"><small>${rotulo}</small><strong>${contagem[status]}</strong></button>`;
+            alvo.innerHTML = atalho('pendente', 'Pendentes') + atalho('aprovado', 'Aprovadas') + atalho('reprovado', 'Reprovadas');
+        }
+
+        function setTransferApprovalStatus(status) {
+            const select = document.getElementById('transferApprovalStatus');
+            if (select) select.value = status;
+            renderAdminTransferRequests();
         }
 
         function renderAdminTransferRequests() {
             const tbody = document.getElementById('admTransferRequestsTable');
             if (!tbody) return;
-            const store = getStore();
-            const usersList = store.users || defaultUsers;
-            const requests = (store.transferRequests || []).slice().reverse();
-            let html = "";
-            let pendingCount = 0;
+            populateTransferAnalystFilter();
+            const usersList = getStore()?.users || defaultUsers;
+            const { visiveis, linhas } = transferApprovalRows();
+            renderTransferApprovalSummary(visiveis);
 
-            requests.forEach(r => {
-                const user = usersList[r.userId];
-                if (!user || !canManagerViewAnalyst(r.userId)) return;
-                const d = new Date(r.timestamp).toLocaleDateString("pt-BR");
-                let statusCell = "";
-                let actionsCell = "";
-                if (r.status === "pendente") {
-                    pendingCount++;
-                    statusCell = `<span class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">Pendente</span>`;
-                    actionsCell = `
-                        <button onclick="approveTransferRequest('${r.id}')" class="text-emerald-400 hover:text-emerald-300 text-xs font-semibold mr-3"><i class="fa-solid fa-check me-1"></i>Aprovar</button>
-                        <button onclick="rejectTransferRequest('${r.id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-xmark me-1"></i>Reprovar</button>
-                    `;
-                } else if (r.status === "aprovado") {
-                    statusCell = `<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Aprovado</span>`;
-                    actionsCell = `<span class="text-[10px] text-secondary">+1 pt creditado</span>`;
-                } else {
-                    statusCell = `<span class="text-[10px] bg-red-500/10 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold">Reprovado</span>`;
-                    actionsCell = r.rejectReason
-                        ? `<span class="text-[10px] text-secondary" title="${r.rejectReason}">Motivo: ${r.rejectReason.length > 30 ? r.rejectReason.slice(0, 30) + '...' : r.rejectReason}</span>`
-                        : `<span class="text-[10px] text-secondary">Sem pontuação</span>`;
-                }
+            const busca = document.getElementById('transferApprovalSearch')?.value || '';
+            const contador = document.getElementById('transferApprovalCount');
+            if (contador) {
+                contador.textContent = linhas.length === visiveis.length
+                    ? `${visiveis.length} transferência(s) registrada(s).`
+                    : `${linhas.length} de ${visiveis.length} transferência(s) neste recorte.`;
+            }
 
-                html += `
-                    <tr>
-                        <td class="p-3 text-secondary">${d}</td>
-                        <td class="p-3 font-semibold text-white"><button onclick="openManagerAnalyst('${r.userId}','transferencias')">${escapeHtml(user.name)}</button></td>
-                        <td class="p-3">${r.protocolo}</td>
-                        <td class="p-3">${r.justificativa}</td>
-                        <td class="p-3 text-center">${statusCell}</td>
-                        <td class="p-3 text-right whitespace-nowrap">${actionsCell}</td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = html || `<tr><td colspan="6" class="p-4 text-center text-secondary">Nenhum protocolo de transferência enviado.</td></tr>`;
+            tbody.innerHTML = linhas.map(request => {
+                const user = usersList[request.userId];
+                const atrasada = request.status === 'pendente' && Date.now() - Number(request.timestamp || 0) >= 86400000;
+                const acoes = request.status === 'pendente'
+                    ? `<span class="actuar-inline-actions"><button class="actuar-btn actuar-btn-danger actuar-btn-sm" onclick="rejectTransferRequest('${request.id}')"><i class="fi fi-rr-cross-circle"></i>Reprovar</button><button class="actuar-btn actuar-btn-success actuar-btn-sm" onclick="approveTransferRequest('${request.id}')"><i class="fi fi-rr-check"></i>Aprovar</button></span>`
+                    : request.status === 'aprovado'
+                        ? `<span class="text-[10px] text-secondary">+1 pt creditado${request.resolvedBy && usersList[request.resolvedBy] ? ` por ${escapeHtml(usersList[request.resolvedBy].name)}` : ''}</span>`
+                        : `<span class="text-[10px] text-secondary">Sem pontuação${request.resolvedBy && usersList[request.resolvedBy] ? ` · ${escapeHtml(usersList[request.resolvedBy].name)}` : ''}</span>`;
+                return `
+                    <tr class="${priorityRowClass(request.status)}">
+                        <td class="p-3 text-secondary whitespace-nowrap">${escapeHtml(formatRotationTime(request.timestamp, true))}${atrasada ? '<small class="priority-late-note">Aguardando há mais de 24h</small>' : ''}</td>
+                        <td class="p-3 font-semibold text-white"><button onclick="openManagerAnalyst('${escapeHtml(request.userId)}','transferencias')">${escapeHtml(user?.name || '—')}</button></td>
+                        <td class="p-3"><strong>${escapeHtml(request.protocolo)}</strong></td>
+                        <td class="p-3">${escapeHtml(request.justificativa)}</td>
+                        <td class="p-3 text-center"><span class="priority-status-cell">${priorityStatusTag(request.status, { waiting: true })}${request.status === 'reprovado' && request.rejectReason ? `<small class="priority-reason priority-reason--danger">Motivo da gestão: ${escapeHtml(request.rejectReason)}</small>` : ''}</span></td>
+                        <td class="p-3 text-right whitespace-nowrap">${acoes}</td>
+                    </tr>`;
+            }).join('') || `<tr><td colspan="6">${managerEmpty(
+                busca.trim() ? 'Nada encontrado para esta busca' : 'Nenhuma transferência neste recorte',
+                busca.trim() ? `Nenhuma transferência combina com "${escapeHtml(busca.trim())}" nos filtros atuais.` : 'Ajuste os filtros ou aguarde novos envios dos analistas.'
+            )}</td></tr>`;
 
             const badge = document.getElementById('admTransferPendingBadge');
-            if (pendingCount > 0) {
-                badge.classList.remove('hidden');
-                badge.innerText = pendingCount;
-            } else {
-                badge.classList.add('hidden');
+            if (badge) {
+                // O contador do menu segue o total pendente do escopo, não o recorte da tela:
+                // filtrar por "aprovadas" não pode zerar o aviso de que há coisa esperando.
+                const pendentes = visiveis.filter(request => request.status === 'pendente').length;
+                badge.classList.toggle('hidden', pendentes === 0);
+                badge.innerText = pendentes;
             }
         }
 

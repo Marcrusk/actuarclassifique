@@ -696,7 +696,11 @@ test('sem sessão a aplicação fica no portão de acesso', () => {
     // O portão cobre a aplicação enquanto ninguém estiver autenticado.
     assert.match(html, /id="loginGate"/);
     assert.match(html, /function hasAnySession\(\) \{ return isAnalystLoggedIn \|\| isAdminLoggedIn \|\| isPecaLoggedIn; \}/);
-    assert.match(html, /const locked = !hasAnySession\(\);/);
+    /* O portal externo é a única exceção, e é estreita: quem abre #/portal-prioridades não
+       tem conta no ActuarClassifique, então exigir sessão ali negaria a razão dele existir.
+       Qualquer outra rota continua trancada. */
+    assert.match(html, /const locked = !hasAnySession\(\) && !isPortalRoute\(\);/);
+    assert.match(html, /function isPortalRoute\(\) \{ return currentRoute\?\.name === 'portal-prioridades'; \}/);
     assert.match(html, /gate\.classList\.toggle\('hidden', !locked\);/);
     // Reavaliado a cada render, então qualquer logout cai no portão.
     assert.match(html, /function render\(\) \{\s*\n\s*syncLoginGate\(\);/);

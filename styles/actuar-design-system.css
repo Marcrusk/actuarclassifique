@@ -428,7 +428,15 @@ body.actuar-app .actuar-filter-select select:hover { border-color: var(--actuar-
 .actuar-btn-secondary:hover { background: var(--actuar-surface-muted); }
 .actuar-btn-ghost { background: transparent; border-color: transparent; color: var(--actuar-secondary); }
 .actuar-btn-ghost:hover { background: var(--actuar-surface-muted); color: var(--actuar-foreground); }
+/* Decisão tem cor fixa no sistema inteiro: aprovar é verde, reprovar é vermelho.
+   Antes "Aprovar" usava o primário roxo — a mesma cor de "Salvar", "Continuar" e de
+   qualquer ação neutra — então a cor não dizia nada sobre a consequência, e a mesma
+   decisão aparecia de um jeito em cada tela. O primário fica para avançar; estas duas
+   variantes são só para decidir. */
+.actuar-btn-success { background: var(--actuar-success); border-color: var(--actuar-success); color: #FFF; }
+.actuar-btn-success:hover { background: color-mix(in srgb, var(--actuar-success) 85%, #000); border-color: color-mix(in srgb, var(--actuar-success) 85%, #000); }
 .actuar-btn-danger { background: var(--actuar-danger); border-color: var(--actuar-danger); color: #FFF; }
+.actuar-btn-danger:hover { background: color-mix(in srgb, var(--actuar-danger) 85%, #000); border-color: color-mix(in srgb, var(--actuar-danger) 85%, #000); }
 .actuar-btn-sm { min-height: 24px; padding: 0 8px; font-size: 10px; }
 .actuar-btn-lg { min-height: 40px; padding: 0 16px; }
 
@@ -437,6 +445,9 @@ body.actuar-app .actuar-filter-select select:hover { border-color: var(--actuar-
 .actuar-badge-success { border-color: color-mix(in srgb, var(--actuar-success) 30%, transparent); background: var(--actuar-success-soft); color: var(--actuar-success); }
 .actuar-badge-warning { border-color: color-mix(in srgb, var(--actuar-warning) 30%, transparent); background: var(--actuar-warning-soft); color: var(--actuar-warning); }
 .actuar-badge-danger { border-color: color-mix(in srgb, var(--actuar-danger) 30%, transparent); background: var(--actuar-danger-soft); color: var(--actuar-danger); }
+/* Faltava: "Fora do rodízio" já usava esta classe e saía sem cor, borda nem fundo — texto
+   solto no meio das tags coloridas. */
+.actuar-badge-neutral { border-color: var(--actuar-border); background: var(--actuar-surface-subtle); color: var(--actuar-secondary); }
 
 .actuar-checkbox { width: 16px; height: 16px; border: 1px solid var(--actuar-border-strong); border-radius: 4px; accent-color: var(--actuar-primary); }
 .actuar-modal { padding: 16px; background: rgba(22, 29, 43, .55); }
@@ -1351,6 +1362,99 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #505A68; }
 .priority-launch-filters button, .analyst-priority-filters button { min-height: 32px; padding: 0 10px; border: 1px solid var(--actuar-border); border-radius: 6px; color: var(--actuar-secondary); background: var(--actuar-surface); font-size: 10px; font-weight: 700; white-space: nowrap; }
 .priority-launch-filters button.is-active, .analyst-priority-filters button.is-active { border-color: var(--actuar-primary); color: var(--actuar-primary); background: var(--actuar-primary-soft); }
 .priority-row-adjustment { background: var(--actuar-warning-soft); }
+
+/* Identificação por cor nas listagens de prioridades e transferências.
+   Uma faixa na borda esquerda diz o estado antes de ler qualquer texto: é o que permite
+   varrer a lista com o olho. O tom é o mesmo da tag, para linha e etiqueta não contarem
+   histórias diferentes. */
+.priority-row { box-shadow: inset 3px 0 0 var(--actuar-border); }
+.priority-row--neutral { box-shadow: inset 3px 0 0 var(--actuar-border); }
+.priority-row--success { box-shadow: inset 3px 0 0 var(--actuar-success); }
+.priority-row--warning { box-shadow: inset 3px 0 0 var(--actuar-warning); }
+.priority-row--danger { box-shadow: inset 3px 0 0 var(--actuar-danger); }
+.priority-row--primary { box-shadow: inset 3px 0 0 var(--actuar-primary); background: var(--actuar-primary-soft); }
+
+/* A pontuação é o dado mais consultado da lista: ganha peso quando existe e recua para
+   secundária quando é zero, em vez de "0 pts" disputando atenção. */
+.priority-points { display: inline-flex; align-items: baseline; gap: 3px; font-family: Geist, "Open Sans", sans-serif; font-variant-numeric: tabular-nums; font-weight: 700; }
+.priority-points small { font-size: 9px; font-weight: 600; opacity: .75; }
+.priority-points--granted { color: var(--actuar-success); }
+.priority-points--none { color: var(--actuar-secondary); font-weight: 600; }
+
+/* O motivo da gestão era texto colorido cru no meio da célula. Como bloco recuado, fica
+   legível sem competir com a tag de status acima. */
+.priority-reason { display: block; margin-top: 5px; padding: 6px 8px; border-left: 2px solid var(--actuar-border); border-radius: 0 var(--actuar-radius) var(--actuar-radius) 0; background: var(--actuar-surface-subtle); color: var(--actuar-secondary); font-size: 10px; line-height: 1.45; text-align: left; }
+.priority-reason--danger { border-left-color: var(--actuar-danger); }
+.priority-reason--primary { border-left-color: var(--actuar-primary); }
+.priority-status-cell { display: inline-grid; justify-items: start; gap: 0; }
+
+/* Aviso de espera na própria célula de data: quem varre a fila vê o atraso sem cruzar
+   colunas. Classe própria porque não é identificação de cliente — reusar priority-client-line
+   daria o mesmo desenho com o nome errado, e há teste que conta as ocorrências dela. */
+.priority-late-note { display: block; margin-top: 2px; color: var(--actuar-warning); font-size: 10px; font-weight: 600; line-height: 1.3; }
+
+/* HISTÓRICO E AUDITORIA — filtros e resumo.
+   A busca ocupa o dobro porque resolve a maioria das perguntas; os recortes fechados vêm
+   depois, e o intervalo exato só aparece quando é pedido. */
+.history-filters {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    align-items: end;
+    gap: 10px;
+}
+
+.history-filters .actuar-field { margin: 0; }
+.history-filters .actuar-btn { white-space: nowrap; }
+
+.history-custom-range {
+    display: flex;
+    align-items: end;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px dashed var(--actuar-border-strong);
+    border-radius: var(--actuar-radius);
+    background: var(--actuar-surface-subtle);
+}
+
+.history-custom-range .actuar-field { margin: 0; }
+.history-range-label { padding-bottom: 8px; color: var(--actuar-secondary); font-size: 11px; }
+
+/* Cards do recorte. Substituem a frase corrida que ninguém lia no meio da tela: o número
+   grande responde de longe, e a legenda embaixo diz do que ele é. */
+.history-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin: 16px 0 12px;
+}
+
+.history-stat {
+    display: grid;
+    gap: 2px;
+    padding: 12px 14px;
+    border: 1px solid var(--actuar-border);
+    border-left: 3px solid var(--actuar-border-strong);
+    border-radius: var(--actuar-radius);
+    background: var(--actuar-surface-subtle);
+}
+
+.history-stat small { color: var(--actuar-secondary); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.history-stat strong { color: var(--actuar-foreground); font-family: Geist, "Open Sans", sans-serif; font-variant-numeric: tabular-nums; font-size: 20px; line-height: 1.15; }
+.history-stat span { color: var(--actuar-secondary); font-size: 10px; }
+.history-stat.is-total { border-left-color: var(--actuar-primary); }
+.history-stat.is-total strong { color: var(--actuar-primary); }
+.history-stat.is-credit { border-left-color: var(--actuar-success); }
+.history-stat.is-credit strong { color: var(--actuar-success); }
+.history-stat.is-debit { border-left-color: var(--actuar-danger); }
+.history-stat.is-debit strong { color: var(--actuar-danger); }
+
+@media (max-width: 1024px) {
+    .history-filters { grid-template-columns: 1fr 1fr; }
+    .history-filters .history-filter-search { grid-column: 1 / -1; }
+    .history-filters .actuar-btn { grid-column: 1 / -1; }
+    .history-custom-range { flex-wrap: wrap; }
+}
 .priority-review-panel { width: min(720px,100vw); }
 .priority-review-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
 .priority-review-grid > div { padding: 10px; border: 1px solid var(--actuar-border); border-radius: 6px; background: var(--actuar-surface-soft); }
@@ -3470,4 +3574,232 @@ body.nav-locked { overflow: hidden; }
 @media (max-width: 768px) {
     .actuar-global-header { padding: 8px 12px; }
     .actuar-nav-rail { padding: 4px 8px; }
+}
+
+/* ==========================================================================
+   PORTAL DE PRIORIDADES — PORTA EXTERNA
+   Reaproveita a atmosfera da tela de acesso (marca à esquerda, ação à direita,
+   fundo escuro, superfícies em níveis) para o portal parecer o que é: uma área
+   legítima da Actuar, e não um formulário avulso hospedado por acaso.
+   ========================================================================== */
+body.actuar-portal-mode .actuar-global-header,
+body.actuar-portal-mode .actuar-nav-rail,
+body.actuar-portal-mode .actuar-nav,
+body.actuar-portal-mode .actuar-toolbar,
+/* A área interna inteira sai de cena — o portal vive fora do #appContent. Esconder só as
+   partes visíveis deixava o cabeçalho de página ("Portal de Prioridades" com a descrição
+   da rota) aparecendo acima do portal, como se fosse mais uma tela do sistema. */
+body.actuar-portal-mode #appContent { display: none !important; }
+body.actuar-portal-mode { overflow-y: auto; }
+
+/* Tudo no eixo central: acesso, formulário e confirmação. O portal tem uma tarefa por
+   vez, e a tela inteira acompanha essa tarefa em vez de espalhar conteúdo pelas bordas. */
+.actuar-portal {
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 20px; background: var(--actuar-header); color: #FFF;
+}
+.actuar-portal > .actuar-portal-shell,
+.actuar-portal > .actuar-portal-panel { margin-top: auto; margin-bottom: auto; }
+
+.actuar-portal-header {
+    display: flex; align-items: center; gap: 14px;
+    width: 100%; max-width: 780px; margin: 0 auto 24px; padding-bottom: 16px;
+    border-bottom: 1px solid #303234;
+}
+.actuar-portal-tag { padding: 4px 10px; border: 1px solid var(--actuar-primary); border-radius: 999px; color: #FFF; font-size: 11px; font-weight: 600; }
+.actuar-portal-identity { display: flex; align-items: center; gap: 10px; margin-left: auto; color: #C5C7CA; font-size: 12px; }
+
+.actuar-portal-shell {
+    width: min(480px, 100%);
+    padding: 32px;
+    text-align: center;
+    border: 1px solid #303234; border-radius: 16px;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--actuar-primary) 14%, transparent), transparent 62%), #1B1B1F;
+    animation: portalRise .32s cubic-bezier(.16, 1, .3, 1) both;
+}
+.actuar-portal-shell h1 { margin: 0 0 8px; font-size: 23px; }
+.actuar-portal-lead { margin: 0 auto 24px; max-width: 340px; color: #C5C7CA; font-size: 13px; line-height: 1.5; }
+.actuar-portal-shell .actuar-field { text-align: left; }
+.actuar-portal-shell .actuar-field-label,
+.actuar-portal-shell label { display: block; margin-bottom: 6px; color: #C5C7CA; font-size: 12px; font-weight: 600; }
+.actuar-portal-foot { display: block; margin-top: 6px; color: #6F7378; font-size: 11px; }
+.actuar-portal-form .actuar-btn-lg { width: 100%; }
+
+
+
+
+
+
+
+
+
+
+
+.actuar-portal-form { display: grid; gap: 14px; }
+
+.actuar-portal-panel {
+    width: min(680px, 100%); padding: 28px;
+    border: 1px solid #303234; border-radius: 16px; background: #1B1B1F;
+    animation: portalRise .3s cubic-bezier(.16, 1, .3, 1) both;
+}
+.actuar-portal-greeting h2 { margin: 0 0 4px; font-size: 22px; }
+.actuar-portal-greeting p { margin: 0 0 22px; color: #C5C7CA; font-size: 13px; line-height: 1.5; }
+.actuar-portal-request { display: grid; gap: 20px; }
+
+.actuar-portal-block { margin: 0; padding: 18px; border: 1px solid #303234; border-radius: 12px; background: #232327; }
+.actuar-portal-block legend { padding: 0 8px; color: #FFF; font-size: 13px; font-weight: 700; }
+.actuar-portal-hint { margin: 0 0 12px; color: #8E9298; font-size: 11px; }
+.actuar-portal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* A escolha da equipe é a decisão que direciona o rodízio: merece peso de botão, não
+   de item de lista. */
+.actuar-portal-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.actuar-portal-option {
+    display: grid; gap: 3px; padding: 14px; text-align: left;
+    border: 1px solid #3A3A40; border-radius: 10px; background: #1B1B1F; color: #D5D7DA; cursor: pointer;
+    transition: border-color var(--actuar-transition), background-color var(--actuar-transition), transform var(--actuar-transition);
+}
+.actuar-portal-option:hover { border-color: var(--actuar-primary); transform: translateY(-1px); }
+.actuar-portal-option i { color: var(--actuar-primary); font-size: 18px; }
+.actuar-portal-option strong { color: #FFF; font-size: 14px; }
+.actuar-portal-option small { color: #8E9298; font-size: 11px; line-height: 1.35; }
+.actuar-portal-option.is-active { border-color: var(--actuar-primary); background: color-mix(in srgb, var(--actuar-primary) 18%, #1B1B1F); }
+.actuar-portal-option:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: 2px; }
+.actuar-portal-queue { min-height: 16px; margin: 12px 0 0; color: var(--actuar-primary); font-size: 11px; }
+
+.actuar-portal-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.actuar-portal-actions #portalBackButton { margin-right: auto; }
+.actuar-portal-note { margin: 0; color: #8E9298; font-size: 11px; }
+.actuar-portal-spin { display: inline-block; animation: portalSpin .9s linear infinite; }
+
+/* Confirmação: o círculo entra, o check se desenha. Comunica "entrou no fluxo", não festa. */
+.actuar-portal-success { text-align: center; }
+.actuar-portal-success h2 { margin: 18px 0 6px; font-size: 24px; }
+.actuar-portal-success > p { margin: 0 auto 20px; max-width: 420px; color: #C5C7CA; font-size: 13px; line-height: 1.5; }
+.actuar-portal-check { display: grid; place-items: center; margin: 0 auto; width: 84px; height: 84px; border-radius: 50%; background: color-mix(in srgb, var(--actuar-success) 16%, transparent); animation: portalHalo .5s cubic-bezier(.16, 1, .3, 1) both; }
+.actuar-portal-check svg { width: 52px; height: 52px; fill: none; stroke: var(--actuar-success); stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+.actuar-portal-check circle { stroke-dasharray: 151; stroke-dashoffset: 151; animation: portalDraw .46s cubic-bezier(.65, 0, .45, 1) .08s forwards; }
+.actuar-portal-check path { stroke-dasharray: 36; stroke-dashoffset: 36; animation: portalDraw .3s cubic-bezier(.65, 0, .45, 1) .42s forwards; }
+
+.actuar-portal-protocol { display: inline-flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #3A3A40; border-radius: 10px; background: #232327; }
+.actuar-portal-protocol small { color: #8E9298; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.actuar-portal-protocol strong { color: #FFF; font-size: 18px; }
+.actuar-portal-receipt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0; padding: 0; }
+.actuar-portal-receipt div { display: grid; gap: 3px; }
+.actuar-portal-receipt dt { color: #8E9298; font-size: 10px; text-transform: uppercase; }
+.actuar-portal-receipt dd { margin: 0; color: #FFF; font-size: 12px; }
+
+@keyframes portalRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes portalHalo { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: none; } }
+@keyframes portalDraw { to { stroke-dashoffset: 0; } }
+@keyframes portalSpin { to { transform: rotate(360deg); } }
+
+@media (max-width: 860px) {
+    .actuar-portal { padding: 14px; }
+    .actuar-portal-shell { grid-template-columns: 1fr; gap: 22px; padding: 22px; }
+    .actuar-portal-panel { padding: 20px; }
+    .actuar-portal-grid, .actuar-portal-choice { grid-template-columns: 1fr; }
+    .actuar-portal-receipt { grid-template-columns: 1fr; }
+    .actuar-portal-actions { flex-direction: column-reverse; align-items: stretch; }
+    .actuar-portal-actions .actuar-btn { width: 100%; }
+}
+
+/* Quem pediu menos movimento recebe a confirmação sem desenho, só com aparição. */
+@media (prefers-reduced-motion: reduce) {
+    .actuar-portal-shell, .actuar-portal-panel, .actuar-portal-check { animation: none; }
+    .actuar-portal-check circle, .actuar-portal-check path { stroke-dashoffset: 0; animation: none; }
+    .actuar-portal-spin { animation: none; }
+}
+
+/* Etapas do portal. Indicador discreto: diz onde a pessoa está sem virar decoração e sem
+   roubar espaço do campo, que é o que ela veio fazer. */
+.actuar-portal-steps {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 22px; padding: 0; list-style: none;
+}
+.actuar-portal-steps li {
+    display: flex; align-items: center; gap: 7px;
+    color: #6F7378; font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.actuar-portal-steps li + li::before { content: ""; width: 18px; height: 1px; margin-right: 8px; background: #3A3A40; }
+.actuar-portal-steps span {
+    display: grid; place-items: center; width: 20px; height: 20px;
+    border: 1px solid #3A3A40; border-radius: 50%;
+    font-family: Geist, "Open Sans", sans-serif; font-size: 10px;
+}
+.actuar-portal-steps .is-current { color: #FFF; }
+.actuar-portal-steps .is-current span { border-color: var(--actuar-primary); background: var(--actuar-primary); color: #FFF; }
+.actuar-portal-steps .is-done { color: #C5C7CA; }
+.actuar-portal-steps .is-done span { border-color: var(--actuar-success); color: var(--actuar-success); }
+
+.actuar-portal-step { animation: portalStepIn .24s cubic-bezier(.16, 1, .3, 1) both; }
+.actuar-portal-step h3 { margin: 0 0 4px; color: #FFF; font-size: 17px; }
+.actuar-portal-step h3:focus { outline: none; }
+.actuar-portal-step > .actuar-portal-hint { margin: 0 0 16px; }
+
+/* Resumo do último passo: confere o que já foi dito sem obrigar a voltar, e cada linha
+   leva de volta ao passo que a originou. */
+.actuar-portal-recap { display: grid; gap: 8px; margin-top: 18px; padding-top: 16px; border-top: 1px dashed #3A3A40; }
+.actuar-portal-recap > div { display: flex; align-items: baseline; gap: 10px; font-size: 12px; }
+.actuar-portal-recap small { min-width: 68px; color: #6F7378; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.actuar-portal-recap span { flex: 1; color: #D5D7DA; }
+.actuar-portal-recap button { border: 0; background: none; color: var(--actuar-primary); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
+.actuar-portal-recap button:hover { text-decoration: underline; }
+
+@keyframes portalStepIn { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 860px) {
+    .actuar-portal-steps li span { width: 18px; height: 18px; }
+    .actuar-portal-steps li + li::before { width: 10px; margin-right: 4px; }
+    .actuar-portal-recap > div { flex-wrap: wrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .actuar-portal-step { animation: none; }
+}
+
+/* Caixas do PIN. O tamanho fixo do código vira a forma do campo: quem olha já sabe quantos
+   dígitos são, sem precisar ler o texto de ajuda. */
+.actuar-otp { display: flex; justify-content: center; gap: 10px; }
+/* A base dos campos é `body.actuar-app input:not(...)` — (0,4,2) e com !important em
+   padding, borda, fundo e cor. Uma regra de classe simples perde, e as caixas saíam com
+   largura 100%, altura 32px e fundo claro: fora do quadrado. Por isso o seletor sobe de
+   especificidade e repete o !important nas mesmas propriedades. */
+body.actuar-app .actuar-otp .actuar-otp-box {
+    width: 58px !important;
+    height: 64px;
+    min-height: 64px;
+    flex: 0 0 auto;
+    padding: 0 !important;
+    border: 1px solid #3A3A40 !important;
+    border-radius: 12px !important;
+    background: #16161A !important;
+    color: #FFF !important;
+    font-family: Geist, "Open Sans", sans-serif; font-size: 26px; font-weight: 700; text-align: center;
+    transition: border-color var(--actuar-transition), box-shadow var(--actuar-transition), transform var(--actuar-transition);
+}
+body.actuar-app .actuar-otp .actuar-otp-box:hover { border-color: #52545A !important; }
+body.actuar-app .actuar-otp .actuar-otp-box:focus {
+    outline: none;
+    border-color: var(--actuar-primary) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--actuar-primary) 28%, transparent) !important;
+    transform: translateY(-1px);
+}
+body.actuar-app .actuar-otp.is-invalid .actuar-otp-box { border-color: var(--actuar-danger) !important; }
+.actuar-otp.is-invalid { animation: otpShake .3s cubic-bezier(.36, .07, .19, .97); }
+
+@keyframes otpShake {
+    10%, 90% { transform: translateX(-2px); }
+    30%, 70% { transform: translateX(4px); }
+    50% { transform: translateX(-4px); }
+}
+
+@media (max-width: 860px) {
+    .actuar-otp { gap: 8px; }
+    body.actuar-app .actuar-otp .actuar-otp-box { width: 52px !important; height: 58px; min-height: 58px; font-size: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .actuar-otp.is-invalid { animation: none; }
+    .actuar-otp-box:focus { transform: none; }
 }

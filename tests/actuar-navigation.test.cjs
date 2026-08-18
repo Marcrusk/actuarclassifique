@@ -110,10 +110,34 @@ test('o grupo aberto acompanha a rota, e a expansão manual não sobrevive à tr
     assert.equal(nav.expandedFor(arvore, { name: 'admin', section: 'ciclos' }, null), null);
     // O usuário pode abrir um grupo só para espiar.
     assert.equal(nav.expandedFor(arvore, { name: 'admin', section: 'ciclos' }, 'metricas'), 'metricas');
-    // Mas a rota atual tem prioridade sobre o que ele espiou.
-    assert.equal(nav.expandedFor(arvore, { name: 'admin', section: 'prioridades' }, 'metricas'), 'prioridades');
+    /* E o clique tem a palavra final enquanto a pessoa não navega.
+       Esta asserção era o contrário — a rota vencia o clique — e travava o menu: estando em
+       Prioridades, clicar em "Métricas operacionais" não abria nada, porque o grupo da rota
+       reassumia. Quem garante que a expansão "só para espiar" não fica guardada é o navGoTo,
+       que zera o manual ao trocar de tela. */
+    assert.equal(nav.expandedFor(arvore, { name: 'admin', section: 'prioridades' }, 'metricas'), 'metricas');
     // Item sem filhos não "abre".
     assert.equal(nav.expandedFor(arvore, { name: 'admin', section: 'ciclos' }, 'ciclos'), null);
+
+    // Fechamento explícito: sem o '', fechar o grupo da rota atual seria desfeito na hora.
+    assert.equal(nav.expandedFor(arvore, { name: 'admin', section: 'prioridades' }, ''), null);
+    assert.equal(nav.expandedFor(arvore, { name: 'admin', section: 'transferencias' }, ''), null);
+    // Grupo inexistente no perfil não abre nada.
+    assert.equal(nav.expandedFor(arvore, { name: 'admin', section: 'ciclos' }, 'inexistente'), null);
+});
+
+test('clicar em outro módulo abre esse módulo, e clicar no aberto fecha', () => {
+    // Regressão de menu travado: o toggle compara com o que está aberto de fato — o grupo da
+    // rota abre sozinho, sem passar pelo clique — e não com o último clique registrado.
+    const html = fs.readFileSync('index.html', 'utf8');
+    const toggle = html.slice(html.indexOf('function toggleNavGroup('), html.indexOf('function navGoTo('));
+    assert.match(toggle, /ActuarNavigation\.expandedFor\(currentNavTree\(\), currentRoute, globalNavManualGroup\)/);
+    assert.match(toggle, /globalNavManualGroup = abertoAgora === id \? '' : id;/);
+    assert.doesNotMatch(toggle, /globalNavManualGroup === id \? null : id/, 'comparar com o último clique ignora o grupo aberto pela rota');
+
+    // Navegar limpa a escolha manual, para o menu voltar a seguir a rota.
+    const navegar = html.slice(html.indexOf('function navGoTo('), html.indexOf('function navGoTo(') + 600);
+    assert.match(navegar, /globalNavManualGroup = null;/);
 });
 
 test('a trilha do cabeçalho é módulo e página, na ordem da árvore', () => {
@@ -343,4 +367,53 @@ test('menu do perfil abre por cima de tudo, e a barra de filtros só aparece ond
     for (const rota of ['envio', 'coleta', 'tasks']) {
         assert.match(rotas, new RegExp(`${rota}:\\s*\\{ periodo: false, contexto: false \\}`), `${rota} não tem o que filtrar por período`);
     }
+});
+
+/* Um painel que quebra ao montar não pode prender a navegação. O erro subia pelo
+   navigateTo, o closeGlobalNav() da linha seguinte nunca rodava, e o resultado era o pior
+   dos mundos: a tela não trocava, o menu ficava aberto e nada avisava. */
+
+test('escolher uma seção sempre fecha o menu, dando certo ou não', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const inicio = html.indexOf('function navGoTo(name, section)');
+    assert.ok(inicio > -1, 'navGoTo precisa continuar no shell');
+    const navegar = html.slice(inicio, html.indexOf('\n        }', html.indexOf('finally', inicio)));
+    assert.match(navegar, /try \{[\s\S]*navigateTo\(/, 'a navegação precisa ser isolada');
+    assert.match(navegar, /\} finally \{[\s\S]*closeGlobalNav\(\);/, 'o menu fecha no finally, não depois da chamada');
+    assert.match(navegar, /console\.error\('Falha ao abrir a seção:'/);
+    assert.match(navegar, /showToast\(/, 'falha silenciosa vira clique morto sem explicação');
+});
+
+test('um painel da gestão com defeito não derruba os outros nem a troca de seção', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const helper = html.slice(html.indexOf('function renderManagerPanel(nome, montar)'), html.indexOf('function managerEmpty('));
+    assert.match(helper, /try \{ montar\(\); \}/);
+    assert.match(helper, /catch \(erro\)/);
+    assert.match(helper, /console\.error/);
+
+    // Todos os painéis passam pelo isolamento, nenhum sobrou solto.
+    const abre = html.lastIndexOf("if (currentRoute.name === 'admin' && isAdminLoggedIn) {");
+    assert.ok(abre > -1, 'o ramo da gestão precisa continuar no render');
+    const admin = html.slice(abre, html.indexOf('updatePiecesPendingBadge', abre));
+    for (const painel of ['renderAdminLogs', 'renderUsersManagementTable', 'renderAdminPriorityRequests', 'renderAdminTransferRequests', 'renderManagerExperience']) {
+        assert.ok(admin.includes(`, ${painel});`), `${painel} continua podendo abortar o render`);
+        assert.ok(!new RegExp('\\n\\s+' + painel + '\\(\\);').test(admin), `${painel} ainda é chamado direto`);
+    }
+});
+
+test('a troca de rota não é refém do desenho da tela', () => {
+    /* Enquanto render() podia abortar applyRoute, uma tela quebrada impedia a navegação:
+       a seção não trocava, o menu não fechava e nada explicava o porquê. */
+    const html = fs.readFileSync('index.html', 'utf8');
+    const inicio = html.indexOf('function applyRoute(route, options = {})');
+    assert.ok(inicio > -1, 'applyRoute precisa continuar no shell');
+    const aplica = html.slice(inicio, html.indexOf('\n        }', html.indexOf('window.scrollTo', inicio)));
+
+    assert.match(aplica, /try \{\s*\n\s*render\(\);\s*\n\s*\} catch/, 'render precisa ser isolado');
+    assert.match(aplica, /console\.error\('Falha ao desenhar a tela:'/);
+
+    // E o que decide a seção roda DEPOIS, então continua rodando mesmo com o desenho falho.
+    const posRender = aplica.indexOf('} catch');
+    const posSecao = aplica.indexOf('switchAdminTabView(currentRoute.section)');
+    assert.ok(posSecao > posRender, 'a troca de seção precisa vir depois do render isolado');
 });

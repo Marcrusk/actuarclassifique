@@ -243,8 +243,78 @@
         return { valid: errors.length === 0, errors };
     }
 
+    /* ==========================================================================
+       DATA E HORA — UM FORMATO SÓ, LEGÍVEL POR PESSOA
+       `18/08/2026 14:32` obriga a pessoa a converter mentalmente para saber se aquilo é
+       recente. Numa lista de auditoria, que é lida de cima para baixo procurando "o que
+       aconteceu agora", isso é trabalho jogado no leitor.
+
+       A escala vai do relativo ao absoluto conforme o registro envelhece: o que é recente
+       se descreve pela distância ("há 12 min"), o que já passou se descreve pela data. A
+       precisão exata nunca some — vai no `title` de quem chama, via `formatFull`.
+
+       `options.now` existe para o teste fixar o instante; sem isso, testar "ontem" seria
+       um teste que muda de resultado à meia-noite. */
+    const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const DIAS_CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+
+    function paraData(value) {
+        if (value === null || value === undefined || value === '') return null;
+        const data = value instanceof Date ? value : new Date(value);
+        return Number.isNaN(data.getTime()) ? null : data;
+    }
+
+    function meiaNoite(data) {
+        return new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
+    }
+
+    function horaDe(data) {
+        return `${String(data.getHours()).padStart(2, '0')}:${String(data.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function formatMoment(value, options = {}) {
+        const vazio = options.empty !== undefined ? options.empty : '—';
+        const data = paraData(value);
+        if (!data) return vazio;
+        const agora = paraData(options.now) || new Date();
+        const minutos = Math.floor((agora.getTime() - data.getTime()) / 60000);
+        const dias = Math.round((meiaNoite(agora) - meiaNoite(data)) / 86400000);
+
+        // Futuro (agendamento, relógio adiantado) cai direto na data: "há -3 min" não existe.
+        if (minutos >= 0) {
+            if (minutos < 1) return 'agora';
+            if (minutos < 60) return `há ${minutos} min`;
+        }
+        if (dias === 0) return `hoje, ${horaDe(data)}`;
+        if (dias === 1) return `ontem, ${horaDe(data)}`;
+        if (dias > 1 && dias < 7) return `${DIAS_CURTOS[data.getDay()]}, ${horaDe(data)}`;
+        if (data.getFullYear() === agora.getFullYear()) return `${data.getDate()} ${MESES_CURTOS[data.getMonth()]}, ${horaDe(data)}`;
+        return `${data.getDate()} ${MESES_CURTOS[data.getMonth()]} ${data.getFullYear()}`;
+    }
+
+    // Só o dia, para onde a hora não acrescenta nada (filtros, cabeçalhos de período).
+    function formatDay(value, options = {}) {
+        const vazio = options.empty !== undefined ? options.empty : '—';
+        const data = paraData(value);
+        if (!data) return vazio;
+        const agora = paraData(options.now) || new Date();
+        const dias = Math.round((meiaNoite(agora) - meiaNoite(data)) / 86400000);
+        if (dias === 0) return 'hoje';
+        if (dias === 1) return 'ontem';
+        if (data.getFullYear() === agora.getFullYear()) return `${data.getDate()} ${MESES_CURTOS[data.getMonth()]}`;
+        return `${data.getDate()} ${MESES_CURTOS[data.getMonth()]} ${data.getFullYear()}`;
+    }
+
+    // A precisão que o formato relativo abre mão: vai no title, ao alcance do mouse.
+    function formatFull(value, options = {}) {
+        const data = paraData(value);
+        if (!data) return options.empty !== undefined ? options.empty : '';
+        return `${String(data.getDate()).padStart(2, '0')} de ${MESES_CURTOS[data.getMonth()]} de ${data.getFullYear()} às ${horaDe(data)}`;
+    }
+
     return {
         UFS, DDDS, TYPES,
+        formatMoment, formatDay, formatFull,
         digits, format, validate, spec, keepOf, keptCount, caretFor,
         formatCnpj, formatCpf, formatCep, formatPhone, formatClientId, formatUf, formatEmail,
         isValidCnpj, isValidCpf, isValidEmail, isValidUf, isValidClientId, isValidPhone,

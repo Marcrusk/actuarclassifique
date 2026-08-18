@@ -113,9 +113,62 @@ test('os filtros cobrem analista, tipo, período e busca livre', () => {
 
 test('o recorte por data cobre o dia inteiro nas duas pontas', () => {
     // Com 'De' e 'Até' no mesmo dia, um recorte por meia-noite devolveria lista vazia.
-    const filtro = bloco('function filteredHistoryRows()', 'function applyHistoryFilters()');
-    assert.match(filtro, /T00:00:00/);
-    assert.match(filtro, /T23:59:59/);
+    const intervalo = bloco('function historyRange(', 'function filteredHistoryRows()');
+    assert.match(intervalo, /T00:00:00/);
+    assert.match(intervalo, /T23:59:59/);
+});
+
+test('o período é escolhido, não digitado', () => {
+    /* Dois campos dd/mm/yyyy exigiam saber a data exata de algo que a pessoa lembra como
+       "semana passada". O intervalo exato continua existindo, mas sob demanda. */
+    const painel = bloco('id="admPanelHistorico"', 'FIM PAINEL HISTÓRICO');
+    assert.match(painel, /id="admHistoryPeriod"/);
+    for (const opcao of ['all', 'today', '7', '30', 'month', 'custom']) {
+        assert.ok(painel.includes(`value="${opcao}"`), `período ausente: ${opcao}`);
+    }
+    assert.match(painel, /id="admHistoryCustomRange" class="history-custom-range hidden"/,
+        'o intervalo exato começa recolhido');
+
+    const aplica = bloco('function applyHistoryFilters()', 'function clearHistoryFilters()');
+    assert.match(aplica, /admHistoryCustomRange'\)\?\.classList\.toggle\('hidden', historyFilters\.period !== 'custom'\)/);
+});
+
+test('cada período vira um intervalo correto', () => {
+    // Reproduz o tradutor do shell: é ele que decide o que "últimos 7 dias" significa.
+    const inicioDoDia = data => new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
+    const fimDoDia = data => inicioDoDia(data) + 86400000 - 1;
+    const agora = new Date(2026, 7, 18, 14, 30);
+
+    const intervalo = bloco('function historyRange(', 'function filteredHistoryRows()');
+    const historyRange = new Function(`${intervalo}; return historyRange;`)();
+
+    assert.deepEqual(historyRange({ period: 'all' }, agora), { de: null, ate: null });
+    assert.deepEqual(historyRange({ period: 'today' }, agora), { de: inicioDoDia(agora), ate: fimDoDia(agora) });
+
+    // "Últimos 7 dias" inclui hoje: são 7 dias de calendário, não 7 × 24h para trás.
+    const sete = historyRange({ period: '7' }, agora);
+    assert.equal(sete.ate, fimDoDia(agora));
+    assert.equal(Math.round((fimDoDia(agora) + 1 - sete.de) / 86400000), 7);
+
+    assert.equal(historyRange({ period: 'month' }, agora).de, new Date(2026, 7, 1).getTime());
+
+    const exato = historyRange({ period: 'custom', from: '2026-08-10', to: '2026-08-12' }, agora);
+    assert.equal(exato.de, new Date('2026-08-10T00:00:00').getTime());
+    assert.equal(exato.ate, new Date('2026-08-12T23:59:59').getTime());
+});
+
+test('o recorte se explica em cards, não em frase corrida', () => {
+    const render = bloco("const resumo = document.getElementById('admHistorySummary')", 'const rotuloIntervalo');
+    // Créditos e estornos separados: um saldo de +40 pode esconder um estorno de -50.
+    assert.match(render, /const creditos = linhas\.filter\(row => row\.points > 0\)/);
+    assert.match(render, /const estornos = linhas\.filter\(row => row\.points < 0\)/);
+    assert.match(render, /class="history-stat/);
+    assert.match(render, /ActuarFields\.formatDay/, 'o período coberto usa o formato do sistema');
+
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+    assert.match(css, /\.history-stat \{/);
+    assert.match(css, /\.history-stat\.is-credit strong \{ color: var\(--actuar-success\); \}/);
+    assert.match(css, /\.history-stat\.is-debit strong \{ color: var\(--actuar-danger\); \}/);
 });
 
 test('a lista de analistas do filtro sai de quem tem registro', () => {

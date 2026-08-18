@@ -180,16 +180,22 @@
         return { groupId: null, itemId: null, childId: null };
     }
 
-    /* O grupo aberto acompanha a rota. Um grupo que o usuário abriu só para
-       espiar continua aberto até ele trocar de módulo — daí o parâmetro. */
+    /* O grupo aberto acompanha a rota — até a pessoa clicar em outro. O clique tem a
+       palavra final enquanto ela não navega; `navGoTo` zera o `manual`, então expansões
+       abertas só para espiar não ficam guardadas.
+
+       Antes a rota vencia sempre, e o efeito era um menu travado: estando em Prioridades
+       (um grupo com filhos), clicar em "Métricas operacionais" não abria nada e Prioridades
+       continuava aberto, porque o `manual` recém-definido era ignorado.
+
+       `manual === ''` é o fechamento explícito: sem ele, fechar o grupo da rota atual seria
+       desfeito no mesmo instante pela própria rota. */
     function expandedFor(tree, route, manual) {
+        const comFilhos = id => tree.flatMap(grupo => grupo.items).some(item => item.id === id && item.children);
+        if (manual === '') return null;
+        if (manual && comFilhos(manual)) return manual;
         const ativo = activeFor(tree, route);
-        if (ativo.itemId) {
-            const item = tree.flatMap(grupo => grupo.items).find(candidato => candidato.id === ativo.itemId);
-            if (item && item.children) return item.id;
-        }
-        if (manual && tree.flatMap(grupo => grupo.items).some(item => item.id === manual && item.children)) return manual;
-        return null;
+        return ativo.itemId && comFilhos(ativo.itemId) ? ativo.itemId : null;
     }
 
     function findItem(tree, itemId) {
