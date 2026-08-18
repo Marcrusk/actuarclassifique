@@ -149,3 +149,194 @@ test('o quadro busca do servidor ao abrir, não só ao recarregar a página', ()
     // E dá para atualizar na mão, sem esperar trocar de seção.
     assert.match(html, /onclick="refreshExternalRequests\(\)"/);
 });
+
+/* DISTRIBUIÇÃO — não existe segunda fila. A solicitação externa entra na mesma que o
+   analista já conhece, com o mesmo briefing que a gestão preenche à mão hoje. */
+
+test('a distribuição reusa o rodízio existente, com o briefing que ele já espera', () => {
+    const assign = html.slice(html.indexOf('async function externalAssign()'), html.indexOf('async function externalSkipNext()'));
+    assert.match(assign, /PriorityRotation\.assign\(/);
+    // O domínio do rodízio exige exatamente estes campos.
+    for (const campo of ['demand', 'clientName', 'clientId', 'phone', 'instructions']) {
+        assert.match(assign, new RegExp(`${campo}:`), `o briefing precisa levar ${campo}`);
+    }
+    assert.match(assign, /ensurePriorityRotation\(item\.team\)/, 'a fila é a da equipe escolhida no portal');
+});
+
+test('encaminhar move rodízio e solicitação juntos, ou nenhum dos dois', () => {
+    /* Meia distribuição deixaria o analista com trabalho que o quadro não reconhece —
+       exatamente o descasamento que o portal existe para acabar. */
+    const assign = html.slice(html.indexOf('async function externalAssign()'), html.indexOf('async function externalSkipNext()'));
+    assert.match(assign, /const rotacaoAnterior = deepClone\(ensurePriorityRotation\(item\.team\)\)/);
+    assert.match(assign, /const listaAnterior = deepClone\(getStore\(\)\.externalRequests \|\| \[\]\)/);
+    assert.match(assign, /appStore\.priorityRotations\[item\.team\] = rotacaoAnterior;[\s\S]*appStore\.externalRequests = listaAnterior;/,
+        'a falha precisa desfazer os dois lados');
+    // A solicitação guarda para quem foi e qual atendimento do rodízio a representa.
+    assert.match(assign, /analystId: view\.next/);
+    assert.match(assign, /attendanceId: rodizio\.current\?\.id/);
+});
+
+test('fila ocupada faz a solicitação esperar, não furar', () => {
+    const painel = html.slice(html.indexOf('function externalDistributionPanel(item)'), html.indexOf('async function externalAssign()'));
+    assert.match(painel, /if \(view\.current\)/, 'com atendimento em andamento não se distribui');
+    assert.match(painel, /aguarda a vez ficar livre/);
+    // Cada impedimento se explica: pausado, sem fila e sem elegível dizem coisas diferentes.
+    assert.match(painel, /Rodízio pausado/);
+    assert.match(painel, /Rodízio indisponível/);
+    assert.match(painel, /Ninguém disponível/);
+});
+
+test('a exceção é pular com motivo, não escolher fora da ordem', () => {
+    /* O rodízio recusa destino que não seja o próximo (`not_next`). Furar isso em código
+       seria desfazer, por conveniência, a regra que dá confiança à fila. */
+    const skip = html.slice(html.indexOf('async function externalSkipNext()'), html.indexOf('function externalActions('));
+    assert.match(skip, /PriorityRotation\.skip\(/);
+    assert.match(skip, /input: \{ label: 'Por que pular\?'/, 'pular sem motivo não pode');
+    assert.match(skip, /não perde a vez/, 'quem é pulado vai para o fim, não perde a vez');
+    assert.doesNotMatch(html, /assign\([^)]*escolhido/, 'não deve existir caminho para furar a fila');
+});
+
+test('a tag do card diz por que a solicitação não anda, não o nome da coluna', () => {
+    /* Repetir o nome da coluna não acrescenta nada — o card já está dentro dela. O que a
+       coluna NÃO diz é se a fila está pausada, ocupada ou pronta, e com quem o atendimento
+       está. É isso que precisa caber num relance. */
+    const tag = html.slice(html.indexOf('function externalCardTag(item)'), html.indexOf('function externalCard(item)'));
+    for (const situacao of ['Rodízio pausado', 'Fila ocupada', 'Sem analista', 'Sem fila', 'Pronta para']) {
+        assert.ok(tag.includes(situacao), `a tag não cobre "${situacao}"`);
+    }
+    // Em atendimento, quem importa é com quem está.
+    assert.match(tag, /etapa === 'em_atendimento'[\s\S]*users\[item\.analystId\]/);
+    // A cor vem de token, e o card usa a badge do Design System.
+    assert.match(html, /actuar-badge-\$\{escapeHtml\(tag\.tone\)\} external-card-tag/);
+});
+
+test('a fila aparece dentro da ficha, com posição e quem está pausado', () => {
+    const fila = html.slice(html.indexOf('function externalQueueList('), html.indexOf('function externalDistributionPanel('));
+    assert.match(fila, /view\.paused/, 'quem está pausado precisa se distinguir de quem espera');
+    assert.match(fila, /id === view\.next/, 'o próximo precisa se destacar');
+    assert.match(fila, /lastCompleted/, 'saber quem atendeu por último explica a ordem atual');
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+    assert.match(css, /\.external-queue li\.is-next/);
+});
+
+test('rodízio pausado se resolve na própria ficha', () => {
+    /* Mandar a gestão para outra tela e voltar é o vaivém em que a solicitação fica
+       esquecida — exatamente o que o quadro existe para acabar. */
+    const painel = html.slice(html.indexOf('function externalDistributionPanel(item)'), html.indexOf('async function externalResumeRotation()'));
+    assert.match(painel, /onclick="externalResumeRotation\(\)"/);
+    const retomar = html.slice(html.indexOf('async function externalResumeRotation()'), html.indexOf('/* Encaminhar move duas coisas'));
+    assert.match(retomar, /PriorityRotation\.setPaused\(rodizio, false/);
+    assert.match(retomar, /persistPriorityRotationMutation/, 'a retomada usa o caminho com rollback do rodízio');
+});
+
+/* O CICLO FECHA PELO CAMINHO QUE JÁ EXISTIA
+   O analista não ganha tela nova nem selo de "veio de fora": para ele é um atendimento
+   prioritário como qualquer outro, porque o trabalho é o mesmo. A entrega acontece pelo
+   briefing do rodízio, e a conclusão pelo registro de prioridade de sempre. */
+
+test('o analista recebe pelo briefing do rodízio, sem experiência paralela', () => {
+    const brief = html.slice(html.indexOf('const briefing = view.current.briefing;'), html.indexOf('return `<section class="rotation-ops-primary is-current">'));
+    for (const campo of ['demand', 'clientName', 'clientId', 'phone', 'instructions']) {
+        assert.ok(brief.includes(`briefing.${campo}`), `o analista precisa ver ${campo}`);
+    }
+    // Nenhuma tela de analista consulta a lista de solicitações externas.
+    const analista = html.slice(html.indexOf('function renderMyPriorityRequests()'), html.indexOf('function renderAdminPriorityRequests()'));
+    assert.doesNotMatch(analista, /externalRequests|ExternalRequests/);
+});
+
+test('concluir o atendimento leva a solicitação para aprovação, não para concluída', () => {
+    /* O analista não aprova a própria pontuação. E sem esta ligação ele concluiria enquanto
+       o quadro da gestão seguiria dizendo "em atendimento" para sempre. */
+    const vincula = html.slice(html.indexOf('function vincularSolicitacaoExterna('), html.indexOf('/* A aprovação da prioridade fecha'));
+    assert.match(vincula, /item\.attendanceId === attendanceId/, 'a ligação é pelo id do atendimento do rodízio');
+    assert.match(vincula, /stageOf\(item\) === 'em_atendimento'/);
+    assert.match(vincula, /'aguardando_aprovacao'/);
+    assert.match(vincula, /priorityRequestId: requestId/, 'guarda qual prioridade representa a conclusão');
+    // E é chamada exatamente onde o rodízio é concluído.
+    assert.match(html, /appStore\.priorityRotations\[team\] = completed;[\s\S]{0,700}vincularSolicitacaoExterna\(rotationBefore\.current\.id, requestId\)/);
+});
+
+test('a aprovação fecha a solicitação junto, sem pontuação paralela', () => {
+    const aprova = html.slice(html.indexOf('async function approvePriorityRequest('), html.indexOf('showToast("Prioridade aprovada!'));
+    assert.match(aprova, /concluirSolicitacaoExterna\(req\.id, true\)/);
+    // O crédito continua sendo o de sempre: mesma prioridade, mesma régua.
+    assert.match(aprova, /type: "PRIORITY", userId: req\.userId, value: 50/);
+    // Falha no salvamento desfaz os dois lados.
+    assert.match(aprova, /appStore\.externalRequests = externaAnterior;/);
+
+    const fecha = html.slice(html.indexOf('function concluirSolicitacaoExterna('), html.indexOf('function externalFilters('));
+    assert.match(fecha, /aprovada \? 'concluida' : 'em_atendimento'/, 'reprovar devolve ao atendimento, não descarta');
+    assert.match(fecha, /stageOf\(item\) === 'aguardando_aprovacao'/, 'só fecha o que está esperando decisão');
+});
+
+test('a gestão aprova pela própria tela, mas quem credita é o fluxo de sempre', () => {
+    /* Duplicar a concessão de pontos criaria duas verdades sobre a mesma prioridade — e a
+       segunda inevitavelmente divergiria da primeira. */
+    const aprovar = html.slice(html.indexOf('async function externalApproveWork()'), html.indexOf('async function externalReturnWork()'));
+    assert.match(aprovar, /await approvePriorityRequest\(prioridade\.id/);
+    assert.doesNotMatch(aprovar, /appStore\.logs\.push/, 'a tela não pode creditar ponto por conta própria');
+    assert.match(aprovar, /50 pontos/, 'a confirmação diz o que vai acontecer');
+
+    // Devolver não credita nada e reabre o atendimento.
+    const devolver = html.slice(html.indexOf('async function externalReturnWork()'), html.indexOf('function externalActions('));
+    assert.match(devolver, /'ajuste_solicitado'/);
+    assert.match(devolver, /concluirSolicitacaoExterna\(prioridade\.id, false/);
+    assert.match(devolver, /nenhum ponto é creditado/);
+    assert.match(devolver, /restorePriorityRequestSnapshot[\s\S]*appStore\.externalRequests = anteriorExterna;/,
+        'a falha desfaz os dois lados');
+
+    // As decisões só aparecem na etapa que as espera.
+    const acoes = html.slice(html.indexOf('function externalActions(item, dominio)'), html.indexOf('function closeExternalRequest()'));
+    assert.match(acoes, /etapa === 'aguardando_aprovacao'[\s\S]*Aprovar e pontuar/);
+    assert.match(acoes, /if \(etapa === 'em_atendimento' \|\| etapa === 'concluida'\) return fechar;/);
+});
+
+/* EXCLUSÃO NO QUADRO — mesma régua de peças e lançamentos. */
+
+test('a solicitação excluída arrasta o lançamento e os pontos que gerou', () => {
+    /* Apagar só o card deixaria pontuação de um atendimento que não existe mais — o mesmo
+       descasamento que a exclusão existe para desfazer. */
+    const entrada = ext.deletionEntry(
+        { ...base, id: 'e1', priorityRequestId: 'p1', status: 'concluida' },
+        'marco', 'solicitação de teste',
+        { removedLogs: [{ id: 'l1', value: 50 }, { id: 'l2', value: -10 }], now: 4000 }
+    );
+    assert.equal(entrada.removedPoints, 40, 'crédito menos ajuste');
+    assert.deepEqual(entrada.removedLogIds, ['l1', 'l2']);
+    assert.equal(entrada.priorityRequestId, 'p1');
+    assert.equal(entrada.deletedAt, 4000);
+    assert.equal(entrada.stage, 'concluida');
+    // O snapshot preserva a solicitação inteira, desligada do original.
+    assert.equal(entrada.record.id, 'e1');
+});
+
+test('exclusão sem motivo, sem autor ou sem solicitação é recusada', () => {
+    assert.throws(() => ext.deletionEntry(base, 'marco', '  ', {}), /motivo/i);
+    assert.throws(() => ext.deletionEntry(base, '', 'teste', {}), /não identificado/i);
+    assert.throws(() => ext.deletionEntry(null, 'marco', 'teste', {}), /inválida/i);
+    // Sem pontos envolvidos, não inventa estorno.
+    assert.equal(ext.deletionEntry(base, 'marco', 'teste', {}).removedPoints, 0);
+});
+
+test('excluir do quadro exige motivo, senha e permissão, e desfaz tudo se falhar', () => {
+    const excluir = html.slice(html.indexOf('async function externalDelete()'), html.indexOf('function externalActions('));
+    assert.match(excluir, /if \(!canAuditDeletedPieces\(\)\)/, 'a permissão é conferida na execução');
+    assert.match(excluir, /input: \{ label: 'Motivo da exclusão'/);
+    assert.match(excluir, /verifyLoginRemote\(currentAdminId, senha\)/);
+    // O aviso muda conforme o caso: pontos, lançamento ligado e atendimento em andamento.
+    assert.match(excluir, /um analista está com este atendimento em andamento/);
+    assert.match(excluir, /O lançamento de prioridade correspondente também é excluído/);
+    // Quatro lados voltam juntos.
+    assert.match(excluir, /appStore\.externalRequests = anterior\.externas;[\s\S]*appStore\.priorityRequests = anterior\.pedidos;[\s\S]*appStore\.logs = anterior\.logs;[\s\S]*appStore\.deletedExternalRequests = anterior\.excluidas;/);
+});
+
+test('o botão vive na ficha do quadro, e a auditoria no Histórico', () => {
+    // Era só na ficha do lançamento; quem trabalha no quadro não o encontrava.
+    assert.match(html, /external-delete-action" onclick="externalDelete\(\)/);
+    assert.match(html, /actuar-btn-danger external-delete-action/);
+
+    assert.match(html, /deletedExternalRequests: diffKeyedArray\(base\.deletedExternalRequests, local\.deletedExternalRequests\)/);
+    assert.match(html, /merged\.deletedExternalRequests = applyKeyedArrayDiff/);
+    const linhas = html.slice(html.indexOf('function historyRows()'), html.indexOf('function filteredHistoryRows()'));
+    assert.match(linhas, /detail: `Solicitação \$\{escapeHtml\(item\.protocol/);
+});

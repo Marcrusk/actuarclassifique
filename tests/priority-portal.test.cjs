@@ -40,25 +40,21 @@ test('o portão de login não cobre o portal, e cobre todo o resto', () => {
     assert.match(gate, /!hasAnySession\(\) && !isPortalRoute\(\)/);
 });
 
-test('o nome vem de lista predefinida, sem texto livre', () => {
-    const lista = bloco('const PORTAL_COLLABORATORS = [', '];');
-    for (const area of ['Comercial', 'Financeiro', 'Administrativo', 'Implantação']) {
-        assert.ok(lista.includes(area), `departamento ausente na lista: ${area}`);
+test('a área vem de lista fechada, sem texto livre', () => {
+    /* Quem registra é a ÁREA, não a pessoa. O PIN é compartilhado: dizer "João Almeida"
+       dava uma certeza que o acesso não sustenta. A área é o que o acesso comprova e o que
+       a gestão precisa para triar e medir de onde vem a demanda. */
+    const lista = bloco('const PORTAL_DEPARTMENTS = [', '];');
+    for (const area of ['Comercial', 'Administrativo', 'Retenção', 'Financeiro', 'Implantação']) {
+        assert.ok(lista.includes(`name: '${area}'`), `área ausente: ${area}`);
     }
-    assert.match(lista, /role: 'SDR'/);
-    assert.match(lista, /role: 'Closer'/);
-
-    // A lista é fechada: o valor sai de um input escondido, alimentado só pelo seletor.
     assert.match(html, /<input type="hidden" id="portalCollaborator" value="">/);
-    const picker = bloco('<div class="actuar-picker">', '</div>\n                </div>');
+    const picker = bloco('<div class="actuar-picker">', '</ul>');
     assert.match(picker, /role="listbox"/);
-    /* A busca é um input, mas ela filtra a lista fechada — não vira nome digitado: o valor
-       só é escrito por portalPickMember, a partir de alguém que existe na lista. */
-    const escolhe = bloco('function portalPickMember(id)', 'function portalFilterMembers()');
-    assert.match(escolhe, /const pessoa = portalCollaborator\(id\);\s*\n\s*if \(!pessoa\) return;/);
+    assert.doesNotMatch(picker, /<input(?! type="hidden")/, 'área digitada abriria a porta para qualquer um');
 
-    // Inativo não aparece na porta.
-    const filtro = bloco('function portalCollaborators()', 'function portalCollaborator(');
+    // Inativa não aparece na porta.
+    const filtro = bloco('function portalDepartments()', 'function portalDepartment(');
     assert.match(filtro, /item\.active !== false/);
 });
 
@@ -366,14 +362,14 @@ test('a identidade precisa ser escolhida, nunca herdada do padrão', () => {
     /* Sem botão, o PIN completo entra na hora. Com um nome já selecionado por padrão, a
        pessoa entraria como o primeiro da lista sem perceber. */
     // O gatilho começa sem ninguém: escolher é um ato, não uma herança do primeiro da lista.
-    assert.match(html, /<strong id="portalMemberName">Quem está registrando\?<\/strong>/);
+    assert.match(html, /<strong id="portalMemberName">Qual área está registrando\?<\/strong>/);
     assert.match(html, /<input type="hidden" id="portalCollaborator" value="">/);
     const escolhe = bloco('function portalPickMember(id)', 'function portalMemberKey(');
     assert.match(escolhe, /portalPinBox\(1\)\?\.focus\(\)/, 'escolhido o nome, o foco vai para o PIN');
 
     const entrada = bloco('function portalEnter(event)', 'function portalSignOut()');
-    assert.match(entrada, /Selecione o seu nome na lista antes de informar o PIN\./);
-    assert.match(entrada, /portalCollaborator'\)\?\.focus\(\)/, 'o foco volta para o que falta');
+    assert.match(entrada, /Selecione a sua área antes de informar o PIN\./);
+    assert.match(entrada, /portalMemberTrigger'\)\?\.focus\(\)/, 'o foco volta para o que falta');
 });
 
 test('a marca vive dentro do card do acesso, no nível do portão dos analistas', () => {
@@ -406,17 +402,17 @@ test('o seletor de quem registra é do produto, e acessível', () => {
     const picker = bloco('<div class="actuar-picker">', '</ul>');
     assert.match(picker, /aria-haspopup="listbox"/);
     assert.match(picker, /aria-expanded="false"/);
-    assert.match(picker, /aria-controls="portalMemberList"/);
+    assert.match(picker, /aria-controls="portalMemberPanel"/);
     assert.match(picker, /role="listbox"/);
     assert.doesNotMatch(html, /<select id="portalCollaborator"/, 'o select nativo não deve voltar');
 
     // Cada opção se anuncia como opção, com estado.
-    const monta = bloco("function portalRenderMembers(termo = '')", 'function portalMembersOpen()');
+    const monta = bloco('function portalRenderMembers()', 'function portalMembersOpen()');
     assert.match(monta, /role="option"/);
     // O estado sai do que está escolhido, não de um valor fixo: reabrir mostra a marca certa.
     assert.match(monta, /aria-selected="\$\{item\.id === escolhido\}"/);
-    assert.match(monta, /portalMemberInitials\(item\.name\)/, 'a inicial dá o ponto de fixação');
-    assert.match(monta, /item\.department[\s\S]*item\.role/, 'o departamento desempata nomes parecidos');
+    assert.match(monta, /item\.icon/, 'cada área tem um ícone que ajuda a reconhecer de relance');
+    assert.match(monta, /item\.name/);
 });
 
 test('o teclado navega a lista como um listbox de verdade', () => {
@@ -495,35 +491,22 @@ test('a lista de nomes expande no fluxo, sem ser recortada pelo card', () => {
 /* Com 300 pessoas na empresa, uma lista completa é inútil: ninguém rola até achar o próprio
    nome. Digitar duas letras resolve em um gesto. */
 
-test('a escolha começa pela busca, não pela lista', () => {
+test('cinco áreas não pedem campo de busca', () => {
+    // A busca existia para 300 pessoas. Com cinco opções à vista, ela vira ruído.
+    assert.doesNotMatch(html, /portalMemberSearch|portalFilterMembers/);
     const painel = bloco('<div id="portalMemberPanel"', '</ul>');
-    assert.match(painel, /id="portalMemberSearch"/);
-    assert.match(painel, /placeholder="Buscar por nome ou departamento"/);
-    // A busca vem ANTES da lista: a ordem dos elementos diz qual é o caminho principal.
-    assert.ok(painel.indexOf('portalMemberSearch') < painel.indexOf('portalMemberList'));
-
-    // Abrir foca a busca, não o primeiro nome.
-    const abre = bloco('function portalToggleMembers(', 'function portalPickMember(');
-    assert.match(abre, /portalMemberSearch'\);\s*\n\s*if \(busca\) \{ busca\.value = ''; busca\.focus\(\); \}/);
+    assert.doesNotMatch(painel, /<input/);
+    assert.match(painel, /role="listbox"/);
 });
 
-test('a busca normaliza acento e olha nome, departamento e função', () => {
-    const filtra = bloco("function portalRenderMembers(termo = '')", 'function portalMembersOpen()');
-    assert.match(filtra, /PriorityRotation\?\.normalizeSearch/, 'quem digita "joao" precisa achar "João"');
-    assert.match(filtra, /\$\{item\.name\} \$\{item\.department\} \$\{item\.role\}/);
-    assert.match(filtra, /portalMemberEmpty'\)\?\.classList\.toggle\('hidden', visiveis\.length > 0\)/,
-        'busca sem resultado precisa dizer isso');
-});
 
-test('o teclado atravessa busca e lista sem sair do componente', () => {
-    const buscaKey = bloco('function portalMemberSearchKey(event)', 'function portalMemberKey(');
-    assert.match(buscaKey, /ArrowDown[\s\S]*itens\[0\]\.focus\(\)/, 'seta para baixo entra na lista');
-    assert.match(buscaKey, /itens\.length === 1\) portalPickMember/, 'sobrou um só, Enter escolhe');
-    assert.match(buscaKey, /Escape/);
-
+test('o teclado navega a lista sem sair do componente', () => {
     const listaKey = bloco('function portalMemberKey(event, indice)', 'function portalMemberTriggerKey(');
-    assert.match(listaKey, /passo === -1 && indice === 0[\s\S]*portalMemberSearch'\)\?\.focus\(\)/,
-        'subir do primeiro devolve à busca, que é de onde a pessoa veio');
+    assert.match(listaKey, /event\.key === 'Enter' \|\| event\.key === ' '/, 'Enter e espaço escolhem');
+    assert.match(listaKey, /event\.key === 'Escape'/, 'Esc fecha');
+    assert.match(listaKey, /\(indice \+ passo \+ itens\.length\) % itens\.length/, 'a lista dá a volta');
+    const gatilho = bloco('function portalMemberTriggerKey(event)', 'document.addEventListener');
+    assert.match(gatilho, /\['ArrowDown', 'Enter', ' '\]/);
 });
 
 /* Um seletor livre de "urgência" faz todo mundo marcar urgente — e não por má-fé: falta
@@ -543,4 +526,39 @@ test('as marcas aparecem por logo, no mesmo peso óptico', () => {
 
     // A da Ediz vem em preto sobre branco: invertida e em screen, o fundo some por completo.
     assert.match(css, /img\.is-boxed \{ filter: invert\(1\); mix-blend-mode: screen;/);
+});
+
+test('nenhuma função do portal usa variável que não declarou', () => {
+    /* Regressão real: ao trocar pessoa por área, a declaração virou `area` e o corpo ficou
+       com `pessoa`. O ReferenceError matava o handler em silêncio — o PIN correto não dava
+       ação nenhuma, sem erro na tela. Sintaxe válida não pega isso; o lint só valida sintaxe. */
+    function corpo(nome) {
+        const i = html.indexOf(`function ${nome}(`);
+        assert.ok(i > -1, `${nome} precisa existir`);
+        let j = html.indexOf('{', i), n = 0;
+        for (; j < html.length; j++) {
+            if (html[j] === '{') n++;
+            else if (html[j] === '}') { n--; if (!n) return html.slice(i, j + 1); }
+        }
+        return '';
+    }
+    const locais = ['area', 'pessoa', 'sugestao', 'registro', 'protocolo', 'dados'];
+    for (const nome of ['portalEnter', 'portalSubmit', 'portalPickMember', 'renderPortal', 'portalShowSuccess', 'portalTryEnter', 'portalSignOut']) {
+        const bloco = corpo(nome);
+        for (const variavel of locais) {
+            const usa = new RegExp(`(?<![\\w.'"])${variavel}(?![\\w'"])`).test(bloco.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, ''));
+            if (!usa) continue;
+            const declara = new RegExp(`(?:const|let|var)\\s+(?:\\{[^}]*\\}|${variavel})\\s*=`).test(bloco)
+                || new RegExp(`function ${nome}\\([^)]*\\b${variavel}\\b`).test(bloco);
+            assert.ok(declara, `${nome} usa "${variavel}" sem declarar`);
+        }
+    }
+});
+
+test('sem área escolhida, o PIN não é julgado', () => {
+    const entrada = bloco('function portalEnter(event)', 'function portalSignOut()');
+    assert.match(entrada, /if \(!area\)/);
+    assert.match(entrada, /Selecione a sua área antes de informar o PIN\./);
+    assert.match(entrada, /portalMemberTrigger'\)\?\.focus\(\)/, 'o foco volta para o que falta');
+    assert.match(entrada, /portalSession = \{ id: area\.id/);
 });

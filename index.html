@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260818-portal-externas-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260818-exclusao-externa-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -303,23 +303,13 @@
                                 onclick="portalToggleMembers()" onkeydown="portalMemberTriggerKey(event)">
                             <span class="actuar-picker-avatar" id="portalMemberAvatar" aria-hidden="true"><i class="fi fi-rr-user"></i></span>
                             <span class="actuar-picker-copy">
-                                <strong id="portalMemberName">Quem está registrando?</strong>
-                                <small id="portalMemberRole">Escolha o seu nome para continuar</small>
+                                <strong id="portalMemberName">Qual área está registrando?</strong>
+                                <small id="portalMemberRole">Escolha a sua área para continuar</small>
                             </span>
                             <i class="fi fi-rr-angle-small-down actuar-picker-caret" aria-hidden="true"></i>
                         </button>
                         <div id="portalMemberPanel" class="actuar-picker-panel" hidden>
-                            <!-- Busca antes da lista: com centenas de pessoas, rolar não é
-                                 caminho. Digitar duas letras do nome resolve em um gesto. -->
-                            <div class="actuar-picker-search">
-                                <i class="fi fi-rr-search" aria-hidden="true"></i>
-                                <input id="portalMemberSearch" type="search" autocomplete="off"
-                                       placeholder="Buscar por nome ou departamento"
-                                       aria-label="Buscar pessoa" aria-controls="portalMemberList"
-                                       oninput="portalFilterMembers()" onkeydown="portalMemberSearchKey(event)">
-                            </div>
-                            <ul id="portalMemberList" class="actuar-picker-list" role="listbox" aria-label="Quem está registrando"></ul>
-                            <p id="portalMemberEmpty" class="actuar-picker-empty hidden">Ninguém encontrado com esse termo.</p>
+                            <ul id="portalMemberList" class="actuar-picker-list" role="listbox" aria-label="Área que está registrando"></ul>
                         </div>
                     </div>
                 </div>
@@ -2200,7 +2190,7 @@
                     <div class="priority-approval-filters">
                         <div class="actuar-field"><label for="externalTeamFilter">Equipe</label><select id="externalTeamFilter" onchange="renderExternalBoard()"><option value="Todos">Todas</option><option value="Sistema">Sistema</option><option value="Catraca">Catraca</option></select></div>
                         <div class="actuar-field"><label for="externalBrandFilter">Marca</label><select id="externalBrandFilter" onchange="renderExternalBoard()"><option value="Todas">Todas</option><option>Actuar</option><option>Ediz</option><option>Toletus</option><option>Fácil Fit</option></select></div>
-                        <div class="actuar-field priority-approval-search"><label for="externalSearch">Localizar</label><div class="actuar-input-icon"><i class="fi fi-rr-search" aria-hidden="true"></i><input id="externalSearch" type="search" oninput="renderExternalBoard()" placeholder="Protocolo, cliente, ID ou quem registrou"></div></div>
+                        <div class="actuar-field priority-approval-search"><label for="externalSearch">Localizar</label><div class="actuar-input-icon"><i class="fi fi-rr-search" aria-hidden="true"></i><input id="externalSearch" type="search" oninput="renderExternalBoard()" placeholder="Protocolo, cliente, ID ou área"></div></div>
                         <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="refreshExternalRequests()"><i class="fi fi-rr-refresh"></i>Atualizar</button>
                     </div>
                     <div id="admExternalBoard" class="external-board"></div>
@@ -5012,6 +5002,8 @@
                 // A auditoria de exclusão viaja junto: chave não declarada aqui é descartada
                 // pelo merge, que parte sempre do dado do servidor.
                 deletedPieceOperations: diffKeyedArray(base.deletedPieceOperations, local.deletedPieceOperations),
+                deletedPriorityRequests: diffKeyedArray(base.deletedPriorityRequests, local.deletedPriorityRequests),
+                deletedExternalRequests: diffKeyedArray(base.deletedExternalRequests, local.deletedExternalRequests),
                 externalRequests: diffKeyedArray(base.externalRequests, local.externalRequests),
                 priorityRotations: { changed: changedRotations, expectedVersions: expectedRotationVersions },
                 // Jornada por usuário; ponto por dia e usuário; escala por semana e time.
@@ -5052,6 +5044,8 @@
             });
             merged.pieceOperations = applyKeyedArrayDiff(merged.pieceOperations, diff.pieceOperations);
             merged.deletedPieceOperations = applyKeyedArrayDiff(merged.deletedPieceOperations, diff.deletedPieceOperations);
+            merged.deletedPriorityRequests = applyKeyedArrayDiff(merged.deletedPriorityRequests, diff.deletedPriorityRequests);
+            merged.deletedExternalRequests = applyKeyedArrayDiff(merged.deletedExternalRequests, diff.deletedExternalRequests);
             merged.externalRequests = applyKeyedArrayDiff(merged.externalRequests, diff.externalRequests);
             merged.priorityRotations ||= {};
             Object.entries(diff.priorityRotations?.changed || {}).forEach(([team, nextRotation]) => {
@@ -5132,6 +5126,8 @@
                     transferRequests: [],
                     pieceOperations: [],
                     deletedPieceOperations: [],
+                    deletedPriorityRequests: [],
+                    deletedExternalRequests: [],
                     externalRequests: [],
                     priorityRotations: {},
                     workProfiles: {},
@@ -5145,6 +5141,8 @@
                 if (!appStore.transferRequests) appStore.transferRequests = [];
                 appStore.pieceOperations = window.PiecesOperations ? PiecesOperations.bootstrap(appStore, appStore.users || defaultUsers) : (appStore.pieceOperations || []);
                 if (!appStore.deletedPieceOperations) appStore.deletedPieceOperations = [];
+                if (!appStore.deletedPriorityRequests) appStore.deletedPriorityRequests = [];
+                if (!appStore.deletedExternalRequests) appStore.deletedExternalRequests = [];
                 if (!appStore.externalRequests) appStore.externalRequests = [];
                 if (!appStore.priorityRotations) appStore.priorityRotations = {};
                 // Ponto e pausas: base vazia em store antigo, para o módulo nunca
@@ -5619,12 +5617,16 @@
 
         /* Lista predefinida, em um lugar só. O portal não aceita texto livre no nome: quem
            registra precisa ser alguém conhecido, ainda que sem conta na plataforma. */
-        const PORTAL_COLLABORATORS = [
-            { id: 'joao_almeida', name: 'João Almeida', department: 'Comercial', role: 'Closer', active: true },
-            { id: 'marina_sdr', name: 'Marina Rocha', department: 'Comercial', role: 'SDR', active: true },
-            { id: 'paulo_fin', name: 'Paulo Meneses', department: 'Financeiro', role: 'Financeiro', active: true },
-            { id: 'clara_adm', name: 'Clara Dias', department: 'Administrativo', role: 'Administrativo', active: true },
-            { id: 'rafael_imp', name: 'Rafael Nunes', department: 'Implantação', role: 'Implantação', active: true }
+        /* Quem registra é a ÁREA, não a pessoa. O PIN é compartilhado, então a identidade
+           individual nunca foi verificada de verdade — dizer "João Almeida" dava uma certeza
+           que o acesso não sustenta. A área é o que a gestão precisa saber para triar e para
+           medir de onde vem a demanda, e é o que o acesso realmente comprova. */
+        const PORTAL_DEPARTMENTS = [
+            { id: 'comercial', name: 'Comercial', icon: 'fi-rr-handshake', active: true },
+            { id: 'administrativo', name: 'Administrativo', icon: 'fi-rr-document', active: true },
+            { id: 'retencao', name: 'Retenção', icon: 'fi-rr-heart', active: true },
+            { id: 'financeiro', name: 'Financeiro', icon: 'fi-rr-coins', active: true },
+            { id: 'implantacao', name: 'Implantação', icon: 'fi-rr-rocket-lunch', active: true }
         ];
 
         let portalSession = null;
@@ -5632,13 +5634,13 @@
         let portalSending = false;
 
         function isPortalRoute() { return currentRoute?.name === 'portal-prioridades'; }
-        function portalCollaborators() { return PORTAL_COLLABORATORS.filter(item => item.active !== false); }
-        function portalCollaborator(id) { return PORTAL_COLLABORATORS.find(item => item.id === id) || null; }
+        function portalDepartments() { return PORTAL_DEPARTMENTS.filter(item => item.active !== false); }
+        function portalDepartment(id) { return PORTAL_DEPARTMENTS.find(item => item.id === id) || null; }
 
         function readPortalSession() {
             try {
                 const salvo = JSON.parse(sessionStorage.getItem(PORTAL_SESSION_KEY) || 'null');
-                if (!salvo || !portalCollaborator(salvo.id)) return null;
+                if (!salvo || !portalDepartment(salvo.id)) return null;
                 // Sessão de turno: expira sozinha, para o portal não ficar aberto no dia seguinte.
                 if (Date.now() - Number(salvo.at || 0) > PORTAL_SESSION_HOURS * 3600000) return null;
                 return salvo;
@@ -5674,11 +5676,11 @@
             document.getElementById('portalHeader')?.classList.toggle('hidden', !identificado);
             document.getElementById('portalIdentity')?.classList.toggle('hidden', !identificado);
             if (identificado) {
-                const pessoa = portalCollaborator(portalSession.id);
+                const area = portalDepartment(portalSession.id);
                 const nome = document.getElementById('portalIdentityName');
-                if (nome) nome.textContent = `${pessoa.name} · ${pessoa.department}`;
+                if (nome) nome.textContent = area.name;
                 const saudacao = document.getElementById('portalGreeting');
-                if (saudacao) saudacao.textContent = `Olá, ${pessoa.name.split(' ')[0]}. Vamos registrar sua solicitação.`;
+                if (saudacao) saudacao.textContent = `${area.name}, vamos registrar a solicitação.`;
                 if (document.getElementById('portalSuccess')?.classList.contains('hidden')) {
                     document.getElementById('portalForm')?.classList.remove('hidden');
                 }
@@ -5749,25 +5751,15 @@
             return String(nome || '').split(/\s+/).filter(Boolean).slice(0, 2).map(parte => parte[0]).join('').toUpperCase();
         }
 
-        function portalRenderMembers(termo = '') {
+        function portalRenderMembers() {
             const lista = document.getElementById('portalMemberList');
             if (!lista) return;
-            /* Normaliza acento e caixa, como a busca de chamados: quem digita "jo" acha
-               "João", e quem digita "joao" também. */
-            const alvo = (window.PriorityRotation?.normalizeSearch ? PriorityRotation.normalizeSearch(termo) : String(termo).toLowerCase()).trim();
-            const visiveis = portalCollaborators().filter(item => {
-                if (!alvo) return true;
-                const campos = `${item.name} ${item.department} ${item.role}`;
-                const normalizado = window.PriorityRotation?.normalizeSearch ? PriorityRotation.normalizeSearch(campos) : campos.toLowerCase();
-                return normalizado.includes(alvo);
-            });
-            document.getElementById('portalMemberEmpty')?.classList.toggle('hidden', visiveis.length > 0);
             const escolhido = document.getElementById('portalCollaborator')?.value;
-            lista.innerHTML = visiveis.map((item, indice) => `
-                <li role="option" id="portalMember_${escapeHtml(item.id)}" data-id="${escapeHtml(item.id)}" tabindex="-1"
+            lista.innerHTML = portalDepartments().map((item, indice) => `
+                <li role="option" data-id="${escapeHtml(item.id)}" tabindex="-1"
                     aria-selected="${item.id === escolhido}" onclick="portalPickMember('${escapeHtml(item.id)}')" onkeydown="portalMemberKey(event, ${indice})">
-                    <span class="actuar-picker-avatar" aria-hidden="true">${escapeHtml(portalMemberInitials(item.name))}</span>
-                    <span class="actuar-picker-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.department)} · ${escapeHtml(item.role)}</small></span>
+                    <span class="actuar-picker-avatar" aria-hidden="true"><i class="fi ${escapeHtml(item.icon)}"></i></span>
+                    <span class="actuar-picker-copy"><strong>${escapeHtml(item.name)}</strong></span>
                     <i class="fi fi-rr-check actuar-picker-tick" aria-hidden="true"></i>
                 </li>`).join('');
         }
@@ -5785,39 +5777,28 @@
             if (abrir) {
                 // O foco vai para a busca, não para o primeiro nome: com muita gente, digitar
                 // é o caminho, e rolar é a exceção.
-                portalRenderMembers('');
-                const busca = document.getElementById('portalMemberSearch');
-                if (busca) { busca.value = ''; busca.focus(); }
+                portalRenderMembers();
+                const lista = document.getElementById('portalMemberList');
+                const atual = lista?.querySelector('[aria-selected="true"]') || lista?.firstElementChild;
+                atual?.focus();
             } else gatilho.focus();
         }
 
         function portalPickMember(id) {
-            const pessoa = portalCollaborator(id);
-            if (!pessoa) return;
-            document.getElementById('portalCollaborator').value = pessoa.id;
-            document.getElementById('portalMemberAvatar').textContent = portalMemberInitials(pessoa.name);
-            document.getElementById('portalMemberName').textContent = pessoa.name;
-            document.getElementById('portalMemberRole').textContent = `${pessoa.department} · ${pessoa.role}`;
+            const area = portalDepartment(id);
+            if (!area) return;
+            document.getElementById('portalCollaborator').value = area.id;
+            document.getElementById('portalMemberAvatar').innerHTML = `<i class="fi ${escapeHtml(area.icon)}"></i>`;
+            document.getElementById('portalMemberName').textContent = area.name;
+            document.getElementById('portalMemberRole').textContent = 'Área que está registrando';
             document.getElementById('portalMemberTrigger')?.classList.add('is-filled');
             document.querySelectorAll('#portalMemberList li').forEach(item => {
-                item.setAttribute('aria-selected', String(item.dataset.id === pessoa.id));
+                item.setAttribute('aria-selected', String(item.dataset.id === area.id));
             });
             portalShowError('portalAccessError', '');
             portalToggleMembers(false);
-            // Escolhido o nome, o próximo passo é o PIN: sem clique extra no caminho.
+            // Escolhida a área, o próximo passo é o PIN: sem clique extra no caminho.
             portalPinBox(1)?.focus();
-        }
-
-        function portalFilterMembers() {
-            portalRenderMembers(document.getElementById('portalMemberSearch')?.value || '');
-        }
-
-        function portalMemberSearchKey(event) {
-            if (event.key === 'Escape') { event.preventDefault(); portalToggleMembers(false); return; }
-            const itens = [...document.querySelectorAll('#portalMemberList li')];
-            // Seta para baixo entra na lista; Enter escolhe direto quando sobrou um só.
-            if (event.key === 'ArrowDown' && itens.length) { event.preventDefault(); itens[0].focus(); }
-            if (event.key === 'Enter') { event.preventDefault(); if (itens.length === 1) portalPickMember(itens[0].dataset.id); }
         }
 
         function portalMemberKey(event, indice) {
@@ -5827,8 +5808,6 @@
             const passo = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;
             if (!passo) return;
             event.preventDefault();
-            // Subir do primeiro devolve à busca: é de onde a pessoa veio.
-            if (passo === -1 && indice === 0) { document.getElementById('portalMemberSearch')?.focus(); return; }
             // A lista dá a volta: chegar ao fim e continuar descendo leva ao começo.
             itens[(indice + passo + itens.length) % itens.length]?.focus();
         }
@@ -5847,12 +5826,12 @@
             portalShowError('portalAccessError', '');
             const id = document.getElementById('portalCollaborator')?.value;
             const pin = portalPinValue();
-            const pessoa = portalCollaborator(id);
-            if (!pessoa) {
-                // Sem nome não há por que julgar o PIN: o que falta é a identidade.
-                portalShowError('portalAccessError', 'Selecione o seu nome na lista antes de informar o PIN.');
+            const area = portalDepartment(id);
+            if (!area) {
+                // Sem área não há por que julgar o PIN: o que falta é a identificação.
+                portalShowError('portalAccessError', 'Selecione a sua área antes de informar o PIN.');
                 portalPinClear(false);
-                document.getElementById('portalCollaborator')?.focus();
+                document.getElementById('portalMemberTrigger')?.focus();
                 return false;
             }
             if (pin.length < PORTAL_PIN_BOXES) { portalShowError('portalAccessError', 'Informe os quatro dígitos do PIN.'); portalPinBox(pin.length + 1)?.focus(); return false; }
@@ -5863,7 +5842,7 @@
                 portalPinClear();
                 return false;
             }
-            portalSession = { id: pessoa.id, at: Date.now() };
+            portalSession = { id: area.id, at: Date.now() };
             writePortalSession(portalSession);
             portalPinClear(false);
             renderPortal();
@@ -6018,20 +5997,18 @@
             botao.disabled = true;
             botao.innerHTML = '<i class="fi fi-rr-spinner actuar-portal-spin" aria-hidden="true"></i>Enviando solicitação…';
 
-            const pessoa = portalCollaborator(portalSession.id);
+            const area = portalDepartment(portalSession.id);
             const protocolo = portalNextProtocol();
             const registro = {
                 id: uid(),
                 protocol: protocolo,
                 ...dados,
                 team: portalTeam,
-                requesterId: pessoa.id,
-                requesterName: pessoa.name,
-                requesterDepartment: pessoa.department,
-                requesterRole: pessoa.role,
+                requesterId: area.id,
+                requesterDepartment: area.name,
                 status: 'aguardando_triagem',
                 createdAt: Date.now(),
-                events: [{ type: 'created', at: Date.now(), by: pessoa.name, text: 'Solicitação registrada pelo Portal de Prioridades.' }]
+                events: [{ type: 'created', at: Date.now(), by: area.name, text: 'Solicitação registrada pelo Portal de Prioridades.' }]
             };
 
             const anterior = deepClone(getStore().externalRequests || []);
@@ -6092,6 +6069,42 @@
            ========================================================================== */
         function externalDomain() { return window.ExternalRequests || null; }
 
+        function vincularSolicitacaoExterna(attendanceId, requestId) {
+            const dominio = externalDomain();
+            if (!dominio || !attendanceId) return;
+            const lista = dominio.list(getStore());
+            const externa = lista.find(item => item.attendanceId === attendanceId && dominio.stageOf(item) === 'em_atendimento');
+            if (!externa) return;
+            /* Vai para aprovação, não para concluída: o analista não aprova a própria
+               pontuação. Quem valida é a gestão, no mesmo fluxo de sempre. */
+            const atualizado = dominio.transition(externa, 'aguardando_aprovacao', {
+                actorName: getStore()?.users?.[currentActiveUser]?.name || 'Analista',
+                patch: { priorityRequestId: requestId },
+                text: 'Atendimento concluído e enviado para aprovação da gestão.'
+            });
+            appStore.externalRequests = lista.map(item => (item.id === externa.id ? atualizado : item));
+        }
+
+        /* A aprovação da prioridade fecha a solicitação externa junto. O crédito dos pontos
+           continua sendo o do fluxo normal — mesma prioridade, mesma régua, 50 pontos —
+           então não há pontuação paralela para manter em dia. */
+        function concluirSolicitacaoExterna(requestId, aprovada, motivo) {
+            const dominio = externalDomain();
+            if (!dominio || !requestId) return false;
+            const lista = dominio.list(getStore());
+            const externa = lista.find(item => item.priorityRequestId === requestId && dominio.stageOf(item) === 'aguardando_aprovacao');
+            if (!externa) return false;
+            const atualizado = dominio.transition(externa, aprovada ? 'concluida' : 'em_atendimento', {
+                actorName: getCurrentManager()?.name || 'Gestão',
+                reason: motivo || '',
+                text: aprovada
+                    ? 'Aprovada pela gestão. Pontuação creditada ao analista.'
+                    : `Devolvida ao atendimento pela gestão${motivo ? `: ${motivo}` : ''}.`
+            });
+            appStore.externalRequests = lista.map(item => (item.id === externa.id ? atualizado : item));
+            return true;
+        }
+
         /* O quadro é uma caixa de entrada: o que chega vem de fora, de outra aba e de outra
            pessoa. Sem buscar do servidor ao abrir, a gestão veria a foto do momento em que
            carregou a página — e uma solicitação registrada agora só apareceria depois de um
@@ -6134,10 +6147,34 @@
             const alvo = window.PriorityRotation?.normalizeSearch ? PriorityRotation.normalizeSearch(busca).trim() : busca.trim().toLowerCase();
             return dominio.list(getStore()).filter(item => {
                 if (!alvo) return true;
-                const campos = `${item.protocol} ${item.clientId} ${item.clientName} ${item.requesterName} ${item.brand}`;
+                const campos = `${item.protocol} ${item.clientId} ${item.clientName} ${item.requesterDepartment} ${item.brand}`;
                 const normalizado = window.PriorityRotation?.normalizeSearch ? PriorityRotation.normalizeSearch(campos) : campos.toLowerCase();
                 return normalizado.includes(alvo);
             });
+        }
+
+        /* Tag do card. Repetir o nome da coluna não acrescentaria nada — o card já está
+           dentro dela. O que a coluna NÃO diz é por que a solicitação não anda: a fila está
+           pausada? ocupada? pronta? E, em atendimento, com quem está. É isso que vira tag. */
+        function externalCardTag(item) {
+            const etapa = externalDomain().stageOf(item);
+            const users = getStore()?.users || defaultUsers;
+            if (etapa === 'aguardando_distribuicao') {
+                const view = externalRotationView(item.team);
+                if (!view || view.status === 'missing') return { tone: 'danger', icon: 'fi-rr-triangle-warning', label: 'Sem fila' };
+                if (view.status !== 'active') return { tone: 'warning', icon: 'fi-rr-pause', label: 'Rodízio pausado' };
+                if (view.current) return { tone: 'warning', icon: 'fi-rr-clock', label: 'Fila ocupada' };
+                if (!view.next) return { tone: 'warning', icon: 'fi-rr-user-slash', label: 'Sem analista' };
+                return { tone: 'success', icon: 'fi-rr-paper-plane', label: `Pronta para ${users[view.next]?.name?.split(' ')[0] || 'distribuir'}` };
+            }
+            if (etapa === 'em_atendimento') {
+                return { tone: 'primary', icon: 'fi-rr-user', label: users[item.analystId]?.name?.split(' ')[0] || 'Em atendimento' };
+            }
+            if (etapa === 'aguardando_info') return { tone: 'warning', icon: 'fi-rr-comment-question', label: 'Aguarda o solicitante' };
+            if (etapa === 'aguardando_aprovacao') return { tone: 'warning', icon: 'fi-rr-check-circle', label: 'Aguarda aprovação' };
+            if (etapa === 'concluida') return { tone: 'success', icon: 'fi-rr-check', label: 'Concluída' };
+            if (externalDomain().isClosed(etapa)) return { tone: 'neutral', icon: 'fi-rr-cross-small', label: externalDomain().stageMeta(etapa).label };
+            return null;
         }
 
         function externalCard(item) {
@@ -6154,11 +6191,12 @@
                     <strong>${escapeHtml(item.clientName || 'Cliente não informado')}</strong>
                     <span class="actuar-badge actuar-badge-neutral">${escapeHtml(item.team || '—')}</span>
                 </header>
+                ${(() => { const tag = externalCardTag(item); return tag ? `<span class="actuar-badge actuar-badge-${escapeHtml(tag.tone)} external-card-tag"><i class="fi ${escapeHtml(tag.icon)}" aria-hidden="true"></i>${escapeHtml(tag.label)}</span>` : ''; })()}
                 <p class="external-card-need">${escapeHtml(item.need || '')}</p>
                 <dl>
                     <div><dt>Protocolo</dt><dd class="num-mono">${escapeHtml(item.protocol || '—')}</dd></div>
                     <div><dt>Cliente</dt><dd>${escapeHtml(item.clientId || '—')} · ${escapeHtml(item.brand || '—')}</dd></div>
-                    <div><dt>Registrado por</dt><dd>${escapeHtml(item.requesterName || '—')}</dd></div>
+                    <div><dt>Registrado por</dt><dd>${escapeHtml(item.requesterDepartment || '—')}</dd></div>
                 </dl>
                 <footer>
                     <span title="${escapeHtml(fullMomentTitle(item.createdAt))}"><i class="fi fi-rr-clock" aria-hidden="true"></i>${escapeHtml(espera)}</span>
@@ -6237,8 +6275,9 @@
                 </dl></div>
                 <div class="pieces-detail-block"><h3>O que o cliente precisa</h3><p class="pieces-detail-copy">${escapeHtml(item.need || '')}</p></div>
                 <div class="pieces-detail-block"><h3>Quem registrou</h3><dl class="external-facts">
-                    ${linha('Pessoa', item.requesterName)}${linha('Departamento', item.requesterDepartment)}${linha('Função', item.requesterRole)}
+                    ${linha('Área', item.requesterDepartment)}${linha('Registrada em', ActuarFields.formatMoment(item.createdAt))}
                 </dl></div>
+                ${dominio.stageOf(item) === 'aguardando_distribuicao' ? `<div class="pieces-detail-block"><h3>Distribuição</h3>${externalDistributionPanel(item)}</div>` : ''}
                 <details class="pieces-audit"><summary>Histórico</summary><div>${(item.events || []).map(evento => `<div><i class="fi fi-rr-time-past"></i><span><strong>${escapeHtml(evento.text)}</strong><small>${escapeHtml(evento.by || '—')} · ${escapeHtml(ActuarFields.formatMoment(evento.at))}</small></span></div>`).join('') || '<p>Sem eventos.</p>'}</div></details>`;
 
             document.getElementById('externalDrawerFooter').innerHTML = externalActions(item, dominio);
@@ -6247,11 +6286,283 @@
             requestAnimationFrame(() => document.querySelector('#externalRequestDrawer .external-drawer')?.focus());
         }
 
+        /* DISTRIBUIÇÃO PELO RODÍZIO
+           Não existe segunda fila: a solicitação externa entra na mesma que o analista já
+           conhece, com o mesmo briefing que a gestão preenche à mão hoje. O domínio do
+           rodízio exige que o destino seja o próximo — furar isso em código seria desfazer,
+           por conveniência, a regra que dá confiança à fila. */
+        function externalRotationView(team) {
+            if (!window.PriorityRotation) return null;
+            return PriorityRotation.view(ensurePriorityRotation(team));
+        }
+
+        // A fila inteira, com posição e estado de cada um. Decidir para quem mandar sem ver
+        // quem vem depois obriga a abrir outra tela e voltar.
+        function externalQueueList(view, users, item) {
+            const rodizio = ensurePriorityRotation(item.team);
+            const pausados = new Set((view.paused || []).map(p => p.userId));
+            const fila = (view.queue || []).map((id, indice) => {
+                const pessoa = users[id];
+                const ehProximo = id === view.next;
+                const estado = pausados.has(id) ? 'Pausado' : ehProximo ? 'Próximo' : `${indice + 1}º`;
+                return `<li class="${ehProximo ? 'is-next' : ''}${pausados.has(id) ? ' is-paused' : ''}">
+                    <span class="external-queue-pos">${escapeHtml(estado)}</span>
+                    <strong>${escapeHtml(pessoa?.name || id)}</strong>
+                </li>`;
+            }).join('');
+            return `<ol class="external-queue" aria-label="Fila do rodízio">${fila || '<li class="external-queue-empty">Fila vazia.</li>'}</ol>`
+                + (rodizio?.lastCompleted ? `<p class="external-queue-note">Último atendimento: ${escapeHtml(users[rodizio.lastCompleted.analystId]?.name || '—')} · ${escapeHtml(ActuarFields.formatMoment(rodizio.lastCompleted.completedAt))}</p>` : '');
+        }
+
+        function externalDistributionPanel(item) {
+            const view = externalRotationView(item.team);
+            const users = getStore()?.users || defaultUsers;
+            if (!view || view.status === 'missing') {
+                return `<div class="actuar-feedback actuar-feedback-warning"><i class="fi fi-rr-triangle-warning"></i><div><strong>Rodízio indisponível</strong><p>Não há fila configurada para ${escapeHtml(teamLabel(item.team))}.</p></div></div>`;
+            }
+            const fila = externalQueueList(view, users, item);
+            if (view.status !== 'active') {
+                /* Pausado, a gestão resolve aqui mesmo. Mandar a pessoa para outra tela para
+                   voltar depois é o tipo de vaivém que faz a solicitação ficar esquecida. */
+                return `<div class="actuar-feedback actuar-feedback-warning"><i class="fi fi-rr-pause"></i><div><strong>Rodízio pausado</strong><p>A fila de ${escapeHtml(teamLabel(item.team))} está parada. Retome para distribuir.</p></div></div>
+                    ${fila}
+                    <div class="external-distribution-actions"><button type="button" class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="externalResumeRotation()"><i class="fi fi-rr-play"></i>Retomar rodízio</button></div>`;
+            }
+            if (view.current) {
+                const ocupado = users[view.current.analystId];
+                /* Próximo ocupado: a solicitação espera. Escolher outro por pressa é como a
+                   fila perde a confiança de quem está nela. */
+                return `<div class="actuar-feedback actuar-feedback-info"><i class="fi fi-rr-clock"></i><div><strong>A fila está ocupada</strong><p>${escapeHtml(ocupado?.name || 'Um analista')} está com um atendimento em andamento. A solicitação aguarda a vez ficar livre.</p></div></div>${fila}`;
+            }
+            if (!view.next) {
+                return `<div class="actuar-feedback actuar-feedback-warning"><i class="fi fi-rr-user-slash"></i><div><strong>Ninguém disponível</strong><p>Não há analista elegível na fila de ${escapeHtml(teamLabel(item.team))} agora.</p></div></div>${fila}`;
+            }
+            const proximo = users[view.next];
+            return `<div class="external-distribution">
+                <div class="external-next">
+                    <small>Próximo elegível em ${escapeHtml(teamLabel(item.team))}</small>
+                    <strong>${escapeHtml(proximo?.name || view.next)}</strong>
+                </div>
+                <span class="external-distribution-actions">
+                    <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="externalSkipNext()">Pular a vez</button>
+                    <button type="button" class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="externalAssign()"><i class="fi fi-rr-paper-plane"></i>Encaminhar</button>
+                </span>
+            </div>${fila}`;
+        }
+
+        async function externalResumeRotation() {
+            const item = externalRequestById(externalOpenId);
+            if (!item) return;
+            const ok = await actuarConfirm({
+                icon: 'play', title: `Retomar o rodízio de ${teamLabel(item.team)}?`,
+                message: 'A fila volta a distribuir atendimentos a partir de quem está na frente.',
+                confirmLabel: 'Retomar'
+            });
+            if (!ok) return;
+            await persistPriorityRotationMutation(item.team,
+                rodizio => PriorityRotation.setPaused(rodizio, false, currentAdminId, ''),
+                'Rodízio retomado.');
+            openExternalRequest(item.id);
+        }
+
+        /* Encaminhar move duas coisas ao mesmo tempo: o rodízio ganha o atendimento e a
+           solicitação muda de etapa. Se qualquer uma falhar, as duas voltam — meia
+           distribuição deixaria o analista com trabalho que o quadro não reconhece. */
+        async function externalAssign() {
+            const dominio = externalDomain();
+            const item = externalRequestById(externalOpenId);
+            if (!dominio || !item) return;
+            const view = externalRotationView(item.team);
+            if (!view?.next) { showToast('A fila mudou: não há próximo elegível agora.', 'error'); return; }
+
+            const rotacaoAnterior = deepClone(ensurePriorityRotation(item.team));
+            const listaAnterior = deepClone(getStore().externalRequests || []);
+            const analista = (getStore()?.users || defaultUsers)[view.next];
+            try {
+                const briefing = {
+                    demand: item.need,
+                    clientName: item.clientName,
+                    clientId: item.clientId,
+                    phone: item.phone,
+                    instructions: `Solicitação ${item.protocol}, registrada pela área ${item.requesterDepartment}.`
+                };
+                const rodizio = PriorityRotation.assign(deepClone(rotacaoAnterior), view.next, currentAdminId, briefing, Date.now());
+                const atualizado = dominio.transition(item, 'em_atendimento', {
+                    actorName: getCurrentManager()?.name || 'Gestão',
+                    patch: { analystId: view.next, attendanceId: rodizio.current?.id || null, assignedAt: Date.now() },
+                    text: `Encaminhada para ${analista?.name || view.next} pelo rodízio.`
+                });
+                appStore.priorityRotations[item.team] = rodizio;
+                appStore.externalRequests = listaAnterior.map(linha => (linha.id === item.id ? atualizado : linha));
+                const ok = await persistStore();
+                if (!ok) throw new Error(lastPersistError || 'Não foi possível encaminhar.');
+                renderExternalBoard();
+                renderPriorityRotation();
+                openExternalRequest(item.id);
+                showToast(`Encaminhada para ${analista?.name || 'o próximo da fila'}.`);
+            } catch (erro) {
+                appStore.priorityRotations[item.team] = rotacaoAnterior;
+                appStore.externalRequests = listaAnterior;
+                showToast(erro.message || 'Não foi possível encaminhar.', 'error');
+            }
+        }
+
+        /* Pular exige motivo e manda a pessoa para o fim da fila — o domínio do rodízio já
+           faz isso. É a alternativa honesta a "escolher outro analista": a vez não some, ela
+           é adiada, e fica registrado por quê. */
+        async function externalSkipNext() {
+            const item = externalRequestById(externalOpenId);
+            const view = externalRotationView(item?.team);
+            if (!item || !view?.next) return;
+            const users = getStore()?.users || defaultUsers;
+            const motivo = await actuarConfirm({
+                icon: 'user-time', title: `Pular a vez de ${users[view.next]?.name || 'quem está na frente'}?`,
+                message: 'A pessoa vai para o fim da fila, não perde a vez. O motivo fica no histórico do rodízio.',
+                input: { label: 'Por que pular?', placeholder: 'Ex.: em atendimento de campo, sem disponibilidade agora.' },
+                confirmLabel: 'Pular a vez'
+            });
+            if (!motivo) return;
+            await persistPriorityRotationMutation(item.team,
+                rodizio => PriorityRotation.skip(rodizio, view.next, currentAdminId, motivo),
+                'Vez adiada. O próximo da fila assume.');
+            openExternalRequest(item.id);
+        }
+
+        /* A gestão aprova por aqui, pela tela em que acompanha a solicitação — mas quem
+           credita é `approvePriorityRequest`, o mesmo do fluxo de sempre. Duplicar a
+           concessão de pontos criaria duas verdades sobre a mesma prioridade. */
+        function externalPriorityRequest(item) {
+            return (getStore()?.priorityRequests || []).find(req => req.id === item.priorityRequestId) || null;
+        }
+
+        async function externalApproveWork() {
+            const item = externalRequestById(externalOpenId);
+            const prioridade = externalPriorityRequest(item);
+            if (!prioridade) { showToast('O lançamento desta prioridade não foi encontrado.', 'error'); return; }
+            const ok = await actuarConfirm({
+                icon: 'check-circle', title: `Aprovar o atendimento de ${item.clientName}?`,
+                message: 'A pontuação de 50 pontos é creditada ao analista e a solicitação é encerrada.',
+                confirmLabel: 'Aprovar e pontuar'
+            });
+            if (!ok) return;
+            const aprovado = await approvePriorityRequest(prioridade.id, `Solicitação externa ${item.protocol}.`);
+            if (!aprovado) return;
+            renderExternalBoard();
+            openExternalRequest(item.id);
+        }
+
+        async function externalReturnWork() {
+            const item = externalRequestById(externalOpenId);
+            const prioridade = externalPriorityRequest(item);
+            if (!prioridade) { showToast('O lançamento desta prioridade não foi encontrado.', 'error'); return; }
+            const motivo = await actuarConfirm({
+                tone: 'danger', icon: 'rotate-left', title: 'Devolver para o analista?',
+                message: 'O atendimento volta a ficar em aberto e nenhum ponto é creditado.',
+                input: { label: 'O que precisa ser refeito ou completado?', placeholder: 'Ex.: informe o protocolo do atendimento no Helpdesk.' },
+                confirmLabel: 'Devolver'
+            });
+            if (!motivo) return;
+            const anteriorPrioridade = deepClone(prioridade);
+            const anteriorExterna = deepClone(getStore().externalRequests || []);
+            try {
+                ensurePriorityEvaluationHistory(prioridade);
+                prioridade.status = 'ajuste_solicitado';
+                prioridade.resolvedBy = currentAdminId;
+                prioridade.resolvedAt = Date.now();
+                prioridade.adjustmentReason = motivo;
+                appendPriorityEvaluation(prioridade, 'ajuste_solicitado', motivo);
+                concluirSolicitacaoExterna(prioridade.id, false, motivo);
+                const ok = await persistStore();
+                if (!ok) throw new Error(lastPersistError || 'A devolução não foi salva.');
+                showToast('Devolvida ao analista.');
+                renderExternalBoard();
+                openExternalRequest(item.id);
+            } catch (erro) {
+                restorePriorityRequestSnapshot(prioridade.id, anteriorPrioridade);
+                appStore.externalRequests = anteriorExterna;
+                showToast(erro.message || 'Não foi possível devolver.', 'error');
+            }
+        }
+
+        /* Excluir a solicitação, com a mesma régua de peças e lançamentos. Se ela já virou
+           prioridade aprovada, o lançamento e os pontos saem junto: apagar só o card
+           deixaria pontuação de um atendimento que não existe mais. */
+        async function externalDelete() {
+            const dominio = externalDomain();
+            const item = externalRequestById(externalOpenId);
+            if (!dominio || !item) return;
+            if (!canAuditDeletedPieces()) { showToast('Apenas a gestão com acesso a todas as equipes pode excluir solicitações.', 'error'); return; }
+
+            const prioridade = externalPriorityRequest(item);
+            const logs = prioridade ? PriorityRotation.pointLogsOf(getStore()?.logs, prioridade.id) : [];
+            const pontos = logs.reduce((soma, log) => soma + Number(log.value || 0), 0);
+            const emAtendimento = dominio.stageOf(item) === 'em_atendimento';
+
+            const motivo = await actuarConfirm({
+                tone: 'danger', icon: 'trash',
+                title: `Excluir a solicitação ${item.protocol}?`,
+                message: [
+                    pontos ? `Os ${pontos} ponto(s) creditados por ela são estornados.` : 'Ela não gerou pontos.',
+                    prioridade ? 'O lançamento de prioridade correspondente também é excluído.' : '',
+                    emAtendimento ? 'Atenção: um analista está com este atendimento em andamento.' : '',
+                    'Fica registrada no Histórico, com o seu nome e o motivo.'
+                ].filter(Boolean).join(' '),
+                input: { label: 'Motivo da exclusão', placeholder: 'Ex.: solicitação de teste criada durante a homologação.' },
+                confirmLabel: 'Excluir solicitação'
+            });
+            if (!motivo) return;
+
+            const senha = await actuarConfirm({
+                tone: 'danger', icon: 'lock', title: 'Confirme com a sua senha',
+                message: 'A exclusão é registrada em seu nome.',
+                input: { label: 'Senha do seu acesso de gestão', placeholder: 'Digite a sua senha' },
+                confirmLabel: 'Confirmar exclusão'
+            });
+            if (!senha) return;
+            if (!await verifyLoginRemote(currentAdminId, senha)) { showToast('Senha incorreta. Nada foi excluído.', 'error'); return; }
+
+            const anterior = {
+                externas: deepClone(getStore().externalRequests || []),
+                pedidos: deepClone(getStore().priorityRequests || []),
+                logs: deepClone(getStore().logs || []),
+                excluidas: deepClone(getStore().deletedExternalRequests || [])
+            };
+            try {
+                const entrada = dominio.deletionEntry(item, currentAdminId, motivo, { removedLogs: logs });
+                const removidos = new Set(entrada.removedLogIds);
+                appStore.externalRequests = anterior.externas.filter(linha => linha.id !== item.id);
+                if (prioridade) appStore.priorityRequests = anterior.pedidos.filter(linha => linha.id !== prioridade.id);
+                appStore.logs = anterior.logs.filter(log => !removidos.has(log.id));
+                appStore.deletedExternalRequests = [...anterior.excluidas, entrada];
+                const ok = await persistStore();
+                if (!ok) throw new Error(lastPersistError || 'Não foi possível concluir a exclusão.');
+                closeExternalRequest();
+                renderExternalBoard();
+                showToast(entrada.removedPoints
+                    ? `Solicitação excluída e ${entrada.removedPoints} ponto(s) estornado(s).`
+                    : 'Solicitação excluída e registrada no Histórico.');
+            } catch (erro) {
+                appStore.externalRequests = anterior.externas;
+                appStore.priorityRequests = anterior.pedidos;
+                appStore.logs = anterior.logs;
+                appStore.deletedExternalRequests = anterior.excluidas;
+                showToast(erro.message || 'Não foi possível excluir a solicitação.', 'error');
+            }
+        }
+
         function externalActions(item, dominio) {
             const etapa = dominio.stageOf(item);
-            const fechar = `<button type="button" class="actuar-btn actuar-btn-secondary" onclick="closeExternalRequest()">Voltar</button>`;
+            const fechar = `<button type="button" class="actuar-btn actuar-btn-secondary" onclick="closeExternalRequest()">Voltar</button>`
+                + (canAuditDeletedPieces() ? `<button type="button" class="actuar-btn actuar-btn-danger external-delete-action" onclick="externalDelete()"><i class="fi fi-rr-trash"></i>Excluir solicitação</button>` : '');
             if (dominio.isClosed(etapa)) return fechar;
             const decisões = [];
+            if (etapa === 'aguardando_distribuicao') return fechar;
+            if (etapa === 'aguardando_aprovacao') {
+                return fechar
+                    + `<button type="button" class="actuar-btn actuar-btn-secondary" onclick="externalReturnWork()">Devolver ao analista</button>`
+                    + `<button type="button" class="actuar-btn actuar-btn-success" onclick="externalApproveWork()"><i class="fi fi-rr-check"></i>Aprovar e pontuar</button>`;
+            }
+            if (etapa === 'em_atendimento' || etapa === 'concluida') return fechar;
             if (etapa === 'nova' || etapa === 'triagem' || etapa === 'aguardando_info') {
                 decisões.push(`<button type="button" class="actuar-btn actuar-btn-secondary" onclick="externalAsk()">Pedir informação</button>`);
                 decisões.push(`<button type="button" class="actuar-btn actuar-btn-danger" onclick="externalReject()">Não é prioridade</button>`);
@@ -7416,15 +7727,41 @@
                 });
             });
 
-            // Exclusões de peça: aparecem para quem tem alcance sobre todas as equipes.
+            // Exclusões: aparecem para quem tem alcance sobre todas as equipes.
             if (canAuditDeletedPieces()) {
+                /* Peça e prioridade compartilham a mesma linha de auditoria. São entidades
+                   diferentes, mas a pergunta de quem audita é uma só: o que foi apagado,
+                   por quem e quanto ponto voltou. */
+                (store?.deletedExternalRequests || []).forEach(item => {
+                    const autor = usersList[item.deletedBy];
+                    rows.push({
+                        id: item.id, timestamp: Number(item.deletedAt || 0), userId: '',
+                        userName: item.clientName || '—', type: 'DELETED',
+                        detail: `Solicitação ${escapeHtml(item.protocol || item.id)} · ${escapeHtml(item.reason || 'Sem motivo registrado')}`,
+                        points: -Number(item.removedPoints || 0), removable: false,
+                        note: `Excluída por ${escapeHtml(autor?.name || item.deletedBy || '—')}`,
+                        search: [item.protocol, item.clientName, item.clientId, item.reason, autor?.name].filter(Boolean).join(' ')
+                    });
+                });
+                (store?.deletedPriorityRequests || []).forEach(item => {
+                    const analista = usersList[item.analystId];
+                    const autor = usersList[item.deletedBy];
+                    rows.push({
+                        id: item.id, timestamp: Number(item.deletedAt || 0), userId: item.analystId || '',
+                        userName: analista?.name || '—', type: 'DELETED',
+                        detail: `Prioridade ${escapeHtml(item.protocol || item.id)} · ${escapeHtml(item.reason || 'Sem motivo registrado')}`,
+                        points: -Number(item.removedPoints || 0), removable: false,
+                        note: `Excluída por ${escapeHtml(autor?.name || item.deletedBy || '—')}`,
+                        search: [analista?.name, item.protocol, item.reason, autor?.name].filter(Boolean).join(' ')
+                    });
+                });
                 (store?.deletedPieceOperations || []).forEach(item => {
                     const analista = usersList[item.analystId];
                     const autor = usersList[item.deletedBy];
                     rows.push({
                         id: item.id, timestamp: Number(item.deletedAt || 0), userId: item.analystId || '',
                         userName: analista?.name || '—', type: 'DELETED',
-                        detail: `Protocolo ${escapeHtml(item.protocol || item.id)} · ${escapeHtml(item.reason || 'Sem motivo registrado')}`,
+                        detail: `Peça ${escapeHtml(item.protocol || item.id)} · ${escapeHtml(item.reason || 'Sem motivo registrado')}`,
                         points: -Number(item.removedPoints || 0), removable: false,
                         note: `Excluída por ${escapeHtml(autor?.name || item.deletedBy || '—')}`,
                         search: [analista?.name, item.protocol, item.reason, autor?.name].filter(Boolean).join(' ')
@@ -10131,6 +10468,12 @@
                     }
                     nextName = priorityRotationUser(request.rotationNextParticipantId)?.name || '';
                     appStore.priorityRotations[team] = completed;
+                    /* Se este atendimento veio do Portal de Prioridades, a solicitação
+                       externa acompanha a conclusão. A chave já existia nos dois lados: o
+                       rodízio guarda o id do atendimento, e o encaminhamento gravou o mesmo
+                       id na solicitação. Sem esta ligação, o analista concluiria e o quadro
+                       da gestão continuaria dizendo "em atendimento" para sempre. */
+                    vincularSolicitacaoExterna(rotationBefore.current.id, requestId);
                 } catch (error) {
                     setFormBusy(e.target, false);
                     showToast(error.message || 'Não foi possível concluir sua vez.', 'error');
@@ -10310,6 +10653,8 @@
             document.getElementById('priorityApprovalReviewSubtitle').textContent = `${teamLabel(record.team)} · ${new Date(record.startedAt).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}`;
             document.getElementById('priorityApprovalReviewBody').innerHTML = `<section class="priority-detail-identity"><div>${priorityRotationAvatar(user)}<span><small>Analista</small><strong>${escapeHtml(user?.name || '—')}</strong><p>${teamLabel(record.team)}</p></span></div><dl><div><dt>Data e período</dt><dd>${priorityAttendanceDateRange(record)}</dd></div><div><dt>Posição no rodízio</dt><dd>${record.position ? `${record.position}ª posição` : 'Não registrada'}</dd></div><div><dt>Origem</dt><dd>${record.origin}</dd></div><div><dt>Situação final</dt><dd>${priorityStatusLabel(request.status)}</dd></div></dl></section><section class="priority-detail-request"><header><div><small>Prioridade registrada</small><h3>Protocolo ${escapeHtml(request.protocolo)}</h3></div><span>${formatRotationTime(request.timestamp,true)}</span></header>${briefing.clientName ? `<dl><div><dt>Cliente</dt><dd>${escapeHtml(briefing.clientName)}</dd></div><div><dt>Registro relacionado</dt><dd>${escapeHtml(briefing.clientId || '—')}</dd></div><div><dt>Contato</dt><dd>${escapeHtml(briefing.phone || '—')}</dd></div><div><dt>Tipo</dt><dd>Prioridade de atendimento</dd></div></dl><div><small>Descrição da demanda</small><p>${escapeHtml(briefing.demand || '—')}</p></div><div><small>Instruções recebidas</small><p>${escapeHtml(briefing.instructions || '—')}</p></div>` : ''}<div class="priority-analyst-justification"><small>Justificativa do analista</small><blockquote>${escapeHtml(request.justificativa || '—')}</blockquote></div><div class="priority-evidence-empty"><i class="fi fi-rr-clip"></i><span><strong>Evidências e anexos</strong><small>Nenhum anexo foi registrado neste lançamento.</small></span></div></section>${renderPriorityEvaluationBlock(request)}<section class="priority-operation-explanation"><small>Relação com o rodízio</small><p>${escapeHtml(operationSummary)}</p></section>${renderPriorityAudit(request,record)}${managerAllowed && !readOnly && request.status === 'pendente' ? '<div class="actuar-field priority-review-note"><label for="priorityReviewObservation">Texto de fechamento da gestão</label><textarea id="priorityReviewObservation" rows="4" placeholder="Obrigatório para devolver ou reprovar; recomendado ao aprovar"></textarea></div>' : ''}`;
             let actions = `<button class="actuar-btn actuar-btn-secondary" onclick="closePriorityApprovalReview()">Voltar</button>`;
+            // Única ação da ficha que tira o lançamento do fluxo: fica à esquerda, longe do resto.
+            if (canDeletePriorityRequest()) actions += `<button class="actuar-btn actuar-btn-danger priority-delete-action" onclick="deletePriorityRequest('${request.id}')"><i class="fi fi-rr-trash"></i>Excluir lançamento</button>`;
             if (managerAllowed && !readOnly && request.status === 'pendente') actions += `<button class="actuar-btn actuar-btn-secondary" onclick="decidePriorityReview('adjustment')">Devolver para ajuste</button><button class="actuar-btn actuar-btn-danger" onclick="decidePriorityReview('reject')">Reprovar</button><button class="actuar-btn actuar-btn-success" onclick="decidePriorityReview('approve')">Aprovar prioridade</button>`;
             else if (managerAllowed && ['aprovado','reprovado'].includes(request.status)) actions += `<button class="actuar-btn actuar-btn-secondary" onclick="openPriorityComplementModal('${request.id}')">Complementar parecer</button>${canReviewPriorityDecision() ? `<button class="actuar-btn actuar-btn-primary" onclick="openPriorityDecisionReviewModal('${request.id}')">Revisar decisão</button>` : ''}`;
             document.getElementById('priorityApprovalReviewFooter').innerHTML = `<div class="priority-review-actions">${actions}</div>`;
@@ -10481,6 +10826,66 @@
             openPriorityApprovalReview(requestId, true);
         }
 
+        /* Exclusão auditada de lançamento — mesma régua da exclusão de peça.
+           Só a gestão com alcance sobre todas as equipes, motivo obrigatório e senha
+           conferida no banco: uma sessão aberta e esquecida numa mesa não pode apagar
+           pontuação de ninguém. */
+        function canDeletePriorityRequest() { return canAuditDeletedPieces(); }
+
+        async function deletePriorityRequest(id) {
+            const request = (getStore()?.priorityRequests || []).find(item => item.id === id);
+            if (!request) return;
+            if (!canDeletePriorityRequest()) { showToast('Apenas a gestão com acesso a todas as equipes pode excluir lançamentos.', 'error'); return; }
+
+            const logs = PriorityRotation.pointLogsOf(getStore()?.logs, id);
+            const pontos = logs.reduce((soma, log) => soma + Number(log.value || 0), 0);
+            const usuarios = getStore()?.users || defaultUsers;
+            const motivo = await actuarConfirm({
+                tone: 'danger', icon: 'trash',
+                title: `Excluir o lançamento ${request.protocolo}?`,
+                message: pontos
+                    ? `Os ${pontos} ponto(s) de ${usuarios[request.userId]?.name || 'do analista'} são estornados do extrato e do ranking. Fica registrado na aba Histórico, com o seu nome e o motivo.`
+                    : 'Este lançamento não gerou pontos. A exclusão fica registrada no Histórico, com o seu nome e o motivo.',
+                input: { label: 'Motivo da exclusão', placeholder: 'Ex.: lançamento de teste criado durante a homologação.' },
+                confirmLabel: 'Excluir lançamento'
+            });
+            if (!motivo) return;
+
+            const senha = await actuarConfirm({
+                tone: 'danger', icon: 'lock', title: 'Confirme com a sua senha',
+                message: 'A exclusão é registrada em seu nome.',
+                input: { label: 'Senha do seu acesso de gestão', placeholder: 'Digite a sua senha' },
+                confirmLabel: 'Confirmar exclusão'
+            });
+            if (!senha) return;
+            if (!await verifyLoginRemote(currentAdminId, senha)) { showToast('Senha incorreta. Nada foi excluído.', 'error'); return; }
+
+            const anterior = {
+                pedidos: deepClone(getStore().priorityRequests || []),
+                logs: deepClone(getStore().logs || []),
+                excluidos: deepClone(getStore().deletedPriorityRequests || [])
+            };
+            try {
+                const entrada = PriorityRotation.deletionEntry(request, currentAdminId, motivo, logs);
+                const removidos = new Set(entrada.removedLogIds);
+                appStore.priorityRequests = anterior.pedidos.filter(item => item.id !== id);
+                appStore.logs = anterior.logs.filter(log => !removidos.has(log.id));
+                appStore.deletedPriorityRequests = [...anterior.excluidos, entrada];
+                const ok = await persistStore();
+                if (!ok) throw new Error(lastPersistError || 'Não foi possível concluir a exclusão.');
+                closePriorityApprovalReview();
+                render();
+                showToast(entrada.removedPoints
+                    ? `Lançamento excluído e ${entrada.removedPoints} ponto(s) estornado(s).`
+                    : 'Lançamento excluído e registrado no Histórico.');
+            } catch (erro) {
+                appStore.priorityRequests = anterior.pedidos;
+                appStore.logs = anterior.logs;
+                appStore.deletedPriorityRequests = anterior.excluidos;
+                showToast(erro.message || 'Não foi possível excluir o lançamento.', 'error');
+            }
+        }
+
         async function decidePriorityReview(action) {
             const request = (appStore.priorityRequests || []).find(item => item.id === priorityApprovalReviewId);
             if (!request || request.status !== 'pendente') return;
@@ -10517,6 +10922,9 @@
             req.resolvedAt = Date.now();
             if (decisionNote) req.decisionNote = decisionNote;
             appendPriorityEvaluation(req, 'aprovado', decisionNote);
+            // Veio do portal? A solicitação externa fecha junto, no mesmo salvamento.
+            const externaAnterior = deepClone(getStore().externalRequests || []);
+            concluirSolicitacaoExterna(req.id, true);
 
             const existingCredit = appStore.logs.find(log => log.type === 'PRIORITY' && log.relatedRequestId === req.id);
             const creditId = existingCredit ? null : uid();
@@ -10526,6 +10934,7 @@
             if (!ok) {
                 restorePriorityRequestSnapshot(req.id, previous);
                 if (creditId) appStore.logs = appStore.logs.filter(log => log.id !== creditId);
+                appStore.externalRequests = externaAnterior;
                 showToast(lastPersistError || 'A aprovação não foi salva. Nenhum ponto foi concedido.', 'error');
                 return false;
             }
@@ -11243,15 +11652,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260818-portal-externas-1"></script>
-    <script src="js/external-requests.js?v=20260818-portal-externas-1"></script>
-    <script src="js/actuar-fields.js?v=20260818-portal-externas-1"></script>
-    <script src="js/attendance-clock.js?v=20260818-portal-externas-1"></script>
-    <script src="js/performance-domain.js?v=20260818-portal-externas-1"></script>
-    <script src="js/manager-experience.js?v=20260818-portal-externas-1"></script>
-    <script src="js/priority-rotation.js?v=20260818-portal-externas-1"></script>
-    <script src="js/pieces-operations.js?v=20260818-portal-externas-1"></script>
-    <script src="js/pieces-ui.js?v=20260818-portal-externas-1"></script>
-    <script src="js/performance-platform.js?v=20260818-portal-externas-1"></script>
+    <script src="js/actuar-navigation.js?v=20260818-exclusao-externa-1"></script>
+    <script src="js/external-requests.js?v=20260818-exclusao-externa-1"></script>
+    <script src="js/actuar-fields.js?v=20260818-exclusao-externa-1"></script>
+    <script src="js/attendance-clock.js?v=20260818-exclusao-externa-1"></script>
+    <script src="js/performance-domain.js?v=20260818-exclusao-externa-1"></script>
+    <script src="js/manager-experience.js?v=20260818-exclusao-externa-1"></script>
+    <script src="js/priority-rotation.js?v=20260818-exclusao-externa-1"></script>
+    <script src="js/pieces-operations.js?v=20260818-exclusao-externa-1"></script>
+    <script src="js/pieces-ui.js?v=20260818-exclusao-externa-1"></script>
+    <script src="js/performance-platform.js?v=20260818-exclusao-externa-1"></script>
 </body>
 </html>

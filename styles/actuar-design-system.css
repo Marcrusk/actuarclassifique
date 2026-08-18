@@ -4078,3 +4078,39 @@ body.actuar-app .actuar-picker-search input::placeholder { color: #6F7378; }
     .external-column { flex-basis: 82vw; }
     .external-facts { grid-template-columns: 1fr; }
 }
+
+/* Distribuição: quem é o próximo e o que fazer com ele, lado a lado. A informação e a ação
+   juntas evitam o vaivém de conferir a fila noutro lugar antes de decidir. */
+.external-distribution { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 14px; border: 1px solid var(--actuar-border); border-left: 3px solid var(--actuar-primary); border-radius: var(--actuar-radius); background: var(--actuar-surface-subtle); }
+.external-next { display: grid; gap: 2px; }
+.external-next small { color: var(--actuar-secondary); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.external-next strong { color: var(--actuar-foreground); font-size: 15px; }
+.external-next span { color: var(--actuar-secondary); font-size: 11px; }
+.external-distribution-actions { display: inline-flex; gap: 8px; }
+
+@media (max-width: 768px) {
+    .external-distribution { flex-direction: column; align-items: stretch; }
+    .external-distribution-actions .actuar-btn { flex: 1; }
+}
+
+/* A fila dentro da ficha: decidir para quem mandar sem ver quem vem depois obriga a abrir
+   outra tela e voltar — e é nesse vaivém que a solicitação fica esquecida. */
+.external-queue { display: grid; gap: 4px; margin: 12px 0 0; padding: 0; list-style: none; counter-reset: fila; }
+.external-queue li { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 1px solid var(--actuar-border); border-radius: var(--actuar-radius); background: var(--actuar-surface); font-size: 12px; }
+.external-queue strong { color: var(--actuar-foreground); font-weight: 600; }
+.external-queue-pos { min-width: 62px; color: var(--actuar-secondary); font-family: Geist, "Open Sans", sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: .03em; }
+.external-queue li.is-next { border-color: var(--actuar-primary); background: var(--actuar-primary-soft); }
+.external-queue li.is-next .external-queue-pos { color: var(--actuar-primary); font-weight: 700; }
+.external-queue li.is-paused { opacity: .6; }
+.external-queue-empty { justify-content: center; color: var(--actuar-secondary); }
+.external-queue-note { margin: 8px 0 0; color: var(--actuar-secondary); font-size: 11px; }
+.external-card-tag { width: fit-content; }
+
+/* Excluir é a única ação da ficha que tira o lançamento do fluxo: fica à esquerda, longe
+   das decisões, para não ser clicada por inércia. */
+.priority-review-actions .priority-delete-action { margin-right: auto; }
+
+@media (max-width: 768px) {
+    .priority-review-actions .priority-delete-action { margin-right: 0; }
+}
+.priority-review-actions .external-delete-action { margin-right: auto; }

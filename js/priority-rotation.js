@@ -22,6 +22,40 @@
         ajuste_solicitado: Object.freeze({ label: 'Precisa de ajuste', short: 'Ajuste', tone: 'primary', icon: 'fi-rr-edit', waitingOn: 'analista' })
     });
 
+    /* EXCLUSÃO AUDITADA DE LANÇAMENTO
+       Mesma régua das peças: apagar a prioridade sem tirar os pontos mantém exatamente o
+       erro que a exclusão existe para desfazer — um lançamento de teste que pontuou alguém.
+       E apagar sem rastro impede conferir depois quem tirou o quê. Por isso a exclusão
+       devolve um registro completo: snapshot, autor, motivo e pontos estornados.
+       Prioridade credita por PRIORITY e pode ter PRIORITY_ADJUSTMENT em cima; os dois saem
+       juntos, senão o extrato fica com um ajuste sobre algo que não existe mais. */
+    const PRIORITY_LOG_TYPES = Object.freeze(['PRIORITY', 'PRIORITY_ADJUSTMENT']);
+
+    function pointLogsOf(logs, requestId) {
+        return (Array.isArray(logs) ? logs : [])
+            .filter(log => log && PRIORITY_LOG_TYPES.includes(log.type) && log.relatedRequestId === requestId);
+    }
+
+    function deletionEntry(request, actorId, reason, removedLogs, timestamp = Date.now()) {
+        assert(request && request.id, 'Lançamento inválido.');
+        assert(String(actorId || '').trim(), 'Usuário responsável não identificado.');
+        assert(String(reason || '').trim().length >= 3, 'Informe o motivo da exclusão.');
+        const logs = Array.isArray(removedLogs) ? removedLogs : [];
+        return {
+            id: request.id,
+            protocol: request.protocolo || '',
+            analystId: request.userId || null,
+            team: request.team || request.rotationTeam || '',
+            status: request.status || '',
+            deletedBy: actorId,
+            deletedAt: timestamp,
+            reason: String(reason).trim(),
+            removedPoints: logs.reduce((soma, log) => soma + Number(log.value || 0), 0),
+            removedLogIds: logs.map(log => log.id),
+            record: clone(request)
+        };
+    }
+
     function statusMeta(status) {
         return REQUEST_STATUS_META[status]
             || { label: String(status || 'Sem status'), short: 'Sem status', tone: 'neutral', icon: 'fi-rr-interrogation', waitingOn: null };
@@ -318,5 +352,5 @@
         return lista.filter(item => matchesSearch(item, query, typeof resolveExtras === 'function' ? resolveExtras(item) : {}));
     }
 
-    return { ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, REQUEST_STATUS_META, statusMeta, create, syncParticipants, nextId, canManage, start, assign, complete, skip, pauseParticipant, reactivateParticipant, reorder, setPaused, resolveCurrent, view, snapshot, matchesSearch, filterBySearch, normalizeSearch };
+    return { ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, REQUEST_STATUS_META, statusMeta, PRIORITY_LOG_TYPES, pointLogsOf, deletionEntry, create, syncParticipants, nextId, canManage, start, assign, complete, skip, pauseParticipant, reactivateParticipant, reorder, setPaused, resolveCurrent, view, snapshot, matchesSearch, filterBySearch, normalizeSearch };
 });

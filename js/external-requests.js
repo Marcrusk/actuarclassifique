@@ -117,6 +117,32 @@
         return proximoRegistro;
     }
 
+    /* Exclusão auditada, mesma régua de peças e lançamentos. Uma solicitação já concluída
+       arrasta o lançamento de prioridade que ela gerou e os pontos dele: apagar só o card
+       deixaria a pontuação de um atendimento que não existe mais. */
+    function deletionEntry(request, actorId, reason, options = {}) {
+        assert(request && request.id, 'Solicitação inválida.');
+        assert(String(actorId || '').trim(), 'Usuário responsável não identificado.');
+        assert(String(reason || '').trim().length >= 3, 'Informe o motivo da exclusão.');
+        const logs = Array.isArray(options.removedLogs) ? options.removedLogs : [];
+        return {
+            id: request.id,
+            protocol: request.protocol || '',
+            clientName: request.clientName || '',
+            clientId: request.clientId || '',
+            team: request.team || '',
+            requesterDepartment: request.requesterDepartment || '',
+            stage: stageOf(request),
+            deletedBy: actorId,
+            deletedAt: options.now || Date.now(),
+            reason: String(reason).trim(),
+            removedPoints: logs.reduce((soma, log) => soma + Number(log.value || 0), 0),
+            removedLogIds: logs.map(log => log.id),
+            priorityRequestId: request.priorityRequestId || null,
+            record: JSON.parse(JSON.stringify(request))
+        };
+    }
+
     // Resumo para o topo do quadro: o que está esperando alguém, e há quanto tempo.
     function summarize(requests, now = Date.now()) {
         const linhas = Array.isArray(requests) ? requests : [];
@@ -132,5 +158,5 @@
         };
     }
 
-    return { STAGES, STAGE_IDS, CLOSED, stageMeta, stageOf, isClosed, list, board, duplicatesOf, transition, summarize };
+    return { STAGES, STAGE_IDS, CLOSED, stageMeta, stageOf, isClosed, list, board, duplicatesOf, transition, deletionEntry, summarize };
 });
