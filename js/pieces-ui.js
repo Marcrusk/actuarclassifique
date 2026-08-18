@@ -569,6 +569,13 @@
             showToast(context.mode === 'lab' ? 'Dados corrigidos. Valide e pontue para enviar à gestão.' : 'Solicitação enviada para validação do Toletus Lab. Nenhum ponto foi concedido nesta etapa.'); } catch (error) { showToast(error.message, 'error'); } }
 
     function canView(record) { const context = currentContext(); if (context.mode === 'analyst') return record.analystId === context.actorId; if (context.mode === 'manager') return !context.teams.length || context.teams.includes(record.department) || record.targetManagerId === context.actorId; if (context.mode === 'lab') return record.requestStatus !== 'draft'; return record.requestStatus === 'approved'; }
+    /* Excluir é privilégio da gestão, e só dentro do que ela já administra: a mesma régua
+       do canView, para não existirem duas noções de alcance. O freio contra o mau uso não é
+       restringir mais — é a aba de auditoria, que mostra a exclusão com autor e motivo para
+       quem tem acesso total. */
+    function canDelete(record) { return Boolean(record) && currentContext().mode === 'manager' && canView(record); }
+    function deletedPoints(record) { return domain().pointLogsOf(store()?.logs, record.id).reduce((sum, log) => sum + Number(log.value || 0), 0); }
+
     function openDetail(id) { const record = records().find(item => item.id === id); if (!record || !canView(record)) return showToast('Você não possui permissão para consultar esta solicitação.', 'error'); state.selectedId = id; state.detailSuspended = false; document.getElementById('piecesDetailDrawer')?.classList.remove('hidden'); renderDetail(); window.syncPriorityRotationOverlayScroll?.(); requestAnimationFrame(() => document.querySelector('#piecesDetailDrawer .pieces-detail-drawer')?.focus()); }
     function closeDetail() { document.getElementById('piecesDetailDrawer')?.classList.add('hidden'); state.selectedId = null; state.detailSuspended = false; window.syncPriorityRotationOverlayScroll?.(); }
     function block(title, content, className = '') { return `<section class="pieces-detail-block ${className}"><h3>${e(title)}</h3>${content}</section>`; }
@@ -608,17 +615,27 @@
             if (operatorCan('Expedição') && currentMovement && !['awaiting_invoice', 'awaiting_tracking'].includes(currentMovement.status)) buttons.push(`<button class="actuar-btn actuar-btn-secondary" onclick="openPiecesAction('freight')">Registrar frete e volumes</button>`);
             buttons.push(`<button class="actuar-btn actuar-btn-secondary" onclick="openPiecesAction('occurrence')">Registrar ocorrência</button>`);
         }
+        // Por último, e separada: é a única ação da ficha que tira a solicitação do fluxo.
+        if (canDelete(record)) buttons.push(`<button class="actuar-btn actuar-btn-danger pieces-delete-action" onclick="openPiecesAction('delete')"><i class="fi fi-rr-trash"></i>Excluir solicitação</button>`);
         return buttons.join('');
     }
 
     function openAction(action, contextId) {
         const record = selected(); if (!record) return; state.action = action; state.actionContext = contextId || null; state.detailSuspended = suspendDetail();
-        const titles = { labValidate: 'Validar e pontuar', labReject: 'Reprovar solicitação', returnToLab: 'Devolver ao Toletus Lab', labFollowup: 'Atualizar acompanhamento', approve: 'Conferir validação e encaminhar', correction: 'Devolver para ajuste', reject: 'Reprovar solicitação', claim: 'Iniciar processamento', invoice: 'Processar nota fiscal', tracking: 'Registrar etiqueta e rastreio', logistics: 'Atualizar preparação e entrega', freight: 'Registrar frete e volumes', returnInfo: 'Solicitar informação', answerInfo: 'Responder informação pendente', occurrence: 'Registrar ocorrência', resolveOccurrence: 'Encerrar ocorrência' };
-        const submits = { labValidate: 'Validar e enviar para a gestão', labReject: 'Confirmar reprovação', returnToLab: 'Devolver ao Lab', labFollowup: 'Confirmar etapa', approve: 'Confirmar e encaminhar', correction: 'Devolver para ajuste', reject: 'Confirmar reprovação', claim: 'Iniciar processamento', invoice: 'Salvar dados fiscais', tracking: 'Encaminhar para Envio/Coleta', logistics: 'Confirmar etapa', freight: 'Salvar dados de frete', returnInfo: 'Devolver para o responsável', answerInfo: 'Enviar resposta', occurrence: 'Registrar ocorrência', resolveOccurrence: 'Encerrar ocorrência' };
+        const titles = { labValidate: 'Validar e pontuar', labReject: 'Reprovar solicitação', returnToLab: 'Devolver ao Toletus Lab', labFollowup: 'Atualizar acompanhamento', approve: 'Conferir validação e encaminhar', correction: 'Devolver para ajuste', reject: 'Reprovar solicitação', claim: 'Iniciar processamento', invoice: 'Processar nota fiscal', tracking: 'Registrar etiqueta e rastreio', logistics: 'Atualizar preparação e entrega', freight: 'Registrar frete e volumes', returnInfo: 'Solicitar informação', answerInfo: 'Responder informação pendente', occurrence: 'Registrar ocorrência', resolveOccurrence: 'Encerrar ocorrência', delete: 'Excluir solicitação' };
+        const submits = { labValidate: 'Validar e enviar para a gestão', labReject: 'Confirmar reprovação', returnToLab: 'Devolver ao Lab', labFollowup: 'Confirmar etapa', approve: 'Confirmar e encaminhar', correction: 'Devolver para ajuste', reject: 'Confirmar reprovação', claim: 'Iniciar processamento', invoice: 'Salvar dados fiscais', tracking: 'Encaminhar para Envio/Coleta', logistics: 'Confirmar etapa', freight: 'Salvar dados de frete', returnInfo: 'Devolver para o responsável', answerInfo: 'Enviar resposta', occurrence: 'Registrar ocorrência', resolveOccurrence: 'Encerrar ocorrência', delete: 'Confirmar exclusão' };
         document.getElementById('piecesActionTitle').textContent = titles[action]; document.getElementById('piecesActionSubtitle').textContent = `Protocolo ${record.protocol || record.sourceTicket}`; document.getElementById('piecesActionSubmit').textContent = submits[action]; document.getElementById('piecesActionBody').innerHTML = actionForm(action, record); bindFields(document.getElementById('piecesActionBody')); document.getElementById('piecesActionModal').classList.remove('hidden'); window.syncPriorityRotationOverlayScroll?.();
     }
     function closeAction() { document.getElementById('piecesActionModal')?.classList.add('hidden'); state.action = null; state.actionContext = null; resumeDetail(); window.syncPriorityRotationOverlayScroll?.(); }
     function actionForm(action, record) {
+        if (action === 'delete') {
+            /* A pontuação sai junto: um chamado de teste que pontuou o analista continuaria
+               pontuando se só a solicitação fosse embora. O número aparece antes de confirmar
+               porque é a consequência que o gestor precisa enxergar. */
+            const pontos = deletedPoints(record);
+            const analista = users()[record.analystId];
+            return `<div class="pieces-confirm is-danger"><i class="fi fi-rr-trash"></i><p>A solicitação <strong>${e(record.protocol || record.sourceTicket || record.id)}</strong> sai do fluxo${analista ? ` de <strong>${e(analista.name)}</strong>` : ''}.${pontos > 0 ? ` Os <strong>${e(pontos)} ponto(s)</strong> lançados por ela são estornados do extrato e do ranking.` : ' Nenhum ponto foi lançado por ela.'}</p></div><div class="pieces-detail-copy">Fica registrada na aba <strong>Excluídos</strong> da Gestão, com o seu nome e o motivo, e pode ser conferida por quem tem acesso total.</div><div class="actuar-form-grid"><div class="actuar-field span-2"><label for="paDeleteReason">Motivo da exclusão</label><textarea id="paDeleteReason" rows="3" placeholder="Ex.: chamado de teste criado por engano durante a homologação" required></textarea></div><div class="actuar-field span-2"><label for="paDeletePassword">Confirme com a sua senha</label><input type="password" id="paDeletePassword" autocomplete="current-password" placeholder="Senha do seu acesso de gestão" required></div></div>`;
+        }
         if (action === 'labValidate') {
             const marked = record.labReview?.criteria || [];
             const isMet = label => !marked.length || marked.some(item => item.label === label && item.met === true);
@@ -680,6 +697,12 @@
         if (!fieldCheck.valid) return showToast(fieldCheck.errors[0].message, 'error');
         try {
             let next;
+            // Exclusão não produz um próximo estado da solicitação: ela tira do fluxo. Por isso
+            // sai antes do encadeamento de ações, com caminho e mensagem próprios.
+            if (requestedAction === 'delete') {
+                await deleteRecord(record, context, val('paDeleteReason'), val('paDeletePassword'));
+                return;
+            }
             if (requestedAction === 'labValidate') {
                 const criteria = [...document.querySelectorAll('[name="pieceCriterion"]')].map(input => ({ label: input.value, met: input.checked }));
                 next = domain().labReview(record, 'validate', context.actorId, { expectedVersion: record.version, criteria, correctionNote: val('paCorrectionNote'), note: val('paNote') });
@@ -741,6 +764,47 @@
             showToast(error.message || 'Não foi possível registrar o comentário.', 'error');
         }
         return false;
+    }
+
+    /* Exclusão auditada: a solicitação e os pontos que ela gerou saem juntos, e o registro
+       inteiro vai para deletedPieceOperations com autor, motivo e o que foi estornado. Nada
+       é perdido de fato — é o que permite conferir depois, e desfazer um engano.
+       A senha é conferida no banco contra o próprio gestor logado: sem isso, uma sessão
+       aberta e esquecida numa mesa bastaria para apagar o trabalho de outra pessoa. */
+    async function deleteRecord(record, context, reason, password) {
+        if (!String(reason || '').trim()) throw new Error('Informe o motivo da exclusão.');
+        if (!password) throw new Error('Confirme a exclusão com a sua senha.');
+        if (!canDelete(record)) throw new Error('Você não possui permissão para excluir esta solicitação.');
+        if (typeof window.verifyLoginRemote !== 'function') throw new Error('Não foi possível conferir a sua senha agora.');
+        if (!await window.verifyLoginRemote(context.actorId, password)) throw new Error('Senha incorreta. Nada foi excluído.');
+
+        const removedLogs = domain().pointLogsOf(store().logs, record.id);
+        const entry = domain().deletionEntry(record, context.actorId, reason, removedLogs);
+        const removedIds = new Set(entry.removedLogIds);
+        // Guarda o estado anterior: se o salvamento falhar, a tela não pode ficar mostrando
+        // uma exclusão que não chegou ao banco.
+        const previous = { operations: store().pieceOperations, logs: store().logs, deleted: store().deletedPieceOperations };
+
+        store().pieceOperations = previous.operations.filter(item => item.id !== record.id);
+        store().logs = previous.logs.filter(log => !removedIds.has(log.id));
+        store().deletedPieceOperations = [...(previous.deleted || []), entry];
+
+        const ok = await persistStore();
+        if (!ok) {
+            store().pieceOperations = previous.operations;
+            store().logs = previous.logs;
+            store().deletedPieceOperations = previous.deleted;
+            throw new Error(lastPersistError || 'Não foi possível concluir a exclusão.');
+        }
+
+        closeAction();
+        state.selectedId = null;
+        closeDetail();
+        renderPiecesModule();
+        window.renderDeletedPiecesPanel?.();
+        showToast(entry.removedPoints > 0
+            ? `Solicitação excluída e ${entry.removedPoints} ponto(s) estornado(s).`
+            : 'Solicitação excluída e registrada na aba Excluídos.');
     }
 
     async function saveRecord(next) {

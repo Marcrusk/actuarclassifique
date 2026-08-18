@@ -532,9 +532,14 @@ test('aba de peças mostra quantas solicitações aguardam o check da gestão', 
     const ui = fs.readFileSync('js/pieces-ui.js', 'utf8');
 
     // Rótulo enxuto e badge no mesmo padrão já usado por Transferências.
-    assert.match(html, /id="admTabBtnPecas">\s*<i class="fa-solid fa-box me-1"><\/i> Peças <span id="admPiecesPendingBadge"/);
+    // O contador mudou de lugar — da barra horizontal para o item Peças da sidebar —,
+    // mas continua sendo o mesmo elemento que pieces-ui preenche.
+    assert.match(fs.readFileSync('js/actuar-navigation.js', 'utf8'), /label: 'Peças'[\s\S]{0,160}badgeId: 'admPiecesPendingBadge'/);
+    assert.match(html, /navBadgeMarkup\(item\.badgeId\)/);
     assert.doesNotMatch(html, /Peças Catraca/);
-    assert.match(html, /id="admPiecesPendingBadge" class="hidden ml-1 bg-amber-500 text-black rounded-full px-1\.5 text-\[10px\]"/);
+    // O visual do contador agora é do design system (.actuar-nav-badge), não mais
+    // classes soltas do Tailwind na barra antiga.
+    assert.match(html, /<span id="\$\{id\}" class="actuar-nav-badge hidden">0<\/span>/);
 
     // Contagem no escopo do gestor, escondida quando não há pendência, e atualizada a cada render.
     assert.match(ui, /if \(currentContext\(\)\.mode !== 'manager'\) return 0;/);
@@ -663,7 +668,9 @@ test('analista entra com o próprio usuário e a URL não troca mais a identidad
     // Primeiro acesso: senha aleatória por pessoa, gravada pela RPC, nunca fixa no código.
     assert.match(html, /crypto\.getRandomValues\(values\)/);
     assert.match(html, /if \(!await setUserPasswordRemote\(id, password\)\) continue;/);
-    assert.match(html, /const pending = analystOptionIds\(\)\.filter\(id => !usersList\[id\]\.hasPassword\)/);
+    // Cobre todo mundo ativo sem senha, e não só quem entra no ranking: o Toletus Lab
+    // e os papéis de peça ficavam sem caminho de volta ao acesso.
+    assert.match(html, /const pending = Object\.keys\(usersList\)\.filter\(id => usersList\[id\]\.active !== false && !usersList\[id\]\.hasPassword\)/);
 });
 
 test('acesso mockado de gestão foi removido do produto', () => {
@@ -812,7 +819,7 @@ test('ranking geral e consulta de analista vivem DENTRO do Modo Gestão', () => 
     /* Antes, "Ranking geral" mandava o gestor para a rota pública: outra barra de
        abas, outro cabeçalho e um botão de voltar. Parecia outro acesso. Agora é
        uma seção do próprio Modo Gestão. */
-    assert.match(html, /onclick="switchAdminTab\('rankingGeral'\)" id="admNavRankingGeral"/);
+    assert.match(fs.readFileSync('js/actuar-navigation.js', 'utf8'), /id: 'rankingGeral'[\s\S]{0,140}route: rota\('admin', 'rankingGeral'\)/);
     assert.ok(!html.includes('openManagerGeneralRanking'), 'a função que saía da gestão não pode sobrar');
 
     // As duas seções entram no mapa de painéis sem painel próprio: o conteúdo é o
@@ -828,7 +835,9 @@ test('ranking geral e consulta de analista vivem DENTRO do Modo Gestão', () => 
     assert.match(html, /navigateTo\(\{ name: 'admin', section: 'analista' \}\);/);
 
     // A barra de abas do analista nunca aparece para quem está no Modo Gestão.
-    assert.match(html, /document\.getElementById\('publicTabsContainer'\)\.classList\.add\('hidden'\);/);
+    // A barra pública deixou de existir: dentro da gestão não há o que esconder,
+    // porque a navegação é a sidebar e ela é a mesma em toda tela.
+    assert.ok(!html.includes('publicTabsContainer'), 'a barra pública voltou ao Modo Gestão');
 
     // A trilha substitui a faixa roxa: mesma informação, uma linha.
     assert.match(html, /function renderManagerSectionHeader\(\)/);

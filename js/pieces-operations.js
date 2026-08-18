@@ -669,6 +669,34 @@
             || Number(a.approvedAt || a.createdAt) - Number(b.approvedAt || b.createdAt));
     }
 
+    /* Exclusão auditada. Apagar a solicitação sem tirar os pontos mantém exatamente o erro
+       que a exclusão existe para desfazer: um chamado de teste que pontuou o analista. E
+       apagar sem rastro impede conferir depois quem tirou o quê. Por isso a exclusão devolve
+       um registro completo — snapshot, autor, motivo e pontos estornados — que vira a aba
+       de auditoria da gestão e mantém o estrago reversível. */
+    function pointLogsOf(logs, recordId) {
+        return normalizeArray(logs).filter(log => log && log.type === 'PECA' && log.relatedPieceRequestId === recordId);
+    }
+
+    function deletionEntry(record, actorId, reason, removedLogs, timestamp = now()) {
+        requireValue(actorId, 'Usuário responsável não identificado.');
+        requireValue(reason, 'Informe o motivo da exclusão.');
+        const logs = normalizeArray(removedLogs);
+        return {
+            id: record.id,
+            protocol: record.protocol || record.sourceTicket || '',
+            analystId: record.analystId || null,
+            department: record.department || '',
+            requestStatus: record.requestStatus || '',
+            deletedBy: actorId,
+            deletedAt: timestamp,
+            reason: String(reason).trim(),
+            removedPoints: logs.reduce((sum, log) => sum + Number(log.value || 0), 0),
+            removedLogIds: logs.map(log => log.id),
+            record: clone(record)
+        };
+    }
+
     function summarize(records) {
         const rows = normalizeArray(records); const count = predicate => rows.filter(predicate).length;
         return {
@@ -696,6 +724,7 @@
         personTypeOf, documentOf, documentTypeOf, documentLabelOf, nameLabelOf,
         bootstrap, legacyToOperation, createDraft, updateDraft, validateForSubmit, pendingRequirements, submit, labCorrect, labReview, evaluate, claim, updateFiscal, registerTracking, returnForInformation, resolveInformation,
         updateMovement, addOccurrence, resolveOccurrence, comment, nextAction, operationalStatus, pipelineStage, pipelineSummary, PIPELINE, sla, isLate, filter, sortQueue, summarize,
+        pointLogsOf, deletionEntry,
         operationMetrics, qualityMetrics, freightMetrics, warrantyMetrics, guaranteeRate, scoreFromCriteria
     };
 });

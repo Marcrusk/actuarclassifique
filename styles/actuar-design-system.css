@@ -243,19 +243,23 @@ body.actuar-app [class*="rounded-xl"] { border-radius: var(--actuar-radius-large
 body.actuar-app button[class*="rounded-full"]:not(.actuar-avatar),
 body.actuar-app div[class*="rounded-full"]:not(.actuar-avatar) { border-radius: var(--actuar-radius) !important; }
 
+/* Marca à esquerda, trilha no meio, ações do usuário à direita — nesta ordem, em
+   qualquer perfil. A grade tem exatamente três colunas: qualquer item extra aqui
+   dentro quebra para uma segunda linha e joga o avatar para o lado errado. */
 .actuar-global-header {
     position: sticky;
     top: 0;
     z-index: 70;
-    min-height: 56px;
+    min-height: var(--actuar-header-h, 56px);
     padding: 8px 24px;
     display: grid;
-    grid-template-columns: minmax(160px, auto) minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     background: var(--actuar-header);
     border-bottom: 1px solid #303234;
 }
+.actuar-header-actions { justify-self: end; }
 
 .actuar-brand { position: relative; display: inline-flex; align-items: center; gap: 10px; min-width: 0; text-decoration: none; }
 .actuar-brand::after {
@@ -272,8 +276,6 @@ body.actuar-app div[class*="rounded-full"]:not(.actuar-avatar) { border-radius: 
 .actuar-header-context { min-width: 0; color: #C5C7CA; font-size: 14.4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .actuar-header-context strong { color: #FFFFFF; font-weight: 600; }
 .actuar-header-actions { position: relative; display: flex; align-items: center; gap: 8px; }
-.actuar-cloud-status { display: inline-flex; align-items: center; gap: 6px; color: #B8E2C8; font-size: 11px; }
-.actuar-cloud-status i { font-size: 14px; }
 
 .actuar-theme-toggle {
     width: 40px;
@@ -327,6 +329,9 @@ body.actuar-app div[class*="rounded-full"]:not(.actuar-avatar) { border-radius: 
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
+    /* Acima de tudo que vem depois do cabeçalho — faixa do menu, véu e painel —
+       senão ele abre por baixo e fica com o topo cortado. */
+    z-index: 95;
     width: min(300px, calc(100vw - 24px));
     background: var(--actuar-surface);
     border: 1px solid var(--actuar-border);
@@ -1287,11 +1292,7 @@ html.dark ::-webkit-scrollbar-thumb { background: #3A424E; }
 html.dark ::-webkit-scrollbar-thumb:hover { background: #505A68; }
 
 /* Experiência gerencial: visão consolidada, filtros, ranking e consulta individual. */
-.manager-navigation { display: flex; gap: 4px; padding: 6px; overflow-x: auto; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface); scrollbar-width: thin; }
-.manager-navigation button { min-height: 36px; padding: 0 12px; border: 1px solid transparent; border-radius: 6px; color: var(--actuar-secondary); font-size: 11px; font-weight: 700; white-space: nowrap; transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease; }
-.manager-navigation button:hover { color: var(--actuar-text); background: var(--actuar-surface-muted); }
-.manager-navigation button.is-active { color: #fff; border-color: var(--actuar-primary); background: var(--actuar-primary); }
-.manager-navigation-subitem { display: none; }
+/* .manager-navigation e .priority-module-tabs saíram junto com as barras horizontais. */
 .manager-filter-shell { padding: 16px; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface); }
 .manager-command-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; padding: 12px; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface); box-shadow: var(--actuar-shadow-xs); }
 .manager-command-primary { display: flex; align-items: flex-end; gap: 8px; min-width: 0; }
@@ -1310,12 +1311,6 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #505A68; }
 .priority-module-context .actuar-field { width: 150px; }
 .priority-module-context .actuar-btn { min-height: 40px; white-space: nowrap; }
 .priority-module-context .actuar-icon-button { flex: 0 0 40px; width: 40px; height: 40px; }
-.priority-module-tabs { display: flex; align-items: center; gap: 4px; padding: 0 16px; border-top: 1px solid var(--actuar-border); overflow-x: auto; }
-.priority-module-tabs button { position: relative; min-height: 46px; padding: 0 14px; border: 0; color: var(--actuar-secondary); background: transparent; font-size: 12px; font-weight: 700; white-space: nowrap; }
-.priority-module-tabs button::after { position: absolute; right: 14px; bottom: -1px; left: 14px; height: 2px; border-radius: 2px 2px 0 0; background: transparent; content: ""; }
-.priority-module-tabs button.is-active { color: var(--actuar-primary); }
-.priority-module-tabs button.is-active::after { background: var(--actuar-primary); }
-.priority-module-tabs button span { min-width: 18px; height: 18px; display: inline-grid; place-items: center; margin-left: 4px; padding: 0 5px; border-radius: 999px; color: #fff; background: var(--actuar-warning); font: 700 9px/1 "Geist",sans-serif; }
 .priority-module-active-context { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 20px; border-top: 1px solid var(--actuar-border); color: var(--actuar-secondary); background: var(--actuar-primary-soft); font-size: 10px; }
 .priority-module-active-context span { display: inline-flex; align-items: center; gap: 6px; }
 .priority-module-active-context strong, .priority-module-active-context i { color: var(--actuar-primary); }
@@ -1515,7 +1510,7 @@ html.dark .manager-podium-item strong, html.dark .manager-podium-item b { color:
     .ranking-presentation-brand img { width: 106px; height: 24px; }
     .ranking-presentation-heading h2 { flex-wrap: wrap; font-size: 20px !important; line-height: 1.2; }
     .actuar-header-context { display: none; }
-    .actuar-cloud-status span, .actuar-product-name { display: none; }
+    .actuar-product-name { display: none; }
     .actuar-header-actions { justify-self: end; gap: 2px; }
     .actuar-header-context { font-size: 11px; }
     .actuar-toolbar { position: static; }
@@ -1588,22 +1583,24 @@ html.dark .manager-podium-item strong, html.dark .manager-podium-item b { color:
 }
 
 /* Rodízio de prioridades */
-.priority-workspace {
-    display: grid;
-    grid-template-columns: minmax(300px, .82fr) minmax(520px, 1.45fr);
-    gap: 16px;
-    align-items: stretch;
-}
-.analyst-priority-module-header { display: none; padding: 18px 20px 0; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface); }
-.analyst-priority-module-header h2 { margin: 3px 0 2px; color: var(--actuar-foreground); font-size: 20px; }
-.analyst-priority-module-header p { margin: 0; color: var(--actuar-secondary); font-size: 11px; }
-.analyst-priority-module-header nav { display: flex; gap: 4px; margin: 14px -20px 0; padding: 0 16px; border-top: 1px solid var(--actuar-border); overflow-x: auto; }
+/* O card de registrar encolheu quando a lista saiu dele. Com `stretch` ele era
+   esticado até a altura do rodízio e sobravam ~300px de nada embaixo do botão;
+   com `start` cada card tem a altura do seu conteúdo. As colunas também trocaram
+   de peso: quem tem conteúdo longo agora é o rodízio, não o formulário. */
+.priority-workspace { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+/* Sem o título repetido, o cabeçalho do módulo é só a fita de navegação: some o
+   respiro de 18px que existia para separar título de abas. */
+.analyst-priority-module-header { display: none; padding: 0 4px; border: 1px solid var(--actuar-border); border-radius: 8px; background: var(--actuar-surface); }
+.analyst-priority-module-header nav { display: flex; gap: 4px; padding: 0 12px; overflow-x: auto; }
 .analyst-priority-module-header nav button { position: relative; min-height: 44px; padding: 0 13px; color: var(--actuar-secondary); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .analyst-priority-module-header nav button.is-active { color: var(--actuar-primary); }
 .analyst-priority-module-header nav button.is-active::after { position: absolute; right: 13px; bottom: -1px; left: 13px; height: 2px; border-radius: 2px 2px 0 0; background: var(--actuar-primary); content: ""; }
-#viewAgent.dashboard-mode > .priority-workspace, #viewAgent.dashboard-mode > .priority-inline-history { display: none; }
+#viewAgent.dashboard-mode > .priority-workspace, #viewAgent.dashboard-mode > .priority-registration-card, #viewAgent.dashboard-mode > .priority-inline-history { display: none; }
 #viewAgent.priorities-mode > .analyst-priority-module-header { display: block; }
-#viewAgent.priorities-mode > :not(.analyst-priority-module-header):not(.priority-workspace):not(.priority-inline-history):not(#managerConsultationBanner) { display: none !important; }
+/* A lista do que aparece em Prioridades é por exceção: tudo o que não estiver
+   aqui some. O card de registrar virou filho direto de #viewAgent ao ganhar a
+   largura cheia, então precisa constar — sem isto ele simplesmente desaparecia. */
+#viewAgent.priorities-mode > :not(.analyst-priority-module-header):not(.priority-registration-card):not(.priority-workspace):not(.priority-inline-history):not(#managerConsultationBanner) { display: none !important; }
 .priority-rotation-card,
 .rotation-modal-card,
 .rotation-drawer-panel {
@@ -1880,7 +1877,6 @@ button.rotation-ops-last:focus-visible { outline: 2px solid var(--actuar-primary
     .priority-module-heading { padding: 16px; }
     .priority-module-context { grid-template-columns: 1fr 1fr; }
     .priority-module-context .actuar-btn { grid-column: 1 / -1; }
-    .priority-module-tabs { padding-inline: 8px; }
     .priority-overview-kpis, .priority-approval-summary { grid-template-columns: 1fr; }
     .priority-approval-filters, .priority-page-filters, .priority-ranking-summary { grid-template-columns: 1fr; }
     .priority-rotation-compact { align-items: stretch; flex-direction: column; }
@@ -3185,4 +3181,293 @@ small.priority-client-line {
 @media (max-width: 768px) {
     .priority-page-filters .priority-search,
     .priority-approval-filters .priority-search { grid-column: 1 / -1; }
+}
+
+/* Exclusão de solicitação de peça. A confirmação usa o vermelho de ocorrência que já
+   existe no módulo, porque é o mesmo significado: algo saiu do curso normal. E o botão
+   ganha margem à esquerda para não encostar nas ações de fluxo — é a única da ficha
+   que não avança a solicitação, e não deve ser clicada por inércia. */
+.pieces-confirm.is-danger {
+    background: rgba(240, 68, 56, .08);
+}
+
+.pieces-confirm.is-danger i {
+    color: #d92d20;
+}
+
+.pieces-detail-actions .pieces-delete-action {
+    margin-right: auto;
+}
+
+@media (max-width: 768px) {
+    .pieces-detail-actions .pieces-delete-action { margin-right: 0; }
+}
+
+/* ==========================================================================
+   NAVEGAÇÃO GLOBAL (SIDEBAR)
+   Substitui as duas barras horizontais de módulos. Abre por cima do conteúdo,
+   com véu escuro: a página continua visível atrás, e nada precisa ser
+   reflowado — o que evita tabela cortada e salto de layout ao abrir.
+   ========================================================================== */
+.actuar-nav-toggle {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: var(--actuar-radius);
+    background: transparent;
+    color: #D5D7DA;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color var(--actuar-transition), color var(--actuar-transition), border-color var(--actuar-transition);
+}
+.actuar-nav-toggle:hover { background: #2A2B2D; color: #FFFFFF; }
+.actuar-nav-toggle:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: 2px; }
+.actuar-nav-toggle[aria-expanded="true"] { background: #2A2B2D; color: #FFFFFF; border-color: #46484A; }
+
+.actuar-nav-overlay {
+    position: fixed;
+    inset: var(--actuar-header-h, 56px) 0 0 0;
+    z-index: 88;
+    background: rgba(10, 12, 16, .52);
+    animation: actuar-nav-fade 160ms ease both;
+}
+.actuar-nav-overlay.hidden { display: none; }
+
+/* Abre ABAIXO do cabeçalho: cobrir a marca e a trilha tirava a referência de onde
+   a pessoa está, justo no momento em que ela vai trocar de lugar. */
+.actuar-nav {
+    position: fixed;
+    top: var(--actuar-header-h, 56px);
+    bottom: 0;
+    left: 0;
+    z-index: 90;
+    width: 288px;
+    max-width: 88vw;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--actuar-border);
+    background: var(--actuar-surface);
+    box-shadow: var(--actuar-shadow-dropdown);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 200ms cubic-bezier(.2, .8, .2, 1), visibility 200ms;
+}
+.actuar-nav.is-open { transform: none; visibility: visible; }
+body.nav-locked { overflow: hidden; }
+
+.actuar-nav-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 12px 12px 16px;
+    border-bottom: 1px solid var(--actuar-border);
+}
+.actuar-nav-header strong { display: block; color: var(--actuar-foreground-structural); font-size: 13px; font-weight: 700; line-height: 1.3; }
+.actuar-nav-header small { display: block; margin-top: 2px; color: var(--actuar-secondary); font-size: 10px; font-weight: 600; }
+.actuar-nav-close {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: var(--actuar-radius);
+    background: transparent;
+    color: var(--actuar-secondary);
+    font-size: 15px;
+    cursor: pointer;
+}
+.actuar-nav-close:hover { background: var(--actuar-surface-muted); color: var(--actuar-foreground); }
+
+.actuar-nav-body { flex: 1; overflow-y: auto; padding: 12px 8px 20px; }
+.actuar-nav-group + .actuar-nav-group { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--actuar-border); }
+.actuar-nav-group-title {
+    display: block;
+    padding: 0 10px 6px;
+    color: var(--actuar-muted);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
+.actuar-nav-item {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 0;
+    border-left: 2px solid transparent;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    color: var(--actuar-secondary);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--actuar-transition), color var(--actuar-transition);
+}
+/* :not() é obrigatório aqui: o contador também é um span filho direto e,
+   sem isso, herdava o flex:1 e esticava por metade do item. */
+.actuar-nav-item > span:not(.actuar-nav-badge) { flex: 1; min-width: 0; }
+.actuar-nav-item > i:first-child { width: 16px; flex: 0 0 auto; display: flex; justify-content: center; color: var(--actuar-muted); font-size: 14px; }
+.actuar-nav-item:hover { background: var(--actuar-surface-muted); color: var(--actuar-foreground); }
+.actuar-nav-item:hover > i:first-child { color: var(--actuar-foreground); }
+.actuar-nav-item:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: -2px; }
+/* Ativo não depende só de cor: ganha barra à esquerda, fundo e peso. */
+.actuar-nav-item.is-active {
+    border-left-color: var(--actuar-primary);
+    background: var(--actuar-primary-soft);
+    color: var(--actuar-primary);
+    font-weight: 700;
+}
+.actuar-nav-item.is-active > i:first-child { color: var(--actuar-primary); }
+
+.actuar-nav-chevron { flex: 0 0 auto; color: var(--actuar-muted); font-size: 13px; transition: transform var(--actuar-transition); }
+.actuar-nav-item[aria-expanded="true"] .actuar-nav-chevron { transform: rotate(180deg); }
+.actuar-nav-children { display: grid; gap: 1px; margin: 2px 0 4px; padding-left: 26px; animation: actuar-nav-open 160ms ease both; }
+.actuar-nav-children[hidden] { display: none; }
+.actuar-nav-subitem {
+    min-height: 34px;
+    padding: 6px 10px;
+    border-left: 2px solid var(--actuar-border);
+    border-radius: 0 4px 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--actuar-secondary);
+    font-size: 11.5px;
+    font-weight: 600;
+    text-decoration: none;
+}
+.actuar-nav-subitem > span:not(.actuar-nav-badge) { flex: 1; min-width: 0; }
+.actuar-nav-subitem:hover { background: var(--actuar-surface-muted); color: var(--actuar-foreground); }
+.actuar-nav-subitem:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: -2px; }
+.actuar-nav-subitem.is-active { border-left-color: var(--actuar-primary); background: var(--actuar-primary-soft); color: var(--actuar-primary); font-weight: 700; }
+
+.actuar-nav-badge {
+    flex: 0 0 auto;
+    min-width: 18px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--actuar-warning-soft);
+    color: var(--actuar-warning);
+    font-family: "Geist", "Open Sans", sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+.actuar-nav-badge.hidden { display: none; }
+
+@keyframes actuar-nav-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes actuar-nav-open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 640px) {
+    .actuar-nav { width: 85vw; max-width: 340px; }
+    .actuar-nav-item { min-height: 44px; }
+    .actuar-nav-subitem { min-height: 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .actuar-nav { transition: none; }
+    .actuar-nav-overlay, .actuar-nav-children { animation: none; }
+    .actuar-nav-chevron { transition: none; }
+}
+
+/* --- Seta do menu global ---
+   Uma seta só, em vez de hambúrguer para abrir e X para fechar: fechada aponta
+   para a direita (é para lá que o painel cresce) e, ao abrir, gira para a
+   esquerda (é para lá que ele volta). O mesmo ícone nos dois botões, girado por
+   transform — trocar de ícone piscaria; girar é contínuo e diz a direção. */
+.actuar-nav-arrow {
+    display: block;
+    line-height: 1;
+    transition: transform 220ms cubic-bezier(.2, .8, .2, 1);
+}
+.actuar-nav-toggle[aria-expanded="true"] .actuar-nav-arrow,
+.actuar-nav-close .actuar-nav-arrow { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) {
+    .actuar-nav-arrow { transition: none; }
+}
+
+/* --- "Meus protocolos" dentro do Histórico de prioridades ---
+   O bloco saiu do card de Registrar Prioridade: registrar e consultar são gestos
+   diferentes, e a lista empurrava o formulário para o fim de um card estreito.
+   Aqui ele tem a largura da seção, então a caixa de rolagem pode respirar. */
+.priority-history-mine { display: grid; gap: 12px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--actuar-border); }
+.priority-history-mine > h4 {
+    margin: 0;
+    color: var(--actuar-secondary);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+.priority-history-mine .priority-search { max-width: 360px; }
+.priority-history-mine-table { max-height: 320px; overflow-y: auto; }
+.priority-history-mine-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--actuar-surface-muted);
+}
+@media (max-width: 768px) {
+    .priority-history-mine .priority-search { max-width: none; }
+    .priority-history-mine-table { max-height: 260px; }
+}
+
+/* --- Densidade da tela de Prioridades do analista ---
+   O relato foi "espaçamento muito grande": três respiros de 24px entre blocos que
+   se leem juntos, mais um card meio vazio. Aqui o ritmo vertical cai para 16px
+   dentro do módulo e a justificativa deixa de esticar a linha da tabela. */
+#viewAgent.priorities-mode { display: grid; gap: 16px; }
+#viewAgent.priorities-mode > * { margin: 0 !important; }
+.priority-registration-card { align-self: start; }
+.priority-registration-card form { align-items: end; }
+
+/* A justificativa é um relatório inteiro numa célula: sem limite, uma linha da
+   tabela ocupava meia tela. Duas linhas bastam para reconhecer o atendimento —
+   o texto completo continua na ficha. */
+#myPriorityRequestsTable td:nth-child(2) {
+    max-width: 520px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+@media (max-width: 900px) {
+    #myPriorityRequestsTable td:nth-child(2) { max-width: 280px; }
+}
+
+/* --- Faixa do gatilho do menu ---
+   Linha própria entre o cabeçalho e o conteúdo, como no Actuar: o botão fica
+   sempre no canto superior esquerdo, e a marca continua visível com o menu aberto. */
+:root { --actuar-header-h: 56px; }
+.actuar-nav-rail {
+    position: sticky;
+    top: var(--actuar-header-h);
+    /* Abaixo do cabeçalho (70): com 71 esta faixa cobria o menu do perfil, que
+       desce do canto superior direito e passa por cima dela. */
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 4px 12px;
+    background: var(--actuar-canvas);
+}
+.actuar-nav-rail .actuar-nav-toggle { color: var(--actuar-secondary); }
+.actuar-nav-rail .actuar-nav-toggle:hover { background: var(--actuar-surface-muted); color: var(--actuar-foreground); }
+.actuar-nav-rail .actuar-nav-toggle[aria-expanded="true"] { background: var(--actuar-primary-soft); border-color: transparent; color: var(--actuar-primary); }
+.actuar-nav-rail .actuar-nav-toggle.hidden { display: none; }
+@media (max-width: 768px) {
+    .actuar-global-header { padding: 8px 12px; }
+    .actuar-nav-rail { padding: 4px 8px; }
 }

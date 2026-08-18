@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260814-abas-por-equipe-2">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260818-perfil-filtros-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -257,9 +257,6 @@
         </a>
         <div id="headerContext" class="actuar-header-context" aria-live="polite">Performance do Atendimento / <strong>Dashboard</strong></div>
         <div class="actuar-header-actions">
-            <span class="actuar-cloud-status" title="Dados sincronizados via Supabase">
-                <i class="fi fi-rr-cloud-check" aria-hidden="true"></i><span>Nuvem conectada</span>
-            </span>
             <button id="themeToggleButton" class="actuar-theme-toggle" type="button" onclick="toggleTheme()" aria-pressed="false" title="Ativar tema escuro">
                 <i id="themeToggleIcon" class="fi fi-rr-moon" aria-hidden="true"></i>
                 <span class="sr-only">Alternar tema</span>
@@ -284,6 +281,37 @@
             </section>
         </div>
     </header>
+
+    <!-- ==========================================================================
+         NAVEGAÇÃO GLOBAL
+         Uma única árvore (js/actuar-navigation.js) montada conforme o perfil de
+         quem entrou. Substitui as duas barras horizontais de módulos — a da gestão,
+         que rolava de lado e escondia opções, e a do analista. O conteúdo é
+         desenhado por renderGlobalNav(); aqui fica só a casca.
+         ========================================================================== -->
+    <!-- O gatilho do menu vive numa faixa própria, abaixo do cabeçalho e colado à
+         esquerda. Dentro do header ele era um quarto item numa grade de três
+         colunas: as ações do usuário caíam para uma segunda linha, e era por isso
+         que o avatar aparecia à esquerda no acesso do analista. -->
+    <div class="actuar-nav-rail">
+        <button id="navToggle" class="actuar-nav-toggle" type="button" onclick="toggleGlobalNav()"
+                aria-expanded="false" aria-controls="globalNav" aria-label="Abrir menu" title="Abrir menu">
+            <i class="fi fi-rr-angle-right actuar-nav-arrow" aria-hidden="true"></i>
+        </button>
+    </div>
+    <div id="globalNavOverlay" class="actuar-nav-overlay hidden" onclick="closeGlobalNav()" aria-hidden="true"></div>
+    <aside id="globalNav" class="actuar-nav" aria-label="Navegação principal" aria-hidden="true">
+        <div class="actuar-nav-header">
+            <div>
+                <strong>Performance do Atendimento</strong>
+                <small id="globalNavContext">ActuarClassifique</small>
+            </div>
+            <button type="button" class="actuar-nav-close" onclick="closeGlobalNav()" aria-label="Fechar menu" title="Fechar menu">
+                <i class="fi fi-rr-angle-right actuar-nav-arrow" aria-hidden="true"></i>
+            </button>
+        </div>
+        <nav id="globalNavBody" class="actuar-nav-body"></nav>
+    </aside>
 
     <div id="actuarConfirmDialog" class="actuar-confirm-layer hidden fixed inset-0 z-[160] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="actuarConfirmTitle" aria-describedby="actuarConfirmMessage">
         <div class="actuar-confirm-card">
@@ -427,33 +455,7 @@
         </header>
 
         <!-- ABAS DE NAVEGAÇÃO PÚBLICA -->
-        <div id="publicTabsContainer" class="flex gap-2.5 mb-6 border-b border-line pb-3 flex-wrap">
-            <button onclick="switchPublicTab('dashboard')" id="btnTabDashboard" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow">
-                <i class="fa-solid fa-chart-line me-1"></i> Dashboard e Resultado Individual
-            </button>
-            <button onclick="switchPublicTab('priorities')" id="btnTabPriorities" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
-                <i class="fi fi-rr-star me-1"></i> Prioridades
-            </button>
-            <button onclick="switchPublicTab('pecas')" id="btnTabPecas" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
-                <i class="fi fi-rr-box-open me-1"></i> Solicitações de peças
-            </button>
-            <button onclick="switchPublicTab('ranking')" id="btnTabRanking" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
-                <i class="fa-solid fa-ranking-star me-1"></i> Ranking Geral
-            </button>
-            <button onclick="switchPublicTab('envio')" id="btnTabEnvio" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
-                <i class="fi fi-rr-truck-side me-1"></i> Envio
-            </button>
-            <button onclick="switchPublicTab('coleta')" id="btnTabColeta" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
-                <i class="fi fi-rr-inbox me-1"></i> Coleta
-            </button>
-            <button onclick="switchPublicTab('tasks')" id="btnTabTasks" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
-                <i class="fi fi-rr-list-check me-1"></i> Tasks
-            </button>
-            <button onclick="switchPublicTab('faq')" id="btnTabFaq" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line">
-                <i class="fa-solid fa-circle-question me-1"></i> FAQ / Métricas & Regras
-            </button>
-        </div>
-
+        <!-- A navegação por módulos vive na sidebar global (#globalNav). -->
         <section id="managerConsultationBanner" class="hidden manager-consultation-banner" aria-live="polite"></section>
 
         <!-- VISÃO AGENTE / PÚBLICA -->
@@ -559,16 +561,21 @@
                 </div>
             </div>
 
+            <!-- O título e a descrição saíram: o cabeçalho da página, logo acima,
+                 dizia exatamente as mesmas duas frases. Fica só a navegação. -->
             <section class="analyst-priority-module-header">
-                <div><span class="rotation-eyebrow">Módulo operacional</span><h2>Prioridades</h2><p>Acompanhe o rodízio, registre atendimentos e consulte seus lançamentos.</p></div>
-                <nav aria-label="Seções de Prioridades"><button class="is-active" type="button" onclick="focusPriorityRotation(this)">Visão geral</button><button type="button" onclick="focusMyPriorityLaunches(this)">Meus lançamentos</button><button type="button" onclick="switchPublicTab('ranking')">Ranking</button></nav>
+                <nav aria-label="Seções de Prioridades">
+                    <button id="analystPriorityTabOverview" class="is-active" type="button" onclick="navigateTo('priorities')">Visão geral</button>
+                    <button id="analystPriorityTabHistory" type="button" onclick="navigateTo({ name: 'priorities', section: 'historico' })">Histórico</button>
+                    <button type="button" onclick="switchPublicTab('ranking')">Ranking geral</button>
+                </nav>
             </section>
 
-            <!-- RODÍZIO + CADASTRO DE PRIORIDADE PELO ANALISTA -->
-            <div class="priority-workspace">
-                <section id="priorityRotationCard" class="priority-rotation-card" aria-labelledby="priorityRotationTitle" aria-live="polite">
-                    <div class="priority-rotation-loading"><span class="actuar-spinner" aria-hidden="true"></span><span>Carregando rodízio…</span></div>
-                </section>
+            <!-- REGISTRO EM LARGURA CHEIA
+                 O formulário nasceu como uma faixa de quatro colunas (protocolo,
+                 justificativa e botão). Espremido em meia tela ele virava três
+                 campos empilhados, e ainda deixava ~270px de coluna vazia embaixo,
+                 porque a lista que preenchia esse espaço mudou para o histórico. -->
             <div class="bg-surface border border-line rounded-2xl card-hover p-6 priority-registration-card">
                 <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><span class="priority-heading-icon" aria-hidden="true"><i class="fi fi-sr-star"></i></span> Registrar Prioridade</h3>
                 <p class="text-xs text-secondary mb-4">Envie o protocolo e a justificativa para validação da gestão. Após aprovado, <strong class="text-emerald-400">50 pontos</strong> são creditados automaticamente.</p>
@@ -588,9 +595,18 @@
                         </button>
                     </div>
                 </form>
+            </div>
+            <!-- RODÍZIO DE PRIORIDADES -->
+            <div class="priority-workspace">
+                <section id="priorityRotationCard" class="priority-rotation-card" aria-labelledby="priorityRotationTitle" aria-live="polite">
+                    <div class="priority-rotation-loading"><span class="actuar-spinner" aria-hidden="true"></span><span>Carregando rodízio…</span></div>
+                </section>
+            </div>
 
-                <div class="mt-5">
-                    <h4 class="text-xs font-bold text-secondary uppercase mb-2">Meus Protocolos</h4>
+            <section id="priorityInlineHistorySection" class="priority-inline-history" aria-labelledby="priorityInlineHistoryTitle">
+                <header><div><span class="rotation-eyebrow">Atendimentos realizados</span><h3 id="priorityInlineHistoryTitle">Histórico de prioridades</h3><p id="priorityInlineHistorySubtitle">Acompanhe cada atendimento, sua avaliação e o impacto no rodízio.</p></div><span id="priorityInlineHistoryUpdated">Atualizado agora</span></header>
+                <div class="priority-history-mine">
+                    <h4>Meus protocolos</h4>
                     <div class="actuar-field priority-search">
                         <label for="analystPrioritySearch">Localizar atendimento</label>
                         <div class="actuar-input-icon">
@@ -606,9 +622,9 @@
                         <button data-status="reprovado" onclick="setAnalystPriorityStatus('reprovado',this)">Reprovados</button>
                         <button data-status="ajuste_solicitado" onclick="setAnalystPriorityStatus('ajuste_solicitado',this)">Precisam de ajuste</button>
                     </div>
-                    <div class="overflow-x-auto max-h-44 overflow-y-auto">
+                    <div class="actuar-table-wrap priority-history-mine-table">
                         <table class="w-full text-left text-xs text-secondary">
-                            <thead class="bg-bg sticky top-0 uppercase text-[10px]">
+                            <thead class="uppercase text-[10px]">
                                 <tr>
                                     <th class="p-2">Protocolo</th>
                                     <th class="p-2">Justificativa</th>
@@ -620,11 +636,6 @@
                         </table>
                     </div>
                 </div>
-            </div>
-            </div>
-
-            <section id="priorityInlineHistorySection" class="priority-inline-history" aria-labelledby="priorityInlineHistoryTitle">
-                <header><div><span class="rotation-eyebrow">Atendimentos realizados</span><h3 id="priorityInlineHistoryTitle">Histórico de prioridades</h3><p id="priorityInlineHistorySubtitle">Acompanhe cada atendimento, sua avaliação e o impacto no rodízio.</p></div><span id="priorityInlineHistoryUpdated">Atualizado agora</span></header>
                 <div id="priorityInlineHistoryBody" class="priority-inline-history-body"></div>
             </section>
 
@@ -1336,36 +1347,9 @@
             </div>
 
             <!-- ABAS DO MODO GESTÃO -->
-            <div class="manager-navigation" role="navigation" aria-label="Navegação da gestão">
-                <button onclick="openPriorityModule('visao')" id="admNavPrioridades" class="is-active">
-                    <i class="fi fi-rr-star me-1"></i> Prioridades
-                </button>
-                <button onclick="switchAdminTab('rankingGeral')" id="admNavRankingGeral">
-                    <i class="fi fi-rr-ranking-podium me-1"></i> Ranking geral
-                </button>
-                <button onclick="switchAdminTab('cadastros')" id="admTabBtnCadastros">
-                    <i class="fa-solid fa-users-gear me-1"></i> Pessoas e Acessos
-                </button>
-                <button onclick="switchAdminTab('lancamentos')" id="admTabBtnLancamentos">
-                    <i class="fa-solid fa-file-pen me-1"></i> Métricas operacionais
-                </button>
-                <button onclick="switchAdminTab('transferencias')" id="admTabBtnTransferencias" class="manager-navigation-subitem">
-                    <i class="fa-solid fa-right-left me-1"></i> Transferências <span id="admTransferPendingBadge" class="hidden ml-1 bg-amber-500 text-black rounded-full px-1.5 text-[10px]">0</span>
-                </button>
-                <button onclick="switchAdminTab('pecas')" id="admTabBtnPecas">
-                    <i class="fa-solid fa-box me-1"></i> Peças <span id="admPiecesPendingBadge" class="hidden ml-1 bg-amber-500 text-black rounded-full px-1.5 text-[10px]">0</span>
-                </button>
-                <button onclick="switchAdminTab('ponto')" id="admTabBtnPonto">
-                    <i class="fi fi-rr-time-check me-1"></i> Ponto e pausas <span id="admBreakLiveBadge" class="hidden ml-1 bg-amber-500 text-black rounded-full px-1.5 text-[10px]">0</span>
-                </button>
-                <button onclick="switchAdminTab('ciclos')" id="admTabBtnCiclos">
-                    <i class="fi fi-rr-calendar-check me-1"></i> Ciclos e Fechamento
-                </button>
-                <button onclick="switchAdminTab('historico')" id="admTabBtnHistorico">
-                    <i class="fa-solid fa-clock-rotate-left me-1"></i> Histórico/Auditoria
-                </button>
-            </div>
-
+            <!-- A navegação entre módulos saiu daqui: virou a sidebar global (#globalNav),
+                 montada por js/actuar-navigation.js conforme a permissão de quem entrou.
+                 A barra horizontal rolava de lado e escondia módulos no fim da fila. -->
             <!-- Trilha da seção. Substitui a faixa roxa: diz onde o gestor está, de quem
                  são os dados e que a visão é de leitura, sem ocupar meia tela. -->
             <div id="managerSectionHeader" class="hidden manager-section-header" aria-live="polite"></div>
@@ -1384,12 +1368,7 @@
                         <button id="priorityModuleTvAction" type="button" class="actuar-btn actuar-btn-secondary" onclick="openManagerTvConfig()"><i class="fi fi-rr-tv-retro"></i>Abrir Modo TV</button>
                     </div>
                 </div>
-                <nav class="priority-module-tabs" aria-label="Seções de Prioridades" role="tablist">
-                    <button id="priorityModuleTabOverview" class="is-active" role="tab" aria-selected="true" onclick="openPriorityModule('visao')">Visão geral</button>
-                    <button id="priorityModuleTabApprovals" role="tab" aria-selected="false" onclick="openPriorityModule('prioridades')">Aprovações <span id="admPriorityPendingBadge" class="hidden">0</span></button>
-                    <button id="priorityModuleTabLaunches" role="tab" aria-selected="false" onclick="openPriorityModule('priorityLaunches')">Lançamentos</button>
-                    <button id="priorityModuleTabRanking" role="tab" aria-selected="false" onclick="openPriorityModule('ranking')">Ranking</button>
-                </nav>
+                <!-- Visão geral, Aprovações, Lançamentos e Ranking são filhos de Prioridades na sidebar. -->
                 <div id="priorityModuleActiveContext" class="hidden priority-module-active-context" aria-live="polite"></div>
             </section>
 
@@ -1604,9 +1583,9 @@
                         </div>
                         <input type="hidden" id="inputUserPhotoData" value="">
                     </div>
-                    <div id="inputUserPasswordWrap" class="hidden md:col-span-2">
-                        <label class="block text-xs text-secondary mb-1">Senha de Acesso (obrigatória para Gestor Adm e Envio/Coleta)</label>
-                        <input type="password" id="inputUserPassword" placeholder="Defina a senha deste gestor" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
+                    <div id="inputUserPasswordWrap" class="md:col-span-2">
+                        <label class="block text-xs text-secondary mb-1" id="inputUserPasswordLabel">Senha de Acesso (mínimo de 8 caracteres)</label>
+                        <input type="password" id="inputUserPassword" placeholder="Defina a senha de acesso desta pessoa" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
                     </div>
 
                     <!-- CONTROLE DE PONTO: é aqui que se decide quem entra na medição.
@@ -1669,8 +1648,8 @@
                 <div id="analystFirstAccess" class="actuar-feedback actuar-feedback-info mb-3">
                     <i class="fi fi-rr-lock" aria-hidden="true"></i>
                     <div>
-                        <strong>Primeiro acesso dos analistas</strong>
-                        <p id="analystFirstAccessHint">Gere as senhas iniciais dos analistas de uma vez, ou use <strong>Redefinir senha</strong> no cartão da pessoa para qualquer perfil. A senha aparece uma única vez, para você distribuir.</p>
+                        <strong>Primeiro acesso</strong>
+                        <p id="analystFirstAccessHint">Gere de uma vez a senha inicial de todo mundo que está ativo e ainda sem acesso — analistas, Toletus Lab e operação de peças. Ou use <strong>Redefinir senha</strong> no cartão da pessoa, para um perfil específico. A senha aparece uma única vez, para você distribuir.</p>
                         <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm mt-2" onclick="generateAnalystPasswords()">
                             <i class="fi fi-rr-lock"></i>Gerar senhas de primeiro acesso
                         </button>
@@ -1969,17 +1948,53 @@
             <div id="admPanelHistorico" class="hidden space-y-6">
             <!-- LOGS -->
             <div class="bg-surface border border-line rounded-2xl card-hover p-6">
-                <h3 class="text-md font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-secondary"></i> Histórico de Registros</h3>
+                <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-secondary"></i> Histórico e auditoria</h3>
+                <p class="text-xs text-secondary mb-4">Tudo que alterou pontuação: lançamentos, penalidades, prioridades, revisões, peças e exclusões. Use os filtros para achar um caso específico.</p>
+
+                <!-- Um filtro por pergunta que o gestor faz: "o que houve com fulano?",
+                     "o que aconteceu naquele dia?", "onde foi parar aquele protocolo?". -->
+                <div class="history-filters" role="search">
+                    <div class="actuar-field history-filter-search">
+                        <label for="admHistorySearch">Buscar</label>
+                        <input type="search" id="admHistorySearch" oninput="applyHistoryFilters()" placeholder="Nome, protocolo, motivo ou cliente">
+                    </div>
+                    <div class="actuar-field">
+                        <label for="admHistoryUser">Analista</label>
+                        <select id="admHistoryUser" onchange="applyHistoryFilters()"></select>
+                    </div>
+                    <div class="actuar-field">
+                        <label for="admHistoryType">Tipo</label>
+                        <select id="admHistoryType" onchange="applyHistoryFilters()">
+                            <option value="Todos">Todos</option>
+                            <option value="WEEKLY">Lançamento semanal</option>
+                            <option value="PENALTY">Penalidade</option>
+                            <option value="PRIORITY">Prioridade</option>
+                            <option value="PRIORITY_ADJUSTMENT">Revisão de avaliação</option>
+                            <option value="PECA">Peça</option>
+                            <option value="DELETED">Excluído</option>
+                        </select>
+                    </div>
+                    <div class="actuar-field">
+                        <label for="admHistoryFrom">De</label>
+                        <input type="date" id="admHistoryFrom" onchange="applyHistoryFilters()">
+                    </div>
+                    <div class="actuar-field">
+                        <label for="admHistoryTo">Até</label>
+                        <input type="date" id="admHistoryTo" onchange="applyHistoryFilters()">
+                    </div>
+                    <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="clearHistoryFilters()"><i class="fi fi-rr-cross-circle"></i>Limpar</button>
+                </div>
+                <p id="admHistorySummary" class="text-xs text-secondary mt-3 mb-2"></p>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs text-secondary">
                         <thead class="bg-bg text-secondary uppercase text-[10px]">
                             <tr>
                                 <th class="p-3">Data/Hora</th>
                                 <th class="p-3">Usuário</th>
-                                <th class="p-3">Semana</th>
-                                <th class="p-3">Resolvidos / Atendidos</th>
-                                <th class="p-3">NPS</th>
                                 <th class="p-3">Tipo</th>
+                                <th class="p-3">Detalhe</th>
+                                <th class="p-3">Pontos</th>
                                 <th class="p-3">Ações</th>
                             </tr>
                         </thead>
@@ -2465,6 +2480,23 @@
             return true;
         };
 
+        /* A URL carrega apenas o que foge do padrão.
+           Gravar todo filtro, inclusive no default, enchia o endereço de ruído
+           (&mgrTeam=Todos&mgrAnalyst=Todos&mgrRanking=Geral...) e escondia justamente o que
+           estava filtrado de verdade. O estado completo continua no localStorage, que é quem
+           sustenta a recarga; a URL serve para compartilhar uma visão específica.
+           Cada entrada é [parâmetro, valor, valor padrão]: igual ao padrão, sai do endereço. */
+        function syncUrlParams(entries) {
+            try {
+                const url = new URL(window.location.href);
+                entries.forEach(([param, value, fallback]) => {
+                    if (value === null || value === undefined || value === '' || value === fallback) url.searchParams.delete(param);
+                    else url.searchParams.set(param, value);
+                });
+                window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+            } catch (_) { /* a URL continua funcional mesmo sem sincronização */ }
+        }
+
         function persistViewContext() {
             const context = {
                 userId: currentActiveUser,
@@ -2476,14 +2508,15 @@
                 localStorage.setItem(VIEW_CONTEXT_STORAGE_KEY, JSON.stringify(context));
             } catch (_) { /* sessionStorage pode estar indisponível */ }
 
-            try {
-                const url = new URL(window.location.href);
-                url.searchParams.set('analyst', context.userId);
-                url.searchParams.set('ranking', context.rankingTeam);
-                url.searchParams.set('month', context.monthKey);
-                url.searchParams.set('period', context.period);
-                window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
-            } catch (_) { /* a URL continua funcional mesmo sem sincronização */ }
+            // ?analyst= não entra mais: o restore deixou de aceitar identidade pela URL, então
+            // o parâmetro só vazava o id de um colega em link compartilhado. Fica na lista
+            // abaixo para que endereços antigos sejam limpos ao navegar.
+            syncUrlParams([
+                ['analyst', null, null],
+                ['ranking', context.rankingTeam, 'Sistema'],
+                ['month', context.monthKey, 'atual'],
+                ['period', context.period, 'ALL']
+            ]);
         }
 
         function restoreViewContext() {
@@ -2550,12 +2583,14 @@
         function persistManagerFilters() {
             managerFilters = normalizeManagerFilters();
             try { localStorage.setItem(MANAGER_FILTER_STORAGE_KEY, JSON.stringify(managerFilters)); } catch (_) { /* opcional */ }
-            try {
-                const url = new URL(location.href);
-                const map = { team: 'mgrTeam', analyst: 'mgrAnalyst', category: 'mgrRanking', month: 'mgrMonth', period: 'mgrPeriod', cycle: 'mgrCycle', cycleStatus: 'mgrCycleStatus' };
-                Object.entries(map).forEach(([key, param]) => url.searchParams.set(param, managerFilters[key]));
-                history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
-            } catch (_) { /* URL continua navegável */ }
+            // O padrão vem do próprio domínio (ManagerExperience.DEFAULT_FILTERS) para não
+            // duplicar aqui a regra de qual é o valor neutro de cada filtro. O shell é avaliado
+            // antes de js/manager-experience.js: sem o módulo não há como saber o que é padrão,
+            // e gravar tudo por precaução é justamente o que enchia a URL de ruído.
+            const defaults = window.ManagerExperience?.DEFAULT_FILTERS;
+            if (!defaults) return;
+            const map = { team: 'mgrTeam', analyst: 'mgrAnalyst', category: 'mgrRanking', month: 'mgrMonth', period: 'mgrPeriod', cycle: 'mgrCycle', cycleStatus: 'mgrCycleStatus' };
+            syncUrlParams(Object.entries(map).map(([key, param]) => [param, managerFilters[key], defaults[key]]));
         }
 
         function restoreManagerFilters() {
@@ -3805,10 +3840,28 @@
             showToast(`Tema ${next === 'dark' ? 'escuro' : 'claro'} ativado.`);
         }
 
+        /* Seções que o Modo Gestão realmente possui. Sem esta lista, um endereço
+           antigo como #/admin/excluidos — seção que deixou de existir — continuava
+           no navegador enquanto a tela mostrava a Visão geral: o endereço dizia uma
+           coisa e o conteúdo outra. */
+        const ADMIN_SECTIONS = ['visao', 'prioridades', 'priorityLaunches', 'ranking', 'rankingGeral', 'analista', 'pecas', 'ponto', 'lancamentos', 'transferencias', 'ciclos', 'cadastros', 'historico'];
+
+        /* Rotas da plataforma nova. Enquanto a autenticação dela está desligada elas
+           não têm tela: o endereço respondia, o cabeçalho anunciava "Central de
+           aprovações" ou "Usuários e equipes" e por baixo aparecia o dashboard do
+           analista — para qualquer perfil, inclusive sem sessão. Sem tela, a rota não
+           existe. Quando a flag for ligada, isSecureRoute volta a valer e elas abrem
+           com a checagem de papel que já existe lá. `profile` fica de fora: essa tem
+           tela nos dois mundos. */
+        const PLATFORM_ONLY_ROUTES = ['overview', 'newRequest', 'requests', 'ledger', 'approvals', 'team', 'usersTeams', 'rules', 'cycles', 'audit', 'notifications'];
+
         function sanitizeRoute(route) {
             const candidate = typeof route === 'string' ? { name: route } : (route || {});
-            const name = ROUTE_META[candidate.name] ? candidate.name : 'dashboard';
-            return { name, section: candidate.section || null };
+            let name = ROUTE_META[candidate.name] ? candidate.name : 'dashboard';
+            if (PLATFORM_ONLY_ROUTES.includes(name) && !window.PerformancePlatform?.isSecureRoute(name)) name = 'dashboard';
+            const section = candidate.section || null;
+            if (name === 'admin' && section && !ADMIN_SECTIONS.includes(section)) return { name, section: 'visao' };
+            return { name, section };
         }
 
         function routeFromLocation() {
@@ -3892,11 +3945,14 @@
             render();
             if (['dashboard', 'priorities', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'pecas'].includes(currentRoute.name)) {
                 switchPublicTabView(currentRoute.name);
+                if (currentRoute.name === 'priorities') focusPrioritySection(currentRoute.section);
             }
             if (currentRoute.name === 'admin' && currentRoute.section) switchAdminTabView(currentRoute.section);
             if (currentRoute.name === 'profile') renderProfileScreen(currentRoute.section);
             updateShell();
-            if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Rota com seção já sabe onde parar; subir ao topo aqui desfaria isso.
+            const rotaAncorada = currentRoute.name === 'priorities' && currentRoute.section;
+            if (!options.preserveScroll && !rotaAncorada) window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         window.addEventListener('popstate', event => {
@@ -3921,6 +3977,12 @@
                 ranking: { title: 'Prioridades · Ranking', description: 'Acompanhe os pontos validados no período selecionado.' },
                 pecas: { title: 'Envio e coleta', description: 'Acompanhe solicitações, avaliações e movimentações logísticas da equipe.' },
                 rankingGeral: { title: 'Ranking geral', description: 'Compare o desempenho das equipes e consulte a classificação consolidada.' },
+                cadastros: { title: 'Pessoas e Acessos', description: 'Administre identidades, equipes, funções e acessos da operação.' },
+                lancamentos: { title: 'Métricas operacionais', description: 'Registre e confira os lançamentos que alimentam a pontuação.' },
+                transferencias: { title: 'Métricas operacionais · Transferências', description: 'Analise os protocolos de transferência enviados pela equipe.' },
+                ponto: { title: 'Ponto e pausas', description: 'Acompanhe jornada, pausas e ociosidade da equipe no dia.' },
+                ciclos: { title: 'Ciclos e Fechamento', description: 'Gerencie abertura, conferência e fechamento de cada ciclo.' },
+                historico: { title: 'Histórico e auditoria', description: 'Consulte ações relevantes e alterações registradas na operação.' },
                 analista: { title: `Ranking geral · ${getStore()?.users?.[currentActiveUser]?.name || 'Analista'}`, description: 'Consulta de leitura: nenhuma ação aqui é registrada em nome do analista.' }
             };
             const meta = currentRoute.name === 'admin' && adminMeta[currentRoute.section] ? adminMeta[currentRoute.section] : (ROUTE_META[currentRoute.name] || ROUTE_META.dashboard);
@@ -3931,7 +3993,15 @@
             const headerContext = document.getElementById('headerContext');
             if (pageTitle) pageTitle.textContent = meta.title;
             if (pageDescription) pageDescription.textContent = meta.description;
-            if (headerContext) headerContext.innerHTML = `Performance do Atendimento / <strong>${escapeHtml(meta.title)}</strong>`;
+            /* A trilha acompanha a árvore do menu: módulo e, quando houver, a página
+               dentro dele — `Performance do Atendimento / Prioridades / Aprovações`. */
+            const trilha = window.ActuarNavigation ? ActuarNavigation.breadcrumb(currentNavTree(), currentRoute) : [];
+            if (headerContext) {
+                const partes = trilha.length ? trilha : [meta.title];
+                const ultimo = partes[partes.length - 1];
+                const anteriores = partes.slice(0, -1).map(parte => `${escapeHtml(parte)} / `).join('');
+                headerContext.innerHTML = `Performance do Atendimento / ${anteriores}<strong>${escapeHtml(ultimo)}</strong>`;
+            }
             if (pageBackButton) pageBackButton.hidden = !(state.actuarBackRoute && (state.actuarDepth || 0) > 0);
             updatePageActions();
             updateProfileUI();
@@ -4556,6 +4626,9 @@
                 priorityRequests: { ...priorityRequestDiff, expectedVersions: expectedPriorityRequestVersions },
                 transferRequests: diffKeyedArray(base.transferRequests, local.transferRequests),
                 pieceOperations: { ...pieceOperationDiff, expectedVersions: expectedPieceOperationVersions },
+                // A auditoria de exclusão viaja junto: chave não declarada aqui é descartada
+                // pelo merge, que parte sempre do dado do servidor.
+                deletedPieceOperations: diffKeyedArray(base.deletedPieceOperations, local.deletedPieceOperations),
                 priorityRotations: { changed: changedRotations, expectedVersions: expectedRotationVersions },
                 // Jornada por usuário; ponto por dia e usuário; escala por semana e time.
                 workProfiles: diffNestedMap(base.workProfiles, local.workProfiles, 1),
@@ -4594,6 +4667,7 @@
                 }
             });
             merged.pieceOperations = applyKeyedArrayDiff(merged.pieceOperations, diff.pieceOperations);
+            merged.deletedPieceOperations = applyKeyedArrayDiff(merged.deletedPieceOperations, diff.deletedPieceOperations);
             merged.priorityRotations ||= {};
             Object.entries(diff.priorityRotations?.changed || {}).forEach(([team, nextRotation]) => {
                 const expected = diff.priorityRotations.expectedVersions[team];
@@ -4672,6 +4746,7 @@
                     priorityRequests: [],
                     transferRequests: [],
                     pieceOperations: [],
+                    deletedPieceOperations: [],
                     priorityRotations: {},
                     workProfiles: {},
                     timeClock: {},
@@ -4683,6 +4758,7 @@
                 if (!appStore.priorityRequests) appStore.priorityRequests = [];
                 if (!appStore.transferRequests) appStore.transferRequests = [];
                 appStore.pieceOperations = window.PiecesOperations ? PiecesOperations.bootstrap(appStore, appStore.users || defaultUsers) : (appStore.pieceOperations || []);
+                if (!appStore.deletedPieceOperations) appStore.deletedPieceOperations = [];
                 if (!appStore.priorityRotations) appStore.priorityRotations = {};
                 // Ponto e pausas: base vazia em store antigo, para o módulo nunca
                 // precisar testar existência antes de ler.
@@ -4695,6 +4771,12 @@
 
             document.getElementById('loadingOverlay').classList.add('hidden');
             restoreViewContext();
+            // Limpa o endereço já na abertura. Sem isso uma URL antiga cheia de defaults
+            // — vinda de favorito, histórico ou autocomplete da barra — sobrevivia à sessão
+            // inteira, porque a escrita só acontecia ao trocar um filtro. Os parâmetros de
+            // visão saem no persistViewContext() que fecha populateDropdowns(); os mgr* não
+            // têm escritor no boot, então precisam desta chamada.
+            if (isAdminLoggedIn) persistManagerFilters();
             populateDropdowns();
             initializeNavigation();
         }
@@ -5108,6 +5190,29 @@
             }
         }
 
+        /* Auditoria das exclusões: quem tem acesso total vê o que qualquer gestor apagou.
+           Um gestor auditando apenas as próprias exclusões não seria vigilância nenhuma —
+           é justamente o caso de uso que a aba precisa cobrir. */
+        function canAuditDeletedPieces() {
+            if (!isAdminLoggedIn) return false;
+            /* Acesso máximo aqui é alcançar todas as equipes — o mesmo que authorizedTeams()
+               já decide, seja por allTeamsAccess ou por não ter restrição declarada. Exigir
+               a flag crua esconderia a aba de todo mundo: ela não é definida nos usuários
+               padrão nem existe campo na ficha para marcá-la. Gestor com managedTeams
+               restrito continua de fora. */
+            const todas = window.ManagerExperience?.TEAMS || ['Sistema', 'Catraca'];
+            const alcance = getManagerAuthorizedTeams();
+            return todas.length > 0 && todas.every(team => alcance.includes(team));
+        }
+
+        /* A exclusão agora vive na tabela de Histórico e auditoria, como tipo "Excluído":
+           era onde a gestão já ia procurar. Este atalho continua existindo porque a ficha
+           de peça o chama logo após excluir, para a tela atrás refletir o que acabou de
+           acontecer sem exigir uma nova navegação. */
+        function renderDeletedPiecesPanel() {
+            if (activeAdminTab === 'historico') renderAdminLogs();
+        }
+
         function hasAnySession() { return isAnalystLoggedIn || isAdminLoggedIn || isPecaLoggedIn; }
         function syncLoginGate() {
             const gate = document.getElementById('loginGate');
@@ -5186,7 +5291,9 @@
 
         function analystDoorOptions() {
             const usersList = getStore()?.users || defaultUsers;
-            return analystOptionIds().map(id => `<option value="${id}">${usersList[id].name} · ${usersList[id].team}</option>`).join('');
+            // O campo de login mostra só o nome: equipe e cargo são organização interna e
+            // poluíam a escolha de quem está apenas entrando.
+            return analystOptionIds().map(id => `<option value="${id}">${usersList[id].name}</option>`).join('');
         }
         function fillAnalystDoor() {
             document.getElementById('analystUserSelect').innerHTML = analystDoorOptions() || `<option value="">Nenhum analista cadastrado</option>`;
@@ -5200,7 +5307,7 @@
         function fillPecaDoor() {
             const usersList = getStore()?.users || defaultUsers;
             const opts = Object.keys(usersList).filter(id => isPiecesOperatorRole(usersList[id].role) && usersList[id].active !== false)
-                .map(id => `<option value="${id}">${usersList[id].name} · ${usersList[id].role}</option>`).join('');
+                .map(id => `<option value="${id}">${usersList[id].name}</option>`).join('');
             document.getElementById('pecaUserSelect').innerHTML = opts || `<option value="">Nenhum usuário cadastrado</option>`;
         }
 
@@ -5256,15 +5363,25 @@
         /* Onde cada grupo de filtro faz sentido. Barra de filtro em tela de cadastro
            ou de ponto não filtra nada — só ocupa espaço e sugere um poder que ela não
            tem. Fora do mapa, o padrão é não mostrar. */
+        /* A barra do topo só aparece onde ela é o ÚNICO jeito de mudar o recorte.
+           Onde a própria tela já tem Departamento, Período, analista ou busca, ela
+           some: dois controles para a mesma coisa, um em cima do outro, é a receita
+           para o usuário mudar um e não entender por que o número não mexeu — foi o
+           que acontecia em Prioridades, que tem os próprios seletores no módulo. */
         const TOOLBAR_SCOPE = {
-            visao:            { periodo: true,  contexto: true  },
-            prioridades:      { periodo: true,  contexto: true  },
-            priorityLaunches: { periodo: true,  contexto: true  },
-            ranking:          { periodo: true,  contexto: true  },
+            // Prioridades tem Departamento e Período dentro do módulo.
+            visao:            { periodo: false, contexto: false },
+            prioridades:      { periodo: false, contexto: false },
+            priorityLaunches: { periodo: false, contexto: false },
+            ranking:          { periodo: false, contexto: false },
+            // Aqui a barra é o filtro da tela: é o recorte do ranking consolidado.
             rankingGeral:     { periodo: true,  contexto: true  },
             analista:         { periodo: true,  contexto: true  },
+            /* Transferências é uma tabela sem nenhum filtro próprio: aqui a barra do
+               topo é o único recorte que existe. Tirá-la deixaria a tela sem saída. */
             transferencias:   { periodo: true,  contexto: true  },
-            historico:        { periodo: true,  contexto: true  },
+            // Histórico tem busca, analista, tipo e datas dentro da própria página.
+            historico:        { periodo: false, contexto: false },
             // Ciclos é por mês, não por pessoa.
             ciclos:           { periodo: true,  contexto: false },
             // Métricas operacionais já tem o seu próprio "Departamento em edição".
@@ -5276,9 +5393,14 @@
         };
 
         const TOOLBAR_ROUTES = {
+            // O mês muda os números do dashboard e do ranking: aqui a barra trabalha.
             dashboard:  { periodo: true,  contexto: false },
             ranking:    { periodo: true,  contexto: false },
-            priorities: { periodo: true,  contexto: false },
+            // Prioridades do analista: o módulo já traz o próprio recorte.
+            priorities: { periodo: false, contexto: false },
+            envio:      { periodo: false, contexto: false },
+            coleta:     { periodo: false, contexto: false },
+            tasks:      { periodo: false, contexto: false },
             faq:        { periodo: false, contexto: false },
             pecas:      { periodo: false, contexto: false },
             profile:    { periodo: false, contexto: false }
@@ -5373,6 +5495,8 @@
         function render() {
             syncLoginGate();
             syncAccessControls();
+            // Antes dos painéis: eles preenchem os contadores do menu logo em seguida.
+            renderGlobalNav();
             const store = getStore();
             const usersList = store.users || defaultUsers;
             const metrics = getAggregatedMetrics(activeMonthKey, activePeriodFilter);
@@ -5380,7 +5504,6 @@
             if (window.PerformancePlatform && PerformancePlatform.isSecureRoute(currentRoute.name)) {
                 ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin', 'viewProfile'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
                 document.getElementById('viewPlatform')?.classList.remove('hidden');
-                document.getElementById('publicTabsContainer')?.classList.add('hidden');
                 PerformancePlatform.renderCurrentRoute(currentRoute);
                 finalizeActuarUi();
                 return;
@@ -5399,7 +5522,6 @@
             if (currentRoute.name === 'profile') {
                 ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin'].forEach(id => document.getElementById(id).classList.add('hidden'));
                 profileView.classList.remove('hidden');
-                document.getElementById('publicTabsContainer').classList.add('hidden');
                 renderProfileScreen(currentRoute.section);
                 finalizeActuarUi();
                 return;
@@ -5422,7 +5544,6 @@
                 document.getElementById('viewFaq').classList.add('hidden');
                 document.getElementById('viewPecas').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
-                document.getElementById('publicTabsContainer').classList.add('hidden');
                 syncManagerSectionViews();
                 if (analistaNaGestao) renderAnalystDashboard(user, usersList, metrics);
                 document.getElementById('loggedAdminName').innerText = getCurrentManager()?.name || "Gestor";
@@ -5442,13 +5563,11 @@
                 document.getElementById('viewFaq').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.add('hidden');
                 document.getElementById('viewPecas').classList.remove('hidden');
-                document.getElementById('publicTabsContainer').classList.toggle('hidden', isPecaLoggedIn);
                 document.getElementById('piecesAnalystEntry')?.classList.toggle('hidden', isPecaLoggedIn || window.canRequestPieces?.() === false);
                 renderPiecesExperience();
             } else {
                 document.getElementById('viewAdmin').classList.add('hidden');
                 document.getElementById('viewPecas').classList.add('hidden');
-                document.getElementById('publicTabsContainer').classList.toggle('hidden', isAdminLoggedIn);
                 renderAnalystDashboard(user, usersList, metrics);
             }
 
@@ -6107,71 +6226,152 @@
             }
         }
 
-        function renderAdminLogs() {
+        /* Histórico e auditoria em linhas de formato único.
+           Antes cada tipo desenhava a própria linha, com colspan invadindo colunas que só
+           faziam sentido no lançamento semanal ("Resolvidos/Atendidos" e "NPS"): a tabela
+           mudava de forma a cada linha e virava ilegível. E o tipo PECA não tinha ramo
+           nenhum — os pontos de peça simplesmente não apareciam aqui.
+           Agora tudo vira {quando, quem, tipo, detalhe, pontos}, o que também é o que
+           torna filtro e busca possíveis. */
+        const HISTORY_TYPES = {
+            WEEKLY: { label: 'Lançamento semanal', tone: 'text-emerald-400' },
+            PENALTY: { label: 'Penalidade', tone: 'text-red-400', row: 'bg-red-500/10' },
+            PRIORITY: { label: 'Prioridade', tone: 'text-amber-400', row: 'bg-amber-500/10' },
+            PRIORITY_ADJUSTMENT: { label: 'Revisão de avaliação', tone: 'text-primary-300', row: 'bg-primary-500/10' },
+            PECA: { label: 'Peça', tone: 'text-sky-400' },
+            DELETED: { label: 'Excluído', tone: 'text-red-300', row: 'bg-red-500/10' }
+        };
+
+        let historyFilters = { search: '', userId: 'Todos', type: 'Todos', from: '', to: '' };
+
+        function historyRows() {
             const store = getStore();
-            const usersList = store.users || defaultUsers;
-            let html = "";
-            const logs = [...(store.logs || [])].reverse();
-            const isCurrentMonth = activeMonthKey === "atual";
+            const usersList = store?.users || defaultUsers;
+            const rows = [];
 
-            logs.forEach(l => {
-                const user = usersList[l.userId];
+            (store?.logs || []).forEach(log => {
+                const user = usersList[log.userId];
                 if (!user) return;
-                if (isAdminLoggedIn && isRankableUser(user) && !canManagerViewAnalyst(l.userId)) return;
-                const d = new Date(l.timestamp).toLocaleDateString("pt-BR") + " " + new Date(l.timestamp).toLocaleTimeString("pt-BR", {hour: '2-digit', minute:'2-digit'});
-                const deleteBtn = isCurrentMonth
-                    ? `<button onclick="deleteLog('${l.id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>`
-                    : `<span class="text-[10px] text-secondary">Mês fechado</span>`;
-
-                if (l.type === "WEEKLY") {
-                    html += `
-                        <tr>
-                            <td class="p-3 text-secondary">${d}</td>
-                            <td class="p-3 font-semibold text-white"><button onclick="openManagerAnalyst('${l.userId}','historico')">${escapeHtml(user.name)}</button></td>
-                            <td class="p-3 text-primary-400 font-bold">${l.week}</td>
-                            <td class="p-3">${l.resolvidos} res / ${l.atendidos} atd</td>
-                            <td class="p-3">${l.nps}</td>
-                            <td class="p-3 text-emerald-400 text-[10px] uppercase font-bold">Lançamento Semanal</td>
-                            <td class="p-3">${deleteBtn}</td>
-                        </tr>
-                    `;
-                } else if (l.type === "PENALTY") {
-                    html += `
-                        <tr class="bg-red-500/10">
-                            <td class="p-3 text-secondary">${d}</td>
-                            <td class="p-3 font-semibold text-white"><button onclick="openManagerAnalyst('${l.userId}','historico')">${escapeHtml(user.name)}</button></td>
-                            <td class="p-3 text-red-400 font-bold">Penalidade</td>
-                            <td class="p-3 text-red-400 font-bold" colspan="2">Motivo: ${l.reason} (${l.value} pts)</td>
-                            <td class="p-3 text-red-400 text-[10px] uppercase font-bold">Punido</td>
-                            <td class="p-3">${deleteBtn}</td>
-                        </tr>
-                    `;
-                } else if (l.type === "PRIORITY") {
-                    html += `
-                        <tr class="bg-amber-500/10">
-                            <td class="p-3 text-secondary">${d}</td>
-                            <td class="p-3 font-semibold text-white"><button onclick="openManagerAnalyst('${l.userId}','historico')">${escapeHtml(user.name)}</button></td>
-                            <td class="p-3 text-amber-400 font-bold">Prioridade</td>
-                            <td class="p-3 text-amber-400 font-bold" colspan="2">Protocolo ${l.protocolo || '-'} (+${l.value} pts)</td>
-                            <td class="p-3 text-amber-400 text-[10px] uppercase font-bold">Validada pela Gestão</td>
-                            <td class="p-3"><span class="text-[10px] text-secondary">Registro auditável</span></td>
-                        </tr>
-                    `;
-                } else if (l.type === "PRIORITY_ADJUSTMENT") {
-                    html += `
-                        <tr class="bg-primary-500/10">
-                            <td class="p-3 text-secondary">${d}</td>
-                            <td class="p-3 font-semibold text-white"><button onclick="openManagerAnalyst('${l.userId}','historico')">${escapeHtml(user.name)}</button></td>
-                            <td class="p-3 text-primary-400 font-bold">Revisão de avaliação</td>
-                            <td class="p-3 text-primary-300 font-bold" colspan="2">Protocolo ${escapeHtml(l.protocolo || '-')} (${Number(l.value || 0) >= 0 ? '+' : ''}${Number(l.value || 0)} pts) · ${escapeHtml(l.reason || 'Sem motivo registrado')}</td>
-                            <td class="p-3 text-primary-300 text-[10px] uppercase font-bold">Ajuste auditável</td>
-                            <td class="p-3"><span class="text-[10px] text-secondary">Registro preservado</span></td>
-                        </tr>
-                    `;
-                }
+                if (isAdminLoggedIn && isRankableUser(user) && !canManagerViewAnalyst(log.userId)) return;
+                const points = Number(log.value || 0);
+                let detail = '';
+                if (log.type === 'WEEKLY') detail = `${escapeHtml(log.week || '-')} · ${escapeHtml(log.resolvidos)} res / ${escapeHtml(log.atendidos)} atd · NPS ${escapeHtml(log.nps)}`;
+                else if (log.type === 'PENALTY') detail = `Motivo: ${escapeHtml(log.reason || 'Não informado')}`;
+                else if (log.type === 'PRIORITY') detail = `Protocolo ${escapeHtml(log.protocolo || '-')}`;
+                else if (log.type === 'PRIORITY_ADJUSTMENT') detail = `Protocolo ${escapeHtml(log.protocolo || '-')} · ${escapeHtml(log.reason || 'Sem motivo registrado')}`;
+                else if (log.type === 'PECA') detail = `${escapeHtml(log.tipo || 'Solicitação de peça')}${log.clientId ? ` · Cliente ${escapeHtml(log.clientId)}` : ''}`;
+                else return; // tipo desconhecido não vira linha silenciosamente torta
+                rows.push({
+                    id: log.id, timestamp: Number(log.timestamp || 0), userId: log.userId, userName: user.name,
+                    type: log.type, detail, points,
+                    // Só lançamento e penalidade têm exclusão individual; os demais são registros auditáveis.
+                    removable: ['WEEKLY', 'PENALTY'].includes(log.type),
+                    note: log.type === 'PRIORITY' ? 'Validada pela Gestão' : log.type === 'PRIORITY_ADJUSTMENT' ? 'Ajuste auditável' : log.type === 'PECA' ? 'Pontuação de peça' : '',
+                    search: [user.name, log.week, log.reason, log.protocolo, log.tipo, log.clientId].filter(Boolean).join(' ')
+                });
             });
 
-            document.getElementById('admHistoryLogs').innerHTML = html || `<tr><td colspan="7" class="p-4 text-center text-secondary">Nenhum registro efetuado este mês.</td></tr>`;
+            // Exclusões de peça: aparecem para quem tem alcance sobre todas as equipes.
+            if (canAuditDeletedPieces()) {
+                (store?.deletedPieceOperations || []).forEach(item => {
+                    const analista = usersList[item.analystId];
+                    const autor = usersList[item.deletedBy];
+                    rows.push({
+                        id: item.id, timestamp: Number(item.deletedAt || 0), userId: item.analystId || '',
+                        userName: analista?.name || '—', type: 'DELETED',
+                        detail: `Protocolo ${escapeHtml(item.protocol || item.id)} · ${escapeHtml(item.reason || 'Sem motivo registrado')}`,
+                        points: -Number(item.removedPoints || 0), removable: false,
+                        note: `Excluída por ${escapeHtml(autor?.name || item.deletedBy || '—')}`,
+                        search: [analista?.name, item.protocol, item.reason, autor?.name].filter(Boolean).join(' ')
+                    });
+                });
+            }
+
+            return rows.sort((a, b) => b.timestamp - a.timestamp);
+        }
+
+        function filteredHistoryRows() {
+            const termo = historyFilters.search.trim().toLowerCase();
+            const de = historyFilters.from ? new Date(`${historyFilters.from}T00:00:00`).getTime() : null;
+            const ate = historyFilters.to ? new Date(`${historyFilters.to}T23:59:59`).getTime() : null;
+            return historyRows().filter(row => {
+                if (historyFilters.type !== 'Todos' && row.type !== historyFilters.type) return false;
+                if (historyFilters.userId !== 'Todos' && row.userId !== historyFilters.userId) return false;
+                if (de !== null && row.timestamp < de) return false;
+                if (ate !== null && row.timestamp > ate) return false;
+                if (termo && !row.search.toLowerCase().includes(termo)) return false;
+                return true;
+            });
+        }
+
+        function applyHistoryFilters() {
+            historyFilters = {
+                search: document.getElementById('admHistorySearch')?.value || '',
+                userId: document.getElementById('admHistoryUser')?.value || 'Todos',
+                type: document.getElementById('admHistoryType')?.value || 'Todos',
+                from: document.getElementById('admHistoryFrom')?.value || '',
+                to: document.getElementById('admHistoryTo')?.value || ''
+            };
+            renderAdminLogs();
+        }
+
+        function clearHistoryFilters() {
+            historyFilters = { search: '', userId: 'Todos', type: 'Todos', from: '', to: '' };
+            ['admHistorySearch', 'admHistoryFrom', 'admHistoryTo'].forEach(id => { const campo = document.getElementById(id); if (campo) campo.value = ''; });
+            ['admHistoryUser', 'admHistoryType'].forEach(id => { const campo = document.getElementById(id); if (campo) campo.value = 'Todos'; });
+            renderAdminLogs();
+        }
+
+        function populateHistoryUserFilter() {
+            const select = document.getElementById('admHistoryUser');
+            if (!select) return;
+            const usersList = getStore()?.users || defaultUsers;
+            // A lista sai de quem realmente aparece no histórico: filtrar por alguém sem
+            // registro nenhum só devolveria tela vazia.
+            const presentes = [...new Set(historyRows().map(row => row.userId).filter(Boolean))]
+                .map(id => ({ id, name: usersList[id]?.name || id }))
+                .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+            select.innerHTML = `<option value="Todos">Todos</option>${presentes.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}`;
+            select.value = presentes.some(item => item.id === historyFilters.userId) ? historyFilters.userId : 'Todos';
+        }
+
+        function renderAdminLogs() {
+            populateHistoryUserFilter();
+            const isCurrentMonth = activeMonthKey === 'atual';
+            const linhas = filteredHistoryRows();
+            const total = historyRows().length;
+
+            const resumo = document.getElementById('admHistorySummary');
+            if (resumo) {
+                const saldo = linhas.reduce((soma, row) => soma + row.points, 0);
+                resumo.textContent = linhas.length === total
+                    ? `${total} registro(s) · saldo de ${saldo} ponto(s).`
+                    : `${linhas.length} de ${total} registro(s) · saldo de ${saldo} ponto(s) no recorte.`;
+            }
+
+            const html = linhas.map(row => {
+                const meta = HISTORY_TYPES[row.type] || { label: row.type, tone: 'text-secondary' };
+                const quando = row.timestamp
+                    ? `${new Date(row.timestamp).toLocaleDateString('pt-BR')} ${new Date(row.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+                    : '—';
+                const acao = row.removable && isCurrentMonth
+                    ? `<button onclick="deleteLog('${escapeHtml(row.id)}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>`
+                    : `<span class="text-[10px] text-secondary">${escapeHtml(row.removable ? 'Mês fechado' : row.note || 'Registro preservado')}</span>`;
+                return `
+                    <tr class="${meta.row || ''}">
+                        <td class="p-3 text-secondary whitespace-nowrap">${escapeHtml(quando)}</td>
+                        <td class="p-3 font-semibold text-white">${row.userId ? `<button onclick="openManagerAnalyst('${escapeHtml(row.userId)}','historico')">${escapeHtml(row.userName)}</button>` : escapeHtml(row.userName)}</td>
+                        <td class="p-3 font-bold ${meta.tone}">${escapeHtml(meta.label)}</td>
+                        <td class="p-3">${row.detail}</td>
+                        <td class="p-3 num-mono font-bold ${row.points < 0 ? 'text-red-400' : meta.tone}">${row.points > 0 ? '+' : ''}${escapeHtml(row.points)}</td>
+                        <td class="p-3">${acao}</td>
+                    </tr>`;
+            }).join('');
+
+            const vazio = total === 0
+                ? 'Nenhum registro efetuado este mês.'
+                : 'Nenhum registro corresponde aos filtros aplicados.';
+            document.getElementById('admHistoryLogs').innerHTML = html || `<tr><td colspan="6" class="p-4 text-center text-secondary">${vazio}</td></tr>`;
         }
 
         // Uma lista só de departamentos, vinda do domínio. Manter as opções no HTML
@@ -6340,10 +6540,20 @@
             document.getElementById('btnRemoveUserPhoto').classList.add('hidden');
         }
 
-        function onUserRoleChange(role) {
-            const wrap = document.getElementById('inputUserPasswordWrap');
-            if (role === "Gestor Adm" || isPiecesOperatorRole(role)) wrap.classList.remove('hidden');
-            else wrap.classList.add('hidden');
+        /* O campo de senha vale para todo perfil. Enquanto ele só aparecia para Gestor Adm e
+           papéis de peça, a gestão não tinha como definir a senha de um analista na ficha —
+           e o salvamento ainda descartava o que fosse digitado. Resultado: analista e Toletus
+           Lab cadastrados sem senha alguma, barrados no login por "senha não cadastrada". */
+        function onUserRoleChange(role, editando = Boolean(document.getElementById('editUserId')?.value)) {
+            const label = document.getElementById('inputUserPasswordLabel');
+            if (label) {
+                label.textContent = editando
+                    ? 'Senha de Acesso (deixe em branco para manter a atual)'
+                    : 'Senha de Acesso (mínimo de 8 caracteres)';
+            }
+            document.getElementById('inputUserPassword').placeholder = editando
+                ? 'Defina uma nova senha para esta pessoa'
+                : 'Defina a senha de acesso desta pessoa';
         }
 
         function startEditUser(id) {
@@ -6470,8 +6680,17 @@
                 return;
             }
 
-            if ((role === "Gestor Adm" || isPiecesOperatorRole(role)) && !password && !(editId && appStore.users[editId] && appStore.users[editId].hasPassword)) {
+            // Todo perfil precisa de senha: sem isso a ficha nasce sem acesso nenhum. Na edição
+            // o campo em branco significa "mantém a atual", desde que já exista uma.
+            const jaTemSenha = Boolean(editId && appStore.users[editId] && appStore.users[editId].hasPassword);
+            if (!password && !jaTemSenha) {
                 showToast("Defina uma senha de acesso para este perfil.", "error");
+                return;
+            }
+            // O mesmo mínimo do autoatendimento do perfil, para a regra não depender de por
+            // onde a senha foi criada.
+            if (password && password.length < 8) {
+                showToast("A senha de acesso deve ter ao menos 8 caracteres.", "error");
                 return;
             }
 
@@ -6495,12 +6714,12 @@
                 // Cadastra novo usuário
                 const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Math.random().toString(36).slice(2, 5);
                 const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-                const needsPassword = (role === "Gestor Adm" || isPiecesOperatorRole(role));
-                if (needsPassword) {
-                    const saved = await setUserPasswordRemote(newId, password);
-                    if (!saved) return;
-                }
-                appStore.users[newId] = { name, email: email || undefined, team, role, initial: initials, active: true, photo: photoData || undefined, hasPassword: needsPassword || undefined };
+                // A senha vai para o banco seja qual for o papel. Antes só Gestor Adm e papéis de
+                // peça chegavam aqui: para analista a senha digitada era jogada fora em silêncio,
+                // com direito a "cadastrado com sucesso" e login impossível depois.
+                const saved = await setUserPasswordRemote(newId, password);
+                if (!saved) return;
+                appStore.users[newId] = { name, email: email || undefined, team, role, initial: initials, active: true, photo: photoData || undefined, hasPassword: true };
                 applyShiftProfile(newId);
                 showToast("Novo usuário cadastrado com sucesso!");
             }
@@ -6591,10 +6810,16 @@
         const OPERATION_TABS = ['envio', 'coleta', 'tasks'];
         function publicTabAccess() {
             const usuarios = getStore()?.users || defaultUsers;
-            const noLab = isPecaLoggedIn && usuarios[currentPecaUserId]?.role === LAB_ROLE_NAME;
+            /* Numa sessão de peças o currentActiveUser continua sendo o analista escolhido no
+               painel — loginPeca só grava currentPecaUserId. Ler a equipe dele tirava Envio e
+               Coleta de quem opera peça: com o padrão 'alessandro' (Sistema) o operador de
+               Envio/Coleta caía em { envio: false, coleta: false, tasks: true } e era devolvido
+               ao dashboard pela própria rota. Quem manda na regra é quem está logado. */
+            const operador = isPecaLoggedIn ? usuarios[currentPecaUserId] : null;
+            if (operador) return { envio: true, coleta: true, tasks: false };
             const equipe = usuarios[currentActiveUser]?.team || '';
-            const catraca = equipe === 'Catraca' || noLab;
-            return { envio: catraca, coleta: catraca, tasks: !noLab && equipe === 'Sistema' };
+            const catraca = equipe === 'Catraca';
+            return { envio: catraca, coleta: catraca, tasks: equipe === 'Sistema' };
         }
 
         /* Esconder o botão não basta: a rota vive no endereço, e quem colar
@@ -6608,6 +6833,180 @@
                 return false;
             }
             return true;
+        }
+
+        /* ==================================================================
+           NAVEGAÇÃO GLOBAL — COMPORTAMENTO
+           A árvore vem de ActuarNavigation.build(); aqui só desenhamos e
+           controlamos abertura, foco e teclado. O item ativo é decidido pela
+           ROTA, então recarregar a página ou colar um link deixa o menu certo.
+           ================================================================== */
+        let globalNavOpen = false;
+        let globalNavManualGroup = null;
+        let globalNavReturnFocus = null;
+
+        function navContext() {
+            if (isAdminLoggedIn) return { mode: 'manager', canAuditDeleted: canAuditDeletedPieces() };
+            if (isPecaLoggedIn) return { mode: 'operations', publicTabs: publicTabAccess() };
+            return { mode: 'analyst', publicTabs: publicTabAccess() };
+        }
+
+        function currentNavTree() {
+            return window.ActuarNavigation ? ActuarNavigation.build(navContext()) : [];
+        }
+
+        function navBadgeMarkup(id) {
+            // O contador nasce escondido: quem preenche é a tela que calculou a pendência.
+            return id ? `<span id="${id}" class="actuar-nav-badge hidden">0</span>` : '';
+        }
+
+        /* Os contadores são preenchidos pelas telas, não pelo menu. Redesenhar o
+           menu (abrir, expandir um grupo) apagaria o número que já estava lá — por
+           isso ele é fotografado antes e devolvido depois. */
+        function snapshotNavBadges() {
+            const mapa = {};
+            document.querySelectorAll('#globalNavBody .actuar-nav-badge').forEach(node => {
+                mapa[node.id] = { texto: node.textContent, escondido: node.classList.contains('hidden') };
+            });
+            return mapa;
+        }
+        function restoreNavBadges(mapa) {
+            Object.entries(mapa || {}).forEach(([id, estado]) => {
+                const node = document.getElementById(id);
+                if (!node) return;
+                node.textContent = estado.texto;
+                node.classList.toggle('hidden', estado.escondido);
+            });
+        }
+
+        function renderGlobalNav() {
+            const corpo = document.getElementById('globalNavBody');
+            if (!corpo || !window.ActuarNavigation) return;
+            /* Antes de entrar não há módulo nenhum a oferecer: o menu fica vazio e o
+               botão sai do cabeçalho. Desenhar a árvore do analista para quem ainda
+               não se identificou mostraria opções que a pessoa não tem. */
+            const gatilho = document.getElementById('navToggle');
+            if (!hasAnySession()) {
+                corpo.innerHTML = '';
+                gatilho?.classList.add('hidden');
+                closeGlobalNav();
+                return;
+            }
+            gatilho?.classList.remove('hidden');
+            const contadores = snapshotNavBadges();
+            const arvore = currentNavTree();
+            const ativo = ActuarNavigation.activeFor(arvore, currentRoute);
+            const aberto = ActuarNavigation.expandedFor(arvore, currentRoute, globalNavManualGroup);
+
+            corpo.innerHTML = arvore.map(grupo => `
+                <div class="actuar-nav-group">
+                    <span class="actuar-nav-group-title">${escapeHtml(grupo.title)}</span>
+                    ${grupo.items.map(item => {
+                        const ehAtivo = ativo.itemId === item.id;
+                        if (!item.children) {
+                            return `<a class="actuar-nav-item${ehAtivo ? ' is-active' : ''}" href="${routeUrl(item.route)}"
+                                       ${ehAtivo ? 'aria-current="page"' : ''}
+                                       onclick="return navGoTo('${item.route.name}', ${item.route.section ? `'${item.route.section}'` : 'null'})">
+                                       <i class="fi ${item.icon}" aria-hidden="true"></i><span>${escapeHtml(item.label)}</span>${navBadgeMarkup(item.badgeId)}</a>`;
+                        }
+                        const expandido = aberto === item.id;
+                        const filhoAtivo = ativo.childId;
+                        return `<div class="actuar-nav-branch${ehAtivo ? ' is-active' : ''}">
+                            <button type="button" class="actuar-nav-item is-group${ehAtivo ? ' is-active' : ''}"
+                                    aria-expanded="${expandido}" aria-controls="navGroup_${item.id}"
+                                    onclick="toggleNavGroup('${item.id}')">
+                                <i class="fi ${item.icon}" aria-hidden="true"></i><span>${escapeHtml(item.label)}</span>
+                                <i class="fi fi-rr-angle-small-down actuar-nav-chevron" aria-hidden="true"></i>
+                            </button>
+                            <div id="navGroup_${item.id}" class="actuar-nav-children" ${expandido ? '' : 'hidden'}>
+                                ${item.children.map(filho => `<a class="actuar-nav-subitem${filhoAtivo === filho.id ? ' is-active' : ''}"
+                                        href="${routeUrl(filho.route)}" ${filhoAtivo === filho.id ? 'aria-current="page"' : ''}
+                                        onclick="return navGoTo('${filho.route.name}', ${filho.route.section ? `'${filho.route.section}'` : 'null'})">
+                                        <span>${escapeHtml(filho.label)}</span>${navBadgeMarkup(filho.badgeId)}</a>`).join('')}
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>`).join('');
+
+            restoreNavBadges(contadores);
+
+            const contexto = document.getElementById('globalNavContext');
+            if (contexto) {
+                const perfil = navContext().mode;
+                contexto.textContent = perfil === 'manager' ? 'Modo Gestão' : perfil === 'operations' ? 'Acesso operacional' : 'ActuarClassifique';
+            }
+        }
+
+        function toggleNavGroup(id) {
+            globalNavManualGroup = globalNavManualGroup === id ? null : id;
+            renderGlobalNav();
+            // Depois de redesenhar, o foco volta para o mesmo cabeçalho de grupo.
+            document.querySelector(`[aria-controls="navGroup_${id}"]`)?.focus();
+        }
+
+        function navGoTo(name, section) {
+            // O grupo aberto passa a ser o da rota nova; expansões abertas "só para
+            // espiar" não ficam guardadas e acumulando.
+            globalNavManualGroup = null;
+            navigateTo(section ? { name, section } : { name });
+            // Menu temporário: some depois da escolha. Expandir um grupo não fecha.
+            closeGlobalNav();
+            return false;
+        }
+
+        function openGlobalNav() {
+            if (globalNavOpen) return;
+            globalNavOpen = true;
+            globalNavReturnFocus = document.activeElement;
+            renderGlobalNav();
+            const painel = document.getElementById('globalNav');
+            const veu = document.getElementById('globalNavOverlay');
+            painel?.classList.add('is-open');
+            painel?.setAttribute('aria-hidden', 'false');
+            veu?.classList.remove('hidden');
+            document.body.classList.add('nav-locked');
+            const gatilho = document.getElementById('navToggle');
+            gatilho?.setAttribute('aria-expanded', 'true');
+            gatilho?.setAttribute('aria-label', 'Fechar menu');
+            gatilho?.setAttribute('title', 'Fechar menu');
+            document.addEventListener('keydown', onGlobalNavKeydown, true);
+            // O foco entra no menu: sem isso o teclado continua preso atrás do véu.
+            requestAnimationFrame(() => painel?.querySelector('.actuar-nav-item, .actuar-nav-close')?.focus());
+        }
+
+        function closeGlobalNav() {
+            if (!globalNavOpen) return;
+            globalNavOpen = false;
+            const painel = document.getElementById('globalNav');
+            painel?.classList.remove('is-open');
+            painel?.setAttribute('aria-hidden', 'true');
+            document.getElementById('globalNavOverlay')?.classList.add('hidden');
+            document.body.classList.remove('nav-locked');
+            const gatilho = document.getElementById('navToggle');
+            gatilho?.setAttribute('aria-expanded', 'false');
+            gatilho?.setAttribute('aria-label', 'Abrir menu');
+            gatilho?.setAttribute('title', 'Abrir menu');
+            document.removeEventListener('keydown', onGlobalNavKeydown, true);
+            if (globalNavReturnFocus && document.contains(globalNavReturnFocus)) globalNavReturnFocus.focus();
+            else gatilho?.focus();
+            globalNavReturnFocus = null;
+        }
+
+        function toggleGlobalNav() { globalNavOpen ? closeGlobalNav() : openGlobalNav(); }
+
+        /* Enquanto o menu está aberto ele se comporta como modal: Esc fecha e o Tab
+           não escapa para trás do véu. */
+        function onGlobalNavKeydown(event) {
+            if (event.key === 'Escape') { event.preventDefault(); closeGlobalNav(); return; }
+            if (event.key !== 'Tab') return;
+            const painel = document.getElementById('globalNav');
+            if (!painel) return;
+            const focaveis = [...painel.querySelectorAll('a[href], button:not([disabled])')].filter(node => node.offsetParent !== null);
+            if (!focaveis.length) return;
+            const primeiro = focaveis[0];
+            const ultimo = focaveis[focaveis.length - 1];
+            if (event.shiftKey && document.activeElement === primeiro) { event.preventDefault(); ultimo.focus(); }
+            else if (!event.shiftKey && document.activeElement === ultimo) { event.preventDefault(); primeiro.focus(); }
         }
 
         function switchPublicTab(tab) {
@@ -6665,6 +7064,23 @@
         function focusPriorityRotation(button) {
             setAnalystPrioritySubsection(button);
             document.getElementById('priorityRotationCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        /* A tela de Prioridades é comprida: registrar em cima, histórico embaixo.
+           Guardar a parte no endereço (#/priorities/historico) faz o menu lateral
+           abrir direto no ponto certo — e recarregar, voltar e link salvo continuam
+           caindo no mesmo lugar, o que um scroll disparado no clique não daria. */
+        const PRIORITY_SECTION_ANCHORS = { historico: 'priorityInlineHistorySection', visao: 'priorityRotationCard' };
+        function focusPrioritySection(section) {
+            const alvo = document.getElementById(PRIORITY_SECTION_ANCHORS[section] || PRIORITY_SECTION_ANCHORS.visao);
+            const botoes = { historico: 'analystPriorityTabHistory', visao: 'analystPriorityTabOverview' };
+            const botao = document.getElementById(botoes[section] || botoes.visao);
+            if (botao) setAnalystPrioritySubsection(botao);
+            if (!alvo) return;
+            // Sem seção no endereço a tela abre do começo: rolar seria movimento gratuito.
+            if (!section || section === 'visao') return;
+            const suave = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+            requestAnimationFrame(() => alvo.scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' }));
         }
 
         function focusMyPriorityLaunches(button) {
@@ -8634,7 +9050,8 @@
             tbody.innerHTML = html || `<tr><td colspan="6">${managerEmpty(emptyApproval[0], emptyApproval[1])}</td></tr>`;
 
             const badge = document.getElementById('admPriorityPendingBadge');
-            if (totalPendingCount > 0) {
+            if (!badge) { /* menu ainda não desenhado */ }
+            else if (totalPendingCount > 0) {
                 badge.classList.remove('hidden');
                 badge.innerText = totalPendingCount;
             } else {
@@ -9296,14 +9713,17 @@
 
         async function generateAnalystPasswords() {
             const usersList = getStore()?.users || defaultUsers;
-            const pending = analystOptionIds().filter(id => !usersList[id].hasPassword);
+            /* Cobre todo mundo que está ativo e sem senha, não só quem entra no ranking.
+               Com analystOptionIds() o filtro era isRankableUser, que exclui Toletus Lab e os
+               papéis de peça — justamente quem ficou sem caminho de volta ao acesso. */
+            const pending = Object.keys(usersList).filter(id => usersList[id].active !== false && !usersList[id].hasPassword);
             if (!pending.length) {
-                showToast('Todos os analistas ativos já possuem senha cadastrada.');
+                showToast('Todos os usuários ativos já possuem senha cadastrada.');
                 return;
             }
             if (!await actuarConfirm({
                 icon: 'lock',
-                title: `Gerar senha de primeiro acesso para ${pending.length} analista(s)?`,
+                title: `Gerar senha de primeiro acesso para ${pending.length} pessoa(s)?`,
                 message: 'A lista aparece uma única vez. Copie antes de fechar para repassar a cada pessoa.',
                 confirmLabel: 'Gerar senhas'
             })) return;
@@ -9546,13 +9966,14 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-fields.js?v=20260814-abas-por-equipe-2"></script>
-    <script src="js/attendance-clock.js?v=20260814-abas-por-equipe-2"></script>
-    <script src="js/performance-domain.js?v=20260814-abas-por-equipe-2"></script>
-    <script src="js/manager-experience.js?v=20260814-abas-por-equipe-2"></script>
-    <script src="js/priority-rotation.js?v=20260814-abas-por-equipe-2"></script>
-    <script src="js/pieces-operations.js?v=20260814-abas-por-equipe-2"></script>
-    <script src="js/pieces-ui.js?v=20260814-abas-por-equipe-2"></script>
-    <script src="js/performance-platform.js?v=20260814-abas-por-equipe-2"></script>
+    <script src="js/actuar-navigation.js?v=20260818-perfil-filtros-1"></script>
+    <script src="js/actuar-fields.js?v=20260818-perfil-filtros-1"></script>
+    <script src="js/attendance-clock.js?v=20260818-perfil-filtros-1"></script>
+    <script src="js/performance-domain.js?v=20260818-perfil-filtros-1"></script>
+    <script src="js/manager-experience.js?v=20260818-perfil-filtros-1"></script>
+    <script src="js/priority-rotation.js?v=20260818-perfil-filtros-1"></script>
+    <script src="js/pieces-operations.js?v=20260818-perfil-filtros-1"></script>
+    <script src="js/pieces-ui.js?v=20260818-perfil-filtros-1"></script>
+    <script src="js/performance-platform.js?v=20260818-perfil-filtros-1"></script>
 </body>
 </html>

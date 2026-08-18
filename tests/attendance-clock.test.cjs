@@ -315,7 +315,8 @@ test('ponto, jornada e escala entram na sincronização sem uma pessoa apagar a 
 
 test('a gestão tem aba, painel e escala publicável', () => {
     const html = fs.readFileSync('index.html', 'utf8');
-    assert.match(html, /id="admTabBtnPonto"/);
+    // A porta de entrada saiu da barra horizontal e virou item da sidebar global.
+    assert.match(fs.readFileSync('js/actuar-navigation.js', 'utf8'), /label: 'Ponto e pausas'[\s\S]*?section: 'ponto'|route: rota\('admin', 'ponto'\)/);
     assert.match(html, /id="admPanelPonto"/);
     assert.match(html, /ponto: 'admPanelPonto'/, 'a aba precisa estar no mapa de painéis');
     assert.match(html, /if \(tab === 'ponto'\) renderAttendanceManager\(\)/);

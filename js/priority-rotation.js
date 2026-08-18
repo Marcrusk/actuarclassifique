@@ -9,6 +9,24 @@
     const PARTICIPANT_STATUS = Object.freeze({ ACTIVE: 'active', PAUSED: 'paused', UNAVAILABLE: 'unavailable', OUTSIDE: 'outside' });
     const ATTENDANCE_STATUS = Object.freeze({ IN_PROGRESS: 'in_progress', COMPLETED: 'completed', CANCELLED: 'cancelled' });
 
+    /* Um status, um significado. O rótulo e a cor viviam duplicados nas telas: a gestão
+       mostrava "Aguardando aprovação" e o analista "Pendente" para o mesmo estado, com
+       paletas próprias — e "precisa de ajuste" usava o mesmo âmbar de "aguardando", os dois
+       casos que mais importa distinguir (um espera a gestão, o outro espera o analista).
+       Aqui fica a fonte única; a tela só pinta o que o domínio diz.
+       O tom é nome de token do Design System, não cor: quem muda a paleta muda em um lugar. */
+    const REQUEST_STATUS_META = Object.freeze({
+        pendente: Object.freeze({ label: 'Aguardando aprovação', short: 'Aguardando', tone: 'warning', icon: 'fi-rr-clock', waitingOn: 'gestão' }),
+        aprovado: Object.freeze({ label: 'Aprovado', short: 'Aprovado', tone: 'success', icon: 'fi-rr-check-circle', waitingOn: null }),
+        reprovado: Object.freeze({ label: 'Reprovado', short: 'Reprovado', tone: 'danger', icon: 'fi-rr-cross-circle', waitingOn: null }),
+        ajuste_solicitado: Object.freeze({ label: 'Precisa de ajuste', short: 'Ajuste', tone: 'primary', icon: 'fi-rr-edit', waitingOn: 'analista' })
+    });
+
+    function statusMeta(status) {
+        return REQUEST_STATUS_META[status]
+            || { label: String(status || 'Sem status'), short: 'Sem status', tone: 'neutral', icon: 'fi-rr-interrogation', waitingOn: null };
+    }
+
     function clone(value) { return JSON.parse(JSON.stringify(value)); }
     function rotationId(team) { return `priority-${String(team || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`; }
     function assert(condition, message, code = 'invalid_operation') {
@@ -300,5 +318,5 @@
         return lista.filter(item => matchesSearch(item, query, typeof resolveExtras === 'function' ? resolveExtras(item) : {}));
     }
 
-    return { ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, create, syncParticipants, nextId, canManage, start, assign, complete, skip, pauseParticipant, reactivateParticipant, reorder, setPaused, resolveCurrent, view, snapshot, matchesSearch, filterBySearch, normalizeSearch };
+    return { ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, REQUEST_STATUS_META, statusMeta, create, syncParticipants, nextId, canManage, start, assign, complete, skip, pauseParticipant, reactivateParticipant, reorder, setPaused, resolveCurrent, view, snapshot, matchesSearch, filterBySearch, normalizeSearch };
 });

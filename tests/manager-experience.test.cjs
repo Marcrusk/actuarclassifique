@@ -599,34 +599,17 @@ test('pessoa inativa não entra por nenhuma das três portas de login', () => {
     assert.match(sessao, /if \(!user \|\| user\.active === false\) \{ clearSession\(\); return false; \}/);
 });
 
-test('abas de operação por equipe: Catraca vê Envio e Coleta, Software vê Tasks', () => {
+test('acesso por equipe: Catraca abre Envio e Coleta, Software abre Tasks', () => {
     const html = fs.readFileSync('index.html', 'utf8');
 
-    // Ordem da barra: as abas de operação entram depois do Ranking Geral e o FAQ fecha.
-    const posicao = (id) => html.indexOf(`id="${id}"`);
-    for (const id of ['btnTabRanking', 'btnTabEnvio', 'btnTabColeta', 'btnTabTasks', 'btnTabFaq']) {
-        assert.ok(posicao(id) > 0, `aba ausente: ${id}`);
-    }
-    assert.ok(posicao('btnTabRanking') < posicao('btnTabEnvio'), 'Envio vem depois do Ranking Geral');
-    assert.ok(posicao('btnTabEnvio') < posicao('btnTabColeta'), 'Coleta vem logo depois de Envio');
-    assert.ok(posicao('btnTabColeta') < posicao('btnTabTasks'), 'Tasks ocupa o mesmo lugar das abas de peça');
-    assert.ok(posicao('btnTabTasks') < posicao('btnTabFaq'), 'o FAQ precisa ser a última aba');
-
-    // Cada botão navega para a sua rota e tem a sua própria tela.
-    for (const rota of ['envio', 'coleta', 'tasks']) {
-        assert.ok(html.includes(`onclick="switchPublicTab('${rota}')"`), `botão sem navegação: ${rota}`);
-    }
+    // Os botões viraram itens da sidebar, mas as TELAS e as ROTAS continuam as mesmas.
     for (const tela of ['viewEnvio', 'viewColeta', 'viewTasks']) {
         assert.ok(html.includes(`<div id="${tela}" class="hidden space-y-6">`), `tela ausente: ${tela}`);
     }
-
-    // Rotas registradas: sem isso, sanitizeRoute joga a URL de volta em dashboard.
     for (const meta of [/envio: \{ title: 'Envio'/, /coleta: \{ title: 'Coleta'/, /tasks: \{ title: 'Tasks'/]) assert.match(html, meta);
-    assert.match(html, /\['dashboard', 'priorities', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'pecas'\]\.includes\(currentRoute\.name\)/);
     assert.match(html, /const views = \{ ranking: 'viewRanking', envio: 'viewEnvio', coleta: 'viewColeta', tasks: 'viewTasks', faq: 'viewFaq', pecas: 'viewPecas' \};/);
-    assert.match(html, /coleta: 'btnTabColeta', tasks: 'btnTabTasks'/);
 
-    // A regra de quem vê o quê: Catraca (e o Lab) movimentam peça; Software é Tasks.
+    // A regra de quem vê o quê continua sendo uma função só, agora consumida pelo menu.
     const inicio = html.indexOf('function publicTabAccess()');
     assert.ok(inicio > 0, 'publicTabAccess não encontrado');
     const regra = html.slice(inicio, html.indexOf('\n        }', inicio) + 10);
@@ -644,26 +627,12 @@ test('abas de operação por equipe: Catraca vê Envio e Coleta, Software vê Ta
     assert.deepEqual(para('lucas', { peca: 'jeremias' }), { envio: true, coleta: true, tasks: false }, 'no acesso do Lab valem Envio e Coleta');
     assert.deepEqual(para('ninguem'), { envio: false, coleta: false, tasks: false }, 'sem equipe resolvida, nenhuma aba de operação');
 
-    // Esconder o botão não basta: a rota vive no endereço e precisa ser barrada.
+    // É essa mesma função que monta o menu — não existe segunda lista de permissão.
+    assert.match(html, /publicTabs: publicTabAccess\(\)/);
+
+    // E esconder o item não basta: a rota vive no endereço e continua barrada.
     assert.match(html, /if \(OPERATION_TABS\.includes\(currentRoute\.name\) && !acesso\[currentRoute\.name\]\) \{\s*navigateTo\('dashboard', \{ replace: true \}\);/);
     assert.match(html, /if \(!syncPublicTabAccess\(\)\) return;/);
-
-    /* REGRESSÃO REAL: switchPublicTabView reescreve o className inteiro de cada
-       botão. Enquanto a visibilidade era aplicada só depois do render, a primeira
-       troca de aba apagava o `hidden` e o analista de Software voltava a ver Envio
-       e Coleta. A visibilidade precisa ser montada JUNTO com a classe. */
-    const troca = html.slice(html.indexOf('function switchPublicTabView'), html.indexOf('function switchPublicTabView') + 2600);
-    assert.match(troca, /const acessoAbas = publicTabAccess\(\);/);
-    assert.match(troca, /button\.className = OPERATION_TABS\.includes\(key\) && !acessoAbas\[key\] \? `\$\{base\} hidden` : base;/);
-    assert.ok(!/button\.className = key === tab \? activeClass : inactiveClass;/.test(html),
-        'a troca de aba voltou a reescrever a classe sem considerar o acesso');
-
-    // E as três somem nas rotas que ocupam a tela inteira — senão ficam sob a gestão.
-    for (const lista of [/\['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin', 'viewProfile'\]/,
-                         /\['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin'\]/]) {
-        assert.match(html, lista);
-    }
-    assert.match(html, /const rotasPublicas = \['dashboard', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'priorities', 'pecas'\];/);
 });
 
 test('busca de prioridade acha por protocolo, cliente e analista — e ignora acento e pontuação', () => {
@@ -732,4 +701,31 @@ test('a busca de prioridades está nas três telas e nunca amplia o que o analis
 
     // Vazio por busca é diferente de vazio de verdade.
     assert.match(html, /Nada encontrado para esta busca/);
+});
+
+test('registrar prioridade é só o formulário; a consulta vive no histórico', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    const inicioCard = html.indexOf('priority-registration-card');
+    const inicioHistorico = html.indexOf('id="priorityInlineHistorySection"');
+    assert.ok(inicioCard > 0 && inicioHistorico > inicioCard, 'a ordem das seções mudou; revise este teste');
+    const card = html.slice(inicioCard, inicioHistorico);
+
+    // Registrar e consultar são gestos diferentes: o card de registro fica com o
+    // formulário e nada mais — a lista empurrava o botão para o fim de um card estreito.
+    for (const fora of ['analystPrioritySearch', 'myPriorityRequestsTable', 'analyst-priority-filters', 'Meus Protocolos']) {
+        assert.ok(!card.includes(fora), `"${fora}" continua dentro de Registrar Prioridade`);
+    }
+    for (const dentro of ['Nº do Protocolo', 'Justificativa', 'Enviar para Validação', 'submitPriorityRequest(event)']) {
+        assert.ok(card.includes(dentro), `o formulário perdeu: ${dentro}`);
+    }
+
+    // E o que saiu está no Histórico de prioridades, não em qualquer outro lugar.
+    const historico = html.slice(inicioHistorico, html.indexOf('</section>', inicioHistorico));
+    for (const item of ['id="analystPrioritySearch"', 'id="myPriorityRequestsTable"', 'analyst-priority-filters', 'Meus protocolos']) {
+        assert.ok(historico.includes(item), `"${item}" não chegou ao Histórico de prioridades`);
+    }
+    // Nada pode existir em duplicidade: dois campos com o mesmo id quebram a busca.
+    assert.equal((html.match(/id="analystPrioritySearch"/g) || []).length, 1);
+    assert.equal((html.match(/id="myPriorityRequestsTable"/g) || []).length, 1);
 });
