@@ -80,3 +80,27 @@ test('o histórico não mantém formatação de data própria', () => {
     assert.match(render, /ActuarFields\.formatMoment\(row\.timestamp\)/);
     assert.doesNotMatch(render, /toLocaleDateString\('pt-BR'\)/, 'a tabela voltou a formatar por conta própria');
 });
+
+test('as funções de data que a tela usa existem de fato no módulo', () => {
+    /* Regressão real: o histórico quebrava com "ActuarFields.formatDay is not a function".
+       O arquivo tinha a função, mas o navegador servia a versão anterior — o ?v= não foi
+       trocado ao editar o módulo. Este teste garante que o que a tela chama existe. */
+    for (const nome of ['formatMoment', 'formatDay', 'formatFull']) {
+        assert.equal(typeof fields[nome], 'function', `ActuarFields.${nome} precisa ser exportada`);
+    }
+    // E que a tela não chame nada que o módulo não exporte.
+    const chamadas = [...html.matchAll(/ActuarFields\.(\w+)\(/g)].map(m => m[1]);
+    for (const chamada of [...new Set(chamadas)]) {
+        assert.equal(typeof fields[chamada], 'function', `index.html chama ActuarFields.${chamada}, que não existe`);
+    }
+});
+
+test('editar um módulo obriga a trocar a versão dos assets', () => {
+    /* O ?v= é a única chave de cache no servidor local: sem trocá-lo, o navegador segue
+       servindo o arquivo antigo e a correção não chega. O hash de conteúdo do build-check
+       só carimba o public/ publicado. */
+    const referencias = [...html.matchAll(/(?:src|href)="((?:js|styles)\/[^"]+)"/g)].map(m => m[1]);
+    const versoes = [...new Set(referencias.map(ref => ref.split('?v=')[1]))];
+    assert.equal(versoes.length, 1, `versões divergentes entre assets: ${versoes.join(', ')}`);
+    assert.notEqual(versoes[0], '20260818-perfil-filtros-1', 'a versão precisa mudar quando um módulo muda');
+});

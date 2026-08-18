@@ -1,0 +1,136 @@
+(function (root, factory) {
+    const api = factory();
+    if (typeof module === 'object' && module.exports) module.exports = api;
+    else root.ExternalRequests = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+    'use strict';
+
+    /* ==========================================================================
+       SOLICITAÇÕES EXTERNAS — CICLO DE VIDA
+       O que entra pelo Portal de Prioridades não é uma prioridade ainda: é um pedido.
+       Vira prioridade quando a gestão tria e distribui pelo rodízio. Este módulo guarda
+       os estados e as transições possíveis; a tela só desenha o que ele permite.
+
+       As etapas são as do processo real que hoje acontece por mensagem — alguém avisa, o
+       gestor interpreta, procura o analista, encaminha e cobra retorno. Cada passo daquele
+       vira um estado aqui, para parar de existir só na cabeça das pessoas.
+       ========================================================================== */
+
+    const STAGES = Object.freeze([
+        Object.freeze({ id: 'nova', label: 'Novas solicitações', hint: 'Chegaram do portal e ninguém olhou ainda.', tone: 'primary' }),
+        Object.freeze({ id: 'triagem', label: 'Em triagem', hint: 'A gestão está avaliando o pedido.', tone: 'primary' }),
+        Object.freeze({ id: 'aguardando_info', label: 'Aguardando informação', hint: 'Devolvidas a quem registrou, à espera de complemento.', tone: 'warning' }),
+        Object.freeze({ id: 'aguardando_distribuicao', label: 'Aguardando distribuição', hint: 'Validadas, esperando o rodízio liberar um analista.', tone: 'warning' }),
+        Object.freeze({ id: 'em_atendimento', label: 'Em atendimento', hint: 'Com o analista, em execução.', tone: 'primary' }),
+        Object.freeze({ id: 'aguardando_aprovacao', label: 'Aguardando aprovação', hint: 'Concluídas pelo analista, à espera da gestão.', tone: 'warning' }),
+        Object.freeze({ id: 'concluida', label: 'Concluídas', hint: 'Aprovadas e pontuadas.', tone: 'success' })
+    ]);
+
+    /* Encerramentos. Não viram coluna: um quadro com uma coluna por exceção fica ilegível,
+       e essas saem do fluxo em vez de avançar nele. Aparecem por filtro. */
+    const CLOSED = Object.freeze({
+        rejeitada: Object.freeze({ label: 'Rejeitada', tone: 'danger', hint: 'A gestão avaliou e não é prioridade.' }),
+        duplicada: Object.freeze({ label: 'Duplicada', tone: 'neutral', hint: 'Já existe outra solicitação para o mesmo caso.' }),
+        cancelada: Object.freeze({ label: 'Cancelada', tone: 'neutral', hint: 'Encerrada sem atendimento.' })
+    });
+
+    const STAGE_IDS = Object.freeze(STAGES.map(item => item.id));
+
+    function stageMeta(id) {
+        return STAGES.find(item => item.id === id)
+            || (CLOSED[id] ? { id, ...CLOSED[id] } : { id, label: String(id || 'Sem etapa'), hint: '', tone: 'neutral' });
+    }
+
+    function isClosed(status) { return Object.prototype.hasOwnProperty.call(CLOSED, status); }
+
+    function list(store) {
+        return Array.isArray(store?.externalRequests) ? store.externalRequests : [];
+    }
+
+    /* O portal grava 'aguardando_triagem'. Traduzir aqui, e não no portal, mantém a porta
+       externa ignorante do vocabulário interno do quadro. */
+    function stageOf(request) {
+        const status = request?.status === 'aguardando_triagem' ? 'nova' : request?.status;
+        return STAGE_IDS.includes(status) || isClosed(status) ? status : 'nova';
+    }
+
+    function board(requests, filtro = {}) {
+        const linhas = (Array.isArray(requests) ? requests : []).filter(item => {
+            if (filtro.team && filtro.team !== 'Todos' && item.team !== filtro.team) return false;
+            if (filtro.brand && filtro.brand !== 'Todas' && item.brand !== filtro.brand) return false;
+            return true;
+        });
+        const colunas = STAGES.map(etapa => ({
+            ...etapa,
+            // Mais antigo primeiro: numa fila, quem espera há mais tempo aparece no topo.
+            items: linhas.filter(item => stageOf(item) === etapa.id).sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0))
+        }));
+        const encerradas = linhas.filter(item => isClosed(stageOf(item)))
+            .sort((a, b) => Number(b.closedAt || b.createdAt || 0) - Number(a.closedAt || a.createdAt || 0));
+        return { stages: colunas, closed: encerradas, total: linhas.length };
+    }
+
+    /* Duplicidade: mesmo cliente com pedido ainda aberto. Comparar por ID do cliente e por
+       telefone cobre quem digitou o ID errado mas o contato certo — e o inverso. */
+    function duplicatesOf(request, requests) {
+        const idAlvo = String(request?.clientId || '').trim().toUpperCase();
+        const foneAlvo = String(request?.phone || '').replace(/\D/g, '');
+        return (Array.isArray(requests) ? requests : []).filter(outro => {
+            if (!outro || outro.id === request?.id) return false;
+            if (isClosed(stageOf(outro))) return false;
+            const mesmoId = idAlvo && String(outro.clientId || '').trim().toUpperCase() === idAlvo;
+            const mesmoFone = foneAlvo && String(outro.phone || '').replace(/\D/g, '') === foneAlvo;
+            return mesmoId || mesmoFone;
+        });
+    }
+
+    function event(type, actorId, text, timestamp) {
+        return { type, at: timestamp, by: actorId || 'Gestão', text };
+    }
+
+    function assert(condition, message) {
+        if (!condition) { const erro = new Error(message); erro.code = 'invalid_operation'; throw erro; }
+    }
+
+    /* Toda transição passa por aqui: um lugar só para registrar quem fez, quando e por quê.
+       Sem isso, cada tela inventaria o próprio jeito de mexer no status e o histórico
+       ficaria cheio de buracos. */
+    function transition(request, proximo, options = {}) {
+        assert(request && typeof request === 'object', 'Solicitação inválida.');
+        assert(STAGE_IDS.includes(proximo) || isClosed(proximo), `Etapa desconhecida: ${proximo}`);
+        const agora = options.now || Date.now();
+        const anterior = stageOf(request);
+        assert(anterior !== proximo, 'A solicitação já está nesta etapa.');
+        if (options.reasonRequired) {
+            assert(String(options.reason || '').trim().length >= 3, 'Informe o motivo desta decisão.');
+        }
+        const proximoRegistro = JSON.parse(JSON.stringify(request));
+        proximoRegistro.status = proximo;
+        proximoRegistro.updatedAt = agora;
+        if (isClosed(proximo)) proximoRegistro.closedAt = agora;
+        if (options.reason) proximoRegistro.lastReason = String(options.reason).trim();
+        if (options.patch) Object.assign(proximoRegistro, options.patch);
+        proximoRegistro.events = [
+            ...(request.events || []),
+            event(proximo, options.actorName, options.text || `${stageMeta(anterior).label} → ${stageMeta(proximo).label}${options.reason ? `: ${String(options.reason).trim()}` : ''}`, agora)
+        ];
+        return proximoRegistro;
+    }
+
+    // Resumo para o topo do quadro: o que está esperando alguém, e há quanto tempo.
+    function summarize(requests, now = Date.now()) {
+        const linhas = Array.isArray(requests) ? requests : [];
+        const abertas = linhas.filter(item => !isClosed(stageOf(item)));
+        const novas = linhas.filter(item => stageOf(item) === 'nova');
+        const esperas = novas.map(item => now - Number(item.createdAt || now));
+        return {
+            total: linhas.length,
+            abertas: abertas.length,
+            novas: novas.length,
+            emAtendimento: linhas.filter(item => stageOf(item) === 'em_atendimento').length,
+            esperaMaisLonga: esperas.length ? Math.max(...esperas) : 0
+        };
+    }
+
+    return { STAGES, STAGE_IDS, CLOSED, stageMeta, stageOf, isClosed, list, board, duplicatesOf, transition, summarize };
+});

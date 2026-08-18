@@ -48,9 +48,14 @@ test('o nome vem de lista predefinida, sem texto livre', () => {
     assert.match(lista, /role: 'SDR'/);
     assert.match(lista, /role: 'Closer'/);
 
-    const markup = bloco('for="portalCollaborator"', '</div>');
-    assert.match(markup, /<select id="portalCollaborator"/, 'o colaborador precisa ser escolha, não digitação');
-    assert.doesNotMatch(markup, /<input/, 'nome digitado abriria a porta para qualquer um');
+    // A lista é fechada: o valor sai de um input escondido, alimentado só pelo seletor.
+    assert.match(html, /<input type="hidden" id="portalCollaborator" value="">/);
+    const picker = bloco('<div class="actuar-picker">', '</div>\n                </div>');
+    assert.match(picker, /role="listbox"/);
+    /* A busca é um input, mas ela filtra a lista fechada — não vira nome digitado: o valor
+       só é escrito por portalPickMember, a partir de alguém que existe na lista. */
+    const escolhe = bloco('function portalPickMember(id)', 'function portalFilterMembers()');
+    assert.match(escolhe, /const pessoa = portalCollaborator\(id\);\s*\n\s*if \(!pessoa\) return;/);
 
     // Inativo não aparece na porta.
     const filtro = bloco('function portalCollaborators()', 'function portalCollaborator(');
@@ -92,10 +97,15 @@ test('o ID de atendimento reusa a regra que já existe no produto', () => {
 });
 
 test('as quatro marcas estão na porta de entrada', () => {
-    const marcas = bloco('id="portalBrand"', '</select>');
+    /* "Empresa do cliente" dizia a coisa errada: não é a empresa DELE, é de qual marca ele
+       é cliente. Com quatro valores fixos, opções à vista batem um select. */
+    const marcas = bloco('id="portalBrandLabel"', '</div>');
     for (const marca of ['Actuar', 'Ediz', 'Toletus', 'Fácil Fit']) {
-        assert.ok(marcas.includes(`<option>${marca}</option>`), `marca ausente: ${marca}`);
+        assert.ok(marcas.includes(`data-brand="${marca}"`), `marca ausente: ${marca}`);
     }
+    assert.match(html, /<span class="actuar-field-label" id="portalBrandLabel">Cliente de qual marca\?<\/span>/);
+    assert.doesNotMatch(html, /Empresa do cliente/);
+    assert.doesNotMatch(html, /<select id="portalBrand"/);
 });
 
 test('a escolha de Sistema ou Catraca direciona o atendimento', () => {
@@ -208,8 +218,10 @@ test('o preenchimento acontece em três etapas, nessa ordem', () => {
 test('cada passo valida o que pede antes de liberar o seguinte', () => {
     const valida = bloco('function portalValidateStep(step)', 'function portalRenderStep()');
     assert.match(valida, /if \(step === 2\)[\s\S]*if \(!portalTeam\)/, 'sem destino não avança');
-    // As regras de formato continuam sendo as do Design System, sem validação paralela.
-    assert.match(valida, /ActuarFields\?\.check/);
+    /* check() recebe UM input; passar a seção devolvia sempre válido, e telefone incompleto
+       atravessava para o passo seguinte. validateScope é quem varre um escopo. */
+    assert.match(valida, /ActuarFields\?\.validateScope/);
+    assert.doesNotMatch(valida, /ActuarFields\?\.check\(escopo\)/);
     assert.match(valida, /campo\.focus\(\)/, 'o foco vai para o campo que faltou');
 
     const avanca = bloco('function portalGoStep(direcao)', 'function portalPickTeam(');
@@ -314,8 +326,9 @@ test('a experiência inteira fica no eixo central', () => {
     assert.match(css, /\.actuar-otp \{ display: flex; justify-content: center;/);
 
     // O painel lateral saiu: virava peso morto no celular e desalinhava o desktop.
-    assert.doesNotMatch(html, /actuar-portal-brand/);
-    assert.doesNotMatch(css, /\.actuar-portal-brand/);
+    // (não confundir com .actuar-portal-brand-option, que são as marcas do cliente)
+    assert.doesNotMatch(html, /class="actuar-portal-brand"/);
+    assert.doesNotMatch(css, /\.actuar-portal-brand \{/);
 });
 
 test('a linha de ações tem só voltar e avançar', () => {
@@ -339,7 +352,7 @@ test('a linha de ações tem só voltar e avançar', () => {
 test('o acesso não tem botão: o PIN completo entra', () => {
     assert.doesNotMatch(html, /portalEnterButton/, 'o botão de acessar não deve voltar');
     const acesso = bloco('id="portalAccess"', '<!-- ETAPA 2');
-    assert.doesNotMatch(acesso, /<button/, 'a tela de acesso não tem botão nenhum');
+    assert.doesNotMatch(acesso, /type="submit"/, 'a tela de acesso não tem botão de enviar');
     assert.match(acesso, /O acesso é liberado assim que os quatro dígitos estiverem corretos\./,
         'sem botão, a tela precisa dizer como se entra');
 
@@ -352,12 +365,182 @@ test('o acesso não tem botão: o PIN completo entra', () => {
 test('a identidade precisa ser escolhida, nunca herdada do padrão', () => {
     /* Sem botão, o PIN completo entra na hora. Com um nome já selecionado por padrão, a
        pessoa entraria como o primeiro da lista sem perceber. */
-    const monta = bloco("if (select && !select.options.length)", 'const identificado');
-    assert.match(monta, /<option value="">Selecione o seu nome<\/option>/);
-    assert.match(monta, /select\.addEventListener\('change'[\s\S]*portalPinBox\(1\)\?\.focus\(\)/,
-        'escolhido o nome, o foco vai para o PIN');
+    // O gatilho começa sem ninguém: escolher é um ato, não uma herança do primeiro da lista.
+    assert.match(html, /<strong id="portalMemberName">Quem está registrando\?<\/strong>/);
+    assert.match(html, /<input type="hidden" id="portalCollaborator" value="">/);
+    const escolhe = bloco('function portalPickMember(id)', 'function portalMemberKey(');
+    assert.match(escolhe, /portalPinBox\(1\)\?\.focus\(\)/, 'escolhido o nome, o foco vai para o PIN');
 
     const entrada = bloco('function portalEnter(event)', 'function portalSignOut()');
     assert.match(entrada, /Selecione o seu nome na lista antes de informar o PIN\./);
     assert.match(entrada, /portalCollaborator'\)\?\.focus\(\)/, 'o foco volta para o que falta');
+});
+
+test('a marca vive dentro do card do acesso, no nível do portão dos analistas', () => {
+    /* Antes a logo e o selo ficavam numa faixa solta acima do card. Quem abre o link precisa
+       ver identidade e nome do ambiente no mesmo bloco em que se identifica. */
+    const acesso = bloco('id="portalAccess"', '<!-- ETAPA 2');
+    assert.match(acesso, /<div class="actuar-portal-crest">[\s\S]*actuar-group\.svg[\s\S]*Portal de Prioridades[\s\S]*<\/div>/);
+
+    // Mesmo acabamento do portão: bloco da marca em primário, logo em branco, sombra profunda.
+    assert.match(css, /\.actuar-portal-crest \{[\s\S]*background: var\(--actuar-primary\);/);
+    assert.match(css, /\.actuar-portal-crest img \{ width: 152px;[^}]*filter: brightness\(0\) invert\(1\); \}/);
+
+    /* Logo e nome lado a lado, separados por um filete — a mesma construção do cabeçalho do
+       produto. Empilhados, os dois competiam pelo topo do card. */
+    assert.match(css, /\.actuar-portal-crest \{\s*\n\s*display: flex; align-items: center; justify-content: center;/);
+    assert.match(css, /\.actuar-portal-crest \.actuar-portal-tag \{[\s\S]*border-left: 1px solid rgba\(255, 255, 255, \.34\);/);
+    assert.match(css, /\.actuar-portal-shell \{[\s\S]*?box-shadow:[\s\S]*?0 32px 80px/);
+
+    // A faixa do topo só aparece depois de identificado, onde mora o "Encerrar acesso".
+    assert.match(html, /<header class="actuar-portal-header hidden" id="portalHeader">/);
+    const render = bloco('function renderPortal()', 'function portalEnter(');
+    assert.match(render, /portalHeader'\)\?\.classList\.toggle\('hidden', !identificado\)/);
+});
+
+/* O <select> nativo entrega o visual do sistema operacional — fundo claro, seta do sistema —
+   e quebra a atmosfera do portal. O seletor próprio é do produto, e continua sendo um
+   listbox de verdade para quem navega por teclado. */
+
+test('o seletor de quem registra é do produto, e acessível', () => {
+    const picker = bloco('<div class="actuar-picker">', '</ul>');
+    assert.match(picker, /aria-haspopup="listbox"/);
+    assert.match(picker, /aria-expanded="false"/);
+    assert.match(picker, /aria-controls="portalMemberList"/);
+    assert.match(picker, /role="listbox"/);
+    assert.doesNotMatch(html, /<select id="portalCollaborator"/, 'o select nativo não deve voltar');
+
+    // Cada opção se anuncia como opção, com estado.
+    const monta = bloco("function portalRenderMembers(termo = '')", 'function portalMembersOpen()');
+    assert.match(monta, /role="option"/);
+    // O estado sai do que está escolhido, não de um valor fixo: reabrir mostra a marca certa.
+    assert.match(monta, /aria-selected="\$\{item\.id === escolhido\}"/);
+    assert.match(monta, /portalMemberInitials\(item\.name\)/, 'a inicial dá o ponto de fixação');
+    assert.match(monta, /item\.department[\s\S]*item\.role/, 'o departamento desempata nomes parecidos');
+});
+
+test('o teclado navega a lista como um listbox de verdade', () => {
+    const tecla = bloco('function portalMemberKey(event, indice)', 'function portalMemberTriggerKey(');
+    assert.match(tecla, /event\.key === 'Enter' \|\| event\.key === ' '/, 'Enter e espaço escolhem');
+    assert.match(tecla, /event\.key === 'Escape'/, 'Esc fecha');
+    assert.match(tecla, /ArrowDown[\s\S]*ArrowUp/);
+    assert.match(tecla, /\(indice \+ passo \+ itens\.length\) % itens\.length/, 'a lista dá a volta');
+
+    const gatilho = bloco('function portalMemberTriggerKey(event)', 'document.addEventListener');
+    assert.match(gatilho, /\['ArrowDown', 'Enter', ' '\]/, 'o gatilho abre pelo teclado');
+
+    // Lista aberta e esquecida atrapalha o resto do formulário.
+    assert.match(html, /portalMembersOpen\(\) && !event\.target\.closest\('\.actuar-picker'\)/);
+});
+
+test('o seletor não deixa rótulo solto nem estado ambíguo', () => {
+    // O rótulo "Colaborador" saiu: o próprio gatilho pergunta quem está registrando.
+    assert.doesNotMatch(html, /<label for="portalCollaborator">/);
+    assert.match(css, /\.actuar-picker-trigger:not\(\.is-filled\) \.actuar-picker-copy strong/,
+        'vazio e preenchido precisam parecer diferentes');
+    assert.match(css, /\.actuar-picker-list li\[aria-selected="true"\] \.actuar-picker-tick \{ opacity: 1; \}/);
+});
+
+/* Preto chapado achata a tela e faz o card flutuar sem chão. O fundo ganha profundidade,
+   mas continua sendo atmosfera: não recebe clique, não é lido e não compete com o card. */
+
+test('o fundo tem vida própria, sem repetir a marca como papel de parede', () => {
+    const backdrop = bloco('<div class="actuar-portal-backdrop"', '</div>');
+    assert.equal((backdrop.match(/actuar-portal-aurora--/g) || []).length, 3);
+    assert.match(backdrop, /actuar-portal-mesh/);
+    assert.match(backdrop, /aria-hidden="true"/, 'atmosfera não é conteúdo');
+    // A marca já está dentro do card; repeti-la no fundo virava papel de parede.
+    assert.doesNotMatch(backdrop, /actuar-group\.svg/);
+    assert.doesNotMatch(css, /\.actuar-portal-watermark/);
+
+    // Ciclos longos e dessincronizados: o fundo nunca repete a mesma composição.
+    const duracoes = [...css.matchAll(/animation: aurora\w+ (\d+)s/g)].map(m => Number(m[1]));
+    assert.deepEqual(duracoes, [26, 32, 38]);
+    assert.equal(new Set(duracoes).size, 3, 'durações iguais sincronizariam o movimento');
+    assert.ok(duracoes.every(d => d >= 20), 'movimento rápido no fundo vira distração');
+});
+
+test('a camada decorativa fica atrás e não intercepta clique', () => {
+    assert.match(css, /\.actuar-portal-backdrop \{ position: absolute; inset: 0; z-index: -1; pointer-events: none;/);
+    assert.match(css, /\.actuar-portal \{\s*\n\s*position: relative; isolation: isolate;/,
+        'sem isolation o z-index negativo escaparia do contexto');
+    assert.match(css, /\.actuar-portal \{[\s\S]*overflow: hidden;/, 'os halos não podem gerar rolagem');
+});
+
+test('o card se sustenta sobre o fundo novo', () => {
+    // Sobre halos, um card chapado se dissolve: precisa de superfície própria e chão.
+    const shell = css.slice(css.indexOf('.actuar-portal-shell {'), css.indexOf('.actuar-portal-crest'));
+    assert.match(shell, /background: linear-gradient\(180deg, #232330 0%, #1A1A21 100%\)/);
+    assert.match(shell, /box-shadow:[\s\S]*inset 0 1px 0 rgba\(255, 255, 255, \.07\)/, 'o brilho no topo dá relevo');
+    assert.match(shell, /0 32px 80px rgba\(5, 6, 10, \.62\)/);
+});
+
+test('a atmosfera recua onde atrapalharia', () => {
+    const mobile = css.slice(css.indexOf('@media (max-width: 860px)', css.indexOf('.actuar-portal-aurora')));
+    assert.match(mobile, /\.actuar-portal-aurora--three \{ display: none; \}/, 'no celular sobra pouca área livre');
+    assert.match(mobile, /\.actuar-portal-aurora \{ filter: blur\(70px\); \}/, 'blur menor alivia GPU fraca');
+    assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\n\s*\.actuar-portal-aurora \{ animation: none; \}/);
+});
+
+test('a lista de nomes expande no fluxo, sem ser recortada pelo card', () => {
+    /* O card precisa de overflow: hidden para arredondar o bloco da marca. Uma lista
+       flutuando por cima era recortada por ele, e a rolagem ficava presa num pedaço. */
+    const painel = css.slice(css.indexOf('.actuar-picker-panel {'), css.indexOf('.actuar-picker-search {'));
+    assert.doesNotMatch(painel, /position: absolute/, 'flutuar dentro de um card recortado esconde nomes');
+    const lista = css.slice(css.indexOf('.actuar-picker-list {'), css.indexOf('.actuar-picker-list::-webkit-scrollbar'));
+    assert.match(lista, /max-height: 264px; overflow-y: auto/, 'com muitos nomes, a lista rola por dentro');
+    assert.match(css, /\.actuar-picker-list::-webkit-scrollbar-thumb/, 'a barra precisa dizer que há mais abaixo');
+});
+
+/* Com 300 pessoas na empresa, uma lista completa é inútil: ninguém rola até achar o próprio
+   nome. Digitar duas letras resolve em um gesto. */
+
+test('a escolha começa pela busca, não pela lista', () => {
+    const painel = bloco('<div id="portalMemberPanel"', '</ul>');
+    assert.match(painel, /id="portalMemberSearch"/);
+    assert.match(painel, /placeholder="Buscar por nome ou departamento"/);
+    // A busca vem ANTES da lista: a ordem dos elementos diz qual é o caminho principal.
+    assert.ok(painel.indexOf('portalMemberSearch') < painel.indexOf('portalMemberList'));
+
+    // Abrir foca a busca, não o primeiro nome.
+    const abre = bloco('function portalToggleMembers(', 'function portalPickMember(');
+    assert.match(abre, /portalMemberSearch'\);\s*\n\s*if \(busca\) \{ busca\.value = ''; busca\.focus\(\); \}/);
+});
+
+test('a busca normaliza acento e olha nome, departamento e função', () => {
+    const filtra = bloco("function portalRenderMembers(termo = '')", 'function portalMembersOpen()');
+    assert.match(filtra, /PriorityRotation\?\.normalizeSearch/, 'quem digita "joao" precisa achar "João"');
+    assert.match(filtra, /\$\{item\.name\} \$\{item\.department\} \$\{item\.role\}/);
+    assert.match(filtra, /portalMemberEmpty'\)\?\.classList\.toggle\('hidden', visiveis\.length > 0\)/,
+        'busca sem resultado precisa dizer isso');
+});
+
+test('o teclado atravessa busca e lista sem sair do componente', () => {
+    const buscaKey = bloco('function portalMemberSearchKey(event)', 'function portalMemberKey(');
+    assert.match(buscaKey, /ArrowDown[\s\S]*itens\[0\]\.focus\(\)/, 'seta para baixo entra na lista');
+    assert.match(buscaKey, /itens\.length === 1\) portalPickMember/, 'sobrou um só, Enter escolhe');
+    assert.match(buscaKey, /Escape/);
+
+    const listaKey = bloco('function portalMemberKey(event, indice)', 'function portalMemberTriggerKey(');
+    assert.match(listaKey, /passo === -1 && indice === 0[\s\S]*portalMemberSearch'\)\?\.focus\(\)/,
+        'subir do primeiro devolve à busca, que é de onde a pessoa veio');
+});
+
+/* Um seletor livre de "urgência" faz todo mundo marcar urgente — e não por má-fé: falta
+   referência. Respondendo fatos verificáveis, a prioridade deixa de ser opinião. */
+
+test('as marcas aparecem por logo, no mesmo peso óptico', () => {
+    /* "Empresa do cliente" já era o termo errado; o nome escrito também não é como a pessoa
+       reconhece a marca. As quatro proporções são muito diferentes (Toletus é 6:1, Ediz
+       2,4:1), então a normalização é por altura com `contain` — nenhuma é esticada. */
+    const marcas = bloco('id="portalBrandLabel"', '</div>');
+    for (const [marca, arquivo] of [['Actuar', 'actuar'], ['Ediz', 'ediz'], ['Toletus', 'toletus'], ['Fácil Fit', 'facil-fit']]) {
+        assert.ok(marcas.includes(`data-brand="${marca}"`), `marca ausente: ${marca}`);
+        assert.ok(marcas.includes(`logos/marcas/${arquivo}.png`), `logo ausente: ${arquivo}`);
+        assert.ok(marcas.includes(`alt="${marca}"`), `a logo de ${marca} precisa de alternativo`);
+    }
+    assert.match(css, /\.actuar-portal-brand-option img \{[\s\S]*max-height: 26px;[\s\S]*object-fit: contain;/);
+
+    // A da Ediz vem em preto sobre branco: invertida e em screen, o fundo some por completo.
+    assert.match(css, /img\.is-boxed \{ filter: invert\(1\); mix-blend-mode: screen;/);
 });

@@ -5,7 +5,7 @@
   "description": "Performance do Atendimento — Actuar",
   "scripts": {
     "test": "node --test tests/*.test.cjs",
-    "lint": "node --check js/actuar-navigation.js && node --check js/actuar-fields.js && node --check js/performance-domain.js && node --check js/manager-experience.js && node --check js/priority-rotation.js && node --check js/pieces-operations.js && node --check js/pieces-ui.js && node --check js/performance-platform.js && node scripts/check-inline-js.cjs",
+    "lint": "node --check js/actuar-navigation.js && node --check js/external-requests.js && node --check js/actuar-fields.js && node --check js/performance-domain.js && node --check js/manager-experience.js && node --check js/priority-rotation.js && node --check js/pieces-operations.js && node --check js/pieces-ui.js && node --check js/performance-platform.js && node scripts/check-inline-js.cjs",
     "typecheck": "node scripts/check-contracts.cjs",
     "build": "node scripts/build-check.cjs"
   },

@@ -18,7 +18,7 @@ test('a árvore da gestão traz os módulos reais, agrupados, com dois níveis n
     ]);
 
     // Só ramifica onde existe mais de uma rota de verdade.
-    assert.deepEqual(item(arvore, 'prioridades').children.map(c => c.label), ['Visão geral', 'Aprovações', 'Lançamentos', 'Ranking do rodízio']);
+    assert.deepEqual(item(arvore, 'prioridades').children.map(c => c.label), ['Visão geral', 'Aprovações', 'Solicitações externas', 'Lançamentos', 'Ranking do rodízio']);
     assert.deepEqual(item(arvore, 'metricas').children.map(c => c.label), ['Lançamentos', 'Transferências']);
     assert.equal(item(arvore, 'pecas').children, undefined, 'Peças usa abas internas de estado, não rotas: não deve ramificar');
     assert.equal(item(arvore, 'ciclos').children, undefined);
@@ -31,7 +31,7 @@ test('a árvore da gestão traz os módulos reais, agrupados, com dois níveis n
     }
 
     // Toda rota aponta para uma seção de gestão existente.
-    const secoes = ['visao', 'prioridades', 'priorityLaunches', 'ranking', 'rankingGeral', 'pecas', 'ponto', 'lancamentos', 'transferencias', 'ciclos', 'cadastros', 'historico'];
+    const secoes = ['visao', 'prioridades', 'externas', 'priorityLaunches', 'ranking', 'rankingGeral', 'pecas', 'ponto', 'lancamentos', 'transferencias', 'ciclos', 'cadastros', 'historico'];
     for (const modulo of arvore.flatMap(g => g.items)) {
         for (const alvo of [modulo, ...(modulo.children || [])]) {
             assert.equal(alvo.route.name, 'admin');
@@ -223,7 +223,7 @@ test('endereço não abre seção nem área que não existe para quem digitou', 
 
     // Seção de gestão fora da lista real cai na Visão geral — e o endereço acompanha,
     // em vez de anunciar uma seção que sumiu.
-    assert.match(html, /const ADMIN_SECTIONS = \['visao', 'prioridades', 'priorityLaunches', 'ranking', 'rankingGeral', 'analista', 'pecas', 'ponto', 'lancamentos', 'transferencias', 'ciclos', 'cadastros', 'historico'\];/);
+    assert.match(html, /const ADMIN_SECTIONS = \['visao', 'prioridades', 'externas', 'priorityLaunches', 'ranking', 'rankingGeral', 'analista', 'pecas', 'ponto', 'lancamentos', 'transferencias', 'ciclos', 'cadastros', 'historico'\];/);
     assert.match(html, /if \(name === 'admin' && section && !ADMIN_SECTIONS\.includes\(section\)\) return \{ name, section: 'visao' \};/);
     assert.ok(!html.includes("'excluidos'"), 'seção removida voltou a ser rota válida');
 

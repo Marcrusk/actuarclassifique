@@ -40,6 +40,10 @@
                         children: [
                             { id: 'prioridades-visao', label: 'Visão geral', route: rota('admin', 'visao') },
                             { id: 'prioridades-aprovacoes', label: 'Aprovações', route: rota('admin', 'prioridades'), badgeId: 'admPriorityPendingBadge' },
+                            /* O que chega pelo Portal de Prioridades vive aqui: é o começo do
+                               mesmo fluxo, e separar em outro módulo faria a gestão procurar
+                               prioridade em dois lugares. */
+                            { id: 'prioridades-externas', label: 'Solicitações externas', route: rota('admin', 'externas'), badgeId: 'admExternalPendingBadge' },
                             { id: 'prioridades-lancamentos', label: 'Lançamentos', route: rota('admin', 'priorityLaunches') },
                             { id: 'prioridades-ranking', label: 'Ranking do rodízio', route: rota('admin', 'ranking') }
                         ]

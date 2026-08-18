@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260818-perfil-filtros-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260818-portal-externas-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -258,7 +258,20 @@
          formulário avulso.
          ========================================================================== -->
     <section id="viewPortal" class="hidden actuar-portal" aria-labelledby="portalTitle">
-        <header class="actuar-portal-header">
+        <!-- Fundo decorativo. O logotipo é só letra — não há símbolo isolado para espalhar —
+             então a marca d'água é o próprio logotipo em escala grande e opacidade baixa,
+             usando o arquivo oficial. Os halos dão profundidade e separam o card do fundo.
+             Tudo aria-hidden: é atmosfera, não conteúdo. -->
+        <!-- Fundo vivo: auroras da paleta derivando devagar sobre uma malha fina. Sem
+             logotipo repetido — a marca já está dentro do card, e repeti-la no fundo virava
+             papel de parede. O movimento é lento de propósito: presença, não distração. -->
+        <div class="actuar-portal-backdrop" aria-hidden="true">
+            <span class="actuar-portal-aurora actuar-portal-aurora--one"></span>
+            <span class="actuar-portal-aurora actuar-portal-aurora--two"></span>
+            <span class="actuar-portal-aurora actuar-portal-aurora--three"></span>
+            <span class="actuar-portal-mesh"></span>
+        </div>
+        <header class="actuar-portal-header hidden" id="portalHeader">
             <img class="actuar-group-logo" src="assets/actuar/logos/actuar-group.svg" alt="Actuar Group">
             <span class="actuar-portal-tag">Portal de Prioridades</span>
             <div id="portalIdentity" class="actuar-portal-identity hidden">
@@ -269,12 +282,46 @@
 
         <!-- ETAPA 1: ACESSO -->
         <div id="portalAccess" class="actuar-portal-shell">
+            <!-- A marca vive dentro do card, como no portão de acesso dos analistas: quem abre
+                 o link vê a identidade e o nome do ambiente no mesmo bloco em que se identifica,
+                 não numa faixa solta acima. -->
+            <div class="actuar-portal-crest">
+                <img src="assets/actuar/logos/actuar-group.svg" alt="Actuar Group">
+                <span class="actuar-portal-tag">Portal de Prioridades</span>
+            </div>
             <h1 id="portalTitle">Registrar atendimento prioritário</h1>
             <p class="actuar-portal-lead">Identifique-se para descrever a situação do cliente que precisa de análise prioritária.</p>
             <form onsubmit="return portalEnter(event)" class="actuar-portal-form" aria-describedby="portalAccessError">
+                <!-- Seletor próprio no lugar do <select> nativo, que entrega o visual do
+                     sistema operacional e não o do produto. O valor continua num input
+                     escondido, então quem lê a identidade não muda. -->
                 <div class="actuar-field">
-                    <label for="portalCollaborator">Colaborador</label>
-                    <select id="portalCollaborator" required></select>
+                    <input type="hidden" id="portalCollaborator" value="">
+                    <div class="actuar-picker">
+                        <button type="button" id="portalMemberTrigger" class="actuar-picker-trigger"
+                                aria-haspopup="listbox" aria-expanded="false" aria-controls="portalMemberPanel"
+                                onclick="portalToggleMembers()" onkeydown="portalMemberTriggerKey(event)">
+                            <span class="actuar-picker-avatar" id="portalMemberAvatar" aria-hidden="true"><i class="fi fi-rr-user"></i></span>
+                            <span class="actuar-picker-copy">
+                                <strong id="portalMemberName">Quem está registrando?</strong>
+                                <small id="portalMemberRole">Escolha o seu nome para continuar</small>
+                            </span>
+                            <i class="fi fi-rr-angle-small-down actuar-picker-caret" aria-hidden="true"></i>
+                        </button>
+                        <div id="portalMemberPanel" class="actuar-picker-panel" hidden>
+                            <!-- Busca antes da lista: com centenas de pessoas, rolar não é
+                                 caminho. Digitar duas letras do nome resolve em um gesto. -->
+                            <div class="actuar-picker-search">
+                                <i class="fi fi-rr-search" aria-hidden="true"></i>
+                                <input id="portalMemberSearch" type="search" autocomplete="off"
+                                       placeholder="Buscar por nome ou departamento"
+                                       aria-label="Buscar pessoa" aria-controls="portalMemberList"
+                                       oninput="portalFilterMembers()" onkeydown="portalMemberSearchKey(event)">
+                            </div>
+                            <ul id="portalMemberList" class="actuar-picker-list" role="listbox" aria-label="Quem está registrando"></ul>
+                            <p id="portalMemberEmpty" class="actuar-picker-empty hidden">Ninguém encontrado com esse termo.</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="actuar-field">
                     <span class="actuar-field-label" id="portalPinLabel">PIN de acesso</span>
@@ -318,15 +365,26 @@
                     <h3>Quem é o cliente</h3>
                     <p class="actuar-portal-hint">Identifique a empresa e o contato para a equipe conseguir retornar.</p>
                     <div class="actuar-portal-grid">
-                        <div class="actuar-field">
-                            <label for="portalBrand">Empresa do cliente</label>
-                            <select id="portalBrand" required>
-                                <option value="">Selecione</option>
-                                <option>Actuar</option>
-                                <option>Ediz</option>
-                                <option>Toletus</option>
-                                <option>Fácil Fit</option>
-                            </select>
+                        <!-- Não é a empresa DELE: é de qual marca ele é cliente. Como são
+                             quatro e não mudam, viram opções à vista — escolher fica a um
+                             toque, e o rótulo deixa de precisar explicar a pergunta. -->
+                        <div class="actuar-field span-full">
+                            <span class="actuar-field-label" id="portalBrandLabel">Cliente de qual marca?</span>
+                            <input type="hidden" id="portalBrand" value="">
+                            <div class="actuar-portal-brands" role="radiogroup" aria-labelledby="portalBrandLabel">
+                                <button type="button" class="actuar-portal-brand-option" data-brand="Actuar" role="radio" aria-checked="false" onclick="portalPickBrand('Actuar')" title="Actuar">
+                                    <img src="assets/actuar/logos/marcas/actuar.png" alt="Actuar">
+                                </button>
+                                <button type="button" class="actuar-portal-brand-option" data-brand="Ediz" role="radio" aria-checked="false" onclick="portalPickBrand('Ediz')" title="Ediz">
+                                    <img class="is-boxed" src="assets/actuar/logos/marcas/ediz.png" alt="Ediz">
+                                </button>
+                                <button type="button" class="actuar-portal-brand-option" data-brand="Toletus" role="radio" aria-checked="false" onclick="portalPickBrand('Toletus')" title="Toletus">
+                                    <img src="assets/actuar/logos/marcas/toletus.png" alt="Toletus">
+                                </button>
+                                <button type="button" class="actuar-portal-brand-option" data-brand="Fácil Fit" role="radio" aria-checked="false" onclick="portalPickBrand('Fácil Fit')" title="Fácil Fit">
+                                    <img src="assets/actuar/logos/marcas/facil-fit.png" alt="Fácil Fit">
+                                </button>
+                            </div>
                         </div>
                         <div class="actuar-field">
                             <label for="portalClientId">ID de atendimento</label>
@@ -368,10 +426,11 @@
                         <label for="portalNeed">O que o cliente precisa</label>
                         <textarea id="portalNeed" rows="5" placeholder="Descreva a situação e o que o cliente precisa resolver." required></textarea>
                     </div>
-                    <!-- Confere o que já foi preenchido sem obrigar a voltar: o resumo é a
-                         revisão, e cada linha leva de volta ao passo que a originou. -->
-                    <div id="portalRecap" class="actuar-portal-recap"></div>
                 </section>
+
+                <!-- Confere o que já foi preenchido sem obrigar a voltar: o resumo é a
+                     revisão, e cada linha leva de volta ao passo que a originou. -->
+                <div id="portalRecap" class="actuar-portal-recap"></div>
 
                 <p class="actuar-login-error" id="portalFormError" role="alert" hidden></p>
                 <p class="actuar-portal-note hidden" id="portalStepNote">A solicitação será encaminhada para análise da equipe responsável.</p>
@@ -473,6 +532,14 @@
             <span id="actuarConfirmIcon" class="actuar-confirm-icon" aria-hidden="true"><i class="fi fi-rr-triangle-warning"></i></span>
             <h2 id="actuarConfirmTitle">Confirmar ação</h2>
             <p id="actuarConfirmMessage"></p>
+            <!-- Campo opcional: decisões que exigem motivo passam a caber no mesmo diálogo,
+                 em vez de cada tela inventar um modal próprio (ou cair no prompt do navegador,
+                 que ignora tema, tipografia e vocabulário do produto). -->
+            <div id="actuarConfirmField" class="actuar-field" hidden>
+                <label for="actuarConfirmInput" id="actuarConfirmInputLabel">Motivo</label>
+                <textarea id="actuarConfirmInput" rows="3"></textarea>
+                <p id="actuarConfirmInputError" class="actuar-field-error hidden">Informe o motivo para continuar.</p>
+            </div>
             <div class="actuar-confirm-actions">
                 <button type="button" id="actuarConfirmCancel" class="actuar-btn actuar-btn-secondary">Cancelar</button>
                 <button type="button" id="actuarConfirmOk" class="actuar-btn actuar-btn-primary">Confirmar</button>
@@ -2113,6 +2180,34 @@
             </div>
             <!-- FIM PAINEL PEÇAS CATRACA -->
 
+        <div id="externalRequestDrawer" class="hidden rotation-modal-layer" role="dialog" aria-modal="true" aria-labelledby="externalDrawerTitle">
+            <div class="rotation-modal-card external-drawer" tabindex="-1">
+                <header>
+                    <div><span class="rotation-eyebrow">Solicitação externa</span><h2 id="externalDrawerTitle">Protocolo</h2><p id="externalDrawerSubtitle"></p></div>
+                    <button type="button" class="actuar-icon-button" onclick="closeExternalRequest()" aria-label="Fechar"><i class="fi fi-rr-cross-small"></i></button>
+                </header>
+                <div id="externalDrawerBody" class="rotation-drawer-body"></div>
+                <div id="externalDrawerFooter" class="priority-review-actions"></div>
+            </div>
+        </div>
+
+            <!-- PAINEL: SOLICITAÇÕES EXTERNAS -->
+            <div id="admPanelExternas" class="hidden space-y-6">
+                <section id="admExternalSummary" class="priority-approval-summary"></section>
+                <div class="bg-surface border border-line rounded-2xl card-hover p-6">
+                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-inbox text-primary-400"></i> Solicitações externas</h3>
+                    <p class="text-xs text-secondary mb-4">O que chegou pelo Portal de Prioridades. Triar, distribuir pelo rodízio e acompanhar até a conclusão.</p>
+                    <div class="priority-approval-filters">
+                        <div class="actuar-field"><label for="externalTeamFilter">Equipe</label><select id="externalTeamFilter" onchange="renderExternalBoard()"><option value="Todos">Todas</option><option value="Sistema">Sistema</option><option value="Catraca">Catraca</option></select></div>
+                        <div class="actuar-field"><label for="externalBrandFilter">Marca</label><select id="externalBrandFilter" onchange="renderExternalBoard()"><option value="Todas">Todas</option><option>Actuar</option><option>Ediz</option><option>Toletus</option><option>Fácil Fit</option></select></div>
+                        <div class="actuar-field priority-approval-search"><label for="externalSearch">Localizar</label><div class="actuar-input-icon"><i class="fi fi-rr-search" aria-hidden="true"></i><input id="externalSearch" type="search" oninput="renderExternalBoard()" placeholder="Protocolo, cliente, ID ou quem registrou"></div></div>
+                        <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="refreshExternalRequests()"><i class="fi fi-rr-refresh"></i>Atualizar</button>
+                    </div>
+                    <div id="admExternalBoard" class="external-board"></div>
+                </div>
+            </div>
+            <!-- FIM PAINEL SOLICITAÇÕES EXTERNAS -->
+
             <!-- PAINEL: HISTÓRICO -->
             <div id="admPanelHistorico" class="hidden space-y-6">
             <!-- LOGS -->
@@ -3171,8 +3266,11 @@
         function renderManagerPanel(nome, montar) {
             try { montar(); }
             catch (erro) {
+                /* A mensagem do erro vai junto: "não foi possível" sozinho não diz o que
+                   houve nem para quem usa nem para quem conserta, e obriga a abrir o console
+                   para descobrir qualquer coisa. */
                 console.error(`Falha ao montar o painel de ${nome}:`, erro);
-                showToast(`Não foi possível carregar ${nome}.`, 'error');
+                showToast(`Não foi possível carregar ${nome}: ${erro.message || erro}`, 'error');
             }
         }
 
@@ -4090,7 +4188,7 @@
            antigo como #/admin/excluidos — seção que deixou de existir — continuava
            no navegador enquanto a tela mostrava a Visão geral: o endereço dizia uma
            coisa e o conteúdo outra. */
-        const ADMIN_SECTIONS = ['visao', 'prioridades', 'priorityLaunches', 'ranking', 'rankingGeral', 'analista', 'pecas', 'ponto', 'lancamentos', 'transferencias', 'ciclos', 'cadastros', 'historico'];
+        const ADMIN_SECTIONS = ['visao', 'prioridades', 'externas', 'priorityLaunches', 'ranking', 'rankingGeral', 'analista', 'pecas', 'ponto', 'lancamentos', 'transferencias', 'ciclos', 'cadastros', 'historico'];
 
         /* Rotas da plataforma nova. Enquanto a autenticação dela está desligada elas
            não têm tela: o endereço respondia, o cabeçalho anunciava "Central de
@@ -4244,6 +4342,7 @@
                 transferencias: { title: 'Métricas operacionais · Transferências', description: 'Analise os protocolos de transferência enviados pela equipe.' },
                 ponto: { title: 'Ponto e pausas', description: 'Acompanhe jornada, pausas e ociosidade da equipe no dia.' },
                 ciclos: { title: 'Ciclos e Fechamento', description: 'Gerencie abertura, conferência e fechamento de cada ciclo.' },
+                externas: { title: 'Prioridades · Solicitações externas', description: 'Triar o que chegou pelo Portal de Prioridades e distribuir pelo rodízio.' },
                 historico: { title: 'Histórico e auditoria', description: 'Consulte ações relevantes e alterações registradas na operação.' },
                 analista: { title: `Ranking geral · ${getStore()?.users?.[currentActiveUser]?.name || 'Analista'}`, description: 'Consulta de leitura: nenhuma ação aqui é registrada em nome do analista.' }
             };
@@ -5567,19 +5666,12 @@
         function renderPortal() {
             if (!isPortalRoute()) return;
             portalSession = portalSession || readPortalSession();
-            const select = document.getElementById('portalCollaborator');
-            if (select && !select.options.length) {
-                /* Começa vazio de propósito. Sem o botão de acessar, completar o PIN entra na
-                   hora — e com um nome já escolhido por padrão, a pessoa entraria como o
-                   primeiro da lista sem perceber. A identidade tem de ser um ato. */
-                select.innerHTML = '<option value="">Selecione o seu nome</option>'
-                    + portalCollaborators()
-                        .map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} · ${escapeHtml(item.department)}</option>`).join('');
-                // Escolhido o nome, o foco vai para o PIN: o próximo passo sem um clique extra.
-                select.addEventListener('change', () => { if (select.value) portalPinBox(1)?.focus(); });
-            }
+            portalRenderMembers();
             const identificado = Boolean(portalSession);
             document.getElementById('portalAccess')?.classList.toggle('hidden', identificado);
+            /* A faixa do topo só faz sentido depois de identificado: é onde mora o nome e o
+               "Encerrar acesso". Antes dela aparecer, a marca já está dentro do card. */
+            document.getElementById('portalHeader')?.classList.toggle('hidden', !identificado);
             document.getElementById('portalIdentity')?.classList.toggle('hidden', !identificado);
             if (identificado) {
                 const pessoa = portalCollaborator(portalSession.id);
@@ -5650,6 +5742,106 @@
             if (form) portalEnter({ preventDefault() {}, target: form });
         }
 
+        /* Seletor de quem registra. Lista fechada, com iniciais e departamento: reconhecer
+           o próprio nome numa lista curta é mais rápido do que ler texto corrido, e a inicial
+           dá o ponto de fixação para o olho. O teclado navega como num listbox de verdade. */
+        function portalMemberInitials(nome) {
+            return String(nome || '').split(/\s+/).filter(Boolean).slice(0, 2).map(parte => parte[0]).join('').toUpperCase();
+        }
+
+        function portalRenderMembers(termo = '') {
+            const lista = document.getElementById('portalMemberList');
+            if (!lista) return;
+            /* Normaliza acento e caixa, como a busca de chamados: quem digita "jo" acha
+               "João", e quem digita "joao" também. */
+            const alvo = (window.PriorityRotation?.normalizeSearch ? PriorityRotation.normalizeSearch(termo) : String(termo).toLowerCase()).trim();
+            const visiveis = portalCollaborators().filter(item => {
+                if (!alvo) return true;
+                const campos = `${item.name} ${item.department} ${item.role}`;
+                const normalizado = window.PriorityRotation?.normalizeSearch ? PriorityRotation.normalizeSearch(campos) : campos.toLowerCase();
+                return normalizado.includes(alvo);
+            });
+            document.getElementById('portalMemberEmpty')?.classList.toggle('hidden', visiveis.length > 0);
+            const escolhido = document.getElementById('portalCollaborator')?.value;
+            lista.innerHTML = visiveis.map((item, indice) => `
+                <li role="option" id="portalMember_${escapeHtml(item.id)}" data-id="${escapeHtml(item.id)}" tabindex="-1"
+                    aria-selected="${item.id === escolhido}" onclick="portalPickMember('${escapeHtml(item.id)}')" onkeydown="portalMemberKey(event, ${indice})">
+                    <span class="actuar-picker-avatar" aria-hidden="true">${escapeHtml(portalMemberInitials(item.name))}</span>
+                    <span class="actuar-picker-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.department)} · ${escapeHtml(item.role)}</small></span>
+                    <i class="fi fi-rr-check actuar-picker-tick" aria-hidden="true"></i>
+                </li>`).join('');
+        }
+
+        function portalMembersOpen() {
+            return document.getElementById('portalMemberTrigger')?.getAttribute('aria-expanded') === 'true';
+        }
+
+        function portalToggleMembers(abrir = !portalMembersOpen()) {
+            const gatilho = document.getElementById('portalMemberTrigger');
+            const painel = document.getElementById('portalMemberPanel');
+            if (!gatilho || !painel) return;
+            gatilho.setAttribute('aria-expanded', String(abrir));
+            painel.hidden = !abrir;
+            if (abrir) {
+                // O foco vai para a busca, não para o primeiro nome: com muita gente, digitar
+                // é o caminho, e rolar é a exceção.
+                portalRenderMembers('');
+                const busca = document.getElementById('portalMemberSearch');
+                if (busca) { busca.value = ''; busca.focus(); }
+            } else gatilho.focus();
+        }
+
+        function portalPickMember(id) {
+            const pessoa = portalCollaborator(id);
+            if (!pessoa) return;
+            document.getElementById('portalCollaborator').value = pessoa.id;
+            document.getElementById('portalMemberAvatar').textContent = portalMemberInitials(pessoa.name);
+            document.getElementById('portalMemberName').textContent = pessoa.name;
+            document.getElementById('portalMemberRole').textContent = `${pessoa.department} · ${pessoa.role}`;
+            document.getElementById('portalMemberTrigger')?.classList.add('is-filled');
+            document.querySelectorAll('#portalMemberList li').forEach(item => {
+                item.setAttribute('aria-selected', String(item.dataset.id === pessoa.id));
+            });
+            portalShowError('portalAccessError', '');
+            portalToggleMembers(false);
+            // Escolhido o nome, o próximo passo é o PIN: sem clique extra no caminho.
+            portalPinBox(1)?.focus();
+        }
+
+        function portalFilterMembers() {
+            portalRenderMembers(document.getElementById('portalMemberSearch')?.value || '');
+        }
+
+        function portalMemberSearchKey(event) {
+            if (event.key === 'Escape') { event.preventDefault(); portalToggleMembers(false); return; }
+            const itens = [...document.querySelectorAll('#portalMemberList li')];
+            // Seta para baixo entra na lista; Enter escolhe direto quando sobrou um só.
+            if (event.key === 'ArrowDown' && itens.length) { event.preventDefault(); itens[0].focus(); }
+            if (event.key === 'Enter') { event.preventDefault(); if (itens.length === 1) portalPickMember(itens[0].dataset.id); }
+        }
+
+        function portalMemberKey(event, indice) {
+            const itens = [...document.querySelectorAll('#portalMemberList li')];
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); portalPickMember(itens[indice]?.dataset.id); return; }
+            if (event.key === 'Escape') { event.preventDefault(); portalToggleMembers(false); return; }
+            const passo = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;
+            if (!passo) return;
+            event.preventDefault();
+            // Subir do primeiro devolve à busca: é de onde a pessoa veio.
+            if (passo === -1 && indice === 0) { document.getElementById('portalMemberSearch')?.focus(); return; }
+            // A lista dá a volta: chegar ao fim e continuar descendo leva ao começo.
+            itens[(indice + passo + itens.length) % itens.length]?.focus();
+        }
+
+        function portalMemberTriggerKey(event) {
+            if (['ArrowDown', 'Enter', ' '].includes(event.key)) { event.preventDefault(); portalToggleMembers(true); }
+        }
+
+        // Clicar fora fecha: uma lista aberta esquecida atrapalha o resto do formulário.
+        document.addEventListener('click', event => {
+            if (portalMembersOpen() && !event.target.closest('.actuar-picker')) portalToggleMembers(false);
+        });
+
         function portalEnter(event) {
             event.preventDefault();
             portalShowError('portalAccessError', '');
@@ -5706,13 +5898,16 @@
             for (const id of portalStepFields(step)) {
                 const campo = document.getElementById(id);
                 if (!campo || campo.value.trim()) continue;
+                if (id === 'portalBrand') { document.querySelector('.actuar-portal-brand-option')?.focus(); return 'Escolha de qual marca o cliente é.'; }
                 campo.focus();
                 return 'Preencha os campos deste passo para continuar.';
             }
-            // As regras de formato (ID com duas letras e quatro números, telefone) são do
-            // Design System: não existe validação paralela aqui.
+            /* As regras de formato (ID com duas letras e quatro números, telefone com DDD)
+               são do Design System: não existe validação paralela aqui.
+               Era `check(escopo)`, mas check() recebe UM input — passar a seção devolvia
+               sempre válido, e o telefone incompleto atravessava para o passo seguinte. */
             const escopo = document.querySelector(`.actuar-portal-step[data-step="${step}"]`);
-            const checagem = window.ActuarFields?.check ? ActuarFields.check(escopo) : { valid: true, errors: [] };
+            const checagem = window.ActuarFields?.validateScope ? ActuarFields.validateScope(escopo) : { valid: true, errors: [] };
             return checagem.valid ? '' : checagem.errors[0].message;
         }
 
@@ -5743,10 +5938,12 @@
             const valor = id => document.getElementById(id)?.value?.trim() || '—';
             const linha = (rotulo, texto, passo) =>
                 `<div><small>${escapeHtml(rotulo)}</small><span>${escapeHtml(texto)}</span><button type="button" onclick="portalJumpStep(${passo})">Editar</button></div>`;
+            const situacao = valor('portalNeed');
             caixa.innerHTML = linha('Cliente', `${valor('portalClientId')} · ${valor('portalClientName')}`, 1)
                 + linha('Empresa', valor('portalBrand'), 1)
                 + linha('Contato', valor('portalPhone'), 1)
-                + linha('Destino', portalTeam ? teamLabel(portalTeam) : '—', 2);
+                + linha('Destino', portalTeam ? teamLabel(portalTeam) : '—', 2)
+                + linha('Situação', situacao.length > 90 ? `${situacao.slice(0, 90)}…` : situacao, 3);
         }
 
         function portalJumpStep(step) {
@@ -5762,6 +5959,16 @@
                 if (erro) { portalShowError('portalFormError', erro); return; }
             }
             portalJumpStep(portalStep + direcao);
+        }
+
+        function portalPickBrand(marca) {
+            document.getElementById('portalBrand').value = marca;
+            document.querySelectorAll('.actuar-portal-brand-option').forEach(botao => {
+                const ativo = botao.dataset.brand === marca;
+                botao.classList.toggle('is-active', ativo);
+                botao.setAttribute('aria-checked', String(ativo));
+            });
+            portalShowError('portalFormError', '');
         }
 
         function portalPickTeam(team) {
@@ -5869,12 +6076,241 @@
             document.getElementById('portalSuccess')?.classList.add('hidden');
             document.querySelector('.actuar-portal-request')?.reset();
             portalTeam = null;
-            document.querySelectorAll('.actuar-portal-option').forEach(botao => { botao.classList.remove('is-active'); botao.setAttribute('aria-checked', 'false'); });
+            document.querySelectorAll('.actuar-portal-option, .actuar-portal-brand-option').forEach(botao => { botao.classList.remove('is-active'); botao.setAttribute('aria-checked', 'false'); });
             const status = document.getElementById('portalTeamStatus');
             if (status) status.textContent = '';
             portalShowError('portalFormError', '');
             portalJumpStep(1);
             renderPortal();
+        }
+
+        /* ==========================================================================
+           QUADRO DE SOLICITAÇÕES EXTERNAS
+           O processo que hoje vive em mensagem — alguém avisa, o gestor interpreta, procura
+           o analista, encaminha e cobra retorno — passa a ter etapas visíveis. O domínio
+           (ExternalRequests) decide os estados; aqui só desenhamos e disparamos transições.
+           ========================================================================== */
+        function externalDomain() { return window.ExternalRequests || null; }
+
+        /* O quadro é uma caixa de entrada: o que chega vem de fora, de outra aba e de outra
+           pessoa. Sem buscar do servidor ao abrir, a gestão veria a foto do momento em que
+           carregou a página — e uma solicitação registrada agora só apareceria depois de um
+           F5, o que faz o portal parecer quebrado. */
+        let externalRefreshing = false;
+        async function refreshExternalRequests() {
+            if (externalRefreshing || !supabaseClient) return;
+            externalRefreshing = true;
+            try {
+                const fresco = await loadLegacyStoreRow();
+                if (!fresco?.data) return;
+                const versao = fresco.version || 0;
+                if (versao === currentVersion) return; // nada mudou lá fora
+                /* Toda alteração local já persiste na hora, então não há rascunho para
+                   perder ao adotar o que está no banco. */
+                appStore = fresco.data;
+                appStore.externalRequests ||= [];
+                currentVersion = versao;
+                lastSyncedSnapshot = deepClone(appStore);
+                renderExternalBoard();
+            } catch (_) {
+                // Sem rede o quadro segue mostrando o que já tinha, sem alarme.
+            } finally {
+                externalRefreshing = false;
+            }
+        }
+
+        function externalFilters() {
+            return {
+                team: document.getElementById('externalTeamFilter')?.value || 'Todos',
+                brand: document.getElementById('externalBrandFilter')?.value || 'Todas',
+                busca: document.getElementById('externalSearch')?.value || ''
+            };
+        }
+
+        function externalVisibleRequests() {
+            const dominio = externalDomain();
+            if (!dominio) return [];
+            const { busca } = externalFilters();
+            const alvo = window.PriorityRotation?.normalizeSearch ? PriorityRotation.normalizeSearch(busca).trim() : busca.trim().toLowerCase();
+            return dominio.list(getStore()).filter(item => {
+                if (!alvo) return true;
+                const campos = `${item.protocol} ${item.clientId} ${item.clientName} ${item.requesterName} ${item.brand}`;
+                const normalizado = window.PriorityRotation?.normalizeSearch ? PriorityRotation.normalizeSearch(campos) : campos.toLowerCase();
+                return normalizado.includes(alvo);
+            });
+        }
+
+        function externalCard(item) {
+            const dominio = externalDomain();
+            const espera = ActuarFields.formatMoment(item.createdAt);
+            const duplicadas = dominio.duplicatesOf(item, dominio.list(getStore()));
+            /* Card enxuto: o que decide o próximo passo. Cliente, quem pediu, há quanto tempo
+               espera e o aviso de duplicidade. O resto vive na ficha — um card que conta tudo
+               obriga a ler tudo para achar o que importa. */
+            return `<article class="external-card" tabindex="0" role="button"
+                    onclick="openExternalRequest('${escapeHtml(item.id)}')"
+                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openExternalRequest('${escapeHtml(item.id)}');}">
+                <header>
+                    <strong>${escapeHtml(item.clientName || 'Cliente não informado')}</strong>
+                    <span class="actuar-badge actuar-badge-neutral">${escapeHtml(item.team || '—')}</span>
+                </header>
+                <p class="external-card-need">${escapeHtml(item.need || '')}</p>
+                <dl>
+                    <div><dt>Protocolo</dt><dd class="num-mono">${escapeHtml(item.protocol || '—')}</dd></div>
+                    <div><dt>Cliente</dt><dd>${escapeHtml(item.clientId || '—')} · ${escapeHtml(item.brand || '—')}</dd></div>
+                    <div><dt>Registrado por</dt><dd>${escapeHtml(item.requesterName || '—')}</dd></div>
+                </dl>
+                <footer>
+                    <span title="${escapeHtml(fullMomentTitle(item.createdAt))}"><i class="fi fi-rr-clock" aria-hidden="true"></i>${escapeHtml(espera)}</span>
+                    ${duplicadas.length ? `<span class="external-card-flag"><i class="fi fi-rr-copy-alt" aria-hidden="true"></i>${duplicadas.length} possível duplicidade</span>` : ''}
+                </footer>
+            </article>`;
+        }
+
+        function renderExternalBoard() {
+            const alvo = document.getElementById('admExternalBoard');
+            const dominio = externalDomain();
+            if (!alvo || !dominio) return;
+            const { team, brand } = externalFilters();
+            const quadro = dominio.board(externalVisibleRequests(), { team, brand });
+
+            alvo.innerHTML = quadro.stages.map(coluna => `
+                <section class="external-column" aria-label="${escapeHtml(coluna.label)}">
+                    <header title="${escapeHtml(coluna.hint)}">
+                        <strong>${escapeHtml(coluna.label)}</strong>
+                        <span class="external-count">${coluna.items.length}</span>
+                    </header>
+                    <div class="external-column-body">
+                        ${coluna.items.map(externalCard).join('') || `<p class="external-empty">${escapeHtml(coluna.hint)}</p>`}
+                    </div>
+                </section>`).join('')
+                + (quadro.closed.length ? `
+                <section class="external-column is-closed" aria-label="Encerradas">
+                    <header title="Saíram do fluxo sem avançar."><strong>Encerradas</strong><span class="external-count">${quadro.closed.length}</span></header>
+                    <div class="external-column-body">${quadro.closed.map(externalCard).join('')}</div>
+                </section>` : '');
+
+            renderExternalSummary(dominio.summarize(dominio.list(getStore())));
+        }
+
+        function renderExternalSummary(resumo) {
+            const alvo = document.getElementById('admExternalSummary');
+            if (!alvo) return;
+            const espera = resumo.esperaMaisLonga
+                ? ActuarFields.formatMoment(Date.now() - resumo.esperaMaisLonga)
+                : '—';
+            alvo.innerHTML = `<button type="button"><small>Novas</small><strong>${resumo.novas}</strong></button>`
+                + `<button type="button"><small>Em atendimento</small><strong>${resumo.emAtendimento}</strong></button>`
+                + `<button type="button"><small>Abertas</small><strong>${resumo.abertas}</strong></button>`
+                + `<button type="button"><small>Espera mais longa</small><strong>${escapeHtml(espera)}</strong></button>`;
+            // O contador do menu conta o que ninguém olhou ainda.
+            const badge = document.getElementById('admExternalPendingBadge');
+            if (badge) {
+                badge.classList.toggle('hidden', resumo.novas === 0);
+                badge.innerText = resumo.novas;
+            }
+        }
+
+        let externalOpenId = null;
+
+        function externalRequestById(id) {
+            return externalDomain()?.list(getStore()).find(item => item.id === id) || null;
+        }
+
+        function openExternalRequest(id) {
+            const item = externalRequestById(id);
+            if (!item) return;
+            externalOpenId = id;
+            const dominio = externalDomain();
+            const etapa = dominio.stageMeta(dominio.stageOf(item));
+            const duplicadas = dominio.duplicatesOf(item, dominio.list(getStore()));
+
+            document.getElementById('externalDrawerTitle').textContent = item.protocol || 'Solicitação';
+            document.getElementById('externalDrawerSubtitle').textContent = `${item.clientName || 'Cliente'} · ${teamLabel(item.team)} · ${ActuarFields.formatMoment(item.createdAt)}`;
+
+            const linha = (rotulo, valor) => `<div><dt>${escapeHtml(rotulo)}</dt><dd>${escapeHtml(valor || '—')}</dd></div>`;
+            document.getElementById('externalDrawerBody').innerHTML = `
+                <p class="external-stage"><span class="actuar-badge actuar-badge-${escapeHtml(etapa.tone)}">${escapeHtml(etapa.label)}</span><em>${escapeHtml(etapa.hint)}</em></p>
+                ${duplicadas.length ? `<div class="actuar-feedback actuar-feedback-warning"><i class="fi fi-rr-copy-alt"></i><div><strong>Possível duplicidade</strong><p>${duplicadas.map(outro => `${escapeHtml(outro.protocol)} · ${escapeHtml(dominio.stageMeta(dominio.stageOf(outro)).label)}`).join('<br>')}</p></div></div>` : ''}
+                <div class="pieces-detail-block"><h3>Cliente</h3><dl class="external-facts">
+                    ${linha('Nome', item.clientName)}${linha('ID', item.clientId)}${linha('Marca', item.brand)}${linha('Telefone', item.phone)}
+                </dl></div>
+                <div class="pieces-detail-block"><h3>O que o cliente precisa</h3><p class="pieces-detail-copy">${escapeHtml(item.need || '')}</p></div>
+                <div class="pieces-detail-block"><h3>Quem registrou</h3><dl class="external-facts">
+                    ${linha('Pessoa', item.requesterName)}${linha('Departamento', item.requesterDepartment)}${linha('Função', item.requesterRole)}
+                </dl></div>
+                <details class="pieces-audit"><summary>Histórico</summary><div>${(item.events || []).map(evento => `<div><i class="fi fi-rr-time-past"></i><span><strong>${escapeHtml(evento.text)}</strong><small>${escapeHtml(evento.by || '—')} · ${escapeHtml(ActuarFields.formatMoment(evento.at))}</small></span></div>`).join('') || '<p>Sem eventos.</p>'}</div></details>`;
+
+            document.getElementById('externalDrawerFooter').innerHTML = externalActions(item, dominio);
+            document.getElementById('externalRequestDrawer').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => document.querySelector('#externalRequestDrawer .external-drawer')?.focus());
+        }
+
+        function externalActions(item, dominio) {
+            const etapa = dominio.stageOf(item);
+            const fechar = `<button type="button" class="actuar-btn actuar-btn-secondary" onclick="closeExternalRequest()">Voltar</button>`;
+            if (dominio.isClosed(etapa)) return fechar;
+            const decisões = [];
+            if (etapa === 'nova' || etapa === 'triagem' || etapa === 'aguardando_info') {
+                decisões.push(`<button type="button" class="actuar-btn actuar-btn-secondary" onclick="externalAsk()">Pedir informação</button>`);
+                decisões.push(`<button type="button" class="actuar-btn actuar-btn-danger" onclick="externalReject()">Não é prioridade</button>`);
+                decisões.push(`<button type="button" class="actuar-btn actuar-btn-success" onclick="externalApprove()"><i class="fi fi-rr-check"></i>Validar e liberar</button>`);
+            }
+            return fechar + decisões.join('');
+        }
+
+        function closeExternalRequest() {
+            document.getElementById('externalRequestDrawer')?.classList.add('hidden');
+            document.body.style.overflow = '';
+            externalOpenId = null;
+        }
+
+        /* Toda decisão passa pelo domínio e persiste com rollback: uma triagem que não chegou
+           ao banco não pode ficar na tela como se tivesse chegado. */
+        async function externalDecide(proximo, opcoes = {}) {
+            const dominio = externalDomain();
+            const item = externalRequestById(externalOpenId);
+            if (!dominio || !item) return;
+            const anterior = deepClone(getStore().externalRequests || []);
+            try {
+                const atualizado = dominio.transition(item, proximo, { ...opcoes, actorName: getCurrentManager()?.name || 'Gestão' });
+                appStore.externalRequests = anterior.map(linha => (linha.id === item.id ? atualizado : linha));
+                const ok = await persistStore();
+                if (!ok) throw new Error(lastPersistError || 'Não foi possível salvar a decisão.');
+                renderExternalBoard();
+                openExternalRequest(item.id);
+                showToast(opcoes.toast || 'Solicitação atualizada.');
+            } catch (erro) {
+                appStore.externalRequests = anterior;
+                showToast(erro.message || 'Não foi possível atualizar a solicitação.', 'error');
+            }
+        }
+
+        async function externalApprove() {
+            await externalDecide('aguardando_distribuicao', { toast: 'Validada. Aguardando distribuição pelo rodízio.' });
+        }
+
+        async function externalAsk() {
+            const motivo = await actuarConfirm({
+                icon: 'comment-question', title: 'Pedir informação a quem registrou',
+                message: 'A solicitação volta para complemento e o histórico guarda o que faltou.',
+                input: { label: 'O que falta para avaliar?', placeholder: 'Ex.: informe o horário em que o problema começou.' },
+                confirmLabel: 'Devolver para complemento'
+            });
+            if (!motivo) return;
+            await externalDecide('aguardando_info', { reason: motivo, reasonRequired: true, toast: 'Devolvida para complemento.' });
+        }
+
+        async function externalReject() {
+            const motivo = await actuarConfirm({
+                tone: 'danger', icon: 'cross-circle', title: 'Marcar como não prioritária',
+                message: 'A solicitação sai do fluxo. O motivo fica registrado e visível no histórico.',
+                input: { label: 'Por que não é prioridade?', placeholder: 'Ex.: atendimento comum, sem impedimento de operação.' },
+                confirmLabel: 'Não é prioridade'
+            });
+            if (!motivo) return;
+            await externalDecide('rejeitada', { reason: motivo, reasonRequired: true, toast: 'Solicitação rejeitada.' });
         }
 
         function hasAnySession() { return isAnalystLoggedIn || isAdminLoggedIn || isPecaLoggedIn; }
@@ -5916,6 +6352,21 @@
             mensagem.textContent = options.message || '';
             mensagem.hidden = !options.message;
 
+            /* `options.input` transforma a confirmação em "confirme e diga por quê". Resolve
+               com o texto (não com true), então quem chama recebe o motivo direto. */
+            const campo = document.getElementById('actuarConfirmField');
+            const entrada = document.getElementById('actuarConfirmInput');
+            const erroEntrada = document.getElementById('actuarConfirmInputError');
+            if (campo && entrada) {
+                campo.hidden = !options.input;
+                entrada.value = '';
+                erroEntrada?.classList.add('hidden');
+                if (options.input) {
+                    document.getElementById('actuarConfirmInputLabel').textContent = options.input.label || 'Motivo';
+                    entrada.placeholder = options.input.placeholder || '';
+                }
+            }
+
             const cancelar = document.getElementById('actuarConfirmCancel');
             const confirmar = document.getElementById('actuarConfirmOk');
             cancelar.textContent = options.cancelLabel || 'Cancelar';
@@ -5926,7 +6377,7 @@
             const ativo = document.activeElement;
             if (ativo && ativo.id) layer.dataset.returnFocus = ativo.id;
             layer.classList.remove('hidden');
-            requestAnimationFrame(() => (options.alert === true ? confirmar : cancelar).focus());
+            requestAnimationFrame(() => (options.input ? entrada : options.alert === true ? confirmar : cancelar).focus());
 
             return new Promise(resolve => { actuarConfirmResolve = resolve; });
         }
@@ -5938,7 +6389,23 @@
         document.addEventListener('click', event => {
             if (event.target?.id === 'actuarConfirmDialog') closeActuarConfirm(false);
             if (event.target?.closest?.('#actuarConfirmCancel')) closeActuarConfirm(false);
-            if (event.target?.closest?.('#actuarConfirmOk')) closeActuarConfirm(true);
+            if (event.target?.closest?.('#actuarConfirmOk')) {
+                /* Com campo aberto, confirmar sem texto não fecha: a decisão exige o motivo,
+                   e devolver `true` sem ele deixaria o registro sem explicação. */
+                const campo = document.getElementById('actuarConfirmField');
+                const entrada = document.getElementById('actuarConfirmInput');
+                if (campo && !campo.hidden) {
+                    const texto = (entrada?.value || '').trim();
+                    if (texto.length < 3) {
+                        document.getElementById('actuarConfirmInputError')?.classList.remove('hidden');
+                        entrada?.focus();
+                        return;
+                    }
+                    closeActuarConfirm(texto);
+                    return;
+                }
+                closeActuarConfirm(true);
+            }
         });
         document.addEventListener('keydown', event => {
             if (event.key !== 'Escape') return;
@@ -8905,8 +9372,8 @@
 
         function switchAdminTabView(tab) {
             activeAdminTab = tab;
-            const panels = { visao: 'admPanelVisao', ranking: 'admPanelRanking', priorityLaunches: 'admPanelPriorityLaunches', cadastros: 'admPanelCadastros', lancamentos: 'admPanelLancamentos', prioridades: 'admPanelPrioridades', transferencias: 'admPanelTransferencias', pecas: 'admPanelPecas', ponto: 'admPanelPonto', ciclos: 'admPanelCiclos', historico: 'admPanelHistorico', rankingGeral: null, analista: null };
-            const btns = { visao: 'priorityModuleTabOverview', ranking: 'priorityModuleTabRanking', priorityLaunches: 'priorityModuleTabLaunches', cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'priorityModuleTabApprovals', transferencias: 'admTabBtnTransferencias', pecas: 'admTabBtnPecas', ponto: 'admTabBtnPonto', ciclos: 'admTabBtnCiclos', historico: 'admTabBtnHistorico', rankingGeral: 'admNavRankingGeral', analista: 'admNavRankingGeral' };
+            const panels = { visao: 'admPanelVisao', ranking: 'admPanelRanking', priorityLaunches: 'admPanelPriorityLaunches', cadastros: 'admPanelCadastros', lancamentos: 'admPanelLancamentos', prioridades: 'admPanelPrioridades', transferencias: 'admPanelTransferencias', pecas: 'admPanelPecas', ponto: 'admPanelPonto', ciclos: 'admPanelCiclos', historico: 'admPanelHistorico', externas: 'admPanelExternas', rankingGeral: null, analista: null };
+            const btns = { visao: 'priorityModuleTabOverview', ranking: 'priorityModuleTabRanking', priorityLaunches: 'priorityModuleTabLaunches', cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'priorityModuleTabApprovals', transferencias: 'admTabBtnTransferencias', pecas: 'admTabBtnPecas', ponto: 'admTabBtnPonto', ciclos: 'admTabBtnCiclos', historico: 'admTabBtnHistorico', externas: null, rankingGeral: 'admNavRankingGeral', analista: 'admNavRankingGeral' };
             if (!(tab in panels)) tab = activeAdminTab = 'visao';
 
             Object.keys(panels).forEach(key => {
@@ -8929,6 +9396,7 @@
             document.getElementById('managerFilterBar')?.classList.add('hidden');
             document.getElementById('priorityModuleTvAction')?.classList.toggle('hidden', !['visao', 'ranking'].includes(tab));
             if (moduleSections.includes(tab) || tab === 'ciclos') renderManagerExperience();
+            if (tab === 'externas') { renderExternalBoard(); refreshExternalRequests(); }
             if (tab === 'pecas') renderPiecesExperience();
             if (tab === 'ponto') renderAttendanceManager();
             syncManagerSectionViews();
@@ -10775,14 +11243,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260818-perfil-filtros-1"></script>
-    <script src="js/actuar-fields.js?v=20260818-perfil-filtros-1"></script>
-    <script src="js/attendance-clock.js?v=20260818-perfil-filtros-1"></script>
-    <script src="js/performance-domain.js?v=20260818-perfil-filtros-1"></script>
-    <script src="js/manager-experience.js?v=20260818-perfil-filtros-1"></script>
-    <script src="js/priority-rotation.js?v=20260818-perfil-filtros-1"></script>
-    <script src="js/pieces-operations.js?v=20260818-perfil-filtros-1"></script>
-    <script src="js/pieces-ui.js?v=20260818-perfil-filtros-1"></script>
-    <script src="js/performance-platform.js?v=20260818-perfil-filtros-1"></script>
+    <script src="js/actuar-navigation.js?v=20260818-portal-externas-1"></script>
+    <script src="js/external-requests.js?v=20260818-portal-externas-1"></script>
+    <script src="js/actuar-fields.js?v=20260818-portal-externas-1"></script>
+    <script src="js/attendance-clock.js?v=20260818-portal-externas-1"></script>
+    <script src="js/performance-domain.js?v=20260818-portal-externas-1"></script>
+    <script src="js/manager-experience.js?v=20260818-portal-externas-1"></script>
+    <script src="js/priority-rotation.js?v=20260818-portal-externas-1"></script>
+    <script src="js/pieces-operations.js?v=20260818-portal-externas-1"></script>
+    <script src="js/pieces-ui.js?v=20260818-portal-externas-1"></script>
+    <script src="js/performance-platform.js?v=20260818-portal-externas-1"></script>
 </body>
 </html>

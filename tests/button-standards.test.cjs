@@ -18,7 +18,7 @@ function botoes(fonte) {
         .map(match => ({ classe: match[1], texto: match[2].replace(/<[^>]*>/g, '').replace(/\$\{[^}]*\}/g, '').trim() }));
 }
 
-const APROVAR = /^(Aprovar( prioridade)?|Validar e pontuar|Confirmar e encaminhar)$/;
+const APROVAR = /^(Aprovar( prioridade)?|Validar e pontuar|Validar e liberar|Confirmar e encaminhar)$/;
 const REPROVAR = /^(Reprovar|Não aprovar)$/;
 
 test('a variante de sucesso existe no Design System, por token', () => {

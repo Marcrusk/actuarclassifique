@@ -257,7 +257,7 @@ body.actuar-app div[class*="rounded-full"]:not(.actuar-avatar) { border-radius: 
     align-items: center;
     gap: 16px;
     background: var(--actuar-header);
-    border-bottom: 1px solid #303234;
+    border-bottom: 1px solid rgba(255, 255, 255, .12);
 }
 .actuar-header-actions { justify-self: end; }
 
@@ -3595,30 +3595,114 @@ body.actuar-portal-mode { overflow-y: auto; }
 /* Tudo no eixo central: acesso, formulário e confirmação. O portal tem uma tarefa por
    vez, e a tela inteira acompanha essa tarefa em vez de espalhar conteúdo pelas bordas. */
 .actuar-portal {
-    display: flex; flex-direction: column; align-items: center;
-    min-height: 100vh; padding: 20px; background: var(--actuar-header); color: #FFF;
+    position: relative; isolation: isolate;
+    /* Centro em ambos os eixos. O `justify-content` resolve o caso em que o cabeçalho
+       está escondido (tela de acesso) e as margens automáticas não têm o que empurrar. */
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px; color: #FFF;
+    /* Preto chapado achata tudo e faz o card flutuar sem chão. Uma base azulada escura,
+       com um clareamento no alto, dá profundidade sem virar cenário. */
+    background:
+        radial-gradient(120% 80% at 50% -10%, #23233A 0%, transparent 58%),
+        linear-gradient(180deg, #131318 0%, #0D0D11 100%);
+    overflow: hidden;
 }
+
 .actuar-portal > .actuar-portal-shell,
 .actuar-portal > .actuar-portal-panel { margin-top: auto; margin-bottom: auto; }
+
+/* Camada de atmosfera. Fica atrás de tudo e não recebe clique. */
+.actuar-portal-backdrop { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+
+/* Auroras: manchas grandes e desfocadas que derivam em ciclos longos e dessincronizados,
+   então o fundo nunca repete a mesma composição. Cada uma anda poucos por cento da tela —
+   o suficiente para o olho perceber vida ao voltar, sem puxar atenção durante o uso. */
+.actuar-portal-aurora { position: absolute; border-radius: 50%; filter: blur(100px); will-change: transform; }
+.actuar-portal-aurora--one {
+    top: -14%; left: -10%; width: 46vw; min-width: 420px; aspect-ratio: 1;
+    background: color-mix(in srgb, var(--actuar-primary) 72%, transparent); opacity: .5;
+    animation: auroraOne 26s ease-in-out infinite alternate;
+}
+.actuar-portal-aurora--two {
+    right: -16%; bottom: -20%; width: 54vw; min-width: 480px; aspect-ratio: 1;
+    background: color-mix(in srgb, #266ED9 66%, transparent); opacity: .42;
+    animation: auroraTwo 32s ease-in-out infinite alternate;
+}
+.actuar-portal-aurora--three {
+    top: 38%; left: 46%; width: 40vw; min-width: 360px; aspect-ratio: 16 / 9;
+    background: color-mix(in srgb, #00E5C7 34%, transparent); opacity: .22;
+    animation: auroraThree 38s ease-in-out infinite alternate;
+}
+
+/* Malha fina por cima, esmaecendo nas bordas: dá textura de instrumento sem virar grade
+   de planilha. É estática — com as auroras se movendo atrás, mover as duas embrulharia. */
+.actuar-portal-mesh {
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(120% 90% at 50% 40%, #000 30%, transparent 78%);
+    mask-image: radial-gradient(120% 90% at 50% 40%, #000 30%, transparent 78%);
+}
+
+@keyframes auroraOne {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(7vw, 5vh, 0) scale(1.12); }
+}
+@keyframes auroraTwo {
+    from { transform: translate3d(0, 0, 0) scale(1.06); }
+    to   { transform: translate3d(-8vw, -6vh, 0) scale(1); }
+}
+@keyframes auroraThree {
+    from { transform: translate(-50%, -50%) scale(1); }
+    to   { transform: translate(-58%, -42%) scale(1.18); }
+}
 
 .actuar-portal-header {
     display: flex; align-items: center; gap: 14px;
     width: 100%; max-width: 780px; margin: 0 auto 24px; padding-bottom: 16px;
-    border-bottom: 1px solid #303234;
+    border-bottom: 1px solid rgba(255, 255, 255, .12);
 }
 .actuar-portal-tag { padding: 4px 10px; border: 1px solid var(--actuar-primary); border-radius: 999px; color: #FFF; font-size: 11px; font-weight: 600; }
 .actuar-portal-identity { display: flex; align-items: center; gap: 10px; margin-left: auto; color: #C5C7CA; font-size: 12px; }
 
 .actuar-portal-shell {
     width: min(480px, 100%);
-    padding: 32px;
+    overflow: hidden;
     text-align: center;
-    border: 1px solid #303234; border-radius: 16px;
-    background: linear-gradient(160deg, color-mix(in srgb, var(--actuar-primary) 14%, transparent), transparent 62%), #1B1B1F;
+    border: 1px solid #3A3A45; border-radius: 16px;
+    /* Superfície levemente mais clara que o fundo e com um brilho no topo: sobre um fundo
+       com halos, um card chapado se dissolve. A sombra profunda dá o chão. */
+    background: linear-gradient(180deg, #232330 0%, #1A1A21 100%);
+    box-shadow:
+        0 32px 80px rgba(5, 6, 10, .62),
+        inset 0 1px 0 rgba(255, 255, 255, .07);
     animation: portalRise .32s cubic-bezier(.16, 1, .3, 1) both;
 }
-.actuar-portal-shell h1 { margin: 0 0 8px; font-size: 23px; }
-.actuar-portal-lead { margin: 0 auto 24px; max-width: 340px; color: #C5C7CA; font-size: 13px; line-height: 1.5; }
+
+/* Bloco da marca, espelhando o brand block do portão de acesso: fundo primário e a logo
+   em branco. É o que diz "isto é da Actuar" antes de qualquer texto. */
+.actuar-portal-crest {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    padding: 26px 28px;
+    background: var(--actuar-primary);
+}
+.actuar-portal-crest img { width: 152px; height: auto; flex: 0 0 auto; filter: brightness(0) invert(1); }
+/* Logo | nome do ambiente, lado a lado com um filete entre eles — a mesma construção que o
+   cabeçalho do produto usa em .actuar-product-name. Empilhados, os dois competiam pelo topo
+   do card; na horizontal a leitura é uma só: de quem é, e o que é. */
+.actuar-portal-crest .actuar-portal-tag {
+    padding: 0 0 0 14px;
+    border: 0;
+    border-left: 1px solid rgba(255, 255, 255, .34);
+    border-radius: 0;
+    color: #FFF; font-size: 13px; font-weight: 600; line-height: 1.25; text-align: left;
+}
+
+.actuar-portal-shell h1 { margin: 32px 32px 8px; font-size: 21px; line-height: 1.25; }
+.actuar-portal-shell .actuar-portal-form { padding: 0 32px 32px; }
+.actuar-portal-lead { margin: 0 32px 24px;  color: #C5C7CA; font-size: 13px; line-height: 1.5; }
 .actuar-portal-shell .actuar-field { text-align: left; }
 .actuar-portal-shell .actuar-field-label,
 .actuar-portal-shell label { display: block; margin-bottom: 6px; color: #C5C7CA; font-size: 12px; font-weight: 600; }
@@ -3639,7 +3723,9 @@ body.actuar-portal-mode { overflow-y: auto; }
 
 .actuar-portal-panel {
     width: min(680px, 100%); padding: 28px;
-    border: 1px solid #303234; border-radius: 16px; background: #1B1B1F;
+    border: 1px solid #3A3A45; border-radius: 16px;
+    background: linear-gradient(180deg, #232330 0%, #1A1A21 100%);
+    box-shadow: 0 32px 80px rgba(5, 6, 10, .55), inset 0 1px 0 rgba(255, 255, 255, .06);
     animation: portalRise .3s cubic-bezier(.16, 1, .3, 1) both;
 }
 .actuar-portal-greeting h2 { margin: 0 0 4px; font-size: 22px; }
@@ -3696,6 +3782,14 @@ body.actuar-portal-mode { overflow-y: auto; }
 
 @media (max-width: 860px) {
     .actuar-portal { padding: 14px; }
+    /* No celular a atmosfera recua: com pouca área livre, ela competiria com o card.
+       O blur menor também alivia GPUs fracas. */
+    .actuar-portal-aurora { filter: blur(70px); }
+    .actuar-portal-aurora--three { display: none; }
+    .actuar-portal-mesh { background-size: 34px 34px; }
+    .actuar-portal-crest { gap: 11px; padding: 22px 18px; }
+    .actuar-portal-crest img { width: 124px; }
+    .actuar-portal-crest .actuar-portal-tag { padding-left: 11px; font-size: 12px; }
     .actuar-portal-shell { grid-template-columns: 1fr; gap: 22px; padding: 22px; }
     .actuar-portal-panel { padding: 20px; }
     .actuar-portal-grid, .actuar-portal-choice { grid-template-columns: 1fr; }
@@ -3802,4 +3896,185 @@ body.actuar-app .actuar-otp.is-invalid .actuar-otp-box { border-color: var(--act
 @media (prefers-reduced-motion: reduce) {
     .actuar-otp.is-invalid { animation: none; }
     .actuar-otp-box:focus { transform: none; }
+}
+
+/* Seletor de quem registra. O <select> nativo entrega o visual do sistema operacional —
+   fundo claro, seta do sistema, altura própria — e quebra a atmosfera do portal. Aqui a
+   lista é do produto: inicial como ponto de fixação, nome em destaque e o departamento
+   embaixo, que é o que desempata dois nomes parecidos. */
+.actuar-picker { position: relative; }
+
+.actuar-picker-trigger {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    padding: 12px 14px; text-align: left;
+    border: 1px solid #3A3A40; border-radius: 12px;
+    background: #16161A; color: #FFF; font: inherit; cursor: pointer;
+    transition: border-color var(--actuar-transition), box-shadow var(--actuar-transition);
+}
+.actuar-picker-trigger:hover { border-color: #52545A; }
+.actuar-picker-trigger:focus-visible {
+    outline: none; border-color: var(--actuar-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--actuar-primary) 28%, transparent);
+}
+.actuar-picker-trigger[aria-expanded="true"] { border-color: var(--actuar-primary); }
+
+.actuar-picker-avatar {
+    display: grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px;
+    border-radius: 50%; background: color-mix(in srgb, var(--actuar-primary) 26%, #16161A);
+    color: #FFF; font-family: Geist, "Open Sans", sans-serif; font-size: 12px; font-weight: 700;
+}
+.actuar-picker-copy { display: grid; gap: 1px; min-width: 0; flex: 1; }
+.actuar-picker-copy strong { color: #FFF; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.actuar-picker-copy small { color: #8E9298; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.actuar-picker-caret { flex: 0 0 auto; color: #8E9298; transition: transform var(--actuar-transition); }
+.actuar-picker-trigger[aria-expanded="true"] .actuar-picker-caret { transform: rotate(180deg); }
+/* Vazio, o gatilho é um convite; preenchido, é uma identidade. */
+.actuar-picker-trigger:not(.is-filled) .actuar-picker-copy strong { color: #C5C7CA; font-weight: 500; }
+
+/* Painel de escolha: busca fixa no topo, lista rolando por baixo. Com centenas de pessoas,
+   digitar é o caminho principal e rolar é a exceção — a ordem dos elementos diz isso. */
+.actuar-picker-panel {
+    margin-top: 8px;
+    border: 1px solid #3A3A40; border-radius: 12px; background: #16161A; overflow: hidden;
+    animation: pickerDrop .16s cubic-bezier(.16, 1, .3, 1) both;
+}
+.actuar-picker-search { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-bottom: 1px solid #26262E; }
+.actuar-picker-search i { flex: 0 0 auto; color: #6F7378; font-size: 13px; }
+/* A base dos campos tem (0,4,2) e !important: sem subir a especificidade, a busca herdaria
+   fundo claro e borda, virando uma caixa dentro da caixa. */
+body.actuar-app .actuar-picker-search input {
+    flex: 1; min-height: 24px;
+    padding: 0 !important; border: 0 !important; border-radius: 0 !important;
+    background: transparent !important; color: #FFF !important; box-shadow: none !important;
+    font-size: 13px;
+}
+body.actuar-app .actuar-picker-search input::placeholder { color: #6F7378; }
+.actuar-picker-empty { margin: 0; padding: 16px 14px; color: #8E9298; font-size: 12px; text-align: center; }
+
+/* A lista abre DENTRO do fluxo, empurrando o conteúdo. Flutuando por cima ela era
+   recortada pelo card (que precisa de overflow: hidden para arredondar o bloco da marca),
+   e a rolagem ficava presa num pedaço de lista. Expandindo, não há recorte, não há disputa
+   de z-index e no celular o dedo rola a página inteira, como espera. */
+.actuar-picker-list {
+    margin: 0; padding: 6px; list-style: none;
+    max-height: 264px; overflow-y: auto;
+}
+/* Barra de rolagem visível o suficiente para dizer que há mais nomes abaixo. */
+.actuar-picker-list::-webkit-scrollbar { width: 6px; }
+.actuar-picker-list::-webkit-scrollbar-thumb { border-radius: 999px; background: #3A3A45; }
+.actuar-picker-list li {
+    display: flex; align-items: center; gap: 11px;
+    padding: 9px 10px; border-radius: 9px; cursor: pointer;
+    transition: background-color var(--actuar-transition);
+}
+.actuar-picker-list li:hover, .actuar-picker-list li:focus { outline: none; background: #232327; }
+.actuar-picker-list li:focus-visible { box-shadow: inset 0 0 0 1px var(--actuar-primary); }
+.actuar-picker-tick { margin-left: auto; color: var(--actuar-primary); opacity: 0; }
+.actuar-picker-list li[aria-selected="true"] { background: color-mix(in srgb, var(--actuar-primary) 16%, #1B1B1F); }
+.actuar-picker-list li[aria-selected="true"] .actuar-picker-tick { opacity: 1; }
+
+@keyframes pickerDrop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .actuar-picker-panel { animation: none; }
+    .actuar-picker-caret { transition: none; }
+}
+
+/* Sem movimento, sem desfoque pesado: em telas fracas o blur dos halos custa caro, e quem
+   pediu menos movimento normalmente também prefere menos ruído visual. */
+/* Movimento é enfeite: quem pediu menos, recebe a mesma composição parada. */
+@media (prefers-reduced-motion: reduce) {
+    .actuar-portal-aurora { animation: none; }
+}
+
+/* Marcas: quatro opções fixas, à vista. Um <select> para quatro valores que nunca mudam
+   esconde a resposta atrás de um clique e ainda entrega o visual do sistema operacional. */
+.actuar-portal-brands { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.actuar-portal-brand-option {
+    display: grid; place-items: center;
+    min-height: 62px; padding: 12px 14px;
+    border: 1px solid #3A3A40; border-radius: 10px;
+    background: #16161A; cursor: pointer;
+    transition: border-color var(--actuar-transition), background-color var(--actuar-transition);
+}
+/* Caixa de altura fixa com `contain`: as quatro logos têm proporções muito diferentes
+   (a Toletus é 6:1, a Ediz 2,6:1). Normalizar pela altura deixa todas com o mesmo peso
+   óptico, sem esticar nenhuma. */
+.actuar-portal-brand-option img {
+    max-height: 26px; max-width: 100%; width: auto;
+    object-fit: contain;
+    opacity: .72;
+    transition: opacity var(--actuar-transition);
+}
+/* A logo da Ediz vem em preto sobre branco, sem transparência. Invertida vira branco puro
+   sobre preto puro, e o `screen` apaga preto puro por completo — sobra só o logotipo. Foi
+   por isso que a segunda versão do arquivo ficou melhor: a primeira tinha fundo #1e1e1e,
+   que deixava uma névoa cinza residual. */
+.actuar-portal-brand-option img.is-boxed { filter: invert(1); mix-blend-mode: screen; max-height: 30px; }
+.actuar-portal-brand-option:hover { border-color: #52545A; }
+.actuar-portal-brand-option:hover img { opacity: .92; }
+.actuar-portal-brand-option:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: 2px; }
+.actuar-portal-brand-option.is-active { border-color: var(--actuar-primary); background: color-mix(in srgb, var(--actuar-primary) 18%, #16161A); }
+.actuar-portal-brand-option.is-active img { opacity: 1; }
+.actuar-portal-grid .span-full { grid-column: 1 / -1; }
+
+@media (max-width: 860px) {
+    .actuar-portal-brand-option { min-height: 56px; }
+    .actuar-portal-brand-option img { max-height: 22px; }
+}
+
+/* QUADRO DE SOLICITAÇÕES EXTERNAS
+   Colunas com rolagem horizontal: o processo tem sete etapas, e espremê-las na largura da
+   tela deixaria cada card ilegível. Rolar de lado é o gesto esperado num quadro. */
+.external-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.external-column {
+    display: flex; flex-direction: column; flex: 0 0 276px;
+    border: 1px solid var(--actuar-border); border-radius: var(--actuar-radius); background: var(--actuar-surface-subtle);
+}
+.external-column > header {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 11px 12px; border-bottom: 1px solid var(--actuar-border);
+}
+.external-column > header strong { color: var(--actuar-foreground); font-size: 12px; }
+.external-count { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: var(--actuar-surface); color: var(--actuar-secondary); font-family: Geist, "Open Sans", sans-serif; font-size: 11px; text-align: center; }
+.external-column.is-closed { opacity: .78; }
+.external-column-body { display: grid; gap: 9px; padding: 10px; max-height: 62vh; overflow-y: auto; }
+.external-empty { margin: 0; padding: 14px 10px; color: var(--actuar-secondary); font-size: 11px; line-height: 1.45; text-align: center; }
+
+/* Card enxuto: o que decide o próximo passo. O resto vive na ficha — um card que conta tudo
+   obriga a ler tudo para achar o que importa. */
+.external-card {
+    display: grid; gap: 8px; padding: 11px;
+    border: 1px solid var(--actuar-border); border-radius: var(--actuar-radius);
+    background: var(--actuar-surface); cursor: pointer;
+    transition: border-color var(--actuar-transition), transform var(--actuar-transition), box-shadow var(--actuar-transition);
+}
+.external-card:hover { border-color: var(--actuar-primary); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(16, 24, 40, .1); }
+.external-card:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: 2px; }
+.external-card > header { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+.external-card > header strong { color: var(--actuar-foreground); font-size: 12px; line-height: 1.3; }
+.external-card-need {
+    margin: 0; color: var(--actuar-secondary); font-size: 11px; line-height: 1.45;
+    /* Duas linhas: o suficiente para reconhecer o caso, sem o card virar parágrafo. */
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.external-card dl { display: grid; gap: 4px; margin: 0; }
+.external-card dl > div { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; }
+.external-card dt { color: var(--actuar-secondary); }
+.external-card dd { margin: 0; color: var(--actuar-foreground); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.external-card > footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 7px; border-top: 1px solid var(--actuar-border); color: var(--actuar-secondary); font-size: 10px; }
+.external-card > footer span { display: inline-flex; align-items: center; gap: 4px; }
+.external-card-flag { color: var(--actuar-warning); font-weight: 600; }
+
+.external-drawer { width: min(720px, 96vw); }
+.external-stage { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
+.external-stage em { color: var(--actuar-secondary); font-size: 11px; font-style: normal; }
+.external-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
+.external-facts > div { display: grid; gap: 2px; }
+.external-facts dt { color: var(--actuar-secondary); font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+.external-facts dd { margin: 0; color: var(--actuar-foreground); font-size: 12px; }
+
+@media (max-width: 768px) {
+    .external-column { flex-basis: 82vw; }
+    .external-facts { grid-template-columns: 1fr; }
 }
