@@ -833,7 +833,8 @@ test('ranking geral e consulta de analista vivem DENTRO do Modo Gestão', () => 
     assert.match(html, /rankingGeral: null, analista: null \};/);
     assert.match(html, /const analistaNaGestao = secao === 'analista';/);
     assert.match(html, /document\.getElementById\('viewRanking'\)\?\.classList\.toggle\('hidden', !noRanking\);/);
-    assert.match(html, /if \(analistaNaGestao\) renderAnalystDashboard\(user, usersList, metrics\);/);
+    // A ficha só é desenhada com alguém escolhido no filtro; sem escolha, o estado vazio.
+    assert.match(html, /if \(analistaNaGestao && managerSelectedAnalystId\(\)\) \{[\s\S]{0,160}renderAnalystDashboard\(usersList\[currentActiveUser\] \|\| user, usersList, metrics\);/);
     // Seção sem painel não pode ser confundida com aba inválida e cair na visão geral.
     assert.match(html, /if \(!\(tab in panels\)\) tab = activeAdminTab = 'visao';/);
 

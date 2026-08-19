@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-tela-analista-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-tela-analista-2">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -7085,6 +7085,16 @@
                    anterior aqui — e a tela ficava sempre um passo atrasada. */
                 const secao = managerSection();
                 const analistaNaGestao = secao === 'analista';
+                /* A barra do topo é o comando da tela Analista, então quem exibe a barra
+                   tem de preenchê-la. `populateDropdowns()` só era chamado no login, no
+                   `initApp` e no clique do pódio (`openManagerAnalyst`) — nunca ao navegar.
+                   Enquanto a ficha só era alcançável pelo pódio isso passava despercebido,
+                   porque aquele caminho preenchia de passagem. Chegando pelo menu, a tela
+                   abria mostrando quem estava em contexto e o seletor ficava em branco: no
+                   arranque da sessão ele nasce só com o placeholder, porque
+                   `canOpenAnalystDetails()` responde false para todos enquanto
+                   `isAdminLoggedIn` ainda não foi ligado. */
+                if (analistaNaGestao) populateDropdowns();
                 document.getElementById('viewEnvio').classList.add('hidden');
                 document.getElementById('viewColeta').classList.add('hidden');
                 document.getElementById('viewTasks').classList.add('hidden');
@@ -7092,7 +7102,12 @@
                 document.getElementById('viewPecas').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
                 syncManagerSectionViews();
-                if (analistaNaGestao) renderAnalystDashboard(user, usersList, metrics);
+                /* Depois de preencher a barra, quem manda é a escolha dela: `currentActiveUser`
+                   pode ter acabado de acompanhar o filtro, e `user` foi resolvido antes disso.
+                   Sem escolha não há ficha para desenhar — o estado vazio é que fala. */
+                if (analistaNaGestao && managerSelectedAnalystId()) {
+                    renderAnalystDashboard(usersList[currentActiveUser] || user, usersList, metrics);
+                }
                 document.getElementById('loggedAdminName').innerText = getCurrentManager()?.name || "Gestor";
                 /* Cada painel monta por sua conta. Antes, um erro em qualquer um deles abortava
                    o render() inteiro no meio: os painéis seguintes nunca eram desenhados, a
@@ -11799,15 +11814,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-tela-analista-1"></script>
-    <script src="js/external-requests.js?v=20260819-tela-analista-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-tela-analista-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-tela-analista-1"></script>
-    <script src="js/performance-domain.js?v=20260819-tela-analista-1"></script>
-    <script src="js/manager-experience.js?v=20260819-tela-analista-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-tela-analista-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-tela-analista-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-tela-analista-1"></script>
-    <script src="js/performance-platform.js?v=20260819-tela-analista-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-tela-analista-2"></script>
+    <script src="js/external-requests.js?v=20260819-tela-analista-2"></script>
+    <script src="js/actuar-fields.js?v=20260819-tela-analista-2"></script>
+    <script src="js/attendance-clock.js?v=20260819-tela-analista-2"></script>
+    <script src="js/performance-domain.js?v=20260819-tela-analista-2"></script>
+    <script src="js/manager-experience.js?v=20260819-tela-analista-2"></script>
+    <script src="js/priority-rotation.js?v=20260819-tela-analista-2"></script>
+    <script src="js/pieces-operations.js?v=20260819-tela-analista-2"></script>
+    <script src="js/pieces-ui.js?v=20260819-tela-analista-2"></script>
+    <script src="js/performance-platform.js?v=20260819-tela-analista-2"></script>
 </body>
 </html>

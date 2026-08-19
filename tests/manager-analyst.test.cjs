@@ -149,3 +149,32 @@ test('trocar de departamento não deixa filtro e ficha apontando para pessoas di
     assert.match(dropdowns, /const emFoco = isAdminLoggedIn \? managerSelectedAnalystId\(\) : currentActiveUser;/);
     assert.match(dropdowns, /const selectedUser = usersList\[emFoco\];/);
 });
+
+test('entrar em Analista pelo menu preenche o seletor da barra', () => {
+    const doc = html();
+    const admin = doc.slice(doc.indexOf('const analistaNaGestao = secao'), doc.indexOf("} else if (currentRoute.name === 'pecas')"));
+
+    /* `populateDropdowns()` só era chamado no login, no initApp e no clique do pódio
+       (`openManagerAnalyst`) — nunca ao navegar. Enquanto a ficha só era alcançável
+       pelo pódio isso passava despercebido, porque aquele caminho preenchia de
+       passagem; chegando pelo menu, a tela abria com o seletor em branco. */
+    assert.match(admin, /if \(analistaNaGestao\) populateDropdowns\(\);/);
+    assert.ok(admin.indexOf('populateDropdowns()') < admin.indexOf('syncManagerSectionViews()'),
+        'a barra precisa estar preenchida antes de a seção decidir o que exibir');
+
+    // Sem escolha não há ficha para desenhar: quem fala é o estado vazio.
+    assert.match(admin, /if \(analistaNaGestao && managerSelectedAnalystId\(\)\) \{/);
+    assert.match(admin, /renderAnalystDashboard\(usersList\[currentActiveUser\] \|\| user, usersList, metrics\);/);
+});
+
+test('preencher a barra dentro do render não reentra no render', () => {
+    const doc = html();
+    /* populateDropdowns() passou a rodar DENTRO do render. Se algum passo dele
+       chamasse render() de volta, seria laço infinito. `switchRankingTab` chama —
+       `syncRankingViewControls`, que é quem populateDropdowns usa, não. */
+    const sync = doc.slice(doc.indexOf('function syncRankingViewControls(team)'), doc.indexOf('function switchRankingTab(team)'));
+    assert.doesNotMatch(sync, /\brender\(\);/, 'syncRankingViewControls voltou a chamar render');
+
+    const popula = doc.slice(doc.indexOf('function populateDropdowns()'), doc.indexOf('function populateCatracaAnalystOptions'));
+    assert.doesNotMatch(popula, /\brender\(\);/, 'populateDropdowns voltou a chamar render');
+});
