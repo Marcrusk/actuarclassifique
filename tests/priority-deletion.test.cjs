@@ -92,3 +92,38 @@ test('o botão de excluir fica longe das decisões', () => {
     assert.match(html, /actuar-btn-danger priority-delete-action/, 'vermelho: reprova ou destrói');
     assert.match(css, /\.priority-review-actions \.priority-delete-action \{ margin-right: auto; \}/);
 });
+
+test('nenhuma função do shell é declarada duas vezes', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    /* `deletePriorityRequest` existia duas vezes no MESMO escopo: a auditada (motivo,
+       senha, estorno e registro no Histórico) e uma anterior que só filtrava o array.
+       Declaração de função não avisa — a última vence, em silêncio —, então o botão
+       "Excluir lançamento" chamava a antiga: nada de motivo, nada de estorno, nada no
+       Histórico, e lançamentos já avaliados recusados. A exclusão auditada inteira era
+       código inalcançável.
+
+       Os testes de string não pegam isso: recortam por `indexOf(...)`, que acha a
+       PRIMEIRA definição — justamente a que nunca roda. Só contando pega. */
+    const nomes = [];
+    for (const [, corpo] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+        for (const [, nome] of corpo.matchAll(/^\s{8}(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gm)) nomes.push(nome);
+    }
+    assert.ok(nomes.length > 400, 'a varredura não encontrou as funções do shell; revise a expressão');
+
+    const repetidas = [...new Set(nomes.filter((nome, i) => nomes.indexOf(nome) !== i))];
+    assert.deepEqual(repetidas, [], `função declarada mais de uma vez (a última vence): ${repetidas.join(', ')}`);
+});
+
+test('excluir lançamento de prioridade pede motivo digitado, e é a versão auditada', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const excluir = html.slice(html.indexOf('async function deletePriorityRequest(id)'), html.indexOf('async function decidePriorityReview('));
+
+    // Campo de digitação para o motivo, antes de qualquer coisa acontecer.
+    assert.match(excluir, /input: \{ label: 'Motivo da exclusão', placeholder: '[^']+' \}/);
+    assert.match(excluir, /if \(!motivo\) return;/);
+    // O motivo é o que alimenta o registro auditável — não fica só na tela.
+    assert.match(excluir, /PriorityRotation\.deletionEntry\(request, currentAdminId, motivo, logs\)/);
+    // E a senha vem depois do motivo: confirmar sem saber o porquê seria confirmar no escuro.
+    assert.ok(excluir.indexOf("label: 'Motivo da exclusão'") < excluir.indexOf('Senha do seu acesso de gestão'));
+});

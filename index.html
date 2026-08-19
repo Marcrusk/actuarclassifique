@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-ficha-atendimento-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-exclusao-motivo-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -11440,28 +11440,18 @@
             render();
         }
 
-        async function deletePriorityRequest(id) {
-            const req = (appStore.priorityRequests || []).find(r => r.id === id);
-            if (!req) return;
+        /* A exclusão de lançamento de prioridade vive em UM lugar só: a versão auditada,
+           acima, que pede motivo, confirma com a senha da gestão, estorna os pontos e grava
+           a entrada no Histórico (PriorityRotation.deletionEntry).
 
-            if (req.status !== 'pendente') {
-                showToast('Lançamentos avaliados são preservados para auditoria e não podem ser excluídos.', 'error');
-                return;
-            }
-
-            if (!await actuarConfirm({
-                tone: 'danger', icon: 'trash',
-                title: 'Excluir este protocolo pendente?',
-                message: 'Só protocolos ainda não avaliados podem ser excluídos. Esta ação não pode ser desfeita.',
-                confirmLabel: 'Excluir protocolo'
-            })) return;
-
-            appStore.priorityRequests = (appStore.priorityRequests || []).filter(r => r.id !== id);
-
-            const ok = await persistStore();
-            if (ok) showToast("Protocolo de prioridade excluído.");
-            render();
-        }
+           Havia aqui uma segunda `deletePriorityRequest`, da época anterior à exclusão
+           auditada. Como declaração de função no mesmo escopo, ERA ELA que rodava — a
+           última definição vence, e o botão "Excluir lançamento" chamava esta. O efeito:
+           nenhum motivo pedido, nenhuma senha, nenhum ponto estornado, nada no Histórico, e
+           lançamentos já avaliados recusados — ou seja, a exclusão auditada inteira era
+           inalcançável. Os testes não pegavam porque recortam o arquivo por
+           `indexOf('async function deletePriorityRequest(id)')`, que acha a PRIMEIRA
+           definição: exatamente a que nunca executava. */
 
         // --- REGISTRO DE PROTOCOLO DE TRANSFERÊNCIA (mesmo fluxo de Prioridades, +1 pt ao aprovar) ---
 
@@ -12074,15 +12064,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-ficha-atendimento-1"></script>
-    <script src="js/external-requests.js?v=20260819-ficha-atendimento-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-ficha-atendimento-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-ficha-atendimento-1"></script>
-    <script src="js/performance-domain.js?v=20260819-ficha-atendimento-1"></script>
-    <script src="js/manager-experience.js?v=20260819-ficha-atendimento-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-ficha-atendimento-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-ficha-atendimento-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-ficha-atendimento-1"></script>
-    <script src="js/performance-platform.js?v=20260819-ficha-atendimento-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-exclusao-motivo-1"></script>
+    <script src="js/external-requests.js?v=20260819-exclusao-motivo-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-exclusao-motivo-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-exclusao-motivo-1"></script>
+    <script src="js/performance-domain.js?v=20260819-exclusao-motivo-1"></script>
+    <script src="js/manager-experience.js?v=20260819-exclusao-motivo-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-exclusao-motivo-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-exclusao-motivo-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-exclusao-motivo-1"></script>
+    <script src="js/performance-platform.js?v=20260819-exclusao-motivo-1"></script>
 </body>
 </html>

@@ -803,10 +803,13 @@ test('confirmação usa o diálogo do sistema, não o do navegador', () => {
     assert.match(html, /function actuarAlert\(title, message, options = \{\}\)/);
     assert.match(html, /id="actuarConfirmDialog"/);
 
-    // Toda decisão destrutiva precisa de tom próprio e rótulo que diga o que vai acontecer.
-    // "Excluir usuário" saiu de propósito: desligar alguém agora é inativar o acesso,
-    // porque a ficha precisa continuar rastreável nos chamados que a pessoa assinou.
-    for (const rotulo of ['Inativar acesso', 'Excluir lançamento', 'Excluir protocolo', 'Fechar mês']) {
+    /* Toda decisão destrutiva precisa de tom próprio e rótulo que diga o que vai acontecer.
+       "Excluir usuário" saiu de propósito: desligar alguém agora é inativar o acesso,
+       porque a ficha precisa continuar rastreável nos chamados que a pessoa assinou.
+       "Excluir protocolo" saiu junto com a `deletePriorityRequest` duplicada: era o rótulo
+       da versão antiga, que sobrescrevia a auditada e apagava sem motivo nem estorno. A
+       exclusão de prioridade tem um rótulo só, "Excluir lançamento". */
+    for (const rotulo of ['Inativar acesso', 'Excluir lançamento', 'Fechar mês']) {
         assert.ok(html.includes(`confirmLabel: '${rotulo}'`), `ação destrutiva sem rótulo próprio: ${rotulo}`);
     }
     assert.ok((html.match(/tone: 'danger'/g) || []).length >= 5, 'ações destrutivas deveriam usar o tom de perigo');
