@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-ficha-propria-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-tela-analista-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -1572,6 +1572,14 @@
                  antes do viewAdmin no documento; sem mudar de lugar, apareceriam ACIMA da
                  navegação da gestão. -->
             <div id="managerSectionHost"></div>
+            <!-- Tela Analista sem ninguém escolhido. Sem isto, abrir "Analista" pelo menu
+                 mostraria a ficha de um analista qualquer — o primeiro da lista —, e o
+                 gestor leria como dado daquela pessoa algo que ele nunca pediu. -->
+            <section id="managerAnalystEmpty" class="hidden actuar-card manager-analyst-empty" aria-live="polite">
+                <i class="fi fi-rr-user" aria-hidden="true"></i>
+                <h3>Escolha um analista</h3>
+                <p>Use o filtro <strong>Analista</strong> no topo da página para abrir a ficha de alguém. O departamento e o período do filtro definem o recorte dos números.</p>
+            </section>
 
             <section id="priorityModuleShell" class="priority-module-shell" aria-labelledby="priorityModuleTitle">
                 <div class="priority-module-heading">
@@ -4019,6 +4027,17 @@
             return (currentRoute.name === 'admin' && currentRoute.section) || activeAdminTab || 'visao';
         }
 
+        /* Quem a tela Analista está mostrando — ou nada, quando o gestor acabou de abrir
+           a tela pelo menu e ainda não escolheu. `Todos` é o valor neutro do filtro: na
+           tela Analista ele não significa "todo mundo junto", significa "ninguém ainda",
+           porque a ficha é de uma pessoa por vez. Escolher pela barra ou clicar no pódio
+           preenchem o MESMO filtro, então os dois caminhos chegam ao mesmo estado. */
+        function managerSelectedAnalystId() {
+            const id = managerFilters.analyst;
+            if (!id || id === 'Todos') return '';
+            return canManagerViewAnalyst(id) ? id : '';
+        }
+
         /* Ranking geral e consulta de analista não têm painel próprio: reaproveitam os
            mesmos blocos que o analista vê, exibidos abaixo da navegação da gestão. */
         /* Move um bloco público para dentro do Modo Gestão e sabe devolvê-lo. A âncora
@@ -4044,33 +4063,49 @@
             const naGestao = currentRoute.name === 'admin' && isAdminLoggedIn;
             const noRanking = naGestao && secao === 'rankingGeral';
             const noAnalista = naGestao && secao === 'analista';
+            // A ficha só aparece com alguém escolhido; sem escolha, o convite a escolher.
+            const comAnalista = noAnalista && Boolean(managerSelectedAnalystId());
             document.getElementById('viewRanking')?.classList.toggle('hidden', !noRanking);
-            document.getElementById('viewAgent')?.classList.toggle('hidden', !noAnalista);
+            document.getElementById('viewAgent')?.classList.toggle('hidden', !comAnalista);
+            document.getElementById('managerAnalystEmpty')?.classList.toggle('hidden', !(noAnalista && !comAnalista));
             parkManagerView('viewRanking', noRanking);
-            parkManagerView('viewAgent', noAnalista);
+            parkManagerView('viewAgent', comAnalista);
             renderManagerSectionHeader();
             // A barra de filtros pertence à seção: trocar de seção sem navegar também
             // precisa reavaliar quais grupos fazem sentido ali.
             syncAccessControls();
         }
 
-        /* Trilha da seção dentro do Modo Gestão. Só aparece quando o gestor está
-           consultando um analista — nas outras seções o título da página já basta. */
+        /* Faixa da tela Analista: quem está à vista e sob que identidade. Só aparece com
+           alguém escolhido — sem escolha, quem fala é o estado vazio.
+
+           A trilha apontava para "Ranking geral" porque a consulta era um sub-estado
+           dele. Agora Analista é tela própria do menu, e um caminho de volta para uma
+           tela que não é mais a mãe desta só confundiria. No lugar dele, a saída que
+           esta tela realmente tem: desfazer a escolha e voltar ao convite. */
         function renderManagerSectionHeader() {
             const faixa = document.getElementById('managerSectionHeader');
             if (!faixa) return;
-            const consultando = managerSection() === 'analista';
-            faixa.classList.toggle('hidden', !consultando);
-            if (!consultando) { faixa.innerHTML = ''; return; }
-            const analista = getStore()?.users?.[currentActiveUser];
+            const id = managerSection() === 'analista' ? managerSelectedAnalystId() : '';
+            faixa.classList.toggle('hidden', !id);
+            if (!id) { faixa.innerHTML = ''; return; }
+            const analista = getStore()?.users?.[id];
             faixa.innerHTML = `
                 <nav class="manager-crumbs" aria-label="Trilha">
-                    <button type="button" onclick="switchAdminTab('rankingGeral')">Ranking geral</button>
-                    <i class="fi fi-rr-angle-small-right" aria-hidden="true"></i>
                     <span>${escapeHtml(analista?.name || 'Analista')}</span>
+                    <small>${escapeHtml(teamLabel(analista?.team) || '')}</small>
                 </nav>
                 <span class="manager-readonly"><i class="fi fi-rr-eye"></i>Somente leitura · você é ${escapeHtml(getCurrentManager()?.name || 'gestor')}</span>
-                <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="switchAdminTab('rankingGeral')"><i class="fi fi-rr-cross-small"></i>Fechar consulta</button>`;
+                <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="clearManagerAnalystSelection()"><i class="fi fi-rr-cross-small"></i>Trocar de analista</button>`;
+        }
+
+        /* Volta a tela Analista ao estado vazio. Mexe no filtro, não na tela: é o filtro
+           que manda aqui, e limpar por baixo dele deixaria a barra dizendo um nome com a
+           ficha já fechada. */
+        function clearManagerAnalystSelection() {
+            managerFilters.analyst = window.ManagerExperience.DEFAULT_FILTERS.analyst;
+            persistManagerFilters();
+            render();
         }
 
         function openManagerAnalyst(id, source = 'gestao') {
@@ -4081,6 +4116,12 @@
             }
             managerConsultationSource = { source, tab: activeAdminTab, scrollY: window.scrollY, filters: { ...managerFilters } };
             currentActiveUser = id;
+            /* Clicar no pódio é escolher o analista — então preenche o mesmo filtro que a
+               barra do topo preenche. Sem isto, o clique abriria a ficha enquanto o filtro
+               continuava em "Todos": a tela mostraria uma pessoa e o controle que a
+               governa mostraria outra coisa. */
+            managerFilters.analyst = id;
+            persistManagerFilters();
             activeMonthKey = managerFilters.month;
             activePeriodFilter = managerFilters.period;
             activeRankingTab = users[id].team;
@@ -4336,7 +4377,11 @@
                 ciclos: { title: 'Ciclos e Fechamento', description: 'Gerencie abertura, conferência e fechamento de cada ciclo.' },
                 externas: { title: 'Prioridades · Solicitações externas', description: 'Triar o que chegou pelo Portal de Prioridades e distribuir pelo rodízio.' },
                 historico: { title: 'Histórico e auditoria', description: 'Consulte ações relevantes e alterações registradas na operação.' },
-                analista: { title: `Ranking geral · ${getStore()?.users?.[currentActiveUser]?.name || 'Analista'}`, description: 'Consulta de leitura: nenhuma ação aqui é registrada em nome do analista.' }
+                /* Deixou de ser "Ranking geral · Fulano": Analista não é mais uma consulta
+                   aberta a partir do ranking, é tela do menu com filtro próprio. */
+                analista: managerSelectedAnalystId()
+                    ? { title: `Analista · ${getStore()?.users?.[managerSelectedAnalystId()]?.name || 'Analista'}`, description: 'Consulta de leitura: nenhuma ação aqui é registrada em nome do analista.' }
+                    : { title: 'Analista', description: 'Escolha um analista no filtro do topo para ver as métricas dele no período selecionado.' }
             };
             const meta = currentRoute.name === 'admin' && adminMeta[currentRoute.section] ? adminMeta[currentRoute.section] : (ROUTE_META[currentRoute.name] || ROUTE_META.dashboard);
             const state = window.history.state || {};
@@ -6861,8 +6906,13 @@
             prioridades:      { periodo: false, contexto: false },
             priorityLaunches: { periodo: false, contexto: false },
             ranking:          { periodo: false, contexto: false },
-            // Aqui a barra é o filtro da tela: é o recorte do ranking consolidado.
-            rankingGeral:     { periodo: true,  contexto: true  },
+            /* Ranking geral é para mostrar o ranking. A classificação consolidada já
+               traz o próprio seletor de departamento dentro do quadro, e escolher uma
+               PESSOA ali não muda ranking nenhum — só desviava o gestor para a ficha
+               dela. O filtro saiu daqui e foi para a tela Analista, que é onde ele
+               governa o que está à vista. */
+            rankingGeral:     { periodo: false, contexto: false },
+            // Analista é a única tela cujo conteúdo inteiro é definido pela barra.
             analista:         { periodo: true,  contexto: true  },
             /* Transferências é uma tabela sem nenhum filtro próprio: aqui a barra do
                topo é o único recorte que existe. Tirá-la deixaria a tela sem saída. */
@@ -8875,6 +8925,15 @@
                 return;
             }
             activeRankingTab = team;
+            /* Trocar de departamento troca a lista de pessoas. Manter a escolha anterior
+               deixaria a barra oferecendo os analistas de um departamento com a ficha de
+               alguém de outro aberta por baixo — o filtro dizendo uma coisa e a tela
+               outra. Quem sai do departamento sai da escolha: volta ao convite. */
+            const escolhido = isAdminLoggedIn ? managerSelectedAnalystId() : '';
+            if (escolhido && getStore()?.users?.[escolhido]?.team !== team) {
+                managerFilters.analyst = window.ManagerExperience.DEFAULT_FILTERS.analyst;
+                persistManagerFilters();
+            }
             syncAnalystTeamControl(team);
             populateAnalystDropdown(team);
             switchRankingTab(team);
@@ -8895,10 +8954,19 @@
                 }
             });
             const select = document.getElementById('userSelect');
-            select.innerHTML = options;
-            if (select.options.length > 0) {
-                const preferredExists = [...select.options].some(option => option.value === currentActiveUser);
-                select.value = preferredExists ? currentActiveUser : select.options[0].value;
+            /* Para a gestão o vazio é um estado legítimo: a tela Analista começa sem
+               ninguém. Sem esta opção o seletor cairia no primeiro da lista e a tela
+               abriria a ficha de quem o gestor não pediu. Para o analista não existe
+               vazio — ele só tem a si mesmo. */
+            const semEscolha = isAdminLoggedIn && !managerSelectedAnalystId();
+            select.innerHTML = (isAdminLoggedIn ? '<option value="">Selecione um analista</option>' : '') + options;
+            if (semEscolha) { select.value = ''; return; }
+            // Para a gestão quem manda é o filtro; para o analista, o próprio contexto.
+            const preferido = (isAdminLoggedIn && managerSelectedAnalystId()) || currentActiveUser;
+            const opcoesReais = [...select.options].filter(option => option.value);
+            if (opcoesReais.length > 0) {
+                const existe = opcoesReais.some(option => option.value === preferido);
+                select.value = existe ? preferido : opcoesReais[0].value;
                 currentActiveUser = select.value;
             }
         }
@@ -9764,7 +9832,7 @@
         function switchAdminTabView(tab) {
             activeAdminTab = tab;
             const panels = { visao: 'admPanelVisao', ranking: 'admPanelRanking', priorityLaunches: 'admPanelPriorityLaunches', cadastros: 'admPanelCadastros', lancamentos: 'admPanelLancamentos', prioridades: 'admPanelPrioridades', transferencias: 'admPanelTransferencias', pecas: 'admPanelPecas', ponto: 'admPanelPonto', ciclos: 'admPanelCiclos', historico: 'admPanelHistorico', externas: 'admPanelExternas', rankingGeral: null, analista: null };
-            const btns = { visao: 'priorityModuleTabOverview', ranking: 'priorityModuleTabRanking', priorityLaunches: 'priorityModuleTabLaunches', cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'priorityModuleTabApprovals', transferencias: 'admTabBtnTransferencias', pecas: 'admTabBtnPecas', ponto: 'admTabBtnPonto', ciclos: 'admTabBtnCiclos', historico: 'admTabBtnHistorico', externas: null, rankingGeral: 'admNavRankingGeral', analista: 'admNavRankingGeral' };
+            const btns = { visao: 'priorityModuleTabOverview', ranking: 'priorityModuleTabRanking', priorityLaunches: 'priorityModuleTabLaunches', cadastros: 'admTabBtnCadastros', lancamentos: 'admTabBtnLancamentos', prioridades: 'priorityModuleTabApprovals', transferencias: 'admTabBtnTransferencias', pecas: 'admTabBtnPecas', ponto: 'admTabBtnPonto', ciclos: 'admTabBtnCiclos', historico: 'admTabBtnHistorico', externas: null, rankingGeral: 'admNavRankingGeral', analista: null };
             if (!(tab in panels)) tab = activeAdminTab = 'visao';
 
             Object.keys(panels).forEach(key => {
@@ -9837,7 +9905,12 @@
             populateCatracaAnalystOptions('admPecaTargetUser');
             populateCatracaAnalystOptions('pecaTargetUser');
 
-            const selectedUser = usersList[currentActiveUser];
+            /* Para a gestão o departamento acompanha o FILTRO, não o analista que ficou
+               em contexto. Seguindo `currentActiveUser`, trocar de departamento sem
+               escolher ninguém era desfeito no render seguinte: o seletor voltava
+               sozinho para a equipe da última pessoa consultada. */
+            const emFoco = isAdminLoggedIn ? managerSelectedAnalystId() : currentActiveUser;
+            const selectedUser = usersList[emFoco];
             const analystTeam = selectedUser && selectedUser.active !== false && isRankableUser(selectedUser)
                 ? selectedUser.team
                 : (activeRankingTab === 'Catraca' ? 'Catraca' : 'Sistema');
@@ -10286,6 +10359,10 @@
 
         function switchAgent(val) {
             const selected = getStore()?.users?.[val];
+            /* O vazio do seletor não é um analista inválido: é a gestão desfazendo a
+               escolha. Sem este ramo, escolher "Selecione um analista" cairia na guarda
+               abaixo e acusaria o gestor de sair do escopo dele. */
+            if (!val && isAdminLoggedIn) { clearManagerAnalystSelection(); return; }
             if (!canOpenAnalystDetails(val)) {
                 document.getElementById('userSelect').value = currentActiveUser;
                 showToast(isAdminLoggedIn
@@ -11722,15 +11799,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-ficha-propria-1"></script>
-    <script src="js/external-requests.js?v=20260819-ficha-propria-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-ficha-propria-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-ficha-propria-1"></script>
-    <script src="js/performance-domain.js?v=20260819-ficha-propria-1"></script>
-    <script src="js/manager-experience.js?v=20260819-ficha-propria-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-ficha-propria-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-ficha-propria-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-ficha-propria-1"></script>
-    <script src="js/performance-platform.js?v=20260819-ficha-propria-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-tela-analista-1"></script>
+    <script src="js/external-requests.js?v=20260819-tela-analista-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-tela-analista-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-tela-analista-1"></script>
+    <script src="js/performance-domain.js?v=20260819-tela-analista-1"></script>
+    <script src="js/manager-experience.js?v=20260819-tela-analista-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-tela-analista-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-tela-analista-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-tela-analista-1"></script>
+    <script src="js/performance-platform.js?v=20260819-tela-analista-1"></script>
 </body>
 </html>

@@ -848,7 +848,10 @@ test('ranking geral e consulta de analista vivem DENTRO do Modo Gestão', () => 
     // A trilha substitui a faixa roxa: mesma informação, uma linha.
     assert.match(html, /function renderManagerSectionHeader\(\)/);
     assert.match(html, /Somente leitura · você é \$\{escapeHtml\(getCurrentManager\(\)\?\.name \|\| 'gestor'\)\}/);
-    assert.match(html, /onclick="switchAdminTab\('rankingGeral'\)"><i class="fi fi-rr-cross-small"><\/i>Fechar consulta/);
+    /* A saída deixou de ser "voltar ao Ranking geral": Analista é tela própria do
+       menu, e o que esta tela desfaz é a ESCOLHA, não a navegação. */
+    assert.match(html, /onclick="clearManagerAnalystSelection\(\)"><i class="fi fi-rr-cross-small"><\/i>Trocar de analista/);
+    assert.doesNotMatch(html, /Fechar consulta/, 'a volta ao ranking não é mais a saída desta tela');
 
     /* A faixa continua existindo para quem cai numa rota pública por link antigo ou
        por recarregar com a URL de antes — sem ela, ficaria sem caminho de volta. */
@@ -994,11 +997,14 @@ test('recarregar devolve a mesma tela e os mesmos filtros', () => {
     assert.match(html, /localStorage\.removeItem\(VIEW_CONTEXT_STORAGE_KEY\);[\s\S]{0,140}localStorage\.removeItem\(MANAGER_FILTER_STORAGE_KEY\);/);
 });
 
-test('a consulta de analista continua acesa no menu, porque é filha do ranking', () => {
+test('Analista acende o próprio item do menu, não o do Ranking geral', () => {
     const html = fs.readFileSync('index.html', 'utf8');
-    // Sem isto o menu ficava sem nenhum item destacado durante a consulta, e o gestor
-    // perdia a referência de onde estava.
-    assert.match(html, /rankingGeral: 'admNavRankingGeral', analista: 'admNavRankingGeral' \};/);
+    const nav = fs.readFileSync('js/actuar-navigation.js', 'utf8');
+    /* Eram uma coisa só: a consulta era sub-estado do Ranking (`also: ['analista']`) e
+       por isso acendia o item dele. Agora cada tela acende a si mesma. */
+    assert.match(nav, /id: 'analista', label: 'Analista'[\s\S]{0,90}route: rota\('admin', 'analista'\)/);
+    assert.doesNotMatch(nav, /route: rota\('admin', 'rankingGeral'\), also:/, 'Analista deixou de ser sub-estado do Ranking geral');
+    assert.match(html, /rankingGeral: 'admNavRankingGeral', analista: null \};/);
     // A seção vem da rota: applyRoute chama render() antes de switchAdminTabView.
     assert.match(html, /function managerSection\(\) \{/);
     assert.match(html, /return \(currentRoute\.name === 'admin' && currentRoute\.section\) \|\| activeAdminTab \|\| 'visao';/);
@@ -1031,10 +1037,11 @@ test('a barra de filtros só aparece onde filtra alguma coisa', () => {
     // Ciclos é por mês; métricas operacionais tem o próprio seletor de departamento.
     assert.match(html, /ciclos:\s*\{ periodo: true,  contexto: false \}/);
     assert.match(html, /lancamentos:\s*\{ periodo: true,  contexto: false \}/);
-    // Onde há resultado por pessoa, os dois grupos aparecem.
-    for (const secao of ['rankingGeral', 'analista']) {
-        assert.match(html, new RegExp(`${secao}:\\s*\\{ periodo: true,  contexto: true  \\}`), `${secao} precisa dos dois grupos`);
-    }
+    /* Ranking geral é só o ranking: o quadro já tem o próprio seletor de departamento,
+       e escolher uma PESSOA ali não mudava classificação nenhuma. */
+    assert.match(html, /rankingGeral:\s*\{ periodo: false, contexto: false \}/);
+    // Analista é a única seção governada inteiramente pela barra do topo.
+    assert.match(html, /analista:\s*\{ periodo: true,  contexto: true  \}/);
     // Sem nenhum grupo, a faixa inteira sai.
     assert.match(html, /document\.querySelector\('\.actuar-toolbar'\)\?\.classList\.toggle\('hidden', !escopo\.periodo && !contexto\);/);
     // Fora do mapa, o padrão é não mostrar.

@@ -34,6 +34,26 @@
     function managerTree() {
         return [
             {
+                id: 'desempenho', title: 'Desempenho', items: [
+                    /* Ranking geral mostra a classificação e nada mais. Analista é tela
+                       própria: era um sub-estado pendurado aqui (`also: ['analista']`),
+                       alcançável só por clique no pódio, e por isso o filtro de
+                       Departamento/Analista tinha de aparecer no Ranking para servir aos
+                       dois. Separados, cada tela responde por um recorte só — e o filtro
+                       mora onde ele de fato governa a tela. */
+                    { id: 'rankingGeral', label: 'Ranking geral', icon: 'fi-rr-ranking-podium', route: rota('admin', 'rankingGeral') },
+                    { id: 'analista', label: 'Analista', icon: 'fi-rr-user', route: rota('admin', 'analista') },
+                    {
+                        id: 'metricas', label: 'Métricas operacionais', icon: 'fi-rr-chart-histogram', route: rota('admin', 'lancamentos'),
+                        children: [
+                            { id: 'metricas-lancamentos', label: 'Lançamentos', route: rota('admin', 'lancamentos') },
+                            { id: 'metricas-transferencias', label: 'Transferências', route: rota('admin', 'transferencias'), badgeId: 'admTransferPendingBadge' }
+                        ]
+                    },
+                    { id: 'ciclos', label: 'Ciclos e Fechamento', icon: 'fi-rr-calendar-check', route: rota('admin', 'ciclos') }
+                ]
+            },
+            {
                 id: 'operacao', title: 'Operação', items: [
                     {
                         id: 'prioridades', label: 'Prioridades', icon: 'fi-rr-star', route: rota('admin', 'visao'),
@@ -50,19 +70,6 @@
                     },
                     { id: 'pecas', label: 'Peças', icon: 'fi-rr-box-open', route: rota('admin', 'pecas'), badgeId: 'admPiecesPendingBadge' },
                     { id: 'ponto', label: 'Ponto e pausas', icon: 'fi-rr-time-check', route: rota('admin', 'ponto'), badgeId: 'admBreakLiveBadge' }
-                ]
-            },
-            {
-                id: 'desempenho', title: 'Desempenho', items: [
-                    { id: 'rankingGeral', label: 'Ranking geral', icon: 'fi-rr-ranking-podium', route: rota('admin', 'rankingGeral'), also: ['analista'] },
-                    {
-                        id: 'metricas', label: 'Métricas operacionais', icon: 'fi-rr-chart-histogram', route: rota('admin', 'lancamentos'),
-                        children: [
-                            { id: 'metricas-lancamentos', label: 'Lançamentos', route: rota('admin', 'lancamentos') },
-                            { id: 'metricas-transferencias', label: 'Transferências', route: rota('admin', 'transferencias'), badgeId: 'admTransferPendingBadge' }
-                        ]
-                    },
-                    { id: 'ciclos', label: 'Ciclos e Fechamento', icon: 'fi-rr-calendar-check', route: rota('admin', 'ciclos') }
                 ]
             },
             {

@@ -2923,8 +2923,17 @@ body.actuar-app .attendance-slot.is-outside input:not([type="checkbox"]):not([ty
 .manager-crumbs button:hover { text-decoration: underline; }
 .manager-crumbs i { color: var(--actuar-text-secondary); font-size: 10px; }
 .manager-crumbs span { color: var(--actuar-text); font-weight: 700; }
+.manager-crumbs small { color: var(--actuar-text-secondary); font-size: 11px; }
 .manager-readonly { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: var(--actuar-surface); color: var(--actuar-text-secondary); font-size: 10px; }
 .manager-section-header > .actuar-btn { margin-left: auto; }
+
+/* Tela Analista antes da escolha. O filtro do topo é o comando desta tela, então o
+   vazio aponta para ele em vez de mostrar a ficha de alguém que ninguém pediu. */
+.manager-analyst-empty { display: grid; justify-items: center; gap: 9px; padding: 56px 24px; text-align: center; }
+.manager-analyst-empty > i { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--actuar-primary-soft); color: var(--actuar-primary); font-size: 19px; }
+.manager-analyst-empty h3 { margin: 0; color: var(--actuar-text); font-size: 15px; }
+.manager-analyst-empty p { max-width: 430px; margin: 0; color: var(--actuar-text-secondary); font-size: 12px; }
+.manager-analyst-empty strong { color: var(--actuar-text); }
 
 /* Funil do processo de peças: cada etapa diz de quem é a bola agora. */
 .pieces-pipeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px; padding: 8px; border: 1px solid var(--actuar-border); border-radius: 10px; background: var(--actuar-surface); }

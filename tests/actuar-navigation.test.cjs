@@ -10,10 +10,12 @@ const item = (arvore, id) => arvore.flatMap(g => g.items).find(i => i.id === id)
 test('a árvore da gestão traz os módulos reais, agrupados, com dois níveis no máximo', () => {
     const arvore = nav.build({ mode: 'manager' });
 
-    assert.deepEqual(arvore.map(g => g.title), ['Operação', 'Desempenho', 'Gestão']);
+    /* Desempenho vem primeiro: é o que a gestão abre para decidir. Operação é o que
+       ela executa depois, e Gestão é manutenção — a ordem do menu segue a do uso. */
+    assert.deepEqual(arvore.map(g => g.title), ['Desempenho', 'Operação', 'Gestão']);
     assert.deepEqual(rotulos(arvore), [
+        'Ranking geral', 'Analista', 'Métricas operacionais', 'Ciclos e Fechamento',
         'Prioridades', 'Peças', 'Ponto e pausas',
-        'Ranking geral', 'Métricas operacionais', 'Ciclos e Fechamento',
         'Pessoas e Acessos', 'Histórico e auditoria'
     ]);
 
@@ -31,7 +33,7 @@ test('a árvore da gestão traz os módulos reais, agrupados, com dois níveis n
     }
 
     // Toda rota aponta para uma seção de gestão existente.
-    const secoes = ['visao', 'prioridades', 'externas', 'priorityLaunches', 'ranking', 'rankingGeral', 'pecas', 'ponto', 'lancamentos', 'transferencias', 'ciclos', 'cadastros', 'historico'];
+    const secoes = ['visao', 'prioridades', 'externas', 'priorityLaunches', 'ranking', 'rankingGeral', 'analista', 'pecas', 'ponto', 'lancamentos', 'transferencias', 'ciclos', 'cadastros', 'historico'];
     for (const modulo of arvore.flatMap(g => g.items)) {
         for (const alvo of [modulo, ...(modulo.children || [])]) {
             assert.equal(alvo.route.name, 'admin');
@@ -89,8 +91,11 @@ test('o item ativo vem da rota, inclusive nas telas que não são item de menu',
     assert.deepEqual(nav.activeFor(arvore, { name: 'admin', section: 'ponto' }),
         { groupId: 'operacao', itemId: 'ponto', childId: null });
 
-    // A consulta de um analista é alcançada pelo Ranking geral: o módulo continua marcado.
-    assert.equal(nav.activeFor(arvore, { name: 'admin', section: 'analista' }).itemId, 'rankingGeral');
+    // Analista é item próprio do menu, não mais um sub-estado do Ranking geral.
+    assert.deepEqual(nav.activeFor(arvore, { name: 'admin', section: 'analista' }),
+        { groupId: 'desempenho', itemId: 'analista', childId: null });
+    // E o Ranking geral não acende junto: uma tela, um item.
+    assert.equal(nav.activeFor(arvore, { name: 'admin', section: 'rankingGeral' }).itemId, 'rankingGeral');
     // Rota desconhecida não marca ninguém — melhor nada do que marcar errado.
     assert.deepEqual(nav.activeFor(arvore, { name: 'admin', section: 'inexistente' }), { groupId: null, itemId: null, childId: null });
 
@@ -351,12 +356,11 @@ test('menu do perfil abre por cima de tudo, e a barra de filtros só aparece ond
        página já tem Departamento, Período, analista ou busca, dois controles para a
        mesma coisa fazem o usuário mexer num e não entender por que o número não muda. */
     const escopo = html.slice(html.indexOf('const TOOLBAR_SCOPE = {'), html.indexOf('const TOOLBAR_ROUTES = {'));
-    for (const secao of ['visao', 'prioridades', 'priorityLaunches', 'ranking']) {
+    for (const secao of ['visao', 'prioridades', 'priorityLaunches', 'ranking', 'rankingGeral']) {
         assert.match(escopo, new RegExp(`${secao}:\\s*\\{ periodo: false, contexto: false \\}`), `${secao} tem seletores próprios; a barra do topo duplica`);
     }
-    for (const secao of ['rankingGeral', 'analista']) {
-        assert.match(escopo, new RegExp(`${secao}:\\s*\\{ periodo: true,  contexto: true  \\}`), `${secao} depende da barra do topo`);
-    }
+    // Analista é a única seção cujo conteúdo inteiro vem da barra do topo.
+    assert.match(escopo, /analista:\s*\{ periodo: true,  contexto: true  \}/);
     // Transferências não tem filtro nenhum na página: sem a barra, fica sem saída.
     assert.match(escopo, /transferencias:\s*\{ periodo: true,  contexto: true  \}/);
     assert.match(escopo, /historico:\s*\{ periodo: false, contexto: false \}/);
