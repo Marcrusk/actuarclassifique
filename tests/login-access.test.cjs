@@ -35,34 +35,34 @@ test('operador de peça mantém Envio e Coleta mesmo com analista de Sistema em 
     const acesso = loadPublicTabAccess({
         store, currentActiveUser: 'alessandro', isPecaLoggedIn: true, currentPecaUserId: 'antonio_ec'
     });
-    assert.deepEqual(acesso(), { envio: true, coleta: true, tasks: false });
+    assert.deepEqual(acesso(), { envio: true, coleta: true, tasks: false, pecas: true });
 });
 
 test('Toletus Lab continua vendo o que sai e o que volta, sem Tasks', () => {
     const acesso = loadPublicTabAccess({
         store, currentActiveUser: 'alessandro', isPecaLoggedIn: true, currentPecaUserId: 'lab'
     });
-    assert.deepEqual(acesso(), { envio: true, coleta: true, tasks: false });
+    assert.deepEqual(acesso(), { envio: true, coleta: true, tasks: false, pecas: true });
 });
 
 test('demais papéis de peça também operam Envio e Coleta', () => {
     const acesso = loadPublicTabAccess({
         store, currentActiveUser: 'alessandro', isPecaLoggedIn: true, currentPecaUserId: 'faturamento'
     });
-    assert.deepEqual(acesso(), { envio: true, coleta: true, tasks: false });
+    assert.deepEqual(acesso(), { envio: true, coleta: true, tasks: false, pecas: true });
 });
 
 test('analista segue a própria equipe: Catraca movimenta peça, Software trabalha por tarefa', () => {
     const catraca = loadPublicTabAccess({ store, currentActiveUser: 'dyego', isPecaLoggedIn: false, currentPecaUserId: null });
-    assert.deepEqual(catraca(), { envio: true, coleta: true, tasks: false });
+    assert.deepEqual(catraca(), { envio: true, coleta: true, tasks: false, pecas: true });
 
     const sistema = loadPublicTabAccess({ store, currentActiveUser: 'alessandro', isPecaLoggedIn: false, currentPecaUserId: null });
-    assert.deepEqual(sistema(), { envio: false, coleta: false, tasks: true });
+    assert.deepEqual(sistema(), { envio: false, coleta: false, tasks: true, pecas: false });
 });
 
 test('usuário desconhecido não ganha aba nenhuma', () => {
     const acesso = loadPublicTabAccess({ store, currentActiveUser: 'inexistente', isPecaLoggedIn: false, currentPecaUserId: null });
-    assert.deepEqual(acesso(), { envio: false, coleta: false, tasks: false });
+    assert.deepEqual(acesso(), { envio: false, coleta: false, tasks: false, pecas: false });
 });
 
 test('o campo Usuário do login mostra apenas o nome', () => {

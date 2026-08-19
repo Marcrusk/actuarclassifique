@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-ficha-do-dono-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-peca-so-catraca-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -7744,7 +7744,9 @@
                 { key: 'ptsSatisfacao', label: 'Satisfação (NPS)', icon: 'fa-star', color: darkTheme ? '#E7B008' : '#C27D1C', value: b.ptsSatisfacao, hint: `Média atual: ${calc.avgSatisfacao}` },
                 { key: 'ptsPrioridades', label: 'Prioridades & Transferências', icon: 'fa-bolt', color: darkTheme ? '#9C5EE4' : '#924CE1', value: b.ptsPrioridades, hint: 'Protocolos validados pela gestão' },
                 { key: 'tmaPts', label: 'TMA / Agilidade', icon: 'fa-stopwatch', color: darkTheme ? '#7D80F1' : '#696CE7', value: b.tmaPts, hint: 'Tempo médio de atendimento' },
-                { key: 'extraPts', label: 'Monitoramento & Peças', icon: 'fa-clipboard-check', color: darkTheme ? '#23AA80' : '#10B981', value: b.extraPts, hint: 'Avaliação de qualidade + envio/coleta' }
+                /* Software não movimenta peça: para ele `extraPts` é só monitoramento, e
+                   ler "& Peças" numa métrica que nunca terá peça confunde o próprio analista. */
+                { key: 'extraPts', label: isSistema ? 'Monitoramento de Qualidade' : 'Monitoramento & Peças', icon: 'fa-clipboard-check', color: darkTheme ? '#23AA80' : '#10B981', value: b.extraPts, hint: isSistema ? 'Avaliação de qualidade dos atendimentos' : 'Avaliação de qualidade + envio/coleta' }
             ].filter(it => it.value !== 0);
 
             const penal = b.penalidades || 0;
@@ -8910,7 +8912,11 @@
            acompanha o que sai e o que volta, então enxerga Envio e Coleta também.
            A conta é sobre o analista em contexto — dentro de uma sessão, ele mesmo. */
         const LAB_ROLE_NAME = 'Toletus Lab';
-        const OPERATION_TABS = ['envio', 'coleta', 'tasks'];
+/* `pecas` entrou aqui: solicitação de peça é trabalho de Catraca, e o analista de
+   Software via a tela inteira no menu — inclusive o contador de peças em aberto, que para
+   ele nunca teria número. Esconder o item não basta, e é por isso que a lista existe: a
+   rota vive no endereço, e quem colasse #/pecas entraria assim mesmo. */
+        const OPERATION_TABS = ['envio', 'coleta', 'tasks', 'pecas'];
         function publicTabAccess() {
             const usuarios = getStore()?.users || defaultUsers;
             /* Numa sessão de peças o currentActiveUser continua sendo o analista escolhido no
@@ -8919,10 +8925,11 @@
                Envio/Coleta caía em { envio: false, coleta: false, tasks: true } e era devolvido
                ao dashboard pela própria rota. Quem manda na regra é quem está logado. */
             const operador = isPecaLoggedIn ? usuarios[currentPecaUserId] : null;
-            if (operador) return { envio: true, coleta: true, tasks: false };
+            // O acesso operacional existe para operar peça: é a tela de trabalho dele.
+            if (operador) return { envio: true, coleta: true, tasks: false, pecas: true };
             const equipe = usuarios[currentActiveUser]?.team || '';
             const catraca = equipe === 'Catraca';
-            return { envio: catraca, coleta: catraca, tasks: equipe === 'Sistema' };
+            return { envio: catraca, coleta: catraca, tasks: equipe === 'Sistema', pecas: catraca };
         }
 
         /* Esconder o botão não basta: a rota vive no endereço, e quem colar
@@ -12277,15 +12284,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-ficha-do-dono-1"></script>
-    <script src="js/external-requests.js?v=20260819-ficha-do-dono-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-ficha-do-dono-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-ficha-do-dono-1"></script>
-    <script src="js/performance-domain.js?v=20260819-ficha-do-dono-1"></script>
-    <script src="js/manager-experience.js?v=20260819-ficha-do-dono-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-ficha-do-dono-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-ficha-do-dono-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-ficha-do-dono-1"></script>
-    <script src="js/performance-platform.js?v=20260819-ficha-do-dono-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-peca-so-catraca-1"></script>
+    <script src="js/external-requests.js?v=20260819-peca-so-catraca-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-peca-so-catraca-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-peca-so-catraca-1"></script>
+    <script src="js/performance-domain.js?v=20260819-peca-so-catraca-1"></script>
+    <script src="js/manager-experience.js?v=20260819-peca-so-catraca-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-peca-so-catraca-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-peca-so-catraca-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-peca-so-catraca-1"></script>
+    <script src="js/performance-platform.js?v=20260819-peca-so-catraca-1"></script>
 </body>
 </html>

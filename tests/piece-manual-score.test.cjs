@@ -80,3 +80,44 @@ test('os formulários de peça que a central substituiu não sobraram pela metad
         assert.ok(!html.includes(campo), `referência a campo inexistente: ${campo}`);
     }
 });
+
+/* ==========================================================================
+   PEÇA É TRABALHO DE CATRACA
+   O analista de Software via "Solicitações de peças" na sidebar, entrava na tela
+   e só descobria lá dentro que não podia solicitar — `canRequestPieces()` recusa
+   quem não é de Catraca. Ainda carregava um contador que nunca teria número.
+   ========================================================================== */
+
+const nav = require('../js/actuar-navigation.js');
+const rotulos = (arvore) => arvore.flatMap(grupo => grupo.items.map(item => item.label));
+
+test('peça sai do menu do analista de Software e fica no de Catraca', () => {
+    const software = rotulos(nav.build({ mode: 'analyst', publicTabs: { tasks: true, pecas: false } }));
+    const catraca = rotulos(nav.build({ mode: 'analyst', publicTabs: { envio: true, coleta: true, pecas: true } }));
+
+    assert.ok(!software.includes('Solicitações de peças'), 'Software não solicita peça');
+    assert.ok(!software.some(item => /peça|peças/i.test(item)), `sobrou item de peça: ${software.join(' · ')}`);
+    assert.ok(catraca.includes('Solicitações de peças'));
+
+    // O acesso operacional é de peça por definição: a tela de trabalho dele não pode sumir.
+    assert.ok(rotulos(nav.build({ mode: 'operations', publicTabs: { envio: true, coleta: true, pecas: true } })).includes('Operação de peças'));
+});
+
+test('esconder o item não basta: a rota também recusa', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    /* A rota vive no endereço. Sem entrar na lista guardada, quem colasse #/pecas sendo do
+       Software entraria na tela assim mesmo — foi por isso que a lista passou a existir. */
+    assert.match(html, /const OPERATION_TABS = \['envio', 'coleta', 'tasks', 'pecas'\];/);
+    assert.match(html, /return \{ envio: catraca, coleta: catraca, tasks: equipe === 'Sistema', pecas: catraca \};/);
+    // E o operador de peça continua com a própria tela de trabalho.
+    assert.match(html, /if \(operador\) return \{ envio: true, coleta: true, tasks: false, pecas: true \};/);
+    // A guarda que devolve ao dashboard é a mesma de sempre, agora cobrindo pecas.
+    assert.match(html, /if \(OPERATION_TABS\.includes\(currentRoute\.name\) && !acesso\[currentRoute\.name\]\) \{\s*\n\s*navigateTo\('dashboard', \{ replace: true \}\);/);
+});
+
+test('o dashboard do Software não fala em peça numa métrica que ele nunca terá', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    assert.match(html, /label: isSistema \? 'Monitoramento de Qualidade' : 'Monitoramento & Peças'/);
+    assert.match(html, /hint: isSistema \? 'Avaliação de qualidade dos atendimentos' : 'Avaliação de qualidade \+ envio\/coleta'/);
+});

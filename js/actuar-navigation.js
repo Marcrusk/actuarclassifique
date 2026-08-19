@@ -111,7 +111,10 @@
             },
             {
                 id: 'operacao', title: 'Operação', items: [
-                    { id: 'pecas', label: 'Solicitações de peças', icon: 'fi-rr-box-open', route: rota('pecas'), badgeId: 'myPiecesOpenBadge' },
+                    /* Só Catraca solicita peça. Para o analista de Software o item abria uma tela que
+                       ele não pode usar — `canRequestPieces()` já recusava lá dentro — e ainda
+                       carregava um contador que nunca teria número. */
+                    { id: 'pecas', label: 'Solicitações de peças', icon: 'fi-rr-box-open', route: rota('pecas'), badgeId: 'myPiecesOpenBadge', when: () => Boolean(abas.pecas) },
                     { id: 'envio', label: 'Envio', icon: 'fi-rr-truck-side', route: rota('envio'), when: () => Boolean(abas.envio) },
                     { id: 'coleta', label: 'Coleta', icon: 'fi-rr-inbox', route: rota('coleta'), when: () => Boolean(abas.coleta) },
                     { id: 'tasks', label: 'Tasks', icon: 'fi-rr-list-check', route: rota('tasks'), when: () => Boolean(abas.tasks) }
