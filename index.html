@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-produto-no-encaminhamento-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-atalho-portal-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -2304,8 +2304,20 @@
             <div id="admPanelExternas" class="hidden space-y-6">
                 <section id="admExternalSummary" class="priority-approval-summary"></section>
                 <div class="bg-surface border border-line rounded-2xl card-hover p-6">
-                    <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-inbox text-primary-400"></i> Solicitações externas</h3>
-                    <p class="text-xs text-secondary mb-4">O que chegou pelo Portal de Prioridades. Triar, distribuir pelo rodízio e acompanhar até a conclusão.</p>
+                    <!-- O Portal é a outra ponta desta tela e vive fora dela: era preciso
+                         digitar o endereço no navegador toda vez. Abrir em GUIA NOVA, e não
+                         navegar, porque a gestão está no meio de uma triagem — sair daqui
+                         para conferir o portal custaria o caminho de volta. -->
+                    <div class="external-panel-head">
+                        <div>
+                            <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-inbox text-primary-400"></i> Solicitações externas</h3>
+                            <p class="text-xs text-secondary">O que chegou pelo Portal de Prioridades. Triar, distribuir pelo rodízio e acompanhar até a conclusão.</p>
+                        </div>
+                        <div class="external-panel-actions">
+                            <button type="button" class="actuar-icon-button" id="portalLinkCopy" onclick="copyPortalLink()" aria-label="Copiar o endereço do Portal" title="Copiar o endereço do Portal"><i class="fi fi-rr-copy" aria-hidden="true"></i></button>
+                            <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openPortalTab()"><i class="fi fi-rr-arrow-up-right-from-square" aria-hidden="true"></i>Abrir o Portal</button>
+                        </div>
+                    </div>
                     <div class="priority-approval-filters">
                         <div class="actuar-field"><label for="externalTeamFilter">Equipe</label><select id="externalTeamFilter" onchange="renderExternalBoard()"><option value="Todos">Todas</option><option value="Sistema">Sistema</option><option value="Catraca">Catraca</option></select></div>
                         <div class="actuar-field"><label for="externalBrandFilter">Marca</label><select id="externalBrandFilter" onchange="renderExternalBoard()"><option value="Todas">Todas</option><option>Actuar</option><option>Ediz</option><option>Toletus</option><option>Fácil Fit</option></select></div>
@@ -7206,6 +7218,35 @@
                 ${lancamento?.justificativa ? `<div class="history-detail-quote"><small>Justificativa do analista</small><blockquote>${escapeHtml(lancamento.justificativa)}</blockquote></div>` : ''}
                 ${fonte ? renderPriorityAttendanceEvidence(fonte) : ''}
             </div>`;
+        }
+
+        /* O endereço do Portal, montado a partir da rota — não escrito à mão. Colado numa
+           constante, ele desatualizaria no dia em que a rota mudasse de nome, e o link
+           chegaria quebrado a quem recebeu por mensagem. */
+        function portalLink() {
+            return `${location.origin}${location.pathname}${routeUrl({ name: 'portal-prioridades' })}`;
+        }
+
+        function openPortalTab() {
+            /* `noopener` porque a guia aberta ganharia acesso a `window.opener` — e ali vive
+               a sessão de gestão. */
+            window.open(portalLink(), '_blank', 'noopener');
+        }
+
+        async function copyPortalLink() {
+            const botao = document.getElementById('portalLinkCopy');
+            try {
+                await navigator.clipboard.writeText(portalLink());
+                showToast('Endereço do Portal copiado.');
+                if (botao) {
+                    botao.innerHTML = '<i class="fi fi-rr-check" aria-hidden="true"></i>';
+                    setTimeout(() => { botao.innerHTML = '<i class="fi fi-rr-copy" aria-hidden="true"></i>'; }, 2000);
+                }
+            } catch (_) {
+                /* Sem permissão de área de transferência — acontece fora de HTTPS. Mostrar o
+                   endereço é melhor que um erro: dá para copiar à mão. */
+                actuarAlert('Copie o endereço do Portal', portalLink());
+            }
         }
 
         function openExternalRequest(id) {
@@ -12935,15 +12976,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-produto-no-encaminhamento-1"></script>
-    <script src="js/external-requests.js?v=20260819-produto-no-encaminhamento-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-produto-no-encaminhamento-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-produto-no-encaminhamento-1"></script>
-    <script src="js/performance-domain.js?v=20260819-produto-no-encaminhamento-1"></script>
-    <script src="js/manager-experience.js?v=20260819-produto-no-encaminhamento-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-produto-no-encaminhamento-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-produto-no-encaminhamento-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-produto-no-encaminhamento-1"></script>
-    <script src="js/performance-platform.js?v=20260819-produto-no-encaminhamento-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-atalho-portal-1"></script>
+    <script src="js/external-requests.js?v=20260819-atalho-portal-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-atalho-portal-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-atalho-portal-1"></script>
+    <script src="js/performance-domain.js?v=20260819-atalho-portal-1"></script>
+    <script src="js/manager-experience.js?v=20260819-atalho-portal-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-atalho-portal-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-atalho-portal-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-atalho-portal-1"></script>
+    <script src="js/performance-platform.js?v=20260819-atalho-portal-1"></script>
 </body>
 </html>

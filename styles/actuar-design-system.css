@@ -4351,6 +4351,12 @@ body.actuar-app .actuar-picker-search input::placeholder { color: #6F7378; }
 /* QUADRO DE SOLICITAÇÕES EXTERNAS
    Colunas com rolagem horizontal: o processo tem sete etapas, e espremê-las na largura da
    tela deixaria cada card ilegível. Rolar de lado é o gesto esperado num quadro. */
+/* Cabeçalho do painel de solicitações externas: título à esquerda, atalhos para o Portal
+   à direita. O Portal é a outra ponta desta tela e vive fora dela — o endereço era digitado
+   à mão toda vez. */
+.external-panel-head { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.external-panel-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+
 .external-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
 .external-column {
     display: flex; flex-direction: column; flex: 0 0 276px;

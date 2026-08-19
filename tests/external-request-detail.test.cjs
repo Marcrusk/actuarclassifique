@@ -250,3 +250,30 @@ test('faltando o produto, o aviso vem antes do clique — não depois', () => {
     // E o produto aparece no painel, para a gestão conferir o que vai junto.
     assert.match(painel, /Produto: \$\{escapeHtml\(item\.brand\)\}/);
 });
+
+test('a gestão alcança o Portal sem digitar o endereço', () => {
+    // O recorte começa no cabeçalho: há outros blocos de filtro antes dele no arquivo.
+    const inicio = html.indexOf('<div class="external-panel-head">');
+    const cabecalho = html.slice(inicio, html.indexOf('<div class="priority-approval-filters">', inicio));
+
+    assert.match(cabecalho, /onclick="openPortalTab\(\)"/);
+    assert.match(cabecalho, /onclick="copyPortalLink\(\)"/);
+    assert.match(cabecalho, /aria-label="Copiar o endereço do Portal"/, 'botão só de ícone precisa de nome acessível');
+
+    const link = html.slice(html.indexOf('function portalLink()'), html.indexOf('async function copyPortalLink()'));
+    /* Montado a partir da ROTA, não escrito à mão: colado numa constante, desatualizaria no
+       dia em que a rota mudasse de nome e chegaria quebrado a quem recebeu por mensagem. */
+    assert.match(link, /routeUrl\(\{ name: 'portal-prioridades' \}\)/);
+    assert.match(link, /\$\{location\.origin\}\$\{location\.pathname\}/);
+    assert.match(html, /'portal-prioridades': \{ title: 'Portal de Prioridades'/, 'a rota precisa existir para routeUrl não a trocar pelo dashboard');
+
+    /* Guia nova, e não navegação: a gestão está no meio de uma triagem, e sair daqui para
+       conferir o portal custaria o caminho de volta. */
+    assert.match(link, /window\.open\(portalLink\(\), '_blank', 'noopener'\)/);
+    // `noopener` porque a guia aberta ganharia acesso a window.opener — e ali vive a sessão.
+
+    // Sem permissão de área de transferência (fora de HTTPS), mostra o endereço em vez de erro.
+    const copia = html.slice(html.indexOf('async function copyPortalLink()'), html.indexOf('function openExternalRequest(id)'));
+    assert.match(copia, /await navigator\.clipboard\.writeText\(portalLink\(\)\)/);
+    assert.match(copia, /actuarAlert\('Copie o endereço do Portal', portalLink\(\)\)/);
+});
