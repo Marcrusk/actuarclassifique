@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-prioridade-avulsa-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-so-o-meu-chamado-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -3765,10 +3765,23 @@
 
         function renderPriorityRotationPrimary(view, action = '') {
             const abertos = view.active || [];
-            const cartoes = abertos.map(renderPriorityAttendanceCard).join('');
-            const contador = abertos.length > 1
+            /* O ANALISTA VÊ O CHAMADO DELE, E SÓ.
+               Com atendimentos simultâneos, o bloco passou a desenhar um cartão por
+               atendimento aberto — cada um com demanda, cliente, ID, telefone e instruções.
+               Para a gestão isso é o painel; para o analista era o chamado do colega inteiro
+               na tela dele, dado de cliente incluído, misturado com o seu.
+
+               Quem está na fila continua aparecendo, porque saber que a equipe está ocupada
+               é do rodízio — mas por nome e tempo, que é o que o rodízio precisa dizer. */
+            const souGestao = isAdminLoggedIn;
+            const meus = souGestao ? abertos : abertos.filter(item => item.analystId === currentActiveUser);
+            const dosOutros = souGestao ? [] : abertos.filter(item => item.analystId !== currentActiveUser);
+            const cartoes = meus.map(renderPriorityAttendanceCard).join('');
+            const contador = souGestao && abertos.length > 1
                 ? `<p class="rotation-ops-concurrent"><i class="fi fi-rr-users-alt" aria-hidden="true"></i>${abertos.length} atendimentos em andamento ao mesmo tempo.</p>`
-                : '';
+                : dosOutros.length
+                    ? `<p class="rotation-ops-concurrent"><i class="fi fi-rr-users-alt" aria-hidden="true"></i>Também em atendimento: ${dosOutros.map(item => `${escapeHtml(priorityRotationUser(item.analystId)?.name || 'Analista')} <small>(${escapeHtml(priorityRotationDuration(item.startedAt))})</small>`).join(' · ')}</p>`
+                    : '';
             if (view.next) {
                 const user = priorityRotationUser(view.next);
                 const ready = view.status === 'active' ? 'Pronto para atender' : 'Aguardando reativação';
@@ -4178,7 +4191,11 @@
                     : `${position}º na ordem atual`;
                 const canSkip = isNext || (isCurrent && view.queue.includes(id));
                 const actions = canManage ? `<details class="rotation-actions-menu"><summary aria-label="Ações para ${escapeHtml(priorityRotationUser(id)?.name || '')}"><i class="fi fi-rr-menu-dots-vertical"></i></summary><div class="rotation-actions-popover">${canSkip ? `<button onclick="openPriorityRotationAction('skip','${id}')">Pular esta vez</button>` : ''}${isCurrent ? `<button onclick="openPriorityRotationAction('resolve','${id}')">Encerrar atendimento</button>` : ''}<button onclick="openPriorityRotationAction('pause','${id}')">Pausar participante</button><button onclick="closePriorityRotationDrawer();openManagerAnalyst('${id}','rodizio')">Ver ficha</button></div></details>` : '';
-                const compactBrief = isCurrent && aberto.briefing ? `<div class="rotation-brief-compact"><strong>${escapeHtml(aberto.briefing.demand)}</strong><br>${escapeHtml(aberto.briefing.clientName)} · ID ${escapeHtml(aberto.briefing.clientId)} · ${escapeHtml(aberto.briefing.phone)}</div>` : '';
+                /* Mesma régua do bloco de cima: o resumo do chamado é de quem o conduz e de
+                   quem administra a fila. Para o colega, a linha diz que a pessoa está
+                   atendendo e há quanto tempo — que é o que a fila precisa informar. */
+                const podeVerBrief = canManage || isSelf;
+                const compactBrief = isCurrent && aberto.briefing && podeVerBrief ? `<div class="rotation-brief-compact"><strong>${escapeHtml(aberto.briefing.demand)}</strong><br>${escapeHtml(aberto.briefing.clientName)} · ID ${escapeHtml(aberto.briefing.clientId)} · ${escapeHtml(aberto.briefing.phone)}</div>` : '';
                 return `<div class="rotation-queue-item ${isCurrent ? 'is-current' : isNext ? 'is-next' : ''}"><span class="rotation-position">${position}º</span><div class="rotation-queue-person">${priorityRotationPerson(id, detail)}<div class="rotation-item-badges">${isSelf ? '<span>Você</span>' : ''}<span class="${isCurrent ? 'is-current' : isNext ? 'is-next' : ''}">${statusLabel}</span>${aberto.pauseAfterCompletion && isCurrent ? '<span>Pausado após este atendimento</span>' : ''}</div>${compactBrief}</div>${actions}</div>`;
             };
             // Uma linha por atendimento aberto, na ordem em que começaram.
@@ -13100,15 +13117,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-prioridade-avulsa-1"></script>
-    <script src="js/external-requests.js?v=20260819-prioridade-avulsa-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-prioridade-avulsa-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-prioridade-avulsa-1"></script>
-    <script src="js/performance-domain.js?v=20260819-prioridade-avulsa-1"></script>
-    <script src="js/manager-experience.js?v=20260819-prioridade-avulsa-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-prioridade-avulsa-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-prioridade-avulsa-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-prioridade-avulsa-1"></script>
-    <script src="js/performance-platform.js?v=20260819-prioridade-avulsa-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-so-o-meu-chamado-1"></script>
+    <script src="js/external-requests.js?v=20260819-so-o-meu-chamado-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-so-o-meu-chamado-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-so-o-meu-chamado-1"></script>
+    <script src="js/performance-domain.js?v=20260819-so-o-meu-chamado-1"></script>
+    <script src="js/manager-experience.js?v=20260819-so-o-meu-chamado-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-so-o-meu-chamado-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-so-o-meu-chamado-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-so-o-meu-chamado-1"></script>
+    <script src="js/performance-platform.js?v=20260819-so-o-meu-chamado-1"></script>
 </body>
 </html>

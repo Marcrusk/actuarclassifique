@@ -513,3 +513,52 @@ test('falha ao salvar não deixa lançamento solto na tela', () => {
     assert.match(avulso, /appStore\.priorityRequests = \(appStore\.priorityRequests \|\| \[\]\)\.filter\(item => item\.id !== requestId\);/);
     assert.ok(avulso.indexOf('const ok = await persistStore();') < avulso.indexOf("showToast('Prioridade avulsa enviada"), 'o aviso de sucesso vem depois do salvamento');
 });
+
+/* ==========================================================================
+   O CHAMADO DO COLEGA NÃO É DO ANALISTA
+   Quando os atendimentos viraram simultâneos, o bloco passou a desenhar um cartão
+   por atendimento aberto — cada um com demanda, cliente, ID, TELEFONE e instruções.
+   Para a gestão isso é o painel; para o analista era o chamado do colega inteiro na
+   tela dele, dado de cliente incluído, misturado com o seu.
+   ========================================================================== */
+
+test('o analista vê o cartão do próprio atendimento, e só', () => {
+    const doc = html();
+    const bloco = doc.slice(doc.indexOf('function renderPriorityRotationPrimary(view'), doc.indexOf('function renderPriorityRotationOverviewPanel(view'));
+
+    assert.match(bloco, /const souGestao = isAdminLoggedIn;/);
+    assert.match(bloco, /const meus = souGestao \? abertos : abertos\.filter\(item => item\.analystId === currentActiveUser\);/);
+    assert.match(bloco, /const cartoes = meus\.map\(renderPriorityAttendanceCard\)\.join\(''\);/, 'os cartões saem da lista recortada, não de todos');
+
+    /* Quem está na fila continua aparecendo — saber que a equipe está ocupada é do rodízio —,
+       mas por NOME e TEMPO, que é o que o rodízio precisa dizer. */
+    assert.match(bloco, /const dosOutros = souGestao \? \[\] : abertos\.filter\(item => item\.analystId !== currentActiveUser\);/);
+    assert.match(bloco, /Também em atendimento: /);
+    assert.match(bloco, /priorityRotationDuration\(item\.startedAt\)/);
+});
+
+test('a fila completa também esconde o chamado do colega', () => {
+    const doc = html();
+    const linha = doc.slice(doc.indexOf('const participantRow = (id, state) =>'), doc.indexOf('const currentRow ='));
+
+    /* O mesmo vazamento acontecia na gaveta "Ver fila completa": cada linha em atendimento
+       trazia demanda, cliente, ID e telefone — e a gaveta abre para o analista. */
+    assert.match(linha, /const podeVerBrief = canManage \|\| isSelf;/);
+    assert.match(linha, /const compactBrief = isCurrent && aberto\.briefing && podeVerBrief \?/);
+    // O menu de ações da linha já era só da gestão; isto não mudou.
+    assert.match(linha, /const actions = canManage \?/);
+});
+
+test('nenhuma outra tela do analista mostra o briefing de terceiros', () => {
+    const doc = html();
+
+    /* A ficha só abre para o dono (`currentOwnAttendance`), e o cartão detalhado só é
+       montado para os atendimentos que sobraram no recorte. Fora daí, o briefing aparece na
+       aprovação, na auditoria e no Portal — todas telas de gestão. */
+    const abrir = doc.slice(doc.indexOf('function openPriorityAttendanceRecord()'), doc.indexOf('function closePriorityAttendanceRecord()'));
+    assert.match(abrir, /if \(!currentOwnAttendance\(\)\)/);
+
+    // O "Último atendimento" mostra nome e horário, nunca o conteúdo do chamado.
+    const ultimo = doc.slice(doc.indexOf('function renderPriorityRotationLast(view'), doc.indexOf('function renderPriorityRotationSequence(view'));
+    assert.doesNotMatch(ultimo, /briefing/, 'o último atendimento voltou a expor o chamado');
+});
