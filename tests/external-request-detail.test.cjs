@@ -102,3 +102,38 @@ test('cancelar aparece em vermelho, nos dois lugares', () => {
     // Texto branco sobre o vermelho do Design System: 4.67 de contraste, medido em Chrome.
     assert.match(css, /\.actuar-btn-danger \{ background: var\(--actuar-danger\); border-color: var\(--actuar-danger\); color: #FFF; \}/);
 });
+
+test('o cartão diz quem está atendendo, de que equipe é, e o começo da descrição', () => {
+    const cartao = html.slice(html.indexOf('function portalAreaCard(item)'), html.indexOf('async function portalAreaMutate'));
+
+    /* A etiqueta contextual é a MESMA da gestão: em atendimento ela traz o nome de quem está
+       com o chamado; nas outras etapas diz de quem é a bola. Reescrevê-la aqui faria as duas
+       telas contarem histórias diferentes do mesmo estado. */
+    assert.match(cartao, /const tag = externalCardTag\(item\);/);
+    assert.match(html, /if \(etapa === 'em_atendimento'\) \{\s*\n\s*return \{ tone: 'primary', icon: 'fi-rr-user', label: users\[item\.analystId\]\?\.name\?\.split\(' '\)\[0\]/);
+
+    // Equipe: Software ou Catraca, com o rótulo que o resto da aplicação usa.
+    assert.match(cartao, /teamLabel\(item\.team\)/);
+    // E o começo da descrição, cortado em duas linhas pelo CSS.
+    assert.match(cartao, /<p class="external-card-need">\$\{escapeHtml\(item\.need \|\| 'Sem descrição registrada\.'\)\}<\/p>/);
+    assert.match(css, /\.external-card-need \{[\s\S]*?-webkit-line-clamp: 2;/);
+});
+
+test('a descrição do cartão lê o campo que existe', () => {
+    /* O cartão do Portal nasceu lendo `item.demand`, que não existe na solicitação externa —
+       o portal grava `need`. A descrição simplesmente nunca aparecia. */
+    const cartao = html.slice(html.indexOf('function portalAreaCard(item)'), html.indexOf('async function portalAreaMutate'));
+    assert.ok(!cartao.includes('item.demand'), 'voltou a ler um campo que a solicitação não tem');
+    assert.match(html, /need: document\.getElementById\('portalNeed'\)\.value\.trim\(\)/, 'é este o campo que o portal grava');
+});
+
+test('"fila ocupada" e "sem analista" voltaram a ser causas diferentes', () => {
+    /* As duas condições ficaram idênticas quando a de ocupado passou de `view.current` para
+       `!view.next`: a segunda virou linha morta e "Sem analista" nunca mais apareceu. */
+    const etiqueta = html.slice(html.indexOf('function externalCardTag(item)'), html.indexOf('function externalCard(item)'));
+    assert.match(etiqueta, /if \(!view\.next && \(view\.active \|\| \[\]\)\.length\) return \{ tone: 'warning', icon: 'fi-rr-clock', label: 'Fila ocupada' \};/);
+    assert.match(etiqueta, /if \(!view\.next\) return \{ tone: 'warning', icon: 'fi-rr-user-slash', label: 'Sem analista' \};/);
+    // Nenhuma condição repetida sobrou no bloco.
+    const condicoes = (etiqueta.match(/if \(!view\.next\)/g) || []).length;
+    assert.equal(condicoes, 1, 'a condição duplicada voltou');
+});

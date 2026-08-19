@@ -3751,6 +3751,11 @@ body.nav-locked { overflow: hidden; }
 .portal-area-filters { display: grid; grid-template-columns: minmax(0, 2fr) minmax(160px, 1fr) auto; gap: 12px; align-items: end; margin-bottom: 14px; }
 .portal-area-summary { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; padding: 11px 14px; border: 1px solid var(--actuar-border); border-radius: var(--actuar-radius-large); background: var(--actuar-surface-muted); color: var(--actuar-text-secondary); font-size: 12px; }
 .portal-area-summary strong { color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 14px; }
+/* O cartão do Portal passou a usar a mesma anatomia do da gestão — cliente em cima com a
+   equipe, etiqueta contextual, começo da descrição e os dados embaixo —, então herda o
+   espaçamento de `.external-card`. Só as ações da área são próprias daqui. */
+.portal-area-card .external-card-tag { justify-self: start; }
+.portal-area-card footer time { display: inline-flex; align-items: center; gap: 6px; }
 /* O cartão do quadro abre a ficha: precisa parecer clicável antes de alguém tentar. */
 .portal-area-card[role="button"] { cursor: pointer; transition: border-color var(--actuar-transition), transform var(--actuar-transition); }
 .portal-area-card[role="button"]:hover { border-color: var(--actuar-primary); transform: translateY(-1px); }

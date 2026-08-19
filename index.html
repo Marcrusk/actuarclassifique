@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-cancelar-vermelho-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-cartao-solicitacao-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -6425,6 +6425,10 @@
         function portalAreaCard(item) {
             const dominio = window.ExternalRequests;
             const etapa = dominio.stageMeta(dominio.stageOf(item));
+            /* A mesma etiqueta contextual da gestão: em atendimento ela traz o NOME de quem
+               está com o chamado, e nas outras etapas diz de quem é a bola. Reescrever isso
+               aqui faria as duas telas contarem histórias diferentes do mesmo estado. */
+            const tag = externalCardTag(item);
             /* As duas únicas ações da área: responder o que a gestão pediu e desistir de um
                chamado aberto por engano. Prioridade, ordem e pontuação seguem sendo da
                gestão — a regra de quem pode o quê está no domínio. */
@@ -6438,10 +6442,21 @@
                     aria-label="Abrir ${escapeHtml(item.protocol || 'solicitação')}"
                     onclick="if(!event.target.closest('.portal-area-card-actions')) openPortalAreaDetail('${escapeHtml(item.id)}')"
                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPortalAreaDetail('${escapeHtml(item.id)}')}">
-                <header><strong>${escapeHtml(item.protocol || '—')}</strong><span class="actuar-badge actuar-badge-${escapeHtml(etapa.tone || 'neutral')}">${escapeHtml(etapa.label)}</span></header>
-                <p class="portal-area-card-client">${escapeHtml(item.clientName || 'Cliente não informado')}${item.clientId ? ` · ${escapeHtml(item.clientId)}` : ''}</p>
-                ${item.demand ? `<p class="portal-area-card-demand">${escapeHtml(item.demand)}</p>` : ''}
-                <footer><time>${escapeHtml(ActuarFields.formatMoment(item.createdAt))}</time>${item.lastReason ? `<small>${escapeHtml(item.lastReason)}</small>` : ''}</footer>
+                <header>
+                    <strong>${escapeHtml(item.clientName || 'Cliente não informado')}</strong>
+                    <!-- Software ou Catraca: é o que diz de quem o chamado depende agora. -->
+                    <span class="actuar-badge actuar-badge-neutral">${escapeHtml(item.team ? teamLabel(item.team) : '—')}</span>
+                </header>
+                <span class="actuar-badge actuar-badge-${escapeHtml(etapa.tone || 'neutral')} external-card-tag">${escapeHtml(etapa.label)}</span>
+                ${tag ? `<span class="actuar-badge actuar-badge-${escapeHtml(tag.tone)} external-card-tag"><i class="fi ${escapeHtml(tag.icon)}" aria-hidden="true"></i>${escapeHtml(tag.label)}</span>` : ''}
+                <!-- O começo da descrição, cortado em duas linhas pelo CSS: o suficiente para
+                     reconhecer o caso sem o cartão virar parágrafo. O resto está na ficha. -->
+                <p class="external-card-need">${escapeHtml(item.need || 'Sem descrição registrada.')}</p>
+                <dl>
+                    <div><dt>Protocolo</dt><dd class="num-mono">${escapeHtml(item.protocol || '—')}</dd></div>
+                    <div><dt>Cliente</dt><dd>${escapeHtml(item.clientId || '—')} · ${escapeHtml(item.brand || '—')}</dd></div>
+                </dl>
+                <footer><time title="${escapeHtml(fullMomentTitle(item.createdAt))}"><i class="fi fi-rr-clock" aria-hidden="true"></i>${escapeHtml(ActuarFields.formatMoment(item.createdAt))}</time>${item.lastReason ? `<small>${escapeHtml(item.lastReason)}</small>` : ''}</footer>
                 ${acoes ? `<div class="portal-area-card-actions">${acoes}</div>` : ''}
             </article>`;
         }
@@ -7025,7 +7040,10 @@
                 const view = externalRotationView(item.team);
                 if (!view || view.status === 'missing') return { tone: 'danger', icon: 'fi-rr-triangle-warning', label: 'Sem fila' };
                 if (view.status !== 'active') return { tone: 'warning', icon: 'fi-rr-pause', label: 'Rodízio pausado' };
-                if (!view.next) return { tone: 'warning', icon: 'fi-rr-clock', label: 'Fila ocupada' };
+                /* Duas causas diferentes para "ninguém para receber": todo mundo ocupado, ou
+                   fila vazia. Ficaram idênticas quando a condição de ocupado passou de
+                   `view.current` para `!view.next` — a segunda virou linha morta. */
+                if (!view.next && (view.active || []).length) return { tone: 'warning', icon: 'fi-rr-clock', label: 'Fila ocupada' };
                 if (!view.next) return { tone: 'warning', icon: 'fi-rr-user-slash', label: 'Sem analista' };
                 return { tone: 'success', icon: 'fi-rr-paper-plane', label: `Pronta para ${users[view.next]?.name?.split(' ')[0] || 'distribuir'}` };
             }
@@ -7055,7 +7073,9 @@
                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openExternalRequest('${escapeHtml(item.id)}');}">
                 <header>
                     <strong>${escapeHtml(item.clientName || 'Cliente não informado')}</strong>
-                    <span class="actuar-badge actuar-badge-neutral">${escapeHtml(item.team || '—')}</span>
+                    <!-- Rótulo traduzido: a equipe se chama Software em toda a aplicação, e
+                         só aqui aparecia como "Sistema", que é o nome interno. -->
+                    <span class="actuar-badge actuar-badge-neutral">${escapeHtml(item.team ? teamLabel(item.team) : '—')}</span>
                 </header>
                 ${(() => { const tag = externalCardTag(item); return tag ? `<span class="actuar-badge actuar-badge-${escapeHtml(tag.tone)} external-card-tag"><i class="fi ${escapeHtml(tag.icon)}" aria-hidden="true"></i>${escapeHtml(tag.label)}</span>` : ''; })()}
                 <p class="external-card-need">${escapeHtml(item.need || '')}</p>
@@ -12892,15 +12912,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-cancelar-vermelho-1"></script>
-    <script src="js/external-requests.js?v=20260819-cancelar-vermelho-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-cancelar-vermelho-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-cancelar-vermelho-1"></script>
-    <script src="js/performance-domain.js?v=20260819-cancelar-vermelho-1"></script>
-    <script src="js/manager-experience.js?v=20260819-cancelar-vermelho-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-cancelar-vermelho-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-cancelar-vermelho-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-cancelar-vermelho-1"></script>
-    <script src="js/performance-platform.js?v=20260819-cancelar-vermelho-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-cartao-solicitacao-1"></script>
+    <script src="js/external-requests.js?v=20260819-cartao-solicitacao-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-cartao-solicitacao-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-cartao-solicitacao-1"></script>
+    <script src="js/performance-domain.js?v=20260819-cartao-solicitacao-1"></script>
+    <script src="js/manager-experience.js?v=20260819-cartao-solicitacao-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-cartao-solicitacao-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-cartao-solicitacao-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-cartao-solicitacao-1"></script>
+    <script src="js/performance-platform.js?v=20260819-cartao-solicitacao-1"></script>
 </body>
 </html>

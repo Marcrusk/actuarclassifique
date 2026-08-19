@@ -379,7 +379,10 @@ test('a tela mostra os atendimentos no plural, e a ficha só no cartão do dono'
 
     // Encaminhar deixou de exigir fila parada; só exige alguém livre.
     assert.match(doc, /if \(view\.status !== 'active' \|\| !view\.next\) \{ showToast\(view\.status !== 'active' \? 'O rodízio está pausado\.' : 'Todos os analistas da fila já estão em atendimento\.'/);
-    assert.doesNotMatch(doc, /view\.current/, 'sobrou leitura do atendimento único na tela');
+    /* Sem comentários: eles citam `view.current` para explicar por que ele saiu. O que não
+       pode voltar é a LEITURA. */
+    const semComentarios = doc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    assert.doesNotMatch(semComentarios, /view\.current/, 'sobrou leitura do atendimento único na tela');
 
     // Encerrar passou para a linha do participante, que escala para N atendimentos.
     assert.match(doc, /\$\{isCurrent \? `<button onclick="openPriorityRotationAction\('resolve','\$\{id\}'\)">Encerrar atendimento<\/button>` : ''\}/);
