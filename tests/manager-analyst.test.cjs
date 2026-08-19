@@ -194,3 +194,25 @@ test('os itens que ramificam na sidebar têm a mesma letra dos demais', () => {
     // E a que corrige precisa vir DEPOIS da que atrapalha, além de ser mais específica.
     assert.ok(css.indexOf('body.actuar-app button,') < css.indexOf('.actuar-nav-body .actuar-nav-item'));
 });
+
+test('o Feedback de Monitoramento não usa cor literal do tema claro', () => {
+    const doc = html();
+    const bloco = doc.slice(doc.indexOf('function renderMonitoringFeedback'), doc.indexOf('function renderLeaderboard'));
+
+    /* Vinha com `bg-bg/60`: `bg` é literal CLARO do tailwind.config e a variante com
+       opacidade escapa ao remapeamento `.bg-bg → var(--actuar-canvas)`, que só cobre a
+       classe sem barra. No escuro virava placa clara comendo o contraste. */
+    // Só os atributos class: os comentários do código citam as utilidades que saíram.
+    const classes = (bloco.match(/class="[^"]*"/g) || []).join(' ');
+    assert.doesNotMatch(classes, /bg-bg\//, 'utilidade de cor do tema claro voltou ao cartão');
+    assert.doesNotMatch(classes, /text-emerald-|text-amber-|text-red-|border-emerald-|border-red-/,
+        'cor de estado voltou a sair de utilidade do Tailwind em vez de token');
+    assert.match(bloco, /class="monitoring-feedback-item"/);
+    assert.match(bloco, /monitoring-feedback-chip \$\{d\.earned > 0 \? 'is-earned' : 'is-missed'\}/);
+
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+    // Fundo e borda por token: viram com o tema sem precisar de par html.dark.
+    assert.match(css, /\.monitoring-feedback-item \{[^}]*background: var\(--actuar-surface-muted\)/);
+    assert.match(css, /\.monitoring-feedback-item \{[^}]*border: 1px solid var\(--actuar-border\)/);
+    assert.match(css, /\.monitoring-feedback-note \{[^}]*color: var\(--actuar-text-secondary\)/);
+});

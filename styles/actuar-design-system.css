@@ -825,6 +825,47 @@ body.actuar-app #agentInitials.agent-avatar--bronze {
 html.dark .agent-rank-text--gold { color: #F2C230 !important; }
 html.dark .agent-rank-text--silver { color: #D5DAE0 !important; }
 html.dark .agent-rank-text--bronze { color: #E39A68 !important; }
+
+/* FEEDBACK DE MONITORAMENTO — cartão de cada avaliação na ficha do analista.
+
+   Vinha montado com `bg-bg/60`. `bg` é um literal CLARO do tailwind.config (#F6F6F7),
+   e a variante com opacidade escapa ao remapeamento `.bg-bg → var(--actuar-canvas)`:
+   aquela regra cobre só a classe sem barra. No tema claro o resultado coincidia com o
+   fundo e ninguém reparava; no escuro virava uma placa clara no meio da página, comendo
+   o contraste do texto e das etiquetas de critério. O FAQ já tinha batido no mesmo
+   problema e o remendou para as suas próprias `.bg-bg\/60`, escopado em `#viewFaq`.
+
+   Aqui a cor vem de token, então acompanha o tema sem precisar de par `html.dark` — e
+   sem depender de qual utilidade do Tailwind alguém lembrou de remapear. */
+.monitoring-feedback-item { padding: 16px; border: 1px solid var(--actuar-border); border-radius: 10px; background: var(--actuar-surface-muted); }
+.monitoring-feedback-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.monitoring-feedback-id { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.monitoring-feedback-week { color: var(--actuar-text); font-size: 12px; font-weight: 700; }
+.monitoring-feedback-protocol { color: var(--actuar-text-secondary); font-size: 11px; }
+.monitoring-feedback-protocol strong { color: var(--actuar-primary); font-weight: 700; }
+.monitoring-feedback-score { font-family: Geist, 'Open Sans', sans-serif; font-size: 14px; font-weight: 800; white-space: nowrap; }
+.monitoring-feedback-score.is-high { color: var(--actuar-success); }
+.monitoring-feedback-score.is-mid { color: var(--actuar-warning); }
+.monitoring-feedback-score.is-low { color: var(--actuar-danger); }
+.monitoring-feedback-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.monitoring-feedback-chip { padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+/* Fundo e borda saem de token. O TEXTO não: `--actuar-success`/`--actuar-danger` são
+   calibrados para preencher (barra, selo, ícone) e, postos sobre o próprio `-soft`,
+   medem 4.20 e 3.59 de contraste — abaixo dos 4.5 que texto de 10px pede. Os tons
+   abaixo são os que `.pieces-status` já usa para estes mesmos dois estados nesta
+   folha. O vermelho foi um passo mais escuro que o de `.pieces-status`: sobre este
+   `-soft`, mais saturado que o fundo de lá, o #C3271C parava em 4.45. Fica em
+   4.59 / 4.74 no claro e 8.2 / 7.1 no escuro. Medido em Chrome headless. */
+.monitoring-feedback-chip.is-earned { border-color: var(--actuar-success); background: var(--actuar-success-soft); color: #087A4B; }
+.monitoring-feedback-chip.is-missed { border-color: var(--actuar-danger); background: var(--actuar-danger-soft); color: #BC2419; }
+html.dark .monitoring-feedback-chip.is-earned { color: #6CE9A6; }
+html.dark .monitoring-feedback-chip.is-missed { color: #FDA29B; }
+/* `--actuar-primary` no escuro (#4F51E9) sobre a superfície do cartão dá 2.65. O bloco
+   usava `text-primary-300` antes desta mudança; mantido, que é o tom da escala desenhado
+   para a primária sobre fundo escuro — 6.0 de contraste. */
+html.dark .monitoring-feedback-protocol strong { color: #9A9CF1; }
+.monitoring-feedback-note { color: var(--actuar-text-secondary); font-size: 12px; line-height: 1.6; }
+.monitoring-feedback-note.is-empty { color: var(--actuar-muted); font-style: italic; }
 .agent-dashboard-avatar-image {
     display: block;
     width: 100%;
