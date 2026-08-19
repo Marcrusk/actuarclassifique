@@ -13,18 +13,30 @@ const E = require('../js/external-requests.js');
 const html = fs.readFileSync('index.html', 'utf8');
 const req = (extra = {}) => ({ id: 'r1', protocol: 'PP-1', requesterDepartment: 'Comercial', status: 'nova', ...extra });
 
-test('a área é do cadastro da pessoa, não do código', () => {
+test('a área que ela acompanha É o departamento dela, num campo só', () => {
+    const manager = require('../js/manager-experience.js');
     /* Decisão do usuário: função genérica. O portal tem cinco áreas, e uma função por área
        significaria cinco funções e uma alteração de código a cada nova. */
-    assert.ok(require('../js/manager-experience.js').NON_RANKED_ROLES.includes('Gestor de Área'));
+    assert.ok(manager.NON_RANKED_ROLES.includes('Gestor de Área'));
     assert.match(html, /<option value="Gestor de Área">Gestor de Área \(acompanha o Portal\)<\/option>/);
-    assert.match(html, /id="inputUserPortalAreaField"/);
-    // As opções saem da mesma lista que o Portal usa para se identificar.
-    assert.match(html, /portalDepartments\(\)\.map\(item => `<option value="\$\{escapeHtml\(item\.name\)\}"/);
-    // O campo só aparece para quem vai usá-lo, e some ao trocar de função.
-    assert.match(html, /areaField\.classList\.toggle\('hidden', !gestorDeArea\);/);
-    assert.match(html, /appStore\.users\[editId\]\.portalArea = portalArea \|\| undefined;/);
-    assert.match(html, /if \(role === 'Gestor de Área' && !portalArea\) \{ showToast\('Escolha a área do Portal desta pessoa\.'/);
+
+    /* Havia dois campos — Departamento e "Área do Portal" — e o Departamento nem oferecia
+       Comercial. Dois campos para a mesma coisa podiam discordar: alguém com Departamento
+       "Comercial" e Área "Financeiro" veria a fila errada. */
+    assert.ok(!html.includes('inputUserPortalArea'), 'o campo duplicado voltou');
+
+    // Toda área do Portal precisa existir no cadastro, senão não há como registrar quem é dela.
+    const areas = [...html.matchAll(/\{ id: '[a-z]+', name: '([^']+)', icon:/g)].map(item => item[1]);
+    assert.ok(areas.length >= 5, 'não encontrei as áreas do Portal no shell');
+    for (const area of areas) {
+        assert.ok(manager.DEPARTMENTS.includes(area), `a área "${area}" do Portal não existe no cadastro`);
+    }
+    // E nenhuma delas entra na disputa do ranking.
+    for (const area of areas) assert.ok(!manager.TEAMS.includes(area), `"${area}" não deveria competir no ranking`);
+
+    // Salvar confere: Gestor de Área sem departamento do Portal não passa.
+    assert.match(html, /if \(role === 'Gestor de Área' && !isPortalAreaTeam\(team\)\)/);
+    assert.match(html, /function isPortalAreaTeam\(team\)/);
 });
 
 test('ela vê só o que a própria área registrou, e o recorte não é filtro de tela', () => {
@@ -48,7 +60,7 @@ test('entra com senha conferida no banco, e a sessão não vira permissão', () 
     /* Sessão guardada é conveniência: a ficha é reconferida a cada abertura, então quem foi
        inativado ou trocou de função não volta com o acesso antigo. */
     const sessao = html.slice(html.indexOf('function readPortalAreaSession()'), html.indexOf('function portalToggleAreaDoor()'));
-    assert.match(sessao, /if \(!user \|\| user\.active === false \|\| user\.role !== 'Gestor de Área' \|\| !user\.portalArea\) return null;/);
+    assert.match(sessao, /if \(!user \|\| user\.active === false \|\| user\.role !== 'Gestor de Área' \|\| !isPortalAreaTeam\(user\.team\)\) return null;/);
 });
 
 test('uma tela só: quem acompanha não vê o formulário de registro', () => {
@@ -127,7 +139,7 @@ test('a escolha da pessoa usa o mesmo seletor da área, não um <select> nativo'
     assert.match(markup, /<input type="hidden" id="portalAreaUser" value="">/);
     // Avatar com iniciais e a área na segunda linha: é ela que distingue dois nomes iguais.
     assert.match(html, /portalAreaInitials\(user\)/);
-    assert.match(html, /<small>\$\{escapeHtml\(user\.portalArea\)\}<\/small>/);
+    assert.match(html, /<small>\$\{escapeHtml\(user\.team\)\}<\/small>/);
 
     // Teclado igual ao de cima: setas, Enter, Escape, e clicar fora fecha.
     for (const fn of ['portalToggleAreaMembers', 'portalPickAreaMember', 'portalAreaMemberKey', 'portalAreaTriggerKey']) {

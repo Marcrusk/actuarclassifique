@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-porta-area-2">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-departamentos-portal-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -1852,13 +1852,6 @@
                             <option value="Gestor Adm">Gestor Adm</option>
                             <option value="Gestor de Área">Gestor de Área (acompanha o Portal)</option>
                         </select>
-                    </div>
-                    <!-- A área não fica no código: é a ficha da pessoa que diz qual ela
-                         acompanha. Sem isso, cada área nova pediria uma função nova. -->
-                    <div id="inputUserPortalAreaField" class="hidden">
-                        <label class="block text-xs text-secondary mb-1">Área do Portal</label>
-                        <select id="inputUserPortalArea" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
-                        <p class="text-[10px] text-secondary mt-1">Ela verá no Portal apenas as solicitações abertas por esta área.</p>
                     </div>
                     <div>
                         <label class="block text-xs text-secondary mb-1">Departamento</label>
@@ -6156,10 +6149,16 @@
         const PORTAL_AREA_SESSION_KEY = 'actuar-portal-area-session';
         let portalAreaSession = null;
 
+        /* Uma lista só de áreas: as do Portal entraram nos departamentos do cadastro, então
+           o campo Departamento já diz qual fila a pessoa acompanha. */
+        function isPortalAreaTeam(team) {
+            return portalDepartments().some(item => item.name === String(team || '').trim());
+        }
+
         function portalAreaManagers() {
             const usuarios = getStore()?.users || defaultUsers;
             return Object.entries(usuarios)
-                .filter(([, user]) => user.role === 'Gestor de Área' && user.active !== false && String(user.portalArea || '').trim())
+                .filter(([, user]) => user.role === 'Gestor de Área' && user.active !== false && isPortalAreaTeam(user.team))
                 .sort((a, b) => String(a[1].name || '').localeCompare(String(b[1].name || ''), 'pt-BR'));
         }
 
@@ -6171,8 +6170,8 @@
                    abertura, então quem foi inativado ou trocou de função não volta com o
                    acesso antigo. */
                 const user = (getStore()?.users || defaultUsers)[salvo.id];
-                if (!user || user.active === false || user.role !== 'Gestor de Área' || !user.portalArea) return null;
-                return { id: salvo.id, name: user.name, area: user.portalArea };
+                if (!user || user.active === false || user.role !== 'Gestor de Área' || !isPortalAreaTeam(user.team)) return null;
+                return { id: salvo.id, name: user.name, area: user.team };
             } catch (_) { return null; }
         }
 
@@ -6203,7 +6202,7 @@
                 <li role="option" data-id="${escapeHtml(id)}" tabindex="-1"
                     aria-selected="${id === escolhido}" onclick="portalPickAreaMember('${escapeHtml(id)}')" onkeydown="portalAreaMemberKey(event, ${indice})">
                     <span class="actuar-picker-avatar" aria-hidden="true">${user.photo ? `<img src="${escapeHtml(user.photo)}" alt="">` : escapeHtml(portalAreaInitials(user))}</span>
-                    <span class="actuar-picker-copy"><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.portalArea)}</small></span>
+                    <span class="actuar-picker-copy"><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.team)}</small></span>
                     <i class="fi fi-rr-check actuar-picker-tick" aria-hidden="true"></i>
                 </li>`).join('')
                 : '<li class="actuar-picker-empty">Nenhum acompanhamento cadastrado. Peça à gestão um acesso com a função Gestor de Área.</li>';
@@ -6229,7 +6228,7 @@
             const avatar = document.getElementById('portalAreaAvatar');
             if (avatar) avatar.innerHTML = user.photo ? `<img src="${escapeHtml(user.photo)}" alt="">` : escapeHtml(portalAreaInitials(user));
             document.getElementById('portalAreaPickedName').textContent = user.name;
-            document.getElementById('portalAreaPickedRole').textContent = user.portalArea || 'Acompanhamento por área';
+            document.getElementById('portalAreaPickedRole').textContent = user.team || 'Acompanhamento por área';
             document.getElementById('portalAreaTrigger')?.classList.add('is-filled');
             document.querySelectorAll('#portalAreaList li').forEach(item => item.setAttribute('aria-selected', String(item.dataset.id === id)));
             portalAreaError('');
@@ -6284,7 +6283,7 @@
             if (!id || !user) { portalAreaError('Escolha quem está entrando.'); return false; }
             // Mesma conferência dos analistas: a senha vive no banco, nunca no frontend.
             if (!await verifyLoginRemote(id, senha)) { portalAreaError('Senha incorreta.'); return false; }
-            portalAreaSession = { id, name: user.name, area: user.portalArea };
+            portalAreaSession = { id, name: user.name, area: user.team };
             try { localStorage.setItem(PORTAL_AREA_SESSION_KEY, JSON.stringify({ id })); } catch (_) { /* sessão é conveniência */ }
             document.getElementById('portalAreaPassword').value = '';
             renderPortal();
@@ -9025,17 +9024,6 @@
            e o salvamento ainda descartava o que fosse digitado. Resultado: analista e Toletus
            Lab cadastrados sem senha alguma, barrados no login por "senha não cadastrada". */
         function onUserRoleChange(role, editando = Boolean(document.getElementById('editUserId')?.value)) {
-            /* A área só é perguntada a quem vai usá-la. Perguntar sempre encheria a ficha de
-               um campo que não diz nada para analista nem para gestor. */
-            const areaField = document.getElementById('inputUserPortalAreaField');
-            const areaSelect = document.getElementById('inputUserPortalArea');
-            if (areaField && areaSelect) {
-                const gestorDeArea = role === 'Gestor de Área';
-                areaField.classList.toggle('hidden', !gestorDeArea);
-                if (gestorDeArea && !areaSelect.options.length) {
-                    areaSelect.innerHTML = portalDepartments().map(item => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('');
-                }
-            }
             const label = document.getElementById('inputUserPasswordLabel');
             if (label) {
                 label.textContent = editando
@@ -9057,8 +9045,6 @@
             document.getElementById('inputUserEmail').value = u.email || '';
             document.getElementById('inputUserRole').value = u.role;
             onUserRoleChange(u.role, true);
-            const areaSelect = document.getElementById('inputUserPortalArea');
-            if (areaSelect && u.portalArea) areaSelect.value = u.portalArea;
             document.getElementById('inputUserTeam').value = u.team;
             document.getElementById('inputUserPassword').value = "";
             document.getElementById('inputUserPhoto').value = "";
@@ -9165,8 +9151,13 @@
             const email = document.getElementById('inputUserEmail').value.trim();
             const role = document.getElementById('inputUserRole').value;
             const team = document.getElementById('inputUserTeam').value;
-            const portalArea = role === 'Gestor de Área' ? document.getElementById('inputUserPortalArea').value : '';
-            if (role === 'Gestor de Área' && !portalArea) { showToast('Escolha a área do Portal desta pessoa.', 'error'); return; }
+            /* A área que a pessoa acompanha no Portal É o departamento dela. Havia um campo
+               separado, e dois campos para a mesma coisa podiam discordar: alguém com
+               Departamento "Comercial" e Área "Financeiro" veria a fila errada. */
+            if (role === 'Gestor de Área' && !isPortalAreaTeam(team)) {
+                showToast('Gestor de Área precisa de um departamento que exista no Portal: ' + portalDepartments().map(item => item.name).join(', ') + '.', 'error');
+                return;
+            }
             const password = document.getElementById('inputUserPassword').value;
             const photoData = document.getElementById('inputUserPhotoData').value;
 
@@ -9198,8 +9189,6 @@
                 appStore.users[editId].email = email || undefined;
                 appStore.users[editId].role = role;
                 appStore.users[editId].team = team;
-                // Trocar de função tira a área junto: guardá-la num analista seria lixo com aparência de permissão.
-                appStore.users[editId].portalArea = portalArea || undefined;
                 if (password) {
                     const saved = await setUserPasswordRemote(editId, password);
                     if (!saved) return;
@@ -9217,7 +9206,7 @@
                 // com direito a "cadastrado com sucesso" e login impossível depois.
                 const saved = await setUserPasswordRemote(newId, password);
                 if (!saved) return;
-                appStore.users[newId] = { name, email: email || undefined, team, role, portalArea: portalArea || undefined, initial: initials, active: true, photo: photoData || undefined, hasPassword: true };
+                appStore.users[newId] = { name, email: email || undefined, team, role, initial: initials, active: true, photo: photoData || undefined, hasPassword: true };
                 applyShiftProfile(newId);
                 showToast("Novo usuário cadastrado com sucesso!");
             }
@@ -12677,15 +12666,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-porta-area-2"></script>
-    <script src="js/external-requests.js?v=20260819-porta-area-2"></script>
-    <script src="js/actuar-fields.js?v=20260819-porta-area-2"></script>
-    <script src="js/attendance-clock.js?v=20260819-porta-area-2"></script>
-    <script src="js/performance-domain.js?v=20260819-porta-area-2"></script>
-    <script src="js/manager-experience.js?v=20260819-porta-area-2"></script>
-    <script src="js/priority-rotation.js?v=20260819-porta-area-2"></script>
-    <script src="js/pieces-operations.js?v=20260819-porta-area-2"></script>
-    <script src="js/pieces-ui.js?v=20260819-porta-area-2"></script>
-    <script src="js/performance-platform.js?v=20260819-porta-area-2"></script>
+    <script src="js/actuar-navigation.js?v=20260819-departamentos-portal-1"></script>
+    <script src="js/external-requests.js?v=20260819-departamentos-portal-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-departamentos-portal-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-departamentos-portal-1"></script>
+    <script src="js/performance-domain.js?v=20260819-departamentos-portal-1"></script>
+    <script src="js/manager-experience.js?v=20260819-departamentos-portal-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-departamentos-portal-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-departamentos-portal-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-departamentos-portal-1"></script>
+    <script src="js/performance-platform.js?v=20260819-departamentos-portal-1"></script>
 </body>
 </html>

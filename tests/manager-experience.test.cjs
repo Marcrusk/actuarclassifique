@@ -346,7 +346,10 @@ test('a apresentação tem um único controle de departamento', () => {
 test('departamentos de apoio existem no cadastro sem entrar no ranking', () => {
     // TEAMS continua sendo só onde há disputa entre analistas.
     assert.deepEqual(manager.TEAMS, ['Sistema', 'Catraca']);
-    assert.deepEqual(manager.DEPARTMENTS, ['Sistema', 'Catraca', 'Logística', 'Toletus Lab', 'Administrativo']);
+    /* As áreas do Portal entraram no cadastro: elas já abriam chamado, mas não existiam
+       como departamento, então não havia como registrar alguém do Comercial. Continuam
+       fora de TEAMS, que é onde há disputa. */
+    assert.deepEqual(manager.DEPARTMENTS, ['Sistema', 'Catraca', 'Logística', 'Toletus Lab', 'Administrativo', 'Comercial', 'Retenção', 'Financeiro', 'Implantação']);
     for (const time of manager.TEAMS) assert.ok(manager.DEPARTMENTS.includes(time), 'o cadastro precisa manter as equipes de ranking');
 
     const pessoas = {
