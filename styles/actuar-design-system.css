@@ -3673,6 +3673,29 @@ body.nav-locked { overflow: hidden; }
 .priority-attendance-notes > li { padding: 8px 10px; border-radius: var(--actuar-radius); background: var(--actuar-surface); display: grid; gap: 3px; }
 .priority-attendance-notes p { margin: 0; color: var(--actuar-text); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .priority-attendance-none { margin: 0; color: var(--actuar-muted); font-size: 11px; font-style: italic; }
+/* NOTA DE PEÇAS — LANÇAMENTO MANUAL (ponte do ciclo em andamento)
+   Fica acima da central e é deliberadamente sóbrio: é uma porta temporária, não um módulo.
+   A borda tracejada diz isso sem precisar de um aviso escrito em cada linha. */
+.piece-manual-score { display: grid; gap: 14px; padding: 18px 20px; border: 1px dashed var(--actuar-border-strong); border-radius: var(--actuar-radius-large); background: var(--actuar-surface); }
+.piece-manual-score header h3 { margin: 3px 0 4px; color: var(--actuar-text); font-size: 16px; font-weight: 700; }
+.piece-manual-score header p { margin: 0; color: var(--actuar-text-secondary); font-size: 12px; line-height: 1.5; max-width: 70ch; }
+.piece-manual-score form { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(90px, .5fr) minmax(0, 1.6fr) auto; gap: 12px; align-items: end; }
+.piece-manual-recent h4 { margin: 0 0 7px; color: var(--actuar-text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.piece-manual-recent ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.piece-manual-recent li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 9px 11px; border: 1px solid var(--actuar-border); border-radius: var(--actuar-radius); background: var(--actuar-surface-muted); }
+.piece-manual-recent li > span { display: grid; gap: 2px; min-width: 0; }
+.piece-manual-recent strong { color: var(--actuar-text); font-size: 12px; }
+.piece-manual-recent small { color: var(--actuar-text-secondary); font-size: 11px; overflow-wrap: anywhere; }
+.piece-manual-recent b { color: var(--actuar-primary); font-size: 13px; white-space: nowrap; }
+.piece-manual-recent time { color: var(--actuar-muted); font-size: 10px; white-space: nowrap; }
+.piece-manual-recent > small { display: block; margin-top: 7px; color: var(--actuar-muted); font-size: 10px; }
+.piece-manual-empty { margin: 0; color: var(--actuar-muted); font-size: 11px; font-style: italic; }
+@media (max-width: 860px) {
+    .piece-manual-score form { grid-template-columns: minmax(0, 1fr); }
+    .piece-manual-recent li { grid-template-columns: minmax(0, 1fr) auto; }
+    .piece-manual-recent time { grid-column: 1 / -1; }
+}
+
 /* AUDITORIA — FICHA DO QUE FOI EXCLUÍDO
    A linha do histórico dizia "Prioridade 202608-1234 · lançamento de teste" e parava aí.
    O lançamento inteiro sempre esteve guardado em `deletionEntry.record`; faltava tela que

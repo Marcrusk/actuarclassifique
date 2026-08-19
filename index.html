@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-senha-mascarada-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-nota-peca-manual-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -2165,6 +2165,28 @@
 
             <!-- PAINEL: PEÇAS CATRACA -->
             <div id="admPanelPecas" class="hidden space-y-6">
+                <!-- PONTE DO CICLO EM ANDAMENTO
+                     A central de peças pontua pelo fluxo (solicitação, validação, aprovação),
+                     e o ciclo atual abriu antes dela entrar em uso. Sem esta área, a nota de
+                     peças deste mês não teria como ser lançada, e o analista de catraca
+                     ficaria sem a métrica no ranking. A partir do próximo ciclo a pontuação
+                     volta a sair da central, e esta área pode sair junto. -->
+                <section class="piece-manual-score" aria-labelledby="pieceManualTitle">
+                    <header>
+                        <span class="rotation-eyebrow">Lançamento manual · ponte deste ciclo</span>
+                        <h3 id="pieceManualTitle">Nota de peças do analista</h3>
+                        <p>Enquanto o ciclo já aberto não passa pela central, a gestão lança a nota direto. O valor entra no total do analista como qualquer pontuação de peça.</p>
+                    </header>
+                    <form onsubmit="submitManualPieceScore(event)">
+                        <div class="actuar-field"><label for="pieceManualAnalyst">Analista de catraca</label><select id="pieceManualAnalyst" required></select></div>
+                        <div class="actuar-field"><label for="pieceManualScore">Nota</label><input id="pieceManualScore" type="number" min="0" max="100" step="1" required placeholder="0 a 100"></div>
+                        <div class="actuar-field"><label for="pieceManualNote">Observação</label><input id="pieceManualNote" maxlength="160" autocomplete="off" placeholder="O que a nota considerou (opcional)"></div>
+                        <button type="submit" class="actuar-btn actuar-btn-primary"><i class="fi fi-rr-check"></i>Lançar nota</button>
+                    </form>
+                    <!-- O que já foi lançado fica à vista: sem isto, saber se a nota de alguém
+                         já entrou exigiria procurar no Histórico. -->
+                    <div id="pieceManualRecent" class="piece-manual-recent" aria-live="polite"></div>
+                </section>
                 <div id="admPiecesModule" class="pieces-module" aria-live="polite"></div>
             </div>
             <!-- FIM PAINEL PEÇAS CATRACA -->
@@ -5826,6 +5848,80 @@
             extraPts:      { Sistema: 'faq-monitoramento-sistema',   Catraca: 'faq-pecas-catraca' }
         };
 
+        /* ==========================================================================
+           NOTA DE PEÇAS — LANÇAMENTO MANUAL, PONTE DO CICLO EM ANDAMENTO
+           A central de peças pontua pelo fluxo inteiro (solicitação, validação, aprovação),
+           e o ciclo atual abriu antes dela entrar em uso. Sem uma porta manual, a nota de
+           peças deste mês não teria como ser lançada e o analista de catraca ficaria sem a
+           métrica no ranking.
+
+           É um log PECA como os outros — a soma em `pecasPts` não distingue origem —, mas
+           carimbado com `manualEntry: true`. Quando o próximo ciclo passar a usar a central,
+           é isso que permite separar o que veio da ponte do que veio do fluxo, sem depender
+           de olhar a data.
+           ========================================================================== */
+        function manualPieceScoreLogs() {
+            return (getStore()?.logs || [])
+                .filter(log => log.type === 'PECA' && log.manualEntry && canManagerViewAnalyst(log.userId))
+                .sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
+        }
+
+        function renderManualPieceScore() {
+            const area = document.getElementById('pieceManualRecent');
+            if (!area) return;
+            const usuarios = getStore()?.users || defaultUsers;
+            const lancamentos = manualPieceScoreLogs();
+            if (!lancamentos.length) {
+                area.innerHTML = '<p class="piece-manual-empty">Nenhuma nota lançada por aqui ainda.</p>';
+                return;
+            }
+            area.innerHTML = `<h4>Notas lançadas</h4><ul>${lancamentos.slice(0, 12).map(log => `
+                <li>
+                    <span><strong>${escapeHtml(usuarios[log.userId]?.name || 'Analista')}</strong>${log.note ? `<small>${escapeHtml(log.note)}</small>` : ''}</span>
+                    <b class="num-mono">${Number(log.value || 0)} pts</b>
+                    <time>${escapeHtml(formatRotationTime(log.timestamp, true))} · ${escapeHtml(usuarios[log.registradoPor]?.name || 'gestão')}</time>
+                </li>`).join('')}</ul>${lancamentos.length > 12 ? `<small>Mostrando 12 de ${lancamentos.length}. O restante fica no Histórico.</small>` : ''}`;
+        }
+
+        async function submitManualPieceScore(event) {
+            event.preventDefault();
+            const analystId = document.getElementById('pieceManualAnalyst').value;
+            const nota = Number(document.getElementById('pieceManualScore').value);
+            const observacao = document.getElementById('pieceManualNote').value.trim();
+
+            /* A tela só é montada dentro do Modo Gestão, mas quem concede ponto confere
+               permissão de novo: o formulário existe no DOM da página inteira. */
+            if (!isAdminLoggedIn) { showToast('Somente a gestão lança nota de peças.', 'error'); return; }
+            if (!analystId || !canManagerViewAnalyst(analystId)) { showToast('Escolha um analista dentro do seu escopo de gestão.', 'error'); return; }
+            if (!Number.isFinite(nota) || nota < 0 || nota > 100) { showToast('A nota precisa estar entre 0 e 100.', 'error'); return; }
+
+            const usuarios = getStore()?.users || defaultUsers;
+            const jaTem = manualPieceScoreLogs().find(log => log.userId === analystId);
+            if (jaTem && !await actuarConfirm({
+                icon: 'interrogation', title: `${usuarios[analystId]?.name || 'Este analista'} já tem nota lançada`,
+                message: `Há um lançamento de ${Number(jaTem.value || 0)} pts. Lançar de novo SOMA ao total, não substitui — para corrigir, exclua o anterior no Histórico.`,
+                confirmLabel: 'Lançar mesmo assim'
+            })) return;
+
+            setFormBusy(event.target, true);
+            const registro = {
+                id: uid(), type: 'PECA', userId: analystId, value: Math.round(nota),
+                tipo: 'Nota de peças (lançamento manual)', note: observacao,
+                manualEntry: true, registradoPor: currentAdminId, timestamp: Date.now()
+            };
+            appStore.logs.push(registro);
+            const ok = await persistStore();
+            setFormBusy(event.target, false);
+            if (!ok) {
+                appStore.logs = (appStore.logs || []).filter(log => log.id !== registro.id);
+                showToast(lastPersistError || 'A nota não foi salva.', 'error');
+                return;
+            }
+            showToast(`Nota de ${registro.value} pts lançada para ${usuarios[analystId]?.name || 'o analista'}.`);
+            event.target.reset();
+            render();
+        }
+
         function renderPiecesExperience() {
             try {
                 if (typeof renderPiecesModule !== 'function') throw new Error('O módulo visual de peças não foi carregado.');
@@ -7353,6 +7449,7 @@
                 renderManagerPanel('transferências', renderAdminTransferRequests);
                 renderManagerPanel('experiência gerencial', renderManagerExperience);
                 if (activeAdminTab === 'pecas') renderManagerPanel('peças', renderPiecesExperience);
+                renderManualPieceScore();
                 window.updatePiecesPendingBadge?.();
             } else if (currentRoute.name === 'pecas') {
                 document.getElementById('viewAgent').classList.add('hidden');
@@ -8063,7 +8160,9 @@
                 else if (log.type === 'PENALTY') detail = `Motivo: ${escapeHtml(log.reason || 'Não informado')}`;
                 else if (log.type === 'PRIORITY') detail = `Protocolo ${escapeHtml(log.protocolo || '-')}`;
                 else if (log.type === 'PRIORITY_ADJUSTMENT') detail = `Protocolo ${escapeHtml(log.protocolo || '-')} · ${escapeHtml(log.reason || 'Sem motivo registrado')}`;
-                else if (log.type === 'PECA') detail = `${escapeHtml(log.tipo || 'Solicitação de peça')}${log.clientId ? ` · Cliente ${escapeHtml(log.clientId)}` : ''}`;
+                // A observação do lançamento manual entra aqui: sem ela, a auditoria mostra
+                // um ponto concedido à mão e nenhuma pista do que ele considerou.
+                else if (log.type === 'PECA') detail = `${escapeHtml(log.tipo || 'Solicitação de peça')}${log.clientId ? ` · Cliente ${escapeHtml(log.clientId)}` : ''}${log.note ? ` · ${escapeHtml(log.note)}` : ''}`;
                 else return; // tipo desconhecido não vira linha silenciosamente torta
                 rows.push({
                     id: log.id, timestamp: Number(log.timestamp || 0), userId: log.userId, userName: user.name,
@@ -10242,8 +10341,9 @@
             document.getElementById('admUserCatraca').innerHTML = catOpt;
             document.getElementById('penaltyUser').innerHTML = admOpt;
 
-            populateCatracaAnalystOptions('admPecaTargetUser');
-            populateCatracaAnalystOptions('pecaTargetUser');
+            /* Os dois selects antigos de peça saíram com a central nova; sobrou este, do
+               lançamento manual que faz a ponte do ciclo em andamento. */
+            populateCatracaAnalystOptions('pieceManualAnalyst');
 
             /* Para a gestão o departamento acompanha o FILTRO, não o analista que ficou
                em contexto. Seguindo `currentActiveUser`, trocar de departamento sem
@@ -12058,37 +12158,6 @@
             showToast('Sessão de Envio/Coleta encerrada.');
         }
 
-        async function submitPecaScore(e) {
-            e.preventDefault();
-            setFormBusy(e.target, true);
-            const store = getStore();
-            const usersList = store.users || defaultUsers;
-            const targetUser = document.getElementById('pecaTargetUser').value;
-            const tipo = document.getElementById('pecaTipo').value;
-            const clientId = document.getElementById('pecaClientId').value.trim();
-            const points = parseInt(document.getElementById('pecaPoints').value) || 0;
-
-            if (!targetUser || !clientId) { setFormBusy(e.target, false); return; }
-
-            appStore.logs.push({
-                id: uid(),
-                type: "PECA",
-                userId: targetUser,
-                clientId,
-                tipo,
-                value: points,
-                registradoPor: currentPecaUserId,
-                timestamp: Date.now()
-            });
-
-            const ok = await persistStore();
-            setFormBusy(e.target, false);
-            if (ok) {
-                showToast(`Peça registrada! ${points} pts atribuídos a ${usersList[targetUser].name}.`);
-                e.target.reset();
-            }
-            render();
-        }
 
         function renderMyPecaRequests() {
             const tbody = document.getElementById('myPecaRequestsTable');
@@ -12113,68 +12182,7 @@
             tbody.innerHTML = html || `<tr><td colspan="5" class="p-3 text-center text-secondary">Nenhuma peça registrada ainda.</td></tr>`;
         }
 
-        async function addPecaScoreAdmin(e) {
-            e.preventDefault();
-            setFormBusy(e.target, true);
-            const store = getStore();
-            const usersList = store.users || defaultUsers;
-            const targetUser = document.getElementById('admPecaTargetUser').value;
-            const tipo = document.getElementById('admPecaTipo').value;
-            const clientId = document.getElementById('admPecaClientId').value.trim();
-            const points = parseInt(document.getElementById('admPecaPoints').value) || 0;
 
-            if (!targetUser || !clientId) { setFormBusy(e.target, false); return; }
-
-            appStore.logs.push({
-                id: uid(),
-                type: "PECA",
-                userId: targetUser,
-                clientId,
-                tipo,
-                value: points,
-                registradoPor: currentAdminId,
-                timestamp: Date.now()
-            });
-
-            const ok = await persistStore();
-            setFormBusy(e.target, false);
-            if (ok) {
-                showToast(`Peça registrada! ${points} pts atribuídos a ${usersList[targetUser].name}.`);
-                e.target.reset();
-            }
-            render();
-        }
-
-        function renderAdminPecaLogs() {
-            const tbody = document.getElementById('admPecaLogsTable');
-            if (!tbody) return;
-            const store = getStore();
-            const usersList = store.users || defaultUsers;
-            const isCurrentMonth = activeMonthKey === "atual";
-            const logs = (store.logs || []).filter(l => l.type === "PECA").slice().reverse();
-            let html = "";
-            logs.forEach(l => {
-                const user = usersList[l.userId];
-                if (!user || !canManagerViewAnalyst(l.userId)) return;
-                const registrador = usersList[l.registradoPor];
-                const d = new Date(l.timestamp).toLocaleDateString("pt-BR") + " " + new Date(l.timestamp).toLocaleTimeString("pt-BR", {hour: '2-digit', minute:'2-digit'});
-                const deleteBtn = isCurrentMonth
-                    ? `<button onclick="deleteLog('${l.id}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>`
-                    : `<span class="text-[10px] text-secondary">Mês fechado</span>`;
-                html += `
-                    <tr>
-                        <td class="p-3 text-secondary">${d}</td>
-                        <td class="p-3 font-semibold text-white"><button onclick="openManagerAnalyst('${l.userId}','pecas')">${escapeHtml(user.name)}</button></td>
-                        <td class="p-3">${registrador ? registrador.name : '-'}</td>
-                        <td class="p-3">${l.tipo || '-'}</td>
-                        <td class="p-3">${l.clientId || '-'}</td>
-                        <td class="p-3 text-right font-bold text-emerald-400">+${l.value} pts</td>
-                        <td class="p-3 text-right">${deleteBtn}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html || `<tr><td colspan="7" class="p-4 text-center text-secondary">Nenhuma peça registrada.</td></tr>`;
-        }
 
         window.onload = async () => {
             // A rota tem de ser lida ANTES de initApp(). A navegação inicial roda com a
@@ -12198,15 +12206,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-senha-mascarada-1"></script>
-    <script src="js/external-requests.js?v=20260819-senha-mascarada-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-senha-mascarada-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-senha-mascarada-1"></script>
-    <script src="js/performance-domain.js?v=20260819-senha-mascarada-1"></script>
-    <script src="js/manager-experience.js?v=20260819-senha-mascarada-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-senha-mascarada-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-senha-mascarada-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-senha-mascarada-1"></script>
-    <script src="js/performance-platform.js?v=20260819-senha-mascarada-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-nota-peca-manual-1"></script>
+    <script src="js/external-requests.js?v=20260819-nota-peca-manual-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-nota-peca-manual-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-nota-peca-manual-1"></script>
+    <script src="js/performance-domain.js?v=20260819-nota-peca-manual-1"></script>
+    <script src="js/manager-experience.js?v=20260819-nota-peca-manual-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-nota-peca-manual-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-nota-peca-manual-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-nota-peca-manual-1"></script>
+    <script src="js/performance-platform.js?v=20260819-nota-peca-manual-1"></script>
 </body>
 </html>
