@@ -50,12 +50,12 @@ test('dar o cliente como sem retorno exige as 3 tentativas do manual', () => {
     const semRetorno = { resolution: 'unresolved', reason: 'no_answer', detail: 'Cliente não respondeu em nenhum canal.' };
 
     assert.equal(R.NO_ANSWER_MIN_ATTEMPTS, 3);
-    assert.deepEqual(R.noAnswerProgress(r.current), { done: 0, required: 3, missing: 3, allowed: false });
+    assert.deepEqual(R.noAnswerProgress(R.activeOf(r, 'ana')), { done: 0, required: 3, missing: 3, allowed: false });
     assert.throws(() => R.complete(r, 'ana', 'p1', AGORA, semRetorno), /Registre 3 tentativas de contato .* Há 0\./);
 
     r = R.logContact(r, 'ana', { channel: 'call', result: 'no_answer' }, AGORA + 1);
     r = R.logContact(r, 'ana', { channel: 'whatsapp', result: 'no_answer' }, AGORA + 2);
-    assert.deepEqual(R.noAnswerProgress(r.current), { done: 2, required: 3, missing: 1, allowed: false });
+    assert.deepEqual(R.noAnswerProgress(R.activeOf(r, 'ana')), { done: 2, required: 3, missing: 1, allowed: false });
     assert.throws(() => R.complete(r, 'ana', 'p1', AGORA, semRetorno), /Há 2\./);
 
     r = R.logContact(r, 'ana', { channel: 'email', result: 'no_answer' }, AGORA + 3);
@@ -91,7 +91,7 @@ test('tentativas e notas ficam no atendimento concluído, com autor e horário',
     r = R.logContact(r, 'ana', { channel: 'call', result: 'no_answer', note: 'caixa postal' }, AGORA + 1);
     r = R.addNote(r, 'ana', 'Cliente pediu retorno depois das 15h.', AGORA + 2);
 
-    const [tentativa] = R.attemptsOf(r.current);
+    const [tentativa] = R.attemptsOf(R.activeOf(r, 'ana'));
     assert.equal(tentativa.channel, 'call');
     assert.equal(tentativa.note, 'caixa postal');
     assert.equal(tentativa.byId, 'ana');
@@ -100,7 +100,7 @@ test('tentativas e notas ficam no atendimento concluído, com autor e horário',
     /* `complete()` limpa `rotation.current`, então o que a ficha reuniu tem de sobreviver
        em `lastCompleted` — é de lá que o lançamento copia para chegar à gestão. */
     const fim = R.complete(r, 'ana', 'p1', AGORA + 3, DESFECHO_OK);
-    assert.equal(fim.current, null);
+    assert.deepEqual(R.activeList(fim), [], 'concluir tira o atendimento da lista de abertos');
     assert.equal(R.attemptsOf(fim.lastCompleted).length, 1);
     assert.equal(R.notesOf(fim.lastCompleted).length, 1);
     assert.equal(fim.lastCompleted.resolutionDetail, DESFECHO_OK.detail);
@@ -128,7 +128,7 @@ test('a ficha substitui o formulário solto e só abre para quem está atendendo
        recusado depois. Quem está em Modo Gestão não escreve na ficha de ninguém. */
     const dono = doc.slice(doc.indexOf('function currentOwnAttendance()'), doc.indexOf('function openPriorityAttendanceRecord()'));
     assert.match(dono, /if \(isAdminLoggedIn\) return null;/);
-    assert.match(dono, /rotation\?\.current\?\.analystId === currentActiveUser \? rotation\.current : null/);
+    assert.match(dono, /PriorityRotation\.activeOf\(rotation, currentActiveUser\)/);
 
     // Se o atendimento acabar por fora, a ficha fecha em vez de mostrar botões mortos.
     const render = doc.slice(doc.indexOf('function renderPriorityAttendanceRecord()'), doc.indexOf('function syncAttendanceResolutionReasons()'));
@@ -145,9 +145,9 @@ test('o desfecho viaja com o lançamento até a gestão', () => {
     for (const campo of ['request.resolution', 'request.resolutionReason', 'request.resolutionDetail', 'request.contactAttempts', 'request.attendanceNotes']) {
         assert.ok(envio.includes(campo), `o lançamento não leva ${campo}`);
     }
-    /* A cópia lê `rotationBefore.current`, não `completed.current`: concluir a vez zera o
-       atendimento corrente, e ler de lá traria vazio. */
-    assert.match(envio, /deepClone\(PriorityRotation\.attemptsOf\(rotationBefore\.current\)\)/);
+    /* A cópia lê o atendimento de ANTES da conclusão: concluir tira o registro de
+       `rotation.active`, e ler depois traria vazio. */
+    assert.match(envio, /deepClone\(PriorityRotation\.attemptsOf\(meuAtendimento\)\)/);
 
     // E a gestão vê isso na revisão, em vez de decidir só pelo protocolo.
     assert.match(doc, /function renderPriorityAttendanceEvidence\(request\)/);
@@ -193,7 +193,7 @@ test('o produto é fechado em lista, e a lista mora no domínio', () => {
     for (const errada of ['Facil Fit', 'fácil fit', 'FÁCIL FIT', 'Outra']) {
         assert.throws(() => R.assign(r, 'ana', 'gestor', { ...BRIEFING, product: errada }, AGORA), /Escolha o produto do atendimento/);
     }
-    assert.equal(R.assign(r, 'ana', 'gestor', BRIEFING, AGORA).current.briefing.product, 'Toletus');
+    assert.equal(R.activeOf(R.assign(r, 'ana', 'gestor', BRIEFING, AGORA), 'ana').briefing.product, 'Toletus');
 });
 
 test('as marcas do Portal e as do despacho são as mesmas', () => {
@@ -269,5 +269,118 @@ test('o produto acompanha o atendimento até a auditoria', () => {
     assert.match(doc, /<dt>Produto<\/dt><dd>\$\{escapeHtml\(briefing\.product \|\| '—'\)\}/);
     assert.match(doc, /historyDetailPair\('Produto', briefing\.product\)/);
     // E o lançamento carrega o produto, senão ele morre com a vez concluída.
-    assert.match(doc, /request\.product = rotationBefore\.current\.briefing\.product;/);
+    assert.match(doc, /request\.product = meuAtendimento\.briefing\.product;/);
+});
+
+/* ==========================================================================
+   ATENDIMENTOS SIMULTÂNEOS
+   O rodízio guardava UM atendimento e `assign` recusava com "Já existe um
+   atendimento em andamento". Numa hora de pico isso trava a operação: chegam
+   vários chamados prioritários e o segundo espera o primeiro acabar, mesmo
+   havendo gente livre na fila.
+   ========================================================================== */
+
+const TIME = ['ana', 'bruno', 'caio', 'duda'];
+const fila = () => R.create('Sistema', TIME, AGORA);
+const brief = (n) => ({ ...BRIEFING, demand: `demanda ${n}`, clientId: `TZ000${n}` });
+
+test('vários analistas atendem ao mesmo tempo, e a vez anda para o próximo livre', () => {
+    let r = fila();
+    assert.equal(R.nextId(r), 'ana');
+
+    r = R.assign(r, 'ana', 'gestor', brief(1), AGORA + 1);
+    assert.equal(R.nextId(r), 'bruno', 'a vez precisa andar sem esperar ana concluir');
+    r = R.assign(r, 'bruno', 'gestor', brief(2), AGORA + 2);
+    r = R.assign(r, 'caio', 'gestor', brief(3), AGORA + 3);
+
+    assert.deepEqual(R.activeList(r).map(item => item.analystId), ['ana', 'bruno', 'caio']);
+    assert.equal(R.nextId(r), 'duda');
+});
+
+test('o limite é por pessoa: ninguém recebe um segundo chamado antes de fechar o primeiro', () => {
+    let r = R.assign(fila(), 'ana', 'gestor', brief(1), AGORA + 1);
+    assert.throws(() => R.assign(r, 'ana', 'gestor', brief(9), AGORA + 2), /Este analista já está com um atendimento em andamento/);
+    assert.throws(() => R.start(r, 'ana', AGORA + 2), /Você já está com um atendimento em andamento/);
+    // E continua valendo a ordem: não dá para saltar para o terceiro da fila.
+    assert.throws(() => R.assign(r, 'caio', 'gestor', brief(9), AGORA + 2), /só pode ser encaminhado ao próximo da fila/);
+});
+
+test('com todos ocupados não há próximo, e a fila diz isso em vez de escolher alguém', () => {
+    let r = fila();
+    TIME.forEach((id, i) => { r = R.assign(r, id, 'gestor', brief(i), AGORA + i + 1); });
+    assert.equal(R.nextId(r), null);
+    assert.deepEqual(R.view(r).upcoming, []);
+});
+
+test('cada um escreve só na própria ficha, mesmo com várias abertas', () => {
+    let r = R.assign(R.assign(fila(), 'ana', 'gestor', brief(1), AGORA + 1), 'bruno', 'gestor', brief(2), AGORA + 2);
+    r = R.logContact(r, 'bruno', { channel: 'call', result: 'no_answer' }, AGORA + 3);
+    r = R.addNote(r, 'ana', 'Nota da ana.', AGORA + 4);
+
+    assert.equal(R.attemptsOf(R.activeOf(r, 'bruno')).length, 1);
+    assert.equal(R.attemptsOf(R.activeOf(r, 'ana')).length, 0, 'a tentativa do bruno não pode cair na ficha da ana');
+    assert.equal(R.notesOf(R.activeOf(r, 'ana')).length, 1);
+    assert.equal(R.notesOf(R.activeOf(r, 'bruno')).length, 0);
+});
+
+test('concluir fecha só o próprio atendimento e devolve só a própria vez', () => {
+    let r = R.assign(R.assign(fila(), 'ana', 'gestor', brief(1), AGORA + 1), 'bruno', 'gestor', brief(2), AGORA + 2);
+    r = R.complete(r, 'bruno', 'p-bruno', AGORA + 3, DESFECHO_OK);
+
+    assert.deepEqual(R.activeList(r).map(item => item.analystId), ['ana'], 'o atendimento da ana continua aberto');
+    assert.equal(r.queue[r.queue.length - 1], 'bruno', 'só quem concluiu vai para o fim da fila');
+    assert.equal(r.lastCompleted.analystId, 'bruno');
+    // E ana segue no lugar dela, que ainda não concluiu.
+    assert.equal(r.queue[0], 'ana');
+});
+
+test('a gestão encerra o atendimento de alguém sem tocar nos outros', () => {
+    let r = R.assign(R.assign(fila(), 'ana', 'gestor', brief(1), AGORA + 1), 'bruno', 'gestor', brief(2), AGORA + 2);
+    const alvo = R.activeOf(r, 'ana').id;
+
+    /* Sem o id, "encerrar o atual" não identifica um: o domínio recusa em vez de escolher
+       por conta própria qual dos dois fechar. */
+    assert.throws(() => R.resolveCurrent(r, 'end_move', 'gestor', 'motivo suficiente', AGORA + 3), /escolha qual encerrar/);
+
+    const fim = R.resolveCurrent(r, 'end_move', 'gestor', 'cliente desistiu', AGORA + 3, alvo);
+    assert.deepEqual(R.activeList(fim).map(item => item.analystId), ['bruno']);
+
+    // Pular e pausar também miram o atendimento da pessoa, e só o dela.
+    const pulado = R.skip(r, 'ana', 'gestor', 'ausente do posto', AGORA + 3);
+    assert.deepEqual(R.activeList(pulado).map(item => item.analystId), ['bruno']);
+    const pausado = R.pauseParticipant(r, 'ana', 'gestor', 'saiu mais cedo', AGORA + 3, 'cancel');
+    assert.deepEqual(R.activeList(pausado).map(item => item.analystId), ['bruno']);
+});
+
+test('rodízio gravado antes da concorrência continua abrindo', () => {
+    /* Há rodízios salvos com `current` único. Ler isso como lista vazia perderia o
+       atendimento em curso de quem estivesse trabalhando na virada. */
+    const antigo = { ...fila(), current: { id: 'a1', analystId: 'ana', status: 'in_progress', startedAt: AGORA } };
+    assert.deepEqual(R.activeList(antigo).map(item => item.analystId), ['ana']);
+    assert.equal(R.nextId(antigo), 'bruno');
+    assert.equal(R.view(antigo).active.length, 1);
+
+    // E a primeira escrita já grava no formato novo, sem deixar as duas fontes convivendo.
+    const migrado = R.assign(antigo, 'bruno', 'gestor', brief(2), AGORA + 1);
+    assert.equal(migrado.current, undefined, 'o `current` antigo precisa sumir na escrita');
+    assert.deepEqual(migrado.active.map(item => item.analystId), ['ana', 'bruno']);
+});
+
+test('a tela mostra os atendimentos no plural, e a ficha só no cartão do dono', () => {
+    const doc = html();
+    assert.match(doc, /function renderPriorityAttendanceCard\(attendance\)/);
+    assert.match(doc, /const abertos = view\.active \|\| \[\];/);
+    assert.match(doc, /\$\{abertos\.length\} atendimentos em andamento ao mesmo tempo/);
+
+    /* Com vários cartões, o botão da ficha não pode aparecer em todos: cada analista vê o
+       dele e em mais nenhum. */
+    assert.match(doc, /const meu = !isAdminLoggedIn && attendance\.analystId === currentActiveUser;/);
+    assert.match(doc, /const acao = meu \? `<button[^`]*openPriorityAttendanceRecord\(\)/);
+
+    // Encaminhar deixou de exigir fila parada; só exige alguém livre.
+    assert.match(doc, /if \(view\.status !== 'active' \|\| !view\.next\) \{ showToast\(view\.status !== 'active' \? 'O rodízio está pausado\.' : 'Todos os analistas da fila já estão em atendimento\.'/);
+    assert.doesNotMatch(doc, /view\.current/, 'sobrou leitura do atendimento único na tela');
+
+    // Encerrar passou para a linha do participante, que escala para N atendimentos.
+    assert.match(doc, /\$\{isCurrent \? `<button onclick="openPriorityRotationAction\('resolve','\$\{id\}'\)">Encerrar atendimento<\/button>` : ''\}/);
 });

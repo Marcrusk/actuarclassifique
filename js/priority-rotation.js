@@ -189,15 +189,57 @@
         return normalizePositions(rotation);
     }
 
+    /* ATENDIMENTOS SIMULTÂNEOS
+       O rodízio guardava UM atendimento (`rotation.current`), e `assign` recusava com "Já
+       existe um atendimento em andamento". Numa hora de pico isso trava a operação inteira:
+       chegam vários chamados prioritários, e o segundo tem de esperar o primeiro acabar,
+       mesmo havendo gente livre na fila.
+
+       Agora são vários (`rotation.active`), um por analista. Quem já está com um chamado
+       não recebe outro — o limite é por PESSOA, não pela equipe. */
+    function activeList(rotation) {
+        // Tolera as rotinas gravadas antes da concorrência, que têm `current` único.
+        if (Array.isArray(rotation?.active)) return rotation.active;
+        return rotation?.current ? [rotation.current] : [];
+    }
+    function activeOf(rotation, analystId) { return activeList(rotation).find(item => item.analystId === analystId) || null; }
+    function isBusy(rotation, analystId) { return Boolean(activeOf(rotation, analystId)); }
+    function attendanceById(rotation, attendanceId) { return activeList(rotation).find(item => item.id === attendanceId) || null; }
+
+    /* Materializa a lista na escrita: quem grava depois disto grava no formato novo, e o
+       `current` antigo some em vez de virar uma segunda fonte de verdade. */
+    function withActive(rotation) {
+        rotation.active = activeList(rotation).slice();
+        delete rotation.current;
+        return rotation;
+    }
+    function replaceActive(rotation, attendance) {
+        rotation.active = activeList(rotation).map(item => (item.id === attendance.id ? attendance : item));
+        return rotation;
+    }
+    function dropActive(rotation, attendanceId) {
+        rotation.active = activeList(rotation).filter(item => item.id !== attendanceId);
+        return rotation;
+    }
+    /* Concluir devolve a vez ao fim da fila. Sai aqui porque quatro caminhos fazem o mesmo
+       movimento — concluir, cancelar, pular e pausar —, e um deles esquecer seria a fila
+       parar de girar sem ninguém perceber. */
+    function sendToBack(rotation, analystId) {
+        rotation.queue = rotation.queue.filter(id => id !== analystId);
+        if (rotation.participants[analystId]?.status === PARTICIPANT_STATUS.ACTIVE) rotation.queue.push(analystId);
+        return rotation;
+    }
+
     function nextId(rotation) {
         if (!rotation?.queue?.length) return null;
-        if (!rotation.current) return rotation.queue[0];
-        const index = rotation.queue.indexOf(rotation.current.analystId);
-        return rotation.queue[index + 1] || rotation.queue.find(id => id !== rotation.current.analystId) || null;
+        /* Quem está atendendo continua na fila, na posição dele — só sai do caminho de um
+           novo encaminhamento. Tirá-lo aqui adiantaria a vez sem ele ter concluído nada. */
+        const ocupados = new Set(activeList(rotation).map(item => item.analystId));
+        return rotation.queue.find(id => !ocupados.has(id)) || null;
     }
 
     function snapshot(rotation) {
-        return { status: rotation.status, queue: [...rotation.queue], current: rotation.current ? { ...rotation.current } : null, version: rotation.version };
+        return { status: rotation.status, queue: [...rotation.queue], active: activeList(rotation).map(item => ({ ...item })), version: rotation.version };
     }
 
     function canManage(actor, team) {
@@ -210,25 +252,25 @@
     }
 
     function start(input, actorId, now = Date.now(), attendanceId = null) {
-        const rotation = clone(input);
+        const rotation = withActive(clone(input));
         assert(rotation.status === ROTATION_STATUS.ACTIVE, 'O rodízio está pausado.', 'rotation_paused');
-        assert(!rotation.current, 'Já existe um atendimento em andamento.', 'attendance_in_progress');
+        assert(!isBusy(rotation, actorId), 'Você já está com um atendimento em andamento.', 'attendance_in_progress');
         assert(nextId(rotation), 'Nenhum analista está disponível para este rodízio.', 'empty_queue');
         assert(nextId(rotation) === actorId, 'Somente o próximo analista pode iniciar o atendimento.', 'not_next');
         const before = snapshot(rotation);
-        rotation.current = {
+        rotation.active.push({
             id: attendanceId || `att-${now}-${actorId}`,
             analystId: actorId,
             team: rotation.team,
             status: ATTENDANCE_STATUS.IN_PROGRESS,
             startedAt: now,
             positionBefore: rotation.queue.indexOf(actorId) + 1
-        };
+        });
         return appendEvents(rotation, [event('attendance_started', rotation, { analystId: actorId, actorId, now, previousState: before, nextState: snapshot(rotation) })]);
     }
 
     function assign(input, analystId, actorId, details, now = Date.now(), attendanceId = null) {
-        const rotation = clone(input);
+        const rotation = withActive(clone(input));
         const briefing = {
             demand: String(details?.demand || '').trim(),
             product: String(details?.product || '').trim(),
@@ -238,14 +280,17 @@
             instructions: String(details?.instructions || '').trim()
         };
         assert(rotation.status === ROTATION_STATUS.ACTIVE, 'O rodízio está pausado.', 'rotation_paused');
-        assert(!rotation.current, 'Já existe um atendimento em andamento.', 'attendance_in_progress');
+        /* O limite é por pessoa: outros analistas podem estar atendendo ao mesmo tempo, mas
+           ninguém recebe um segundo chamado antes de fechar o primeiro. */
+        assert(!isBusy(rotation, analystId), 'Este analista já está com um atendimento em andamento.', 'attendance_in_progress');
+        assert(nextId(rotation), 'Todos os analistas da fila já estão em atendimento.', 'queue_busy');
         assert(nextId(rotation) === analystId, 'O atendimento só pode ser encaminhado ao próximo da fila.', 'not_next');
         assert(briefing.demand && briefing.clientName && briefing.clientId && briefing.phone && briefing.instructions, 'Preencha todas as informações do atendimento.', 'briefing_required');
         /* A marca é fechada: digitada livre, "Facil Fit", "fácil-fit" e "FÁCIL FIT" viram
            três produtos diferentes no primeiro relatório que agrupar por ela. */
         assert(BRANDS.includes(briefing.product), 'Escolha o produto do atendimento.', 'product_required');
         const before = snapshot(rotation);
-        rotation.current = {
+        rotation.active.push({
             id: attendanceId || `att-${now}-${analystId}`,
             analystId,
             team: rotation.team,
@@ -254,7 +299,7 @@
             positionBefore: rotation.queue.indexOf(analystId) + 1,
             assignedBy: actorId,
             briefing
-        };
+        });
         return appendEvents(rotation, [event('attendance_assigned', rotation, { analystId, actorId, now, previousState: before, nextState: snapshot(rotation) })]);
     }
 
@@ -262,8 +307,9 @@
        `complete()` de propósito: registrar tentativa e nota são portas novas para o mesmo
        objeto, e uma porta sem tranca torna a outra decorativa. */
     function assertOwnAttendance(rotation, actorId) {
-        assert(rotation.current, 'Não existe atendimento em andamento.', 'no_attendance');
-        assert(rotation.current.analystId === actorId, 'Este atendimento pertence a outro analista.', 'not_owner');
+        assert(activeList(rotation).length, 'Não existe atendimento em andamento.', 'no_attendance');
+        assert(isBusy(rotation, actorId), 'Este atendimento pertence a outro analista.', 'not_owner');
+        return activeOf(rotation, actorId);
     }
 
     function attemptsOf(attendance) {
@@ -280,29 +326,29 @@
     }
 
     function logContact(input, actorId, details, now = Date.now()) {
-        const rotation = clone(input);
-        assertOwnAttendance(rotation, actorId);
+        const rotation = withActive(clone(input));
+        const atendimento = assertOwnAttendance(rotation, actorId);
         const channel = String(details?.channel || '');
         const result = String(details?.result || '');
         assert(Object.values(CONTACT_CHANNEL).includes(channel), 'Escolha o canal do contato.', 'invalid_channel');
         assert(Object.values(CONTACT_RESULT).includes(result), 'Escolha o resultado do contato.', 'invalid_result');
         const attempt = {
-            id: `try-${now}-${attemptsOf(rotation.current).length + 1}`,
+            id: `try-${now}-${attemptsOf(atendimento).length + 1}`,
             channel, result,
             note: String(details?.note || '').trim(),
             at: now, byId: actorId
         };
-        rotation.current = { ...rotation.current, contactAttempts: [...attemptsOf(rotation.current), attempt] };
+        replaceActive(rotation, { ...atendimento, contactAttempts: [...attemptsOf(atendimento), attempt] });
         return appendEvents(rotation, [event('contact_attempted', rotation, { analystId: actorId, actorId, now, reason: `${CONTACT_CHANNEL_LABEL[channel]} · ${CONTACT_RESULT_LABEL[result]}` })]);
     }
 
     function addNote(input, actorId, text, now = Date.now()) {
-        const rotation = clone(input);
-        assertOwnAttendance(rotation, actorId);
+        const rotation = withActive(clone(input));
+        const atendimento = assertOwnAttendance(rotation, actorId);
         const conteudo = String(text || '').trim();
         assert(conteudo.length >= 3, 'Escreva a nota antes de salvar.', 'note_required');
-        const nota = { id: `note-${now}-${notesOf(rotation.current).length + 1}`, text: conteudo, at: now, byId: actorId };
-        rotation.current = { ...rotation.current, notes: [...notesOf(rotation.current), nota] };
+        const nota = { id: `note-${now}-${notesOf(atendimento).length + 1}`, text: conteudo, at: now, byId: actorId };
+        replaceActive(rotation, { ...atendimento, notes: [...notesOf(atendimento), nota] });
         return appendEvents(rotation, [event('attendance_noted', rotation, { analystId: actorId, actorId, now })]);
     }
 
@@ -327,19 +373,18 @@
     }
 
     function complete(input, actorId, priorityId, now = Date.now(), outcome = null) {
-        const rotation = clone(input);
-        assertOwnAttendance(rotation, actorId);
-        if (rotation.current.priorityId === priorityId && rotation.current.status === ATTENDANCE_STATUS.COMPLETED) return rotation;
+        const rotation = withActive(clone(input));
+        const atual = assertOwnAttendance(rotation, actorId);
+        if (atual.priorityId === priorityId && atual.status === ATTENDANCE_STATUS.COMPLETED) return rotation;
         assert(!rotation.events?.some(item => item.type === 'priority_registered' && item.relatedPriorityId === priorityId), 'Esta prioridade já concluiu uma vez do rodízio.', 'duplicate_completion');
-        const desfecho = normalizeOutcome(outcome, rotation.current);
+        const desfecho = normalizeOutcome(outcome, atual);
         const before = snapshot(rotation);
         const attendance = {
-            ...rotation.current, status: ATTENDANCE_STATUS.COMPLETED, completedAt: now, priorityId,
+            ...atual, status: ATTENDANCE_STATUS.COMPLETED, completedAt: now, priorityId,
             resolution: desfecho.resolution, resolutionReason: desfecho.reason, resolutionDetail: desfecho.detail
         };
-        rotation.queue = rotation.queue.filter(id => id !== actorId);
-        if (rotation.participants[actorId]?.status === PARTICIPANT_STATUS.ACTIVE) rotation.queue.push(actorId);
-        rotation.current = null;
+        dropActive(rotation, atual.id);
+        sendToBack(rotation, actorId);
         rotation.lastCompleted = attendance;
         normalizePositions(rotation);
         const next = nextId(rotation);
@@ -351,13 +396,14 @@
     }
 
     function skip(input, targetId, actorId, reason, now = Date.now()) {
-        const rotation = clone(input); reason = requiredReason(reason);
+        const rotation = withActive(clone(input)); reason = requiredReason(reason);
         assert(rotation.queue.includes(targetId), 'O participante não está na fila ativa.', 'participant_not_active');
         const before = snapshot(rotation);
-        if (rotation.current?.analystId === targetId) {
-            rotation.current = { ...rotation.current, status: ATTENDANCE_STATUS.CANCELLED, completedAt: now, endedBy: actorId, reason };
-            rotation.lastCompleted = rotation.current;
-            rotation.current = null;
+        // Pular quem está atendendo cancela o atendimento DELE, e só o dele.
+        const atendimento = activeOf(rotation, targetId);
+        if (atendimento) {
+            rotation.lastCompleted = { ...atendimento, status: ATTENDANCE_STATUS.CANCELLED, completedAt: now, endedBy: actorId, reason };
+            dropActive(rotation, atendimento.id);
         }
         rotation.queue = rotation.queue.filter(id => id !== targetId);
         rotation.queue.push(targetId);
@@ -366,15 +412,15 @@
     }
 
     function pauseParticipant(input, targetId, actorId, reason, now = Date.now(), currentHandling = 'keep') {
-        const rotation = clone(input); reason = requiredReason(reason);
+        const rotation = withActive(clone(input)); reason = requiredReason(reason);
         assert(rotation.participants[targetId], 'Participante não encontrado.', 'participant_not_found');
         const before = snapshot(rotation);
-        if (rotation.current?.analystId === targetId && currentHandling === 'keep') {
-            rotation.current.pauseAfterCompletion = true;
-        } else if (rotation.current?.analystId === targetId) {
-            rotation.current = { ...rotation.current, status: ATTENDANCE_STATUS.CANCELLED, completedAt: now, endedBy: actorId, reason };
-            rotation.lastCompleted = rotation.current;
-            rotation.current = null;
+        const atendimento = activeOf(rotation, targetId);
+        if (atendimento && currentHandling === 'keep') {
+            replaceActive(rotation, { ...atendimento, pauseAfterCompletion: true });
+        } else if (atendimento) {
+            rotation.lastCompleted = { ...atendimento, status: ATTENDANCE_STATUS.CANCELLED, completedAt: now, endedBy: actorId, reason };
+            dropActive(rotation, atendimento.id);
         }
         rotation.queue = rotation.queue.filter(id => id !== targetId);
         rotation.participants[targetId] = { ...rotation.participants[targetId], status: PARTICIPANT_STATUS.PAUSED, pausedAt: now, pauseReason: reason, position: null };
@@ -397,7 +443,14 @@
         const rotation = clone(input);
         const unique = [...new Set(order || [])];
         assert(unique.length === rotation.queue.length && unique.every(id => rotation.queue.includes(id)), 'A nova ordem deve conter todos os participantes ativos.', 'invalid_order');
-        if (rotation.current) assert(unique[0] === rotation.current.analystId, 'Um atendimento iniciado não pode mudar de posição.', 'current_position_locked');
+        /* Quem está atendendo não muda de lugar. Antes a regra era "o atendimento tem de
+           continuar em primeiro"; com vários simultâneos isso não se sustenta — o que
+           precisa ficar parado é a posição de CADA um que já recebeu o chamado. */
+        activeList(rotation).forEach(item => {
+            const antes = rotation.queue.indexOf(item.analystId);
+            if (antes === -1) return;
+            assert(unique.indexOf(item.analystId) === antes, 'Um atendimento iniciado não pode mudar de posição.', 'current_position_locked');
+        });
         const before = snapshot(rotation);
         rotation.queue = unique;
         normalizePositions(rotation);
@@ -412,31 +465,36 @@
         return appendEvents(rotation, [event(paused ? 'rotation_paused' : 'rotation_reactivated', rotation, { actorId, reason: reason || null, now, previousState: before, nextState: snapshot(rotation) })]);
     }
 
-    function resolveCurrent(input, outcome, actorId, reason, now = Date.now()) {
-        const rotation = clone(input); reason = requiredReason(reason);
-        assert(rotation.current, 'Não existe atendimento em andamento.', 'no_attendance');
+    /* `attendanceId` passou a ser obrigatório na prática: com vários atendimentos abertos,
+       "encerrar o atual" deixou de identificar um. Fica opcional só para o caso de haver um
+       único aberto — encerrar o que existe, sem ambiguidade, continua sendo inequívoco. */
+    function resolveCurrent(input, outcome, actorId, reason, now = Date.now(), attendanceId = null) {
+        const rotation = withActive(clone(input)); reason = requiredReason(reason);
+        const abertos = activeList(rotation);
+        assert(abertos.length, 'Não existe atendimento em andamento.', 'no_attendance');
+        const alvo = attendanceId ? attendanceById(rotation, attendanceId) : (abertos.length === 1 ? abertos[0] : null);
+        assert(alvo, attendanceId ? 'Este atendimento não está mais em andamento.' : 'Há mais de um atendimento aberto: escolha qual encerrar.', 'attendance_ambiguous');
         assert(['end_move', 'cancel_keep', 'cancel_move'].includes(outcome), 'Escolha um resultado válido.', 'invalid_outcome');
-        const before = snapshot(rotation), analystId = rotation.current.analystId;
-        rotation.current = { ...rotation.current, status: outcome === 'end_move' ? ATTENDANCE_STATUS.COMPLETED : ATTENDANCE_STATUS.CANCELLED, completedAt: now, endedBy: actorId, reason };
-        rotation.lastCompleted = rotation.current;
-        rotation.current = null;
-        if (outcome.endsWith('move')) {
-            rotation.queue = rotation.queue.filter(id => id !== analystId);
-            if (rotation.participants[analystId]?.status === PARTICIPANT_STATUS.ACTIVE) rotation.queue.push(analystId);
-        }
+        const before = snapshot(rotation), analystId = alvo.analystId;
+        rotation.lastCompleted = { ...alvo, status: outcome === 'end_move' ? ATTENDANCE_STATUS.COMPLETED : ATTENDANCE_STATUS.CANCELLED, completedAt: now, endedBy: actorId, reason };
+        dropActive(rotation, alvo.id);
+        if (outcome.endsWith('move')) sendToBack(rotation, analystId);
         normalizePositions(rotation);
         return appendEvents(rotation, [event(outcome === 'end_move' ? 'attendance_ended_by_manager' : 'attendance_cancelled', rotation, { analystId, actorId, reason, now, previousState: before, nextState: snapshot(rotation) })]);
     }
 
     function view(rotation) {
-        if (!rotation) return { status: 'missing', queue: [], paused: [], current: null, next: null, upcoming: [], lastCompleted: null };
+        if (!rotation) return { status: 'missing', queue: [], paused: [], active: [], next: null, upcoming: [], lastCompleted: null };
         const next = nextId(rotation);
-        const start = rotation.current ? Math.max(0, rotation.queue.indexOf(rotation.current.analystId) + 2) : 1;
+        const ocupados = new Set(activeList(rotation).map(item => item.analystId));
+        /* Os próximos são os livres depois do próximo. Antes a janela era calculada pela
+           posição do único atendimento; com vários, o que importa é quem está livre. */
+        const livres = rotation.queue.filter(id => !ocupados.has(id) && id !== next);
         return {
             status: rotation.status,
-            current: rotation.current,
+            active: activeList(rotation).slice().sort((a, b) => Number(a.startedAt || 0) - Number(b.startedAt || 0)),
             next,
-            upcoming: rotation.queue.slice(start, start + 3),
+            upcoming: livres.slice(0, 3),
             queue: [...rotation.queue],
             paused: Object.values(rotation.participants || {}).filter(item => item.status === PARTICIPANT_STATUS.PAUSED),
             lastCompleted: rotation.lastCompleted,
@@ -481,6 +539,8 @@
         ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, REQUEST_STATUS_META, statusMeta, PRIORITY_LOG_TYPES, pointLogsOf, deletionEntry, BRANDS,
         create, syncParticipants, nextId, canManage, start, assign, complete, skip, pauseParticipant, reactivateParticipant, reorder, setPaused, resolveCurrent,
         view, snapshot, matchesSearch, filterBySearch, normalizeSearch,
+        // Atendimentos simultâneos
+        activeList, activeOf, isBusy, attendanceById,
         // Ficha do atendimento
         CONTACT_CHANNEL, CONTACT_RESULT, CONTACT_CHANNEL_LABEL, CONTACT_RESULT_LABEL,
         RESOLUTION, RESOLUTION_REASONS, RESOLUTION_LABEL, RESOLUTION_REASON_LABEL,

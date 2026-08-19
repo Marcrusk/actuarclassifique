@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-nota-peca-manual-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-atendimentos-simultaneos-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -3286,7 +3286,7 @@
             const compact = document.getElementById('priorityApprovalRotation');
             const team = document.getElementById('priorityModuleTeam')?.value || activeRankingTab;
             const view = PriorityRotation.view(ensurePriorityRotation(team));
-            if (compact) compact.innerHTML = `<span><strong>Rodízio ${teamLabel(team)}</strong><small>Último: ${escapeHtml(priorityRotationUser(view.lastCompleted?.analystId)?.name || '—')} · Atual: ${escapeHtml(priorityRotationUser(view.current?.analystId)?.name || '—')} · Próximo: ${escapeHtml(priorityRotationUser(view.next)?.name || '—')}</small></span><span>${view.queue.length} ativos · ${view.paused.length} pausados</span><button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openManagerPriorityRotation('${team}')">Ver rodízio</button>`;
+            if (compact) compact.innerHTML = `<span><strong>Rodízio ${teamLabel(team)}</strong><small>Último: ${escapeHtml(priorityRotationUser(view.lastCompleted?.analystId)?.name || '—')} · Em atendimento: ${(view.active || []).length} · Próximo: ${escapeHtml(priorityRotationUser(view.next)?.name || '—')}</small></span><span>${view.queue.length} ativos · ${view.paused.length} pausados</span><button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="openManagerPriorityRotation('${team}')">Ver rodízio</button>`;
         }
 
         function setPriorityLaunchStatus(status, button) {
@@ -3545,13 +3545,15 @@
             return `<div class="rotation-person">${priorityRotationAvatar(user)}<span><strong>${escapeHtml(user?.name || 'Participante indisponível')}</strong>${detail ? `<small>${escapeHtml(detail)}</small>` : ''}</span></div>`;
         }
 
+        /* A ordem que a fila mostra: quem está livre, começando pelo próximo. Antes tirava
+           uma pessoa só — a que estava atendendo. Agora tira todas as que estão. */
         function priorityRotationOrderedQueue(view) {
-            const currentId = view.current?.analystId || null;
-            const queueWithoutCurrent = view.queue.filter(id => id !== currentId);
-            const nextIndex = queueWithoutCurrent.indexOf(view.next);
+            const ocupados = new Set((view.active || []).map(item => item.analystId));
+            const livres = view.queue.filter(id => !ocupados.has(id));
+            const nextIndex = livres.indexOf(view.next);
             return nextIndex > 0
-                ? [...queueWithoutCurrent.slice(nextIndex), ...queueWithoutCurrent.slice(0, nextIndex)]
-                : queueWithoutCurrent;
+                ? [...livres.slice(nextIndex), ...livres.slice(0, nextIndex)]
+                : livres;
         }
 
         function priorityRotationDuration(startedAt, completedAt = Date.now()) {
@@ -3587,36 +3589,56 @@
 
         function renderPriorityRotationSequence(view) {
             const orderedQueue = priorityRotationOrderedQueue(view);
-            const visibleQueue = view.current ? orderedQueue.slice(0, 2) : orderedQueue.slice(1, 3);
+            // O primeiro da lista é o "Próximo", que já tem cartão próprio acima.
+            const visibleQueue = orderedQueue.slice(1, 4);
             if (!visibleQueue.length) return `<div class="rotation-ops-sequence-empty">Nenhum outro participante aguardando.</div>`;
             const rows = visibleQueue.map((id, index) => {
                 const user = priorityRotationUser(id);
                 const position = Math.max(1, view.queue.indexOf(id) + 1);
-                const isImmediateNext = Boolean(view.current && index === 0 && id === view.next);
-                return `<div class="rotation-ops-sequence-row ${isImmediateNext ? 'is-next' : ''}" role="listitem"><span class="rotation-ops-position">${position}º</span>${priorityRotationAvatar(user, 'is-small')}<span class="rotation-ops-sequence-person"><strong>${escapeHtml(user?.name || 'Participante indisponível')}</strong><small>${teamLabel(user?.team || view.current?.team || '')}</small></span><span class="rotation-ops-waiting">${isImmediateNext ? 'Próximo' : 'Aguardando'}</span></div>`;
+                const isImmediateNext = id === view.next;
+                return `<div class="rotation-ops-sequence-row ${isImmediateNext ? 'is-next' : ''}" role="listitem"><span class="rotation-ops-position">${position}º</span>${priorityRotationAvatar(user, 'is-small')}<span class="rotation-ops-sequence-person"><strong>${escapeHtml(user?.name || 'Participante indisponível')}</strong><small>${teamLabel(user?.team || '')}</small></span><span class="rotation-ops-waiting">${isImmediateNext ? 'Próximo' : 'Aguardando'}</span></div>`;
             }).join('');
             return `<div class="rotation-ops-sequence" role="list" aria-label="Próximos participantes do rodízio">${rows}</div>`;
         }
 
+        /* Um atendimento por vez virou vários. O bloco deixou de ser "quem está atendendo" e
+           passou a ser "quem está atendendo agora", no plural — e o cartão do próximo continua
+           embaixo, porque com gente livre ainda dá para encaminhar mais um. */
+        function renderPriorityAttendanceCard(attendance) {
+            const user = priorityRotationUser(attendance.analystId);
+            const request = attendance.priorityId ? (getStore()?.priorityRequests || []).find(item => item.id === attendance.priorityId) : null;
+            const briefing = attendance.briefing;
+            const briefingMarkup = briefing ? `<div class="rotation-brief"><div><small>Demanda</small><strong>${escapeHtml(briefing.demand)}</strong></div>${briefing.product ? `<div><small>Produto</small><strong>${escapeHtml(briefing.product)}</strong></div>` : ''}<div><small>Cliente</small><strong>${escapeHtml(briefing.clientName)}</strong></div><div><small>ID do cliente</small><strong>${escapeHtml(briefing.clientId)}</strong></div><div><small>Contato</small><strong>${escapeHtml(briefing.phone)}</strong></div><div><small>Instruções</small><p>${escapeHtml(briefing.instructions)}</p></div></div>` : '';
+            /* A ficha só aparece para o dono do atendimento: com vários abertos, cada analista
+               vê o botão no cartão dele e em mais nenhum. */
+            const meu = !isAdminLoggedIn && attendance.analystId === currentActiveUser;
+            const acao = meu ? `<button class="actuar-btn actuar-btn-primary" type="button" onclick="openPriorityAttendanceRecord()"><i class="fi fi-rr-clipboard-list"></i>Abrir ficha do atendimento</button>` : '';
+            return `<section class="rotation-ops-primary is-current${meu ? ' is-mine' : ''}"><span class="rotation-ops-primary-accent" aria-hidden="true"></span><div class="rotation-ops-primary-heading"><span>Em atendimento agora</span><span class="actuar-badge actuar-badge-primary">Atendimento em andamento</span></div><div class="rotation-ops-primary-person">${priorityRotationAvatar(user, 'is-featured')}<span><strong>${escapeHtml(user?.name || 'Analista indisponível')}</strong><small>Iniciado às ${formatRotationTime(attendance.startedAt)} · ${priorityRotationDuration(attendance.startedAt)} em atendimento${request?.protocolo ? ` · Protocolo ${escapeHtml(request.protocolo)}` : ''}</small></span>${acao}</div>${briefingMarkup}</section>`;
+        }
+
         function renderPriorityRotationPrimary(view, action = '') {
-            if (view.current) {
-                const user = priorityRotationUser(view.current.analystId);
-                const request = view.current.priorityId ? (getStore()?.priorityRequests || []).find(item => item.id === view.current.priorityId) : null;
-                const briefing = view.current.briefing;
-                const briefingMarkup = briefing ? `<div class="rotation-brief"><div><small>Demanda</small><strong>${escapeHtml(briefing.demand)}</strong></div>${briefing.product ? `<div><small>Produto</small><strong>${escapeHtml(briefing.product)}</strong></div>` : ''}<div><small>Cliente</small><strong>${escapeHtml(briefing.clientName)}</strong></div><div><small>ID do cliente</small><strong>${escapeHtml(briefing.clientId)}</strong></div><div><small>Contato</small><strong>${escapeHtml(briefing.phone)}</strong></div><div><small>Instruções</small><p>${escapeHtml(briefing.instructions)}</p></div></div>` : '';
-                return `<section class="rotation-ops-primary is-current"><span class="rotation-ops-primary-accent" aria-hidden="true"></span><div class="rotation-ops-primary-heading"><span>Em atendimento agora</span><span class="actuar-badge actuar-badge-primary">Atendimento em andamento</span></div><div class="rotation-ops-primary-person">${priorityRotationAvatar(user, 'is-featured')}<span><strong>${escapeHtml(user?.name || 'Analista indisponível')}</strong><small>Iniciado às ${formatRotationTime(view.current.startedAt)} · ${priorityRotationDuration(view.current.startedAt)} em atendimento${request?.protocolo ? ` · Protocolo ${escapeHtml(request.protocolo)}` : ''}</small></span>${action}</div>${briefingMarkup}</section>`;
-            }
+            const abertos = view.active || [];
+            const cartoes = abertos.map(renderPriorityAttendanceCard).join('');
+            const contador = abertos.length > 1
+                ? `<p class="rotation-ops-concurrent"><i class="fi fi-rr-users-alt" aria-hidden="true"></i>${abertos.length} atendimentos em andamento ao mesmo tempo.</p>`
+                : '';
             if (view.next) {
                 const user = priorityRotationUser(view.next);
                 const ready = view.status === 'active' ? 'Pronto para atender' : 'Aguardando reativação';
-                return `<section class="rotation-ops-primary is-next"><span class="rotation-ops-primary-accent" aria-hidden="true"></span><div class="rotation-ops-primary-heading"><span>Próximo atendimento</span><span class="actuar-badge actuar-badge-${view.status === 'active' ? 'success' : 'warning'}">${ready}</span></div><div class="rotation-ops-primary-person">${priorityRotationAvatar(user, 'is-featured')}<span><strong>${escapeHtml(user?.name || 'Analista indisponível')}</strong><small>1º da fila · ${ready}</small></span>${action}</div></section>`;
+                /* O cartão do próximo convive com os atendimentos abertos: é justamente isso
+                   que permite encaminhar mais um sem esperar ninguém terminar. */
+                const proximo = `<section class="rotation-ops-primary is-next"><span class="rotation-ops-primary-accent" aria-hidden="true"></span><div class="rotation-ops-primary-heading"><span>Próximo atendimento</span><span class="actuar-badge actuar-badge-neutral">${ready}</span></div><div class="rotation-ops-primary-person">${priorityRotationAvatar(user, 'is-featured')}<span><strong>${escapeHtml(user?.name || 'Analista indisponível')}</strong><small>1º da fila · ${ready}</small></span>${action}</div></section>`;
+                return `${contador}${cartoes}${proximo}`;
             }
-            return `<div class="rotation-ops-primary-empty"><i class="fi fi-rr-users-alt"></i><span><strong>Nenhum analista disponível</strong><small>Consulte os participantes pausados ou indisponíveis.</small></span></div>`;
+            if (abertos.length) {
+                return `${contador}${cartoes}<div class="rotation-ops-primary-empty"><i class="fi fi-rr-clock"></i><span><strong>Ninguém livre na fila</strong><small>Todos os analistas ativos estão em atendimento. O próximo encaminhamento espera alguém concluir.</small></span></div>`;
+            }
+            return `<div class="rotation-ops-primary-empty"><i class="fi fi-rr-users-alt"></i><span><strong>Nenhum analista disponível</strong><small>Consulte os participantes pausados ou reative alguém para retomar o rodízio.</small></span></div>`;
         }
 
         function renderPriorityRotationOverviewPanel(view, team) {
             const canManage = canManagePriorityRotation(team);
-            const contextualAction = canManage && view.status === 'active' && !view.current && view.next
+            const contextualAction = canManage && view.status === 'active' && view.next
                 ? `<button class="actuar-btn actuar-btn-primary actuar-btn-sm" type="button" onclick="openPriorityRotationDispatchModal()"><i class="fi fi-rr-paper-plane"></i>Encaminhar</button>` : '';
             const pauseAction = view.status === 'paused'
                 ? `resumePriorityRotation()`
@@ -3660,12 +3682,14 @@
             const canManage = canManagePriorityRotation(team);
             const isAnalystContext = !isAdminLoggedIn;
             const selfPaused = view.paused.some(item => item.userId === currentActiveUser);
-            const currentOwner = view.current?.analystId === currentActiveUser && isAnalystContext;
-            const selfNext = !view.current && view.next === currentActiveUser && isAnalystContext;
+            const currentOwner = (view.active || []).some(item => item.analystId === currentActiveUser) && isAnalystContext;
+            /* Ser o próximo deixou de depender da fila estar parada: com atendimentos
+               simultâneos, alguém pode ser o próximo enquanto outros atendem. */
+            const selfNext = !currentOwner && view.next === currentActiveUser && isAnalystContext;
             let mainAction = '';
             if (view.status === 'active' && selfNext) mainAction = `<button id="priorityRotationStartButton" class="actuar-btn actuar-btn-primary" type="button" onclick="openPriorityRotationStartModal()"><i class="fi fi-rr-play"></i>Iniciar atendimento</button>`;
             else if (currentOwner) mainAction = `<button class="actuar-btn actuar-btn-primary" type="button" onclick="openPriorityAttendanceRecord()"><i class="fi fi-rr-clipboard-list"></i>Abrir ficha do atendimento</button>`;
-            else if (canManage && !view.current && view.next && view.status === 'active') mainAction = `<button class="actuar-btn actuar-btn-primary" type="button" onclick="openPriorityRotationDispatchModal()"><i class="fi fi-rr-paper-plane"></i>Encaminhar prioridade</button>`;
+            else if (canManage && view.next && view.status === 'active') mainAction = `<button class="actuar-btn actuar-btn-primary" type="button" onclick="openPriorityRotationDispatchModal()"><i class="fi fi-rr-paper-plane"></i>Encaminhar prioridade</button>`;
             else if (canManage) mainAction = `<button class="actuar-btn actuar-btn-primary" type="button" onclick="openPriorityRotationDrawer()"><i class="fi fi-rr-settings-sliders"></i>Gerenciar fila</button>`;
 
             card.innerHTML = `
@@ -3678,7 +3702,7 @@
                 ${renderPriorityRotationLast(view)}
                 ${renderPriorityRotationPrimary(view, mainAction)}
                 <section class="rotation-ops-following"><h4>Na sequência</h4>${renderPriorityRotationSequence(view)}</section>
-                <footer class="rotation-ops-footer"><div class="rotation-ops-meta"><span><strong>${view.queue.length}</strong> ativo${view.queue.length === 1 ? '' : 's'}</span><i aria-hidden="true"></i><span><strong>${view.paused.length}</strong> pausado${view.paused.length === 1 ? '' : 's'}</span><i aria-hidden="true"></i><span>Atualizado agora</span></div><div class="rotation-ops-footer-actions">${!view.current && !view.next ? mainAction : ''}<button class="actuar-btn actuar-btn-primary actuar-btn-sm" type="button" onclick="openPriorityRotationDrawer()">Ver fila completa</button><button class="rotation-ops-history-link" type="button" onclick="openPriorityRotationHistory()">Ver histórico</button></div></footer>`;
+                <footer class="rotation-ops-footer"><div class="rotation-ops-meta"><span><strong>${view.queue.length}</strong> ativo${view.queue.length === 1 ? '' : 's'}</span><i aria-hidden="true"></i><span><strong>${view.paused.length}</strong> pausado${view.paused.length === 1 ? '' : 's'}</span><i aria-hidden="true"></i><span>Atualizado agora</span></div><div class="rotation-ops-footer-actions">${!view.next ? mainAction : ''}<button class="actuar-btn actuar-btn-primary actuar-btn-sm" type="button" onclick="openPriorityRotationDrawer()">Ver fila completa</button><button class="rotation-ops-history-link" type="button" onclick="openPriorityRotationHistory()">Ver histórico</button></div></footer>`;
 
             // A faixa do formulário solto saiu com ele; a ficha aberta acompanha o rodízio.
             renderPriorityAttendanceRecord();
@@ -3720,7 +3744,7 @@
         function openPriorityRotationStartModal() {
             const team = currentPriorityRotationTeam();
             const view = PriorityRotation.view(ensurePriorityRotation(team));
-            if (isAdminLoggedIn || view.status !== 'active' || view.current || view.next !== currentActiveUser) {
+            if (isAdminLoggedIn || view.status !== 'active' || view.next !== currentActiveUser) {
                 showToast('A fila foi atualizada e esta vez não está mais disponível para início.', 'error');
                 renderPriorityRotation();
                 return;
@@ -3762,7 +3786,7 @@
         function currentOwnAttendance() {
             const rotation = ensurePriorityRotation(currentPriorityRotationTeam());
             if (isAdminLoggedIn) return null;
-            return rotation?.current?.analystId === currentActiveUser ? rotation.current : null;
+            return PriorityRotation.activeOf(rotation, currentActiveUser);
         }
 
         function openPriorityAttendanceRecord() {
@@ -3925,7 +3949,9 @@
         function openPriorityRotationDispatchModal() {
             const team = currentPriorityRotationTeam(), rotation = ensurePriorityRotation(team), view = PriorityRotation.view(rotation);
             if (!canManagePriorityRotation(team)) { showToast('Somente a gestão responsável pode encaminhar atendimentos.', 'error'); return; }
-            if (view.status !== 'active' || view.current || !view.next) { showToast('A fila não está disponível para um novo encaminhamento.', 'error'); return; }
+            /* Deixou de bastar "não há atendimento em curso": agora a fila está indisponível
+               só quando ninguém está livre — `view.next` é nulo com todo mundo atendendo. */
+            if (view.status !== 'active' || !view.next) { showToast(view.status !== 'active' ? 'O rodízio está pausado.' : 'Todos os analistas da fila já estão em atendimento.', 'error'); return; }
             const next = priorityRotationUser(view.next);
             document.getElementById('priorityRotationDispatchTitle').textContent = `Encaminhar para ${next?.name || 'o próximo analista'}`;
             document.getElementById('priorityRotationDispatchSubtitle').textContent = `${teamLabel(team)} · ${next?.name || 'Analista'} permanece como responsável pelo atendimento.`;
@@ -3979,32 +4005,36 @@
 
         function renderPriorityRotationDrawer() {
             const team = currentPriorityRotationTeam(), rotation = ensurePriorityRotation(team), view = PriorityRotation.view(rotation);
-            const canManage = canManagePriorityRotation(team), currentId = view.current?.analystId;
+            const canManage = canManagePriorityRotation(team);
+            // Um mapa em vez de um id: cada linha da fila precisa saber do atendimento DELA.
+            const abertosPorAnalista = new Map((view.active || []).map(item => [item.analystId, item]));
             document.getElementById('priorityRotationDrawerSubtitle').textContent = 'Acompanhe a sequência atual e a disponibilidade dos participantes.';
             const orderedQueue = priorityRotationOrderedQueue(view);
             const participantRow = (id, state) => {
                 const isCurrent = state === 'current', isNext = state === 'next', isSelf = id === currentActiveUser && !isAdminLoggedIn;
+                const aberto = abertosPorAnalista.get(id) || {};
                 const user = priorityRotationUser(id);
                 const position = isCurrent
-                    ? (view.current.positionBefore || Math.max(1, view.queue.indexOf(id) + 1))
+                    ? (aberto.positionBefore || Math.max(1, view.queue.indexOf(id) + 1))
                     : Math.max(1, view.queue.indexOf(id) + 1);
                 const statusLabel = isCurrent ? 'Em atendimento' : isNext ? 'Próximo' : 'Aguardando';
                 const detail = isCurrent
-                    ? `${view.current.assignedBy ? 'Encaminhado' : 'Iniciado'} às ${formatRotationTime(view.current.startedAt)} · ${priorityRotationDuration(view.current.startedAt)}`
+                    ? `${aberto.assignedBy ? 'Encaminhado' : 'Iniciado'} às ${formatRotationTime(aberto.startedAt)} · ${priorityRotationDuration(aberto.startedAt)}`
                     : `${position}º na ordem atual`;
                 const canSkip = isNext || (isCurrent && view.queue.includes(id));
-                const actions = canManage ? `<details class="rotation-actions-menu"><summary aria-label="Ações para ${escapeHtml(priorityRotationUser(id)?.name || '')}"><i class="fi fi-rr-menu-dots-vertical"></i></summary><div class="rotation-actions-popover">${canSkip ? `<button onclick="openPriorityRotationAction('skip','${id}')">Pular esta vez</button>` : ''}<button onclick="openPriorityRotationAction('pause','${id}')">Pausar participante</button><button onclick="closePriorityRotationDrawer();openManagerAnalyst('${id}','rodizio')">Ver ficha</button></div></details>` : '';
-                const compactBrief = isCurrent && view.current.briefing ? `<div class="rotation-brief-compact"><strong>${escapeHtml(view.current.briefing.demand)}</strong><br>${escapeHtml(view.current.briefing.clientName)} · ID ${escapeHtml(view.current.briefing.clientId)} · ${escapeHtml(view.current.briefing.phone)}</div>` : '';
-                return `<div class="rotation-queue-item ${isCurrent ? 'is-current' : isNext ? 'is-next' : ''}"><span class="rotation-position">${position}º</span><div class="rotation-queue-person">${priorityRotationPerson(id, detail)}<div class="rotation-item-badges">${isSelf ? '<span>Você</span>' : ''}<span class="${isCurrent ? 'is-current' : isNext ? 'is-next' : ''}">${statusLabel}</span>${view.current?.pauseAfterCompletion && isCurrent ? '<span>Pausado após este atendimento</span>' : ''}</div>${compactBrief}</div>${actions}</div>`;
+                const actions = canManage ? `<details class="rotation-actions-menu"><summary aria-label="Ações para ${escapeHtml(priorityRotationUser(id)?.name || '')}"><i class="fi fi-rr-menu-dots-vertical"></i></summary><div class="rotation-actions-popover">${canSkip ? `<button onclick="openPriorityRotationAction('skip','${id}')">Pular esta vez</button>` : ''}${isCurrent ? `<button onclick="openPriorityRotationAction('resolve','${id}')">Encerrar atendimento</button>` : ''}<button onclick="openPriorityRotationAction('pause','${id}')">Pausar participante</button><button onclick="closePriorityRotationDrawer();openManagerAnalyst('${id}','rodizio')">Ver ficha</button></div></details>` : '';
+                const compactBrief = isCurrent && aberto.briefing ? `<div class="rotation-brief-compact"><strong>${escapeHtml(aberto.briefing.demand)}</strong><br>${escapeHtml(aberto.briefing.clientName)} · ID ${escapeHtml(aberto.briefing.clientId)} · ${escapeHtml(aberto.briefing.phone)}</div>` : '';
+                return `<div class="rotation-queue-item ${isCurrent ? 'is-current' : isNext ? 'is-next' : ''}"><span class="rotation-position">${position}º</span><div class="rotation-queue-person">${priorityRotationPerson(id, detail)}<div class="rotation-item-badges">${isSelf ? '<span>Você</span>' : ''}<span class="${isCurrent ? 'is-current' : isNext ? 'is-next' : ''}">${statusLabel}</span>${aberto.pauseAfterCompletion && isCurrent ? '<span>Pausado após este atendimento</span>' : ''}</div>${compactBrief}</div>${actions}</div>`;
             };
-            const currentRow = currentId ? participantRow(currentId, 'current') : '';
+            // Uma linha por atendimento aberto, na ordem em que começaram.
+            const currentRow = (view.active || []).map(item => participantRow(item.analystId, 'current')).join('');
             const nextRow = view.next ? participantRow(view.next, 'next') : '';
             const remainingRows = orderedQueue.filter(id => id !== view.next).map(id => participantRow(id, 'waiting')).join('');
-            const pausedParticipants = view.paused.filter(item => item.userId !== currentId);
+            const pausedParticipants = view.paused.filter(item => !abertosPorAnalista.has(item.userId));
             const pausedRows = pausedParticipants.map(item => `<div class="rotation-queue-item"><span class="rotation-position">—</span><div class="rotation-queue-person">${priorityRotationPerson(item.userId, item.pauseReason || 'Pausado')}<div class="rotation-item-badges"><span>Pausado</span></div></div>${canManage ? `<button class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="reactivatePriorityRotationParticipant('${item.userId}')">Reativar</button>` : ''}</div>`).join('');
             document.getElementById('priorityRotationDrawerBody').innerHTML = `<div class="rotation-drawer-summary"><span><strong>${teamLabel(team)}</strong><small>${view.status === 'paused' ? 'Rodízio pausado' : 'Rodízio ativo'}</small></span><span>${view.queue.length} ativos · ${view.paused.length} pausados</span><time>Atualizado ${priorityRotationRelativeTime(rotation.updatedAt)}</time></div>${currentRow ? `<section class="rotation-drawer-group"><div class="rotation-section-title"><strong>Em atendimento</strong><span>Agora</span></div><div class="rotation-queue-list">${currentRow}</div></section>` : ''}${nextRow ? `<section class="rotation-drawer-group"><div class="rotation-section-title"><strong>Próximo</strong><span>Primeiro disponível</span></div><div class="rotation-queue-list">${nextRow}</div></section>` : ''}<section class="rotation-drawer-group"><div class="rotation-section-title"><strong>Demais participantes</strong><span>${orderedQueue.filter(id => id !== view.next).length}</span></div><div class="rotation-queue-list">${remainingRows || '<div class="rotation-empty-message">Nenhum outro participante aguardando.</div>'}</div></section>${pausedParticipants.length ? `<section class="rotation-drawer-group rotation-paused-list"><div class="rotation-section-title"><strong>Pausados</strong><span>${pausedParticipants.length}</span></div><div class="rotation-queue-list">${pausedRows}</div></section>` : ''}`;
-            const orderLocked = Boolean(view.current && !view.queue.includes(view.current.analystId));
-            document.getElementById('priorityRotationDrawerFooter').innerHTML = canManage ? `<div class="actuar-inline-actions">${!view.current && view.next && view.status === 'active' ? '<button class="actuar-btn actuar-btn-primary" onclick="openPriorityRotationDispatchModal()"><i class="fi fi-rr-paper-plane"></i>Encaminhar prioridade</button>' : ''}<button class="actuar-btn actuar-btn-secondary" ${orderLocked ? 'disabled title="Conclua o atendimento atual antes de corrigir a ordem"' : ''} onclick="openPriorityRotationOrderModal()"><i class="fi fi-rr-sort"></i>Corrigir ordem</button>${view.current ? '<button class="actuar-btn actuar-btn-secondary" onclick="openPriorityRotationAction(\'resolve\',\'' + view.current.analystId + '\')">Encerrar atendimento</button>' : ''}<button class="actuar-btn ${view.status === 'paused' ? 'actuar-btn-primary' : 'actuar-btn-secondary'}" onclick="${view.status === 'paused' ? 'resumePriorityRotation()' : "openPriorityRotationAction('pauseRotation','')"}">${view.status === 'paused' ? 'Reativar rodízio' : 'Pausar rodízio'}</button></div>` : '<p class="text-xs text-secondary">A ordem é administrada pela gestão responsável.</p>';
+            const orderLocked = (view.active || []).some(item => !view.queue.includes(item.analystId));
+            document.getElementById('priorityRotationDrawerFooter').innerHTML = canManage ? `<div class="actuar-inline-actions">${view.next && view.status === 'active' ? '<button class="actuar-btn actuar-btn-primary" onclick="openPriorityRotationDispatchModal()"><i class="fi fi-rr-paper-plane"></i>Encaminhar prioridade</button>' : ''}<button class="actuar-btn actuar-btn-secondary" ${orderLocked ? 'disabled title="Conclua o atendimento atual antes de corrigir a ordem"' : ''} onclick="openPriorityRotationOrderModal()"><i class="fi fi-rr-sort"></i>Corrigir ordem</button><button class="actuar-btn ${view.status === 'paused' ? 'actuar-btn-primary' : 'actuar-btn-secondary'}" onclick="${view.status === 'paused' ? 'resumePriorityRotation()' : "openPriorityRotationAction('pauseRotation','')"}">${view.status === 'paused' ? 'Reativar rodízio' : 'Pausar rodízio'}</button></div>` : '<p class="text-xs text-secondary">A ordem é administrada pela gestão responsável.</p>';
         }
 
         function openPriorityRotationHistory() {
@@ -4199,7 +4229,9 @@
             const ok = await persistPriorityRotationMutation(team, rotation => {
                 if (action === 'skip') return PriorityRotation.skip(rotation, target, priorityRotationActorId(), reason, Date.now());
                 if (action === 'pause') return PriorityRotation.pauseParticipant(rotation, target, priorityRotationActorId(), reason, Date.now(), outcome);
-                if (action === 'resolve') return PriorityRotation.resolveCurrent(rotation, outcome, priorityRotationActorId(), reason, Date.now());
+                /* Com vários atendimentos abertos, "encerrar o atual" deixou de identificar
+                   um: o alvo vem do participante sobre quem a gestão abriu o menu. */
+                if (action === 'resolve') return PriorityRotation.resolveCurrent(rotation, outcome, priorityRotationActorId(), reason, Date.now(), PriorityRotation.activeOf(rotation, target)?.id || null);
                 if (action === 'pauseRotation') return PriorityRotation.setPaused(rotation, true, priorityRotationActorId(), reason, Date.now());
                 throw new Error('Ação gerencial inválida.');
             }, 'Intervenção registrada no histórico do rodízio.');
@@ -4242,7 +4274,7 @@
 
         function renderPriorityRotationOrderList() {
             const rotation = ensurePriorityRotation(currentPriorityRotationTeam());
-            document.getElementById('priorityRotationOrderList').innerHTML = priorityRotationOrderDraft.map((id, index) => `<div class="rotation-order-item"><span class="rotation-position">${index + 1}º</span>${priorityRotationPerson(id, rotation.current?.analystId === id ? 'Em atendimento · posição bloqueada' : 'Aguardando')}<div class="rotation-order-controls"><button type="button" ${index === 0 || rotation.current?.analystId === id ? 'disabled' : ''} onclick="movePriorityRotationOrder(${index},-1)" aria-label="Mover para cima"><i class="fi fi-rr-angle-up"></i></button><button type="button" ${index === priorityRotationOrderDraft.length - 1 || rotation.current?.analystId === id ? 'disabled' : ''} onclick="movePriorityRotationOrder(${index},1)" aria-label="Mover para baixo"><i class="fi fi-rr-angle-down"></i></button></div></div>`).join('');
+            document.getElementById('priorityRotationOrderList').innerHTML = priorityRotationOrderDraft.map((id, index) => `<div class="rotation-order-item"><span class="rotation-position">${index + 1}º</span>${priorityRotationPerson(id, PriorityRotation.isBusy(rotation, id) ? 'Em atendimento · posição bloqueada' : 'Aguardando')}<div class="rotation-order-controls"><button type="button" ${index === 0 || PriorityRotation.isBusy(rotation, id) ? 'disabled' : ''} onclick="movePriorityRotationOrder(${index},-1)" aria-label="Mover para cima"><i class="fi fi-rr-angle-up"></i></button><button type="button" ${index === priorityRotationOrderDraft.length - 1 || PriorityRotation.isBusy(rotation, id) ? 'disabled' : ''} onclick="movePriorityRotationOrder(${index},1)" aria-label="Mover para baixo"><i class="fi fi-rr-angle-down"></i></button></div></div>`).join('');
         }
 
         function movePriorityRotationOrder(index, direction) {
@@ -6523,7 +6555,7 @@
                 const view = externalRotationView(item.team);
                 if (!view || view.status === 'missing') return { tone: 'danger', icon: 'fi-rr-triangle-warning', label: 'Sem fila' };
                 if (view.status !== 'active') return { tone: 'warning', icon: 'fi-rr-pause', label: 'Rodízio pausado' };
-                if (view.current) return { tone: 'warning', icon: 'fi-rr-clock', label: 'Fila ocupada' };
+                if (!view.next) return { tone: 'warning', icon: 'fi-rr-clock', label: 'Fila ocupada' };
                 if (!view.next) return { tone: 'warning', icon: 'fi-rr-user-slash', label: 'Sem analista' };
                 return { tone: 'success', icon: 'fi-rr-paper-plane', label: `Pronta para ${users[view.next]?.name?.split(' ')[0] || 'distribuir'}` };
             }
@@ -6692,11 +6724,12 @@
                     ${fila}
                     <div class="external-distribution-actions"><button type="button" class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="externalResumeRotation()"><i class="fi fi-rr-play"></i>Retomar rodízio</button></div>`;
             }
-            if (view.current) {
-                const ocupado = users[view.current.analystId];
-                /* Próximo ocupado: a solicitação espera. Escolher outro por pressa é como a
-                   fila perde a confiança de quem está nela. */
-                return `<div class="actuar-feedback actuar-feedback-info"><i class="fi fi-rr-clock"></i><div><strong>A fila está ocupada</strong><p>${escapeHtml(ocupado?.name || 'Um analista')} está com um atendimento em andamento. A solicitação aguarda a vez ficar livre.</p></div></div>${fila}`;
+            /* Antes qualquer atendimento em curso bloqueava a distribuição: a solicitação
+               esperava mesmo havendo gente livre na fila. Agora só espera quando ninguém
+               está livre — e o aviso diz quantos estão ocupados, não quem. */
+            if (!view.next && (view.active || []).length) {
+                const ocupados = (view.active || []).length;
+                return `<div class="actuar-feedback actuar-feedback-info"><i class="fi fi-rr-clock"></i><div><strong>A fila está ocupada</strong><p>${ocupados} analista${ocupados === 1 ? ' está' : 's estão'} em atendimento e ninguém mais está livre em ${escapeHtml(teamLabel(item.team))}. A solicitação aguarda a próxima vez.</p></div></div>${fila}`;
             }
             if (!view.next) {
                 return `<div class="actuar-feedback actuar-feedback-warning"><i class="fi fi-rr-user-slash"></i><div><strong>Ninguém disponível</strong><p>Não há analista elegível na fila de ${escapeHtml(teamLabel(item.team))} agora.</p></div></div>${fila}`;
@@ -6753,7 +6786,7 @@
                 const rodizio = PriorityRotation.assign(deepClone(rotacaoAnterior), view.next, currentAdminId, briefing, Date.now());
                 const atualizado = dominio.transition(item, 'em_atendimento', {
                     actorName: getCurrentManager()?.name || 'Gestão',
-                    patch: { analystId: view.next, attendanceId: rodizio.current?.id || null, assignedAt: Date.now() },
+                    patch: { analystId: view.next, attendanceId: PriorityRotation.activeOf(rodizio, view.next)?.id || null, assignedAt: Date.now() },
                     text: `Encaminhada para ${analista?.name || view.next} pelo rodízio.`
                 });
                 appStore.priorityRotations[item.team] = rodizio;
@@ -10608,7 +10641,7 @@
             // os dois departamentos — o anel nunca discorda do que está na tela.
             const posicoes = rankingPositionsByTeam(getAggregatedMetrics(managerFilters.month || activeMonthKey, managerFilters.period || 'ALL'));
             const rotation = PriorityRotation.view(ensurePriorityRotation(managerFilters.team));
-            const operationCards = [{ label: 'Último atendimento', id: rotation.lastCompleted?.analystId, detail: rotation.lastCompleted ? formatRotationTime(rotation.lastCompleted.completedAt) : '—' }, { label: 'Em atendimento', id: rotation.current?.analystId, detail: rotation.current ? priorityRotationElapsed(rotation.current.startedAt) : 'Nenhum' }, { label: 'Próximo', id: rotation.next, detail: rotation.status === 'paused' ? 'Rodízio pausado' : 'Fila ativa' }];
+            const operationCards = [{ label: 'Último atendimento', id: rotation.lastCompleted?.analystId, detail: rotation.lastCompleted ? formatRotationTime(rotation.lastCompleted.completedAt) : '—' }, { label: 'Em atendimento', id: emAtendimento[0]?.analystId, detail: emAtendimento.length ? (emAtendimento.length > 1 ? `${emAtendimento.length} simultâneos` : priorityRotationElapsed(emAtendimento[0].startedAt)) : 'Nenhum' }, { label: 'Próximo', id: rotation.next, detail: rotation.status === 'paused' ? 'Rodízio pausado' : 'Fila ativa' }];
             if (managerTvOptions.content === 'rotation') {
                 renderRotationStage(rotation, head, posicoes);
             } else {
@@ -10635,11 +10668,12 @@
             };
 
             const pausado = rotation.status === 'paused';
-            const atendendo = rotation.current?.analystId || null;
+            const emAtendimento = PriorityRotation.activeList(rotation);
+            const atendendo = emAtendimento[0]?.analystId || null;
             const heroId = atendendo || rotation.next;
             const heroRotulo = atendendo ? 'Em atendimento agora' : pausado ? 'Rodízio pausado' : 'Próximo a atender';
             const heroDetalhe = atendendo
-                ? `Iniciado às ${escapeHtml(formatRotationTime(rotation.current.startedAt))} · ${escapeHtml(priorityRotationElapsed(rotation.current.startedAt))}`
+                ? `${emAtendimento.length > 1 ? `${emAtendimento.length} em atendimento · ` : ''}Iniciado às ${escapeHtml(formatRotationTime(emAtendimento[0].startedAt))} · ${escapeHtml(priorityRotationElapsed(emAtendimento[0].startedAt))}`
                 : pausado ? 'A fila volta quando o rodízio for reativado' : 'Pronto para receber o próximo atendimento';
 
             const sequencia = [atendendo ? rotation.next : null, ...(rotation.upcoming || [])].filter(Boolean).slice(0, 2);
@@ -10708,7 +10742,8 @@
             };
 
             const pausado = rotation.status === 'paused';
-            const atendendo = rotation.current?.analystId || null;
+            const emAtendimento = PriorityRotation.activeList(rotation);
+            const atendendo = emAtendimento[0]?.analystId || null;
             const sequencia = (rotation.upcoming || []).slice(0, 2);
 
             // Linha única, na ordem do ciclo: quem fechou, quem atende, quem vem.
@@ -10719,7 +10754,7 @@
                 </div>
                 <div class="rotation-strip-track">
                     ${slot('Último', rotation.lastCompleted?.analystId, rotation.lastCompleted ? formatRotationTime(rotation.lastCompleted.completedAt) : '')}
-                    ${slot(atendendo ? 'Em atendimento' : 'Nenhum aberto', atendendo, rotation.current ? priorityRotationElapsed(rotation.current.startedAt) : '', 'is-live')}
+                    ${slot(atendendo ? (emAtendimento.length > 1 ? `${emAtendimento.length} em atendimento` : 'Em atendimento') : 'Nenhum aberto', atendendo, emAtendimento[0] ? priorityRotationElapsed(emAtendimento[0].startedAt) : '', 'is-live')}
                     ${slot('Próximo', rotation.next, pausado ? 'Rodízio pausado' : 'Fila ativa', 'is-next')}
                     ${sequencia.map((id, index) => slot(`${index + 2}º da fila`, id, '')).join('')}
                 </div>`;
@@ -11022,11 +11057,10 @@
 
             const team = currentPriorityRotationTeam();
             const rotationBefore = deepClone(ensurePriorityRotation(team));
-            if (rotationBefore.current && rotationBefore.current.analystId !== currentActiveUser) {
-                setFormBusy(e.target, false);
-                showToast(`${priorityRotationUser(rotationBefore.current.analystId)?.name || 'Outro analista'} está com o atendimento atual. Você não pode concluir esta vez.`, 'error');
-                return;
-            }
+            /* Com atendimentos simultâneos, "o atendimento atual" deixou de existir: o que
+               importa é o MEU. Antes, qualquer atendimento de outra pessoa barrava a conclusão
+               — que é exatamente o que a concorrência precisa deixar de acontecer. */
+            const meuAtendimento = PriorityRotation.activeOf(rotationBefore, currentActiveUser);
 
             if (!appStore.priorityRequests) appStore.priorityRequests = [];
             const requestId = uid();
@@ -11041,35 +11075,35 @@
             };
 
             let nextName = '';
-            if (rotationBefore.current?.analystId === currentActiveUser) {
+            if (meuAtendimento) {
                 try {
                     const completed = PriorityRotation.complete(rotationBefore, currentActiveUser, requestId, Date.now(), desfecho);
                     request.rotationId = rotationBefore.id;
-                    request.rotationAttendanceId = rotationBefore.current.id;
+                    request.rotationAttendanceId = meuAtendimento.id;
                     request.rotationTeam = team;
-                    request.rotationStartedAt = rotationBefore.current.startedAt;
+                    request.rotationStartedAt = meuAtendimento.startedAt;
                     request.rotationCompletedAt = completed.lastCompleted.completedAt;
-                    request.rotationPreviousPosition = rotationBefore.current.positionBefore;
+                    request.rotationPreviousPosition = meuAtendimento.positionBefore;
                     request.rotationNextParticipantId = PriorityRotation.view(completed).next;
-                    if (rotationBefore.current.briefing) {
-                        request.rotationBriefing = deepClone(rotationBefore.current.briefing);
-                        request.product = rotationBefore.current.briefing.product;
-                        request.clientName = rotationBefore.current.briefing.clientName;
-                        request.clientId = rotationBefore.current.briefing.clientId;
-                        request.clientPhone = rotationBefore.current.briefing.phone;
-                        request.demand = rotationBefore.current.briefing.demand;
-                        request.attendanceInstructions = rotationBefore.current.briefing.instructions;
-                        request.dispatchedBy = rotationBefore.current.assignedBy || null;
+                    if (meuAtendimento.briefing) {
+                        request.rotationBriefing = deepClone(meuAtendimento.briefing);
+                        request.product = meuAtendimento.briefing.product;
+                        request.clientName = meuAtendimento.briefing.clientName;
+                        request.clientId = meuAtendimento.briefing.clientId;
+                        request.clientPhone = meuAtendimento.briefing.phone;
+                        request.demand = meuAtendimento.briefing.demand;
+                        request.attendanceInstructions = meuAtendimento.briefing.instructions;
+                        request.dispatchedBy = meuAtendimento.assignedBy || null;
                     }
                     /* Tudo o que a ficha reuniu acompanha o lançamento. Sem esta cópia, a
                        gestão aprovaria olhando protocolo e justificativa como antes: o
-                       atendimento é apagado do rodízio (`rotation.current = null`) assim
+                       atendimento sai de `rotation.active` assim
                        que a vez é concluída, e com ele iriam as tentativas e as notas. */
                     request.resolution = completed.lastCompleted.resolution;
                     request.resolutionReason = completed.lastCompleted.resolutionReason;
                     request.resolutionDetail = completed.lastCompleted.resolutionDetail;
-                    request.contactAttempts = deepClone(PriorityRotation.attemptsOf(rotationBefore.current));
-                    request.attendanceNotes = deepClone(PriorityRotation.notesOf(rotationBefore.current));
+                    request.contactAttempts = deepClone(PriorityRotation.attemptsOf(meuAtendimento));
+                    request.attendanceNotes = deepClone(PriorityRotation.notesOf(meuAtendimento));
                     nextName = priorityRotationUser(request.rotationNextParticipantId)?.name || '';
                     appStore.priorityRotations[team] = completed;
                     /* Se este atendimento veio do Portal de Prioridades, a solicitação
@@ -11077,7 +11111,7 @@
                        rodízio guarda o id do atendimento, e o encaminhamento gravou o mesmo
                        id na solicitação. Sem esta ligação, o analista concluiria e o quadro
                        da gestão continuaria dizendo "em atendimento" para sempre. */
-                    vincularSolicitacaoExterna(rotationBefore.current.id, requestId);
+                    vincularSolicitacaoExterna(meuAtendimento.id, requestId);
                 } catch (error) {
                     setFormBusy(e.target, false);
                     showToast(error.message || 'Não foi possível concluir sua vez.', 'error');
@@ -12206,15 +12240,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-nota-peca-manual-1"></script>
-    <script src="js/external-requests.js?v=20260819-nota-peca-manual-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-nota-peca-manual-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-nota-peca-manual-1"></script>
-    <script src="js/performance-domain.js?v=20260819-nota-peca-manual-1"></script>
-    <script src="js/manager-experience.js?v=20260819-nota-peca-manual-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-nota-peca-manual-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-nota-peca-manual-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-nota-peca-manual-1"></script>
-    <script src="js/performance-platform.js?v=20260819-nota-peca-manual-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-atendimentos-simultaneos-1"></script>
+    <script src="js/external-requests.js?v=20260819-atendimentos-simultaneos-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-atendimentos-simultaneos-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-atendimentos-simultaneos-1"></script>
+    <script src="js/performance-domain.js?v=20260819-atendimentos-simultaneos-1"></script>
+    <script src="js/manager-experience.js?v=20260819-atendimentos-simultaneos-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-atendimentos-simultaneos-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-atendimentos-simultaneos-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-atendimentos-simultaneos-1"></script>
+    <script src="js/performance-platform.js?v=20260819-atendimentos-simultaneos-1"></script>
 </body>
 </html>

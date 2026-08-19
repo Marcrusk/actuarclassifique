@@ -3673,6 +3673,14 @@ body.nav-locked { overflow: hidden; }
 .priority-attendance-notes > li { padding: 8px 10px; border-radius: var(--actuar-radius); background: var(--actuar-surface); display: grid; gap: 3px; }
 .priority-attendance-notes p { margin: 0; color: var(--actuar-text); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .priority-attendance-none { margin: 0; color: var(--actuar-muted); font-size: 11px; font-style: italic; }
+/* ATENDIMENTOS SIMULTÂNEOS
+   O bloco mostrava um cartão só. Com vários, o do próprio analista precisa se distinguir
+   dos outros à primeira vista — ele é o único onde há um botão para clicar. */
+.rotation-ops-primary.is-current + .rotation-ops-primary.is-current { margin-top: 10px; }
+.rotation-ops-primary.is-mine { border-color: var(--actuar-primary); box-shadow: 0 0 0 1px var(--actuar-primary-soft); }
+.rotation-ops-concurrent { display: flex; align-items: center; gap: 7px; margin: 0 0 10px; padding: 7px 11px; border-radius: var(--actuar-radius); background: var(--actuar-primary-soft); color: var(--actuar-primary); font-size: 11px; font-weight: 700; }
+.rotation-ops-concurrent i { font-size: 13px; }
+
 /* NOTA DE PEÇAS — LANÇAMENTO MANUAL (ponte do ciclo em andamento)
    Fica acima da central e é deliberadamente sóbrio: é uma porta temporária, não um módulo.
    A borda tracejada diz isso sem precisar de um aviso escrito em cada linha. */

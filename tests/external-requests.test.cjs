@@ -180,13 +180,16 @@ test('encaminhar move rodízio e solicitação juntos, ou nenhum dos dois', () =
         'a falha precisa desfazer os dois lados');
     // A solicitação guarda para quem foi e qual atendimento do rodízio a representa.
     assert.match(assign, /analystId: view\.next/);
-    assert.match(assign, /attendanceId: rodizio\.current\?\.id/);
+    assert.match(assign, /attendanceId: PriorityRotation\.activeOf\(rodizio, view\.next\)\?\.id/);
 });
 
 test('fila ocupada faz a solicitação esperar, não furar', () => {
     const painel = html.slice(html.indexOf('function externalDistributionPanel(item)'), html.indexOf('async function externalAssign()'));
-    assert.match(painel, /if \(view\.current\)/, 'com atendimento em andamento não se distribui');
-    assert.match(painel, /aguarda a vez ficar livre/);
+    /* "Ocupada" deixou de significar "alguém está atendendo": com atendimentos simultâneos,
+       a fila só está ocupada quando NINGUÉM está livre. Antes, um atendimento em curso
+       segurava a solicitação mesmo havendo gente parada na fila. */
+    assert.match(painel, /if \(!view\.next && \(view\.active \|\| \[\]\)\.length\)/, 'só espera quando ninguém está livre');
+    assert.match(painel, /aguarda a próxima vez/);
     // Cada impedimento se explica: pausado, sem fila e sem elegível dizem coisas diferentes.
     assert.match(painel, /Rodízio pausado/);
     assert.match(painel, /Rodízio indisponível/);
@@ -242,7 +245,7 @@ test('rodízio pausado se resolve na própria ficha', () => {
    briefing do rodízio, e a conclusão pelo registro de prioridade de sempre. */
 
 test('o analista recebe pelo briefing do rodízio, sem experiência paralela', () => {
-    const brief = html.slice(html.indexOf('const briefing = view.current.briefing;'), html.indexOf('return `<section class="rotation-ops-primary is-current">'));
+    const brief = html.slice(html.indexOf('function renderPriorityAttendanceCard(attendance)'), html.indexOf('function renderPriorityRotationPrimary(view'));
     for (const campo of ['demand', 'clientName', 'clientId', 'phone', 'instructions']) {
         assert.ok(brief.includes(`briefing.${campo}`), `o analista precisa ver ${campo}`);
     }
@@ -261,7 +264,7 @@ test('concluir o atendimento leva a solicitação para aprovação, não para co
     assert.match(vincula, /'aguardando_aprovacao'/);
     assert.match(vincula, /priorityRequestId: requestId/, 'guarda qual prioridade representa a conclusão');
     // E é chamada exatamente onde o rodízio é concluído.
-    assert.match(html, /appStore\.priorityRotations\[team\] = completed;[\s\S]{0,700}vincularSolicitacaoExterna\(rotationBefore\.current\.id, requestId\)/);
+    assert.match(html, /appStore\.priorityRotations\[team\] = completed;[\s\S]{0,900}vincularSolicitacaoExterna\(meuAtendimento\.id, requestId\)/);
 });
 
 test('a aprovação fecha a solicitação junto, sem pontuação paralela', () => {
