@@ -3430,6 +3430,16 @@ body.nav-locked { overflow: hidden; }
 }
 /* :not() é obrigatório aqui: o contador também é um span filho direto e,
    sem isso, herdava o flex:1 e esticava por metade do item. */
+/* Os itens que ramificam (Prioridades, Métricas operacionais) são <button>; as folhas
+   são <a>. E `body.actuar-app button { font: inherit }`, lá em cima, vale 0,1,2 — vence
+   o `.actuar-nav-item` (0,1,0) acima e, por ser atalho, devolve font-size e font-weight
+   ao herdado. Resultado: os dois itens de grupo saíam em 16px/400 no meio de vizinhos
+   de 12px/600. Esta linha vale 0,2,0 e devolve a tipografia a quem a declarou.
+
+   Corrigido só aqui de propósito. A mesma regra achata a tipografia da maioria dos
+   botões da aplicação; consertá-la na origem mexe em 112 dos 156 botões e é decisão
+   de produto, não efeito colateral de um ajuste de menu. */
+.actuar-nav-body .actuar-nav-item { font-size: 12px; font-weight: 600; }
 .actuar-nav-item > span:not(.actuar-nav-badge) { flex: 1; min-width: 0; }
 .actuar-nav-item > i:first-child { width: 16px; flex: 0 0 auto; display: flex; justify-content: center; color: var(--actuar-muted); font-size: 14px; }
 .actuar-nav-item:hover { background: var(--actuar-surface-muted); color: var(--actuar-foreground); }

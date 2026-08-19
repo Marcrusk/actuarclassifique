@@ -178,3 +178,19 @@ test('preencher a barra dentro do render não reentra no render', () => {
     const popula = doc.slice(doc.indexOf('function populateDropdowns()'), doc.indexOf('function populateCatracaAnalystOptions'));
     assert.doesNotMatch(popula, /\brender\(\);/, 'populateDropdowns voltou a chamar render');
 });
+
+test('os itens que ramificam na sidebar têm a mesma letra dos demais', () => {
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    /* Prioridades e Métricas operacionais ramificam, então são <button>; as folhas são
+       <a>. E `body.actuar-app button { font: inherit }` vale 0,1,2 — vence o
+       `.actuar-nav-item` (0,1,0) e, por ser atalho, devolve font-size e font-weight ao
+       herdado. Os dois saíam em 16px/400 no meio de vizinhos de 12px/600. */
+    assert.match(css, /\.actuar-nav-body \.actuar-nav-item \{ font-size: 12px; font-weight: 600; \}/);
+
+    // A regra global continua de pé: consertá-la na origem mexe em 112 dos 156 botões.
+    assert.match(css, /body\.actuar-app button,\n(?:body\.actuar-app \w+,\n)*body\.actuar-app textarea \{ font: inherit; \}/);
+
+    // E a que corrige precisa vir DEPOIS da que atrapalha, além de ser mais específica.
+    assert.ok(css.indexOf('body.actuar-app button,') < css.indexOf('.actuar-nav-body .actuar-nav-item'));
+});
