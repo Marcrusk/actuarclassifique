@@ -22,9 +22,13 @@ test('o vocabulário do portal é traduzido na entrada do quadro', () => {
     assert.equal(ext.stageOf({}), 'nova');
 });
 
-test('o quadro tem as sete etapas do processo, e encerradas fora delas', () => {
-    assert.equal(ext.STAGES.length, 7);
-    assert.deepEqual(ext.STAGE_IDS, ['nova', 'triagem', 'aguardando_info', 'aguardando_distribuicao', 'em_atendimento', 'aguardando_aprovacao', 'concluida']);
+test('o quadro tem as etapas do processo, e encerradas fora delas', () => {
+    assert.equal(ext.STAGES.length, 8);
+    /* "Sem retorno do cliente" é etapa própria: sem ela, um chamado parado há dias esperando
+       o cliente ficava indistinguível de trabalho em andamento — e cobrava o analista por
+       algo que não depende dele. */
+    assert.deepEqual(ext.STAGE_IDS, ['nova', 'triagem', 'aguardando_info', 'aguardando_distribuicao', 'em_atendimento', 'sem_retorno', 'aguardando_aprovacao', 'concluida']);
+    assert.equal(ext.stageMeta('sem_retorno').tone, 'warning');
     // Encerramentos não viram coluna: um quadro com uma coluna por exceção fica ilegível.
     for (const fim of ['rejeitada', 'duplicada', 'cancelada']) {
         assert.ok(ext.isClosed(fim), `${fim} deveria ser encerramento`);
@@ -249,7 +253,8 @@ test('concluir o atendimento leva a solicitação para aprovação, não para co
        o quadro da gestão seguiria dizendo "em atendimento" para sempre. */
     const vincula = html.slice(html.indexOf('function vincularSolicitacaoExterna('), html.indexOf('/* A aprovação da prioridade fecha'));
     assert.match(vincula, /item\.attendanceId === attendanceId/, 'a ligação é pelo id do atendimento do rodízio');
-    assert.match(vincula, /stageOf\(item\) === 'em_atendimento'/);
+    // Aceita as duas: o cliente pode ter voltado a responder e o analista concluir dali.
+    assert.match(vincula, /\['em_atendimento', 'sem_retorno'\]\.includes\(dominio\.stageOf\(item\)\)/);
     assert.match(vincula, /'aguardando_aprovacao'/);
     assert.match(vincula, /priorityRequestId: requestId/, 'guarda qual prioridade representa a conclusão');
     // E é chamada exatamente onde o rodízio é concluído.
@@ -288,7 +293,7 @@ test('a gestão aprova pela própria tela, mas quem credita é o fluxo de sempre
     // As decisões só aparecem na etapa que as espera.
     const acoes = html.slice(html.indexOf('function externalActions(item, dominio)'), html.indexOf('function closeExternalRequest()'));
     assert.match(acoes, /etapa === 'aguardando_aprovacao'[\s\S]*Aprovar e pontuar/);
-    assert.match(acoes, /if \(etapa === 'em_atendimento' \|\| etapa === 'concluida'\) return fechar;/);
+    assert.match(acoes, /if \(etapa === 'concluida'\) return fechar;/);
 });
 
 /* EXCLUSÃO NO QUADRO — mesma régua de peças e lançamentos. */
@@ -339,4 +344,25 @@ test('o botão vive na ficha do quadro, e a auditoria no Histórico', () => {
     assert.match(html, /merged\.deletedExternalRequests = applyKeyedArrayDiff/);
     const linhas = html.slice(html.indexOf('function historyRows()'), html.indexOf('function filteredHistoryRows()'));
     assert.match(linhas, /detail: `Solicitação \$\{escapeHtml\(item\.protocol/);
+});
+
+test('sem retorno é sobre o cliente, e tem saída dos dois lados', () => {
+    const acoes = html.slice(html.indexOf('function externalActions(item, dominio)'), html.indexOf('function closeExternalRequest()'));
+    // De em_atendimento dá para marcar; de sem_retorno dá para voltar ou encerrar.
+    assert.match(acoes, /etapa === 'em_atendimento'[\s\S]*externalNoAnswer/);
+    assert.match(acoes, /etapa === 'sem_retorno'[\s\S]*externalClientAnswered/);
+    assert.match(acoes, /etapa === 'sem_retorno'[\s\S]*externalGiveUp/);
+
+    const marcar = html.slice(html.indexOf('async function externalNoAnswer()'), html.indexOf('async function externalClientAnswered()'));
+    assert.match(marcar, /input: \{ label: 'O que foi tentado\?'/, 'as tentativas sustentam encerrar depois sem parecer desistência');
+    assert.match(marcar, /reasonRequired: true/);
+
+    const encerrar = html.slice(html.indexOf('async function externalGiveUp()'), html.indexOf('async function externalApproveWork()'));
+    assert.match(encerrar, /'cancelada'/, 'encerrar sai do fluxo, não vira conclusão');
+    assert.match(encerrar, /sem pontuação/);
+    assert.match(encerrar, /não perde a vez do rodízio/, 'a vez dele já foi concluída quando o atendimento começou');
+
+    // E o card mostra o estado sem obrigar a abrir a ficha.
+    const tag = html.slice(html.indexOf('function externalCardTag(item)'), html.indexOf('function externalCard(item)'));
+    assert.match(tag, /etapa === 'sem_retorno'[\s\S]*Sem retorno/);
 });

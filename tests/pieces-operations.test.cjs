@@ -686,7 +686,9 @@ test('acesso mockado de gestão foi removido do produto', () => {
 
     // Gestão passa a ter um caminho só: usuário cadastrado com senha conferida no banco.
     assert.match(html, /function loginAdmin\(e\)/);
-    assert.match(html, /return isAdminLoggedIn \? currentAdminId : currentActiveUser;/);
+    /* O ator do rodízio passou a vir da SESSÃO, não do contexto: `currentActiveUser` é o
+       analista sendo olhado, e usá-lo permitia agir na fila em nome de um colega. */
+    assert.match(html, /return isAdminLoggedIn \? currentAdminId : getCurrentProfileUserId\(\);/);
 });
 
 test('sem sessão a aplicação fica no portão de acesso', () => {

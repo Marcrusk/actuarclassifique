@@ -22,6 +22,10 @@
         Object.freeze({ id: 'aguardando_info', label: 'Aguardando informação', hint: 'Devolvidas a quem registrou, à espera de complemento.', tone: 'warning' }),
         Object.freeze({ id: 'aguardando_distribuicao', label: 'Aguardando distribuição', hint: 'Validadas, esperando o rodízio liberar um analista.', tone: 'warning' }),
         Object.freeze({ id: 'em_atendimento', label: 'Em atendimento', hint: 'Com o analista, em execução.', tone: 'primary' }),
+        /* Parado esperando o CLIENTE, não a equipe. Sem uma etapa própria, esse caso ficava
+           indistinguível de "em atendimento" — e um chamado sem resposta há dias parecia
+           trabalho em andamento, cobrando o analista por algo que não depende dele. */
+        Object.freeze({ id: 'sem_retorno', label: 'Sem retorno do cliente', hint: 'O analista tentou contato e o cliente não respondeu.', tone: 'warning' }),
         Object.freeze({ id: 'aguardando_aprovacao', label: 'Aguardando aprovação', hint: 'Concluídas pelo analista, à espera da gestão.', tone: 'warning' }),
         Object.freeze({ id: 'concluida', label: 'Concluídas', hint: 'Aprovadas e pontuadas.', tone: 'success' })
     ]);
