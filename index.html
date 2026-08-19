@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-exclusao-motivo-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-auditoria-exclusao-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -8054,6 +8054,11 @@
                         detail: `Prioridade ${escapeHtml(item.protocol || item.id)} · ${escapeHtml(item.reason || 'Sem motivo registrado')}`,
                         points: -Number(item.removedPoints || 0), removable: false,
                         note: `Excluída por ${escapeHtml(autor?.name || item.deletedBy || '—')}`,
+                        /* `deletionEntry` guarda o lançamento inteiro em `record`. A linha do
+                           histórico mostrava só protocolo e motivo, e o resto — briefing,
+                           justificativa, desfecho, tentativas, notas e o parecer da gestão —
+                           ficava gravado sem nenhuma tela que o abrisse. */
+                        deletion: item,
                         search: [analista?.name, item.protocol, item.reason, autor?.name].filter(Boolean).join(' ')
                     });
                 });
@@ -8145,6 +8150,80 @@
             select.value = presentes.some(item => item.id === historyFilters.userId) ? historyFilters.userId : 'Todos';
         }
 
+        /* FICHA DO QUE FOI EXCLUÍDO
+           A auditoria dizia "Prioridade 202608-1234 · lançamento de teste" e parava aí. Tudo
+           o que o chamado tinha vive em `deletionEntry.record` desde sempre — a exclusão
+           guarda o lançamento inteiro justamente para isto —, mas não havia tela que abrisse.
+           Sem isso, conferir uma exclusão dependia de acreditar no resumo de uma linha. */
+        let expandedHistoryRows = new Set();
+
+        function toggleHistoryRow(id) {
+            if (expandedHistoryRows.has(id)) expandedHistoryRows.delete(id);
+            else expandedHistoryRows.add(id);
+            renderAdminLogs();
+        }
+
+        function historyDetailPair(rotulo, valor) {
+            return `<div><dt>${escapeHtml(rotulo)}</dt><dd>${escapeHtml(valor || '—')}</dd></div>`;
+        }
+
+        function renderDeletedPriorityDetail(entry) {
+            const usuarios = getStore()?.users || defaultUsers;
+            const registro = entry?.record || {};
+            const analista = usuarios[entry?.analystId];
+            const autor = usuarios[entry?.deletedBy];
+            const briefing = registro.rotationBriefing || {};
+            const pontos = Number(entry?.removedPoints || 0);
+
+            /* Quem excluiu, quando, por quê e quanto custou fica em bloco próprio e primeiro:
+               é a pergunta que se faz ao abrir uma exclusão. */
+            const exclusao = `<section class="history-detail-block is-deletion">
+                <h4><i class="fi fi-rr-trash" aria-hidden="true"></i>Exclusão</h4>
+                <dl>
+                    ${historyDetailPair('Excluído por', autor?.name || entry?.deletedBy)}
+                    ${historyDetailPair('Data e hora', entry?.deletedAt ? fullMomentTitle(entry.deletedAt) : '')}
+                    ${historyDetailPair('Pontuação estornada', pontos ? `${pontos} pts retirados do extrato e do ranking` : 'Nenhum ponto havia sido creditado')}
+                    ${historyDetailPair('Lançamentos de pontos removidos', (entry?.removedLogIds || []).length ? String(entry.removedLogIds.length) : 'nenhum')}
+                </dl>
+                <div class="history-detail-quote"><small>Motivo declarado</small><blockquote>${escapeHtml(entry?.reason || 'Sem motivo registrado')}</blockquote></div>
+            </section>`;
+
+            const identificacao = `<section class="history-detail-block">
+                <h4><i class="fi fi-rr-star" aria-hidden="true"></i>Lançamento excluído</h4>
+                <dl>
+                    ${historyDetailPair('Protocolo', entry?.protocol || registro.protocolo)}
+                    ${historyDetailPair('Analista', analista?.name || entry?.analystId)}
+                    ${historyDetailPair('Departamento', entry?.team ? teamLabel(entry.team) : '')}
+                    ${historyDetailPair('Situação quando foi excluído', entry?.status ? priorityStatusLabel(entry.status) : '')}
+                    ${historyDetailPair('Registrado em', registro.timestamp ? fullMomentTitle(registro.timestamp) : '')}
+                    ${historyDetailPair('Origem', registro.rotationAttendanceId ? 'Rodízio de prioridades' : 'Fora do rodízio')}
+                </dl>
+                ${registro.justificativa ? `<div class="history-detail-quote"><small>Justificativa do analista</small><blockquote>${escapeHtml(registro.justificativa)}</blockquote></div>` : ''}
+            </section>`;
+
+            const encaminhamento = briefing.clientName || briefing.demand ? `<section class="history-detail-block">
+                <h4><i class="fi fi-rr-paper-plane" aria-hidden="true"></i>Encaminhado pela gestão</h4>
+                <dl>
+                    ${historyDetailPair('Cliente', briefing.clientName)}
+                    ${historyDetailPair('ID do cliente', briefing.clientId)}
+                    ${historyDetailPair('Telefone', briefing.phone)}
+                    ${historyDetailPair('Despachado por', usuarios[registro.dispatchedBy]?.name || registro.dispatchedBy)}
+                </dl>
+                ${briefing.demand ? `<div class="history-detail-quote"><small>Demanda</small><blockquote>${escapeHtml(briefing.demand)}</blockquote></div>` : ''}
+                ${briefing.instructions ? `<div class="history-detail-quote"><small>Instruções recebidas</small><blockquote>${escapeHtml(briefing.instructions)}</blockquote></div>` : ''}
+            </section>` : '';
+
+            // A ficha do atendimento é a mesma que a gestão lê na aprovação: um renderizador só.
+            const ficha = `<section class="history-detail-block"><h4><i class="fi fi-rr-clipboard-list" aria-hidden="true"></i>Ficha do atendimento</h4>${renderPriorityAttendanceEvidence(registro)}</section>`;
+
+            const decisoes = (registro.evaluationHistory || []).length ? `<section class="history-detail-block">
+                <h4><i class="fi fi-rr-comment-check" aria-hidden="true"></i>Pareceres da gestão</h4>
+                <ol class="history-detail-decisions">${registro.evaluationHistory.map(item => `<li><strong>${escapeHtml(priorityStatusLabel(item.status) || item.status)}</strong><span>${escapeHtml(usuarios[item.authorId]?.name || item.authorId || '—')} · ${escapeHtml(item.createdAt ? fullMomentTitle(item.createdAt) : '—')}${Number.isFinite(Number(item.points)) ? ` · ${Number(item.points)} pts` : ''}</span>${item.note ? `<p>${escapeHtml(item.note)}</p>` : ''}${item.revisionReason ? `<small>Revisão: ${escapeHtml(item.revisionReason)}</small>` : ''}</li>`).join('')}</ol>
+            </section>` : '';
+
+            return `<div class="history-detail">${exclusao}${identificacao}${encaminhamento}${ficha}${decisoes}</div>`;
+        }
+
         function renderAdminLogs() {
             populateHistoryUserFilter();
             const isCurrentMonth = activeMonthKey === 'atual';
@@ -8189,15 +8268,22 @@
                 const acao = row.removable && isCurrentMonth
                     ? `<button onclick="deleteLog('${escapeHtml(row.id)}')" class="text-red-400 hover:text-red-300 text-xs font-semibold"><i class="fa-solid fa-trash-can me-1"></i>Excluir</button>`
                     : `<span class="text-[10px] text-secondary">${escapeHtml(row.removable ? 'Mês fechado' : row.note || 'Registro preservado')}</span>`;
+                const aberto = expandedHistoryRows.has(row.id);
+                const expandir = row.deletion
+                    ? `<button type="button" class="history-expand" aria-expanded="${aberto}" onclick="toggleHistoryRow('${escapeHtml(row.id)}')"><i class="fi fi-rr-angle-small-${aberto ? 'up' : 'down'}" aria-hidden="true"></i>${aberto ? 'Ocultar' : 'Ver tudo que foi registrado'}</button>`
+                    : '';
+                const detalhe = row.deletion && aberto
+                    ? `<tr class="history-detail-row"><td colspan="6">${renderDeletedPriorityDetail(row.deletion)}</td></tr>`
+                    : '';
                 return `
                     <tr class="${meta.row || ''}">
                         <td class="p-3 text-secondary whitespace-nowrap" title="${escapeHtml(fullMomentTitle(row.timestamp))}">${escapeHtml(quando)}</td>
                         <td class="p-3 font-semibold text-white">${row.userId ? `<button onclick="openManagerAnalyst('${escapeHtml(row.userId)}','historico')">${escapeHtml(row.userName)}</button>` : escapeHtml(row.userName)}</td>
                         <td class="p-3 font-bold ${meta.tone}">${escapeHtml(meta.label)}</td>
-                        <td class="p-3">${row.detail}</td>
+                        <td class="p-3">${row.detail}${expandir}</td>
                         <td class="p-3 num-mono font-bold ${row.points < 0 ? 'text-red-400' : meta.tone}">${row.points > 0 ? '+' : ''}${escapeHtml(row.points)}</td>
                         <td class="p-3">${acao}</td>
-                    </tr>`;
+                    </tr>${detalhe}`;
             }).join('');
 
             const vazio = total === 0
@@ -12064,15 +12150,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-exclusao-motivo-1"></script>
-    <script src="js/external-requests.js?v=20260819-exclusao-motivo-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-exclusao-motivo-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-exclusao-motivo-1"></script>
-    <script src="js/performance-domain.js?v=20260819-exclusao-motivo-1"></script>
-    <script src="js/manager-experience.js?v=20260819-exclusao-motivo-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-exclusao-motivo-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-exclusao-motivo-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-exclusao-motivo-1"></script>
-    <script src="js/performance-platform.js?v=20260819-exclusao-motivo-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-auditoria-exclusao-1"></script>
+    <script src="js/external-requests.js?v=20260819-auditoria-exclusao-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-auditoria-exclusao-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-auditoria-exclusao-1"></script>
+    <script src="js/performance-domain.js?v=20260819-auditoria-exclusao-1"></script>
+    <script src="js/manager-experience.js?v=20260819-auditoria-exclusao-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-auditoria-exclusao-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-auditoria-exclusao-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-auditoria-exclusao-1"></script>
+    <script src="js/performance-platform.js?v=20260819-auditoria-exclusao-1"></script>
 </body>
 </html>

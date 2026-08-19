@@ -127,3 +127,96 @@ test('excluir lançamento de prioridade pede motivo digitado, e é a versão aud
     // E a senha vem depois do motivo: confirmar sem saber o porquê seria confirmar no escuro.
     assert.ok(excluir.indexOf("label: 'Motivo da exclusão'") < excluir.indexOf('Senha do seu acesso de gestão'));
 });
+
+/* ==========================================================================
+   A EXCLUSÃO ABERTA NA AUDITORIA
+   `deletionEntry` sempre guardou o lançamento inteiro em `record` — é para isso que
+   ele existe. Mas a auditoria mostrava uma linha: "Prioridade PR-2026-77 · motivo".
+   Conferir uma exclusão dependia de acreditar nesse resumo.
+   ========================================================================== */
+
+// Avalia o renderizador real do shell, com o resto do mundo dublado.
+function montarDetalhe(entry, usuarios = {}) {
+    const trechos = ['function historyDetailPair(', 'function renderDeletedPriorityDetail('].map(assinatura => {
+        const inicio = html.indexOf(assinatura);
+        assert.ok(inicio > -1, `${assinatura} não existe mais no shell`);
+        const fim = html.indexOf('\n        }', inicio) + '\n        }'.length;
+        return html.slice(inicio, fim);
+    }).join('\n');
+
+    const escapeHtml = (valor) => String(valor ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fabrica = new Function(
+        'escapeHtml', 'getStore', 'defaultUsers', 'teamLabel', 'priorityStatusLabel', 'fullMomentTitle', 'renderPriorityAttendanceEvidence', 'PriorityRotation',
+        `${trechos}\nreturn renderDeletedPriorityDetail;`
+    );
+    return fabrica(
+        escapeHtml,
+        () => ({ users: usuarios }),
+        {},
+        (t) => (t === 'Sistema' ? 'Software' : t),
+        (s) => ({ aprovado: 'Aprovado', pendente: 'Aguardando aprovação' }[s] || s),
+        (ts) => `data(${ts})`,
+        (registro) => `<ficha tentativas="${(registro.contactAttempts || []).length}" notas="${(registro.attendanceNotes || []).length}" desfecho="${registro.resolution || ''}">`,
+        rotation
+    )(entry);
+}
+
+test('a exclusão abre com tudo que o chamado tinha registrado', () => {
+    const registro = {
+        ...base,
+        justificativa: 'Cliente parado desde a manhã',
+        timestamp: 1_700_000_000_000,
+        rotationAttendanceId: 'att-1',
+        dispatchedBy: 'gestor',
+        rotationBriefing: { clientName: 'Theron Fit', clientId: 'C-1', phone: '5599', demand: 'Catraca travada', instructions: 'Ligar antes das 18h' },
+        resolution: 'unresolved', resolutionReason: 'no_answer', resolutionDetail: 'Três contatos sem resposta.',
+        contactAttempts: [{ channel: 'call', result: 'no_answer', at: 1 }, { channel: 'whatsapp', result: 'no_answer', at: 2 }],
+        attendanceNotes: [{ text: 'Cliente pediu retorno.', at: 3 }],
+        evaluationHistory: [{ id: 'e1', status: 'aprovado', points: 50, note: 'Atendimento conferido.', authorId: 'gestor', createdAt: 1_700_000_100_000 }]
+    };
+    const entrada = rotation.deletionEntry(registro, 'gestor', 'Lançamento duplicado na homologação.', logs, 1_700_000_200_000);
+    const saida = montarDetalhe(entrada, { dyego: { name: 'Dyego' }, gestor: { name: 'Marco' } });
+
+    // As quatro perguntas de uma exclusão.
+    assert.match(saida, /Excluído por[\s\S]*?Marco/, 'quem excluiu');
+    assert.match(saida, /Lançamento duplicado na homologação\./, 'motivo declarado');
+    assert.match(saida, /pts retirados do extrato e do ranking/, 'pontuação perdida');
+    assert.match(saida, /data\(1700000200000\)/, 'quando');
+
+    // E o conteúdo do chamado, que antes não tinha tela.
+    assert.match(saida, /PR-2026-77/);
+    assert.match(saida, /Dyego/);
+    assert.match(saida, /Cliente parado desde a manhã/, 'justificativa do analista');
+    assert.match(saida, /Theron Fit[\s\S]*?5599/, 'briefing do encaminhamento');
+    assert.match(saida, /Catraca travada/);
+    assert.match(saida, /Ligar antes das 18h/);
+    assert.match(saida, /Rodízio de prioridades/, 'origem');
+    assert.match(saida, /Atendimento conferido\./, 'parecer da gestão');
+    assert.match(saida, /Marco · data\(1700000100000\) · 50 pts/, 'autor, data e pontos do parecer');
+
+    /* A ficha do atendimento usa o MESMO renderizador da tela de aprovação. Duplicar a
+       montagem faria a auditoria e a aprovação divergirem na primeira mudança. */
+    assert.match(saida, /<ficha tentativas="2" notas="1" desfecho="unresolved">/);
+});
+
+test('exclusão sem pontos e sem ficha não inventa dado', () => {
+    const entrada = rotation.deletionEntry({ ...base, status: 'pendente' }, 'gestor', 'Teste criado por engano.', [], 1_700_000_300_000);
+    const saida = montarDetalhe(entrada, { dyego: { name: 'Dyego' }, gestor: { name: 'Marco' } });
+
+    assert.match(saida, /Nenhum ponto havia sido creditado/);
+    assert.match(saida, /Aguardando aprovação/, 'situação no momento da exclusão');
+    assert.match(saida, /Fora do rodízio/);
+    // Sem briefing o bloco do encaminhamento nem aparece, em vez de sair vazio.
+    assert.ok(!saida.includes('Encaminhado pela gestão'));
+    assert.ok(!saida.includes('Pareceres da gestão'));
+});
+
+test('a linha da auditoria carrega o registro e sabe expandir', () => {
+    // Sem isto a tela teria só o resumo, e o `record` seguiria gravado sem leitor.
+    assert.match(html, /deletion: item,/);
+    assert.match(html, /function toggleHistoryRow\(id\)/);
+    assert.match(html, /row\.deletion && aberto[\s\S]{0,160}renderDeletedPriorityDetail\(row\.deletion\)/);
+    assert.match(html, /Ver tudo que foi registrado/);
+    // Expandir é estado da tela, não da base: recarregar não deve deixar linhas abertas.
+    assert.match(html, /let expandedHistoryRows = new Set\(\);/);
+});

@@ -3668,6 +3668,35 @@ body.nav-locked { overflow: hidden; }
 .priority-attendance-notes > li { padding: 8px 10px; border-radius: var(--actuar-radius); background: var(--actuar-surface); display: grid; gap: 3px; }
 .priority-attendance-notes p { margin: 0; color: var(--actuar-text); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .priority-attendance-none { margin: 0; color: var(--actuar-muted); font-size: 11px; font-style: italic; }
+/* AUDITORIA — FICHA DO QUE FOI EXCLUÍDO
+   A linha do histórico dizia "Prioridade 202608-1234 · lançamento de teste" e parava aí.
+   O lançamento inteiro sempre esteve guardado em `deletionEntry.record`; faltava tela que
+   o abrisse — e conferir uma exclusão dependia de acreditar no resumo de uma linha. */
+.history-expand { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 0; border: 0; background: transparent; color: var(--actuar-primary); font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.history-expand:hover { text-decoration: underline; }
+.history-detail-row > td { padding: 0 12px 14px !important; background: var(--actuar-surface-muted); }
+.history-detail { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--actuar-border); border-radius: var(--actuar-radius-large); background: var(--actuar-surface); }
+.history-detail-block { display: grid; gap: 9px; }
+.history-detail-block h4 { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--actuar-text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.history-detail-block h4 i { color: var(--actuar-muted); font-size: 12px; }
+/* O bloco da exclusão vem primeiro e é o único marcado: quem, quando, por quê e quanto
+   custou é a pergunta que se faz ao abrir uma exclusão. */
+.history-detail-block.is-deletion { padding: 12px 13px; border: 1px solid var(--actuar-danger); border-radius: var(--actuar-radius); background: var(--actuar-danger-soft); }
+.history-detail-block.is-deletion h4, .history-detail-block.is-deletion h4 i { color: var(--actuar-danger); }
+.history-detail-block dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 9px; margin: 0; }
+.history-detail-block dt { margin: 0; color: var(--actuar-text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.history-detail-block dd { margin: 2px 0 0; color: var(--actuar-text); font-size: 12px; overflow-wrap: anywhere; }
+.history-detail-quote small { display: block; margin-bottom: 4px; color: var(--actuar-text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.history-detail-quote blockquote { margin: 0; padding: 8px 11px; border-left: 3px solid var(--actuar-border); border-radius: 0 var(--actuar-radius) var(--actuar-radius) 0; background: var(--actuar-surface-muted); color: var(--actuar-text); font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
+.history-detail-block.is-deletion .history-detail-quote blockquote { border-left-color: var(--actuar-danger); background: var(--actuar-surface); }
+.history-detail-decisions { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.history-detail-decisions > li { padding: 9px 11px; border-radius: var(--actuar-radius); background: var(--actuar-surface-muted); display: grid; gap: 3px; }
+.history-detail-decisions strong { color: var(--actuar-text); font-size: 12px; }
+.history-detail-decisions span { color: var(--actuar-text-secondary); font-size: 11px; }
+.history-detail-decisions p { margin: 3px 0 0; color: var(--actuar-text); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.history-detail-decisions small { color: var(--actuar-muted); font-size: 10px; }
+@media (max-width: 720px) { .history-detail-block dl { grid-template-columns: minmax(0, 1fr); } }
+
 .priority-review-decision { display: grid; grid-template-columns: minmax(0, 2fr) minmax(160px, 1fr); gap: 12px; align-items: start; }
 .priority-review-points small { color: var(--actuar-text-secondary); font-size: 10px; line-height: 1.45; }
 @media (max-width: 720px) { .priority-review-decision { grid-template-columns: minmax(0, 1fr); } }
