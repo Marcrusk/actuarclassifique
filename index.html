@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-quadro-area-2">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-renovar-acesso-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -1937,9 +1937,17 @@
                     <div>
                         <strong>Primeiro acesso</strong>
                         <p id="analystFirstAccessHint">Gere de uma vez a senha inicial de todo mundo que está ativo e ainda sem acesso — analistas, Toletus Lab e operação de peças. Ou use <strong>Redefinir senha</strong> no cartão da pessoa, para um perfil específico. A senha aparece uma única vez, para você distribuir.</p>
-                        <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm mt-2" onclick="generateAnalystPasswords()">
-                            <i class="fi fi-rr-lock"></i>Gerar senhas de primeiro acesso
-                        </button>
+                        <div class="actuar-inline-actions mt-2">
+                            <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="generateAnalystPasswords()">
+                                <i class="fi fi-rr-lock"></i>Gerar senhas de primeiro acesso
+                            </button>
+                            <!-- Troca periódica. O botão ao lado só alcança quem ainda não tem
+                                 acesso; este sobrescreve o que já existe, e por isso confirma
+                                 com a credencial da gestão antes. -->
+                            <button type="button" class="actuar-btn actuar-btn-danger actuar-btn-sm" onclick="resetAllActivePasswords()">
+                                <i class="fi fi-rr-refresh"></i>Renovar acesso de todos os ativos
+                            </button>
+                        </div>
                         <div id="analystFirstAccessResult" class="hidden"></div>
                     </div>
                 </div>
@@ -2319,6 +2327,7 @@
                             <option value="PRIORITY">Prioridade</option>
                             <option value="PRIORITY_ADJUSTMENT">Revisão de avaliação</option>
                             <option value="PECA">Peça</option>
+                            <option value="ACESSO">Acesso</option>
                             <option value="DELETED">Excluído</option>
                         </select>
                     </div>
@@ -8563,6 +8572,10 @@
             PRIORITY: { label: 'Prioridade', tone: 'text-amber-400', row: 'bg-amber-500/10' },
             PRIORITY_ADJUSTMENT: { label: 'Revisão de avaliação', tone: 'text-primary-300', row: 'bg-primary-500/10' },
             PECA: { label: 'Peça', tone: 'text-sky-400' },
+            /* Renovação em massa de acesso não move ponto nenhum, mas é a operação que mais
+               mexe com quem consegue entrar — e `historyRows` descarta tipo desconhecido em
+               silêncio, então sem registrar aqui ela não deixaria rastro nenhum. */
+            ACESSO: { label: 'Acesso', tone: 'text-primary-300', row: 'bg-primary-500/10' },
             DELETED: { label: 'Excluído', tone: 'text-red-300', row: 'bg-red-500/10' }
         };
 
@@ -8586,6 +8599,7 @@
                 // A observação do lançamento manual entra aqui: sem ela, a auditoria mostra
                 // um ponto concedido à mão e nenhuma pista do que ele considerou.
                 else if (log.type === 'PECA') detail = `${escapeHtml(log.tipo || 'Solicitação de peça')}${log.clientId ? ` · Cliente ${escapeHtml(log.clientId)}` : ''}${log.note ? ` · ${escapeHtml(log.note)}` : ''}`;
+                else if (log.type === 'ACESSO') detail = escapeHtml(log.detail || 'Operação de acesso');
                 else return; // tipo desconhecido não vira linha silenciosamente torta
                 rows.push({
                     id: log.id, timestamp: Number(log.timestamp || 0), userId: log.userId, userName: user.name,
@@ -12554,6 +12568,65 @@
             renderUsersManagementTable();
         }
 
+        /* RENOVAR O ACESSO DE TODOS OS ATIVOS
+           "Gerar senhas de primeiro acesso" só alcança quem ainda não tem acesso — serve para
+           destravar cadastro novo, não para uma troca periódica. Este sobrescreve o que já
+           existe, então derruba todo mundo até receber a credencial nova: confirma duas
+           vezes, a segunda com a credencial da própria gestão, como a exclusão de lançamento.
+
+           Inativos ficam de fora. Eles não conseguem entrar de qualquer forma, e incluí-los
+           só poluiria a lista que vai ser distribuída pessoa a pessoa. */
+        async function resetAllActivePasswords() {
+            const usersList = getStore()?.users || defaultUsers;
+            if (!canManageUserEmail()) return showToast('Entre no Modo Gestão para renovar acessos.', 'error');
+
+            const alvos = Object.keys(usersList).filter(id => usersList[id].active !== false);
+            const inativos = Object.keys(usersList).length - alvos.length;
+            if (!alvos.length) return showToast('Nenhum usuário ativo para renovar.', 'error');
+
+            if (!await actuarConfirm({
+                tone: 'danger', icon: 'refresh',
+                title: `Renovar o acesso de ${alvos.length} pessoa(s) ativa(s)?`,
+                message: `O acesso atual de cada uma deixa de valer na hora, e todas precisarão do novo para entrar.${inativos ? ` ${inativos} inativo(s) ficam de fora.` : ''} A lista aparece uma única vez — copie antes de fechar.`,
+                confirmLabel: 'Renovar todos'
+            })) return;
+
+            const confirmacao = await actuarConfirm({
+                tone: 'danger', icon: 'lock', title: 'Confirme com o seu acesso',
+                message: 'A renovação fica registrada em seu nome.',
+                input: { type: 'password', label: 'Acesso de gestão', placeholder: 'Confirme a sua credencial' },
+                confirmLabel: 'Confirmar renovação'
+            });
+            if (!confirmacao) return;
+            if (!await verifyLoginRemote(currentAdminId, confirmacao)) return showToast('Credencial incorreta. Nada foi alterado.', 'error');
+
+            const criadas = [];
+            const falhas = [];
+            for (const id of alvos) {
+                const nova = makeTempPassword();
+                /* Uma pessoa por vez, e o que falhar é NOMEADO no fim: numa troca em massa,
+                   "algumas falharam" deixa quem administra sem saber quem ficou sem entrar. */
+                if (!await setUserPasswordRemote(id, nova)) { falhas.push(usersList[id].name); continue; }
+                usersList[id].hasPassword = true;
+                criadas.push({ name: usersList[id].name, team: usersList[id].team, password: nova });
+            }
+            if (!criadas.length) return showToast('Nada foi gravado.', 'error');
+
+            /* Fica no Histórico quem renovou e quantos — o conteúdo em si não é gravado em
+               lugar nenhum, nem aqui nem no JSON sincronizado. */
+            appStore.logs.push({
+                id: uid(), type: 'ACESSO', userId: currentAdminId, value: 0,
+                detail: `Renovação em massa: ${criadas.length} acesso(s) de usuários ativos.`,
+                registradoPor: currentAdminId, timestamp: Date.now()
+            });
+            await persistStore();
+            showGeneratedPasswords(criadas);
+            renderUsersManagementTable();
+            showToast(falhas.length
+                ? `${criadas.length} acesso(s) renovado(s). Falharam: ${falhas.join(', ')}.`
+                : `${criadas.length} acesso(s) renovado(s).`, falhas.length ? 'error' : 'success');
+        }
+
         function analystOptionIds() {
             const usersList = getStore()?.users || defaultUsers;
             return Object.keys(usersList).filter(id => usersList[id].active !== false && isRankableUser(usersList[id]));
@@ -12685,15 +12758,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-quadro-area-2"></script>
-    <script src="js/external-requests.js?v=20260819-quadro-area-2"></script>
-    <script src="js/actuar-fields.js?v=20260819-quadro-area-2"></script>
-    <script src="js/attendance-clock.js?v=20260819-quadro-area-2"></script>
-    <script src="js/performance-domain.js?v=20260819-quadro-area-2"></script>
-    <script src="js/manager-experience.js?v=20260819-quadro-area-2"></script>
-    <script src="js/priority-rotation.js?v=20260819-quadro-area-2"></script>
-    <script src="js/pieces-operations.js?v=20260819-quadro-area-2"></script>
-    <script src="js/pieces-ui.js?v=20260819-quadro-area-2"></script>
-    <script src="js/performance-platform.js?v=20260819-quadro-area-2"></script>
+    <script src="js/actuar-navigation.js?v=20260819-renovar-acesso-1"></script>
+    <script src="js/external-requests.js?v=20260819-renovar-acesso-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-renovar-acesso-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-renovar-acesso-1"></script>
+    <script src="js/performance-domain.js?v=20260819-renovar-acesso-1"></script>
+    <script src="js/manager-experience.js?v=20260819-renovar-acesso-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-renovar-acesso-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-renovar-acesso-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-renovar-acesso-1"></script>
+    <script src="js/performance-platform.js?v=20260819-renovar-acesso-1"></script>
 </body>
 </html>
