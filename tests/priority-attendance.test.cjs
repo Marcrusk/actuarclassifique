@@ -14,7 +14,7 @@ const R = require('../js/priority-rotation.js');
 
 const html = () => fs.readFileSync('index.html', 'utf8');
 const AGORA = 1_700_000_000_000;
-const BRIEFING = { demand: 'Catraca travada', clientName: 'Theron Fit', clientId: 'C-1', phone: '5599', instructions: 'Ligar antes das 18h' };
+const BRIEFING = { demand: 'Catraca travada', product: 'Toletus', clientName: 'Theron Fit', clientId: 'TZ2345', phone: '(62) 99999-9999', instructions: 'Ligar antes das 18h' };
 
 function emAtendimento() {
     let r = R.create('Sistema', ['ana', 'bruno', 'caio'], AGORA);
@@ -169,4 +169,105 @@ test('a pontuação é decidida na aprovação, com padrão em constante', () =>
 test('a ficha trava o corpo da página, como as outras camadas do rodízio', () => {
     const doc = html();
     assert.match(doc, /const ids = \['priorityAttendanceModal', 'priorityRotationDrawer'/);
+});
+
+/* ==========================================================================
+   ENCAMINHAMENTO: PRODUTO E FORMATO DOS CAMPOS
+   O modal de despacho tinha inputs livres — "dgwegw" entrava como ID de cliente e
+   "wetewtewtw" como telefone. E não perguntava a marca, embora o Portal de
+   Prioridades já perguntasse: o mesmo atendimento chegava identificado pelo portal
+   e anônimo pelo despacho interno.
+   ========================================================================== */
+
+const campos = require('../js/actuar-fields.js');
+
+test('o produto é fechado em lista, e a lista mora no domínio', () => {
+    assert.deepEqual(R.BRANDS, ['Actuar', 'Ediz', 'Toletus', 'Fácil Fit']);
+
+    const r = R.create('Catraca', ['ana', 'bruno'], AGORA);
+    const semProduto = { ...BRIEFING };
+    delete semProduto.product;
+    assert.throws(() => R.assign(r, 'ana', 'gestor', semProduto, AGORA), /Escolha o produto do atendimento/);
+    /* Digitada livre, "Facil Fit", "fácil-fit" e "FÁCIL FIT" viram três produtos
+       diferentes no primeiro relatório que agrupar por marca. */
+    for (const errada of ['Facil Fit', 'fácil fit', 'FÁCIL FIT', 'Outra']) {
+        assert.throws(() => R.assign(r, 'ana', 'gestor', { ...BRIEFING, product: errada }, AGORA), /Escolha o produto do atendimento/);
+    }
+    assert.equal(R.assign(r, 'ana', 'gestor', BRIEFING, AGORA).current.briefing.product, 'Toletus');
+});
+
+test('as marcas do Portal e as do despacho são as mesmas', () => {
+    const doc = html();
+    /* O Portal escreveu as dela à mão no HTML. Enquanto for assim, este teste é o que
+       impede as duas telas da mesma empresa de discordarem sobre quais marcas existem. */
+    const noPortal = [...doc.matchAll(/data-brand="([^"]+)"/g)].map(m => m[1]);
+    assert.deepEqual(noPortal, R.BRANDS);
+    // E o despacho não escreve lista nenhuma: monta a partir do domínio.
+    assert.match(doc, /PriorityRotation\.BRANDS\.map\(marca => `<option value="\$\{escapeHtml\(marca\)\}">/);
+});
+
+test('ID do cliente é sempre duas letras e quatro números', () => {
+    assert.equal(campos.format('clientId', 'tz 23 45'), 'TZ2345');
+    assert.equal(campos.validate('clientId', 'TZ2345').valid, true);
+
+    /* A máscara CORRIGE o que dá para corrigir em vez de recusar: minúsculas viram
+       maiúsculas e o excedente é cortado. Só sobra erro quando não há como formar
+       duas letras e quatro números. */
+    assert.equal(campos.format('clientId', 'TZ23456'), 'TZ2345', 'o excedente é cortado');
+    assert.equal(campos.format('clientId', 'dgwegw'), 'DG', 'sem dígitos, sobram só as letras');
+
+    for (const invalido of ['dgwegw', 'T2345', 'TZ234', '123456']) {
+        const r = campos.validate('clientId', invalido);
+        assert.equal(r.valid, false, `"${invalido}" deveria ser recusado`);
+        assert.match(r.message, /duas letras e quatro números/);
+    }
+    // O campo do despacho está ligado à mesma regra, e não a uma cópia.
+    assert.match(html(), /<input id="priorityDispatchClientId" data-field="clientId" required/);
+});
+
+test('telefone é sempre com DDD e 9', () => {
+    assert.equal(campos.format('phone', '62999999999'), '(62) 99999-9999');
+    assert.equal(campos.validate('phone', '(62) 99999-9999').valid, true);
+    // Celular sem o 9, DDD que não existe, e número incompleto.
+    assert.equal(campos.validate('phone', '(62) 8999-9999').valid, false);
+    assert.equal(campos.validate('phone', '(00) 99999-9999').valid, false);
+    assert.match(campos.validate('phone', '(62) 9999').message, /telefone com DDD/);
+
+    /* Texto sem dígito nenhum — como o "wetewtewtw" que entrava antes — some na
+       máscara e cai na exigência de preenchimento, porque o campo é `required` e
+       `check()` lê isso do próprio input. */
+    assert.equal(campos.format('phone', 'wetewtewtw'), '');
+    assert.equal(campos.validate('phone', 'wetewtewtw', { required: true }).message, 'Preencha este campo.');
+
+    assert.match(html(), /<input id="priorityDispatchPhone" data-field="phone" required/);
+    assert.match(html(), /<input id="priorityDispatchClient" data-field="text" required/);
+});
+
+test('o despacho confere o formato antes de chegar ao domínio, e instruções ficam por último', () => {
+    const doc = html();
+    const confirma = doc.slice(doc.indexOf('async function confirmPriorityRotationDispatch('), doc.indexOf('function closePriorityRotationDrawer('));
+
+    // O erro precisa aparecer NO campo; um toast genérico não diz qual está errado.
+    assert.match(confirma, /ActuarFields\.validateScope\(document\.getElementById\('priorityRotationDispatchModal'\)\)/);
+    assert.ok(confirma.indexOf('validateScope') < confirma.indexOf('const details ='), 'a checagem tem de vir antes do envio');
+    assert.match(confirma, /product: document\.getElementById\('priorityDispatchProduct'\)\.value,/);
+    // Sem bind() as máscaras não se ligam aos campos ao abrir.
+    assert.match(doc, /if \(window\.ActuarFields\?\.bind\) ActuarFields\.bind\(modal\);/);
+
+    // Ordem do formulário: demanda, produto, cliente, ID, telefone e instruções no fim.
+    const form = doc.slice(doc.indexOf('id="priorityRotationDispatchModal"'), doc.indexOf('<!-- MODAL DE INTERVENÇÃO GERENCIAL NO RODÍZIO -->'));
+    const ordem = ['priorityDispatchDemand', 'priorityDispatchProduct', 'priorityDispatchClient', 'priorityDispatchClientId', 'priorityDispatchPhone', 'priorityDispatchInstructions'];
+    const posicoes = ordem.map(id => form.indexOf(`id="${id}"`));
+    assert.deepEqual(posicoes, [...posicoes].sort((a, b) => a - b), 'a ordem dos campos do encaminhamento mudou');
+});
+
+test('o produto acompanha o atendimento até a auditoria', () => {
+    const doc = html();
+    // Card do rodízio, ficha do analista, revisão da gestão e detalhe da exclusão.
+    assert.match(doc, /<small>Produto<\/small><strong>\$\{escapeHtml\(briefing\.product\)\}/);
+    assert.match(doc, /\['Produto', briefing\.product\]/);
+    assert.match(doc, /<dt>Produto<\/dt><dd>\$\{escapeHtml\(briefing\.product \|\| '—'\)\}/);
+    assert.match(doc, /historyDetailPair\('Produto', briefing\.product\)/);
+    // E o lançamento carrega o produto, senão ele morre com a vez concluída.
+    assert.match(doc, /request\.product = rotationBefore\.current\.briefing\.product;/);
 });

@@ -168,7 +168,7 @@ test('a exclusão abre com tudo que o chamado tinha registrado', () => {
         timestamp: 1_700_000_000_000,
         rotationAttendanceId: 'att-1',
         dispatchedBy: 'gestor',
-        rotationBriefing: { clientName: 'Theron Fit', clientId: 'C-1', phone: '5599', demand: 'Catraca travada', instructions: 'Ligar antes das 18h' },
+        rotationBriefing: { product: 'Toletus', clientName: 'Theron Fit', clientId: 'TZ2345', phone: '(62) 99999-9999', demand: 'Catraca travada', instructions: 'Ligar antes das 18h' },
         resolution: 'unresolved', resolutionReason: 'no_answer', resolutionDetail: 'Três contatos sem resposta.',
         contactAttempts: [{ channel: 'call', result: 'no_answer', at: 1 }, { channel: 'whatsapp', result: 'no_answer', at: 2 }],
         attendanceNotes: [{ text: 'Cliente pediu retorno.', at: 3 }],
@@ -187,7 +187,7 @@ test('a exclusão abre com tudo que o chamado tinha registrado', () => {
     assert.match(saida, /PR-2026-77/);
     assert.match(saida, /Dyego/);
     assert.match(saida, /Cliente parado desde a manhã/, 'justificativa do analista');
-    assert.match(saida, /Theron Fit[\s\S]*?5599/, 'briefing do encaminhamento');
+    assert.match(saida, /Toletus[\s\S]*?Theron Fit[\s\S]*?\(62\) 99999-9999/, 'produto e briefing do encaminhamento');
     assert.match(saida, /Catraca travada/);
     assert.match(saida, /Ligar antes das 18h/);
     assert.match(saida, /Rodízio de prioridades/, 'origem');

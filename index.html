@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-auditoria-exclusao-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-despacho-produto-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -2539,9 +2539,17 @@
             <form onsubmit="confirmPriorityRotationDispatch(event)">
                 <div class="actuar-form-grid">
                     <div class="actuar-field actuar-field-full"><label for="priorityDispatchDemand">Demanda</label><input id="priorityDispatchDemand" required maxlength="160" placeholder="Resumo objetivo da prioridade"></div>
-                    <div class="actuar-field"><label for="priorityDispatchClient">Nome do cliente</label><input id="priorityDispatchClient" required maxlength="120" autocomplete="off"></div>
-                    <div class="actuar-field"><label for="priorityDispatchClientId">ID do cliente</label><input id="priorityDispatchClientId" required maxlength="80" autocomplete="off"></div>
-                    <div class="actuar-field actuar-field-full"><label for="priorityDispatchPhone">Telefone de contato</label><input id="priorityDispatchPhone" required maxlength="30" inputmode="tel" autocomplete="off" placeholder="(00) 00000-0000"></div>
+                    <!-- Produto fechado em lista: digitado livre, "Facil Fit", "fácil-fit" e
+                         "FÁCIL FIT" viram três produtos diferentes no primeiro relatório que
+                         agrupar por marca. As opções vêm de PriorityRotation.BRANDS. -->
+                    <div class="actuar-field actuar-field-full"><label for="priorityDispatchProduct">Produto</label><select id="priorityDispatchProduct" required></select></div>
+                    <div class="actuar-field"><label for="priorityDispatchClient">Nome do cliente</label><input id="priorityDispatchClient" data-field="text" required maxlength="120" autocomplete="off" placeholder="Academia Modelo"></div>
+                    <!-- data-field liga o campo às máscaras de js/actuar-fields.js, as mesmas
+                         que o Portal de Prioridades usa: ID em duas letras e quatro números,
+                         telefone com DDD válido e 9. Antes eram inputs livres, e "dgwegw"
+                         entrava como ID de cliente. -->
+                    <div class="actuar-field"><label for="priorityDispatchClientId">ID do cliente</label><input id="priorityDispatchClientId" data-field="clientId" required autocomplete="off"></div>
+                    <div class="actuar-field actuar-field-full"><label for="priorityDispatchPhone">Telefone de contato</label><input id="priorityDispatchPhone" data-field="phone" required autocomplete="off"></div>
                     <div class="actuar-field actuar-field-full"><label for="priorityDispatchInstructions">Instruções para o atendimento</label><textarea id="priorityDispatchInstructions" required rows="4" maxlength="800" placeholder="Contexto, cuidados e orientação de como conduzir o atendimento"></textarea><small>Essas informações ficam vinculadas a esta vez do rodízio.</small></div>
                 </div>
                 <div class="actuar-form-actions"><button type="button" class="actuar-btn actuar-btn-secondary" onclick="closePriorityRotationDispatchModal()">Cancelar</button><button id="priorityRotationDispatchSubmit" type="submit" class="actuar-btn actuar-btn-primary"><i class="fi fi-rr-paper-plane"></i>Iniciar e encaminhar</button></div>
@@ -3569,7 +3577,7 @@
                 const user = priorityRotationUser(view.current.analystId);
                 const request = view.current.priorityId ? (getStore()?.priorityRequests || []).find(item => item.id === view.current.priorityId) : null;
                 const briefing = view.current.briefing;
-                const briefingMarkup = briefing ? `<div class="rotation-brief"><div><small>Demanda</small><strong>${escapeHtml(briefing.demand)}</strong></div><div><small>Cliente</small><strong>${escapeHtml(briefing.clientName)}</strong></div><div><small>ID do cliente</small><strong>${escapeHtml(briefing.clientId)}</strong></div><div><small>Contato</small><strong>${escapeHtml(briefing.phone)}</strong></div><div><small>Instruções</small><p>${escapeHtml(briefing.instructions)}</p></div></div>` : '';
+                const briefingMarkup = briefing ? `<div class="rotation-brief"><div><small>Demanda</small><strong>${escapeHtml(briefing.demand)}</strong></div>${briefing.product ? `<div><small>Produto</small><strong>${escapeHtml(briefing.product)}</strong></div>` : ''}<div><small>Cliente</small><strong>${escapeHtml(briefing.clientName)}</strong></div><div><small>ID do cliente</small><strong>${escapeHtml(briefing.clientId)}</strong></div><div><small>Contato</small><strong>${escapeHtml(briefing.phone)}</strong></div><div><small>Instruções</small><p>${escapeHtml(briefing.instructions)}</p></div></div>` : '';
                 return `<section class="rotation-ops-primary is-current"><span class="rotation-ops-primary-accent" aria-hidden="true"></span><div class="rotation-ops-primary-heading"><span>Em atendimento agora</span><span class="actuar-badge actuar-badge-primary">Atendimento em andamento</span></div><div class="rotation-ops-primary-person">${priorityRotationAvatar(user, 'is-featured')}<span><strong>${escapeHtml(user?.name || 'Analista indisponível')}</strong><small>Iniciado às ${formatRotationTime(view.current.startedAt)} · ${priorityRotationDuration(view.current.startedAt)} em atendimento${request?.protocolo ? ` · Protocolo ${escapeHtml(request.protocolo)}` : ''}</small></span>${action}</div>${briefingMarkup}</section>`;
             }
             if (view.next) {
@@ -3774,7 +3782,7 @@
             const brief = document.getElementById('attendanceBriefBody');
             if (brief) {
                 brief.innerHTML = [
-                    ['Demanda', briefing.demand], ['Cliente', briefing.clientName],
+                    ['Demanda', briefing.demand], ['Produto', briefing.product], ['Cliente', briefing.clientName],
                     ['ID do cliente', briefing.clientId], ['Telefone', briefing.phone],
                     ['Instruções', briefing.instructions]
                 ].filter(([, valor]) => valor).map(([rotulo, valor]) => `<div><small>${rotulo}</small><strong>${escapeHtml(valor)}</strong></div>`).join('')
@@ -3896,7 +3904,14 @@
             document.getElementById('priorityRotationDispatchTitle').textContent = `Encaminhar para ${next?.name || 'o próximo analista'}`;
             document.getElementById('priorityRotationDispatchSubtitle').textContent = `${teamLabel(team)} · ${next?.name || 'Analista'} permanece como responsável pelo atendimento.`;
             ['priorityDispatchDemand','priorityDispatchClient','priorityDispatchClientId','priorityDispatchPhone','priorityDispatchInstructions'].forEach(id => { document.getElementById(id).value = ''; });
-            document.getElementById('priorityRotationDispatchModal').classList.remove('hidden');
+            /* A lista sai do domínio, não do HTML: o Portal escreveu as dela à mão e é assim
+               que duas telas da mesma marca passam a discordar. */
+            const produto = document.getElementById('priorityDispatchProduct');
+            produto.innerHTML = '<option value="">Selecione o produto</option>' + PriorityRotation.BRANDS.map(marca => `<option value="${escapeHtml(marca)}">${escapeHtml(marca)}</option>`).join('');
+            produto.value = '';
+            const modal = document.getElementById('priorityRotationDispatchModal');
+            if (window.ActuarFields?.bind) ActuarFields.bind(modal);
+            modal.classList.remove('hidden');
             syncPriorityRotationOverlayScroll();
             requestAnimationFrame(() => document.getElementById('priorityDispatchDemand')?.focus());
         }
@@ -3910,8 +3925,15 @@
             event.preventDefault();
             const team = currentPriorityRotationTeam(), rotation = ensurePriorityRotation(team), nextId = PriorityRotation.view(rotation).next;
             if (!nextId || !canManagePriorityRotation(team)) { showToast('O próximo participante não está mais disponível.', 'error'); return; }
+            /* Formato é conferido pelo mesmo módulo que o Portal usa, e antes de chegar ao
+               domínio: assim o erro aparece no campo errado, e não como um toast genérico. */
+            const checagem = window.ActuarFields?.validateScope
+                ? ActuarFields.validateScope(document.getElementById('priorityRotationDispatchModal'))
+                : { valid: true, errors: [] };
+            if (!checagem.valid) { showToast(checagem.errors[0]?.message || 'Confira os campos destacados.', 'error'); return; }
             const details = {
                 demand: document.getElementById('priorityDispatchDemand').value,
+                product: document.getElementById('priorityDispatchProduct').value,
                 clientName: document.getElementById('priorityDispatchClient').value,
                 clientId: document.getElementById('priorityDispatchClientId').value,
                 phone: document.getElementById('priorityDispatchPhone').value,
@@ -8204,6 +8226,7 @@
             const encaminhamento = briefing.clientName || briefing.demand ? `<section class="history-detail-block">
                 <h4><i class="fi fi-rr-paper-plane" aria-hidden="true"></i>Encaminhado pela gestão</h4>
                 <dl>
+                    ${historyDetailPair('Produto', briefing.product)}
                     ${historyDetailPair('Cliente', briefing.clientName)}
                     ${historyDetailPair('ID do cliente', briefing.clientId)}
                     ${historyDetailPair('Telefone', briefing.phone)}
@@ -10906,6 +10929,7 @@
                     request.rotationNextParticipantId = PriorityRotation.view(completed).next;
                     if (rotationBefore.current.briefing) {
                         request.rotationBriefing = deepClone(rotationBefore.current.briefing);
+                        request.product = rotationBefore.current.briefing.product;
                         request.clientName = rotationBefore.current.briefing.clientName;
                         request.clientId = rotationBefore.current.briefing.clientId;
                         request.clientPhone = rotationBefore.current.briefing.phone;
@@ -11149,7 +11173,7 @@
             const operationSummary = record.completedAt ? `${user?.name || 'O analista'} iniciou o atendimento às ${new Date(record.startedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}, registrou a prioridade ${request.protocolo} e concluiu sua vez às ${new Date(record.completedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}.${nextUser ? ` Após a conclusão, foi movido para o final da fila e ${nextUser.name} passou a ser o próximo participante.` : ''}` : `${user?.name || 'O analista'} registrou a prioridade fora de uma conclusão de rodízio.`;
             document.getElementById('priorityApprovalReviewTitle').textContent = `Atendimento prioritário — Protocolo ${request.protocolo}`;
             document.getElementById('priorityApprovalReviewSubtitle').textContent = `${teamLabel(record.team)} · ${new Date(record.startedAt).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}`;
-            document.getElementById('priorityApprovalReviewBody').innerHTML = `<section class="priority-detail-identity"><div>${priorityRotationAvatar(user)}<span><small>Analista</small><strong>${escapeHtml(user?.name || '—')}</strong><p>${teamLabel(record.team)}</p></span></div><dl><div><dt>Data e período</dt><dd>${priorityAttendanceDateRange(record)}</dd></div><div><dt>Posição no rodízio</dt><dd>${record.position ? `${record.position}ª posição` : 'Não registrada'}</dd></div><div><dt>Origem</dt><dd>${record.origin}</dd></div><div><dt>Situação final</dt><dd>${priorityStatusLabel(request.status)}</dd></div></dl></section><section class="priority-detail-request"><header><div><small>Prioridade registrada</small><h3>Protocolo ${escapeHtml(request.protocolo)}</h3></div><span>${formatRotationTime(request.timestamp,true)}</span></header>${briefing.clientName ? `<dl><div><dt>Cliente</dt><dd>${escapeHtml(briefing.clientName)}</dd></div><div><dt>Registro relacionado</dt><dd>${escapeHtml(briefing.clientId || '—')}</dd></div><div><dt>Contato</dt><dd>${escapeHtml(briefing.phone || '—')}</dd></div><div><dt>Tipo</dt><dd>Prioridade de atendimento</dd></div></dl><div><small>Descrição da demanda</small><p>${escapeHtml(briefing.demand || '—')}</p></div><div><small>Instruções recebidas</small><p>${escapeHtml(briefing.instructions || '—')}</p></div>` : ''}<div class="priority-analyst-justification"><small>Justificativa do analista</small><blockquote>${escapeHtml(request.justificativa || '—')}</blockquote></div>${renderPriorityAttendanceEvidence(request)}<div class="priority-evidence-empty"><i class="fi fi-rr-clip"></i><span><strong>Evidências e anexos</strong><small>Nenhum anexo foi registrado neste lançamento.</small></span></div></section>${renderPriorityEvaluationBlock(request)}<section class="priority-operation-explanation"><small>Relação com o rodízio</small><p>${escapeHtml(operationSummary)}</p></section>${renderPriorityAudit(request,record)}${managerAllowed && !readOnly && request.status === 'pendente' ? '<div class="priority-review-decision"><div class="actuar-field priority-review-note"><label for="priorityReviewObservation">Texto de fechamento da gestão</label><textarea id="priorityReviewObservation" rows="4" placeholder="Obrigatório para devolver ou reprovar; recomendado ao aprovar"></textarea></div><div class="actuar-field priority-review-points"><label for="priorityReviewPoints">Pontos a creditar</label><input id="priorityReviewPoints" type="number" min="0" max="200" step="5" value="${PRIORITY_DEFAULT_POINTS}"><small>Padrão de ${PRIORITY_DEFAULT_POINTS} pts. O desfecho acima é informativo: quem define a pontuação é a gestão, caso a caso.</small></div></div>' : ''}`;
+            document.getElementById('priorityApprovalReviewBody').innerHTML = `<section class="priority-detail-identity"><div>${priorityRotationAvatar(user)}<span><small>Analista</small><strong>${escapeHtml(user?.name || '—')}</strong><p>${teamLabel(record.team)}</p></span></div><dl><div><dt>Data e período</dt><dd>${priorityAttendanceDateRange(record)}</dd></div><div><dt>Posição no rodízio</dt><dd>${record.position ? `${record.position}ª posição` : 'Não registrada'}</dd></div><div><dt>Origem</dt><dd>${record.origin}</dd></div><div><dt>Situação final</dt><dd>${priorityStatusLabel(request.status)}</dd></div></dl></section><section class="priority-detail-request"><header><div><small>Prioridade registrada</small><h3>Protocolo ${escapeHtml(request.protocolo)}</h3></div><span>${formatRotationTime(request.timestamp,true)}</span></header>${briefing.clientName ? `<dl><div><dt>Cliente</dt><dd>${escapeHtml(briefing.clientName)}</dd></div><div><dt>Produto</dt><dd>${escapeHtml(briefing.product || '—')}</dd></div><div><dt>Registro relacionado</dt><dd>${escapeHtml(briefing.clientId || '—')}</dd></div><div><dt>Contato</dt><dd>${escapeHtml(briefing.phone || '—')}</dd></div><div><dt>Tipo</dt><dd>Prioridade de atendimento</dd></div></dl><div><small>Descrição da demanda</small><p>${escapeHtml(briefing.demand || '—')}</p></div><div><small>Instruções recebidas</small><p>${escapeHtml(briefing.instructions || '—')}</p></div>` : ''}<div class="priority-analyst-justification"><small>Justificativa do analista</small><blockquote>${escapeHtml(request.justificativa || '—')}</blockquote></div>${renderPriorityAttendanceEvidence(request)}<div class="priority-evidence-empty"><i class="fi fi-rr-clip"></i><span><strong>Evidências e anexos</strong><small>Nenhum anexo foi registrado neste lançamento.</small></span></div></section>${renderPriorityEvaluationBlock(request)}<section class="priority-operation-explanation"><small>Relação com o rodízio</small><p>${escapeHtml(operationSummary)}</p></section>${renderPriorityAudit(request,record)}${managerAllowed && !readOnly && request.status === 'pendente' ? '<div class="priority-review-decision"><div class="actuar-field priority-review-note"><label for="priorityReviewObservation">Texto de fechamento da gestão</label><textarea id="priorityReviewObservation" rows="4" placeholder="Obrigatório para devolver ou reprovar; recomendado ao aprovar"></textarea></div><div class="actuar-field priority-review-points"><label for="priorityReviewPoints">Pontos a creditar</label><input id="priorityReviewPoints" type="number" min="0" max="200" step="5" value="${PRIORITY_DEFAULT_POINTS}"><small>Padrão de ${PRIORITY_DEFAULT_POINTS} pts. O desfecho acima é informativo: quem define a pontuação é a gestão, caso a caso.</small></div></div>' : ''}`;
             let actions = `<button class="actuar-btn actuar-btn-secondary" onclick="closePriorityApprovalReview()">Voltar</button>`;
             // Única ação da ficha que tira o lançamento do fluxo: fica à esquerda, longe do resto.
             if (canDeletePriorityRequest()) actions += `<button class="actuar-btn actuar-btn-danger priority-delete-action" onclick="deletePriorityRequest('${request.id}')"><i class="fi fi-rr-trash"></i>Excluir lançamento</button>`;
@@ -12150,15 +12174,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-auditoria-exclusao-1"></script>
-    <script src="js/external-requests.js?v=20260819-auditoria-exclusao-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-auditoria-exclusao-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-auditoria-exclusao-1"></script>
-    <script src="js/performance-domain.js?v=20260819-auditoria-exclusao-1"></script>
-    <script src="js/manager-experience.js?v=20260819-auditoria-exclusao-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-auditoria-exclusao-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-auditoria-exclusao-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-auditoria-exclusao-1"></script>
-    <script src="js/performance-platform.js?v=20260819-auditoria-exclusao-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-despacho-produto-1"></script>
+    <script src="js/external-requests.js?v=20260819-despacho-produto-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-despacho-produto-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-despacho-produto-1"></script>
+    <script src="js/performance-domain.js?v=20260819-despacho-produto-1"></script>
+    <script src="js/manager-experience.js?v=20260819-despacho-produto-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-despacho-produto-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-despacho-produto-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-despacho-produto-1"></script>
+    <script src="js/performance-platform.js?v=20260819-despacho-produto-1"></script>
 </body>
 </html>

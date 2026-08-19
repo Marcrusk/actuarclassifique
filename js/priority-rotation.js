@@ -22,6 +22,14 @@
         ajuste_solicitado: Object.freeze({ label: 'Precisa de ajuste', short: 'Ajuste', tone: 'primary', icon: 'fi-rr-edit', waitingOn: 'analista' })
     });
 
+    /* MARCAS ATENDIDAS
+       O Portal de Prioridades já pergunta "Cliente de qual marca?" e oferece estas quatro,
+       escritas à mão no HTML dele. O encaminhamento interno não perguntava nada: o mesmo
+       atendimento chegava identificado pelo portal e anônimo pelo despacho da gestão.
+       A lista passa a viver aqui, onde o briefing é validado — e um teste guarda que as
+       quatro do portal continuam sendo estas. */
+    const BRANDS = Object.freeze(['Actuar', 'Ediz', 'Toletus', 'Fácil Fit']);
+
     /* FICHA DO ATENDIMENTO
        O atendimento prioritário só registrava protocolo e justificativa — dois campos de
        uma linha. Tudo o que aconteceu entre receber o cliente e encerrar (quantas vezes se
@@ -223,6 +231,7 @@
         const rotation = clone(input);
         const briefing = {
             demand: String(details?.demand || '').trim(),
+            product: String(details?.product || '').trim(),
             clientName: String(details?.clientName || '').trim(),
             clientId: String(details?.clientId || '').trim(),
             phone: String(details?.phone || '').trim(),
@@ -232,6 +241,9 @@
         assert(!rotation.current, 'Já existe um atendimento em andamento.', 'attendance_in_progress');
         assert(nextId(rotation) === analystId, 'O atendimento só pode ser encaminhado ao próximo da fila.', 'not_next');
         assert(briefing.demand && briefing.clientName && briefing.clientId && briefing.phone && briefing.instructions, 'Preencha todas as informações do atendimento.', 'briefing_required');
+        /* A marca é fechada: digitada livre, "Facil Fit", "fácil-fit" e "FÁCIL FIT" viram
+           três produtos diferentes no primeiro relatório que agrupar por ela. */
+        assert(BRANDS.includes(briefing.product), 'Escolha o produto do atendimento.', 'product_required');
         const before = snapshot(rotation);
         rotation.current = {
             id: attendanceId || `att-${now}-${analystId}`,
@@ -466,7 +478,7 @@
     }
 
     return {
-        ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, REQUEST_STATUS_META, statusMeta, PRIORITY_LOG_TYPES, pointLogsOf, deletionEntry,
+        ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, REQUEST_STATUS_META, statusMeta, PRIORITY_LOG_TYPES, pointLogsOf, deletionEntry, BRANDS,
         create, syncParticipants, nextId, canManage, start, assign, complete, skip, pauseParticipant, reactivateParticipant, reorder, setPaused, resolveCurrent,
         view, snapshot, matchesSearch, filterBySearch, normalizeSearch,
         // Ficha do atendimento
