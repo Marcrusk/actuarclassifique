@@ -182,3 +182,42 @@ test('a lista de nomes não flutua: o card recorta o que sai dele', () => {
     assert.match(html, /Nenhum acompanhamento cadastrado\. Peça à gestão um acesso com a função Gestor de Área\./);
     assert.match(css, /\.actuar-picker-empty \{/);
 });
+
+/* ==========================================================================
+   A KAMILLA SUMIU DA LISTA, E APARECEU TRÊS VEZES NO PORTAL
+   Dois sintomas, uma causa: o shell tinha a PRÓPRIA cópia da régua de quem
+   compete no ranking, e ela não conhecia `Gestor de Área`. A Kamilla passava por
+   analista, caía na checagem por equipe autorizada — Comercial não é equipe de
+   ranking — e desaparecia de Pessoas e Acessos. Sem ver a ficha, o cadastro foi
+   refeito, e sobraram três.
+   ========================================================================== */
+
+test('quem compete no ranking vem do domínio, não de uma cópia no shell', () => {
+    const manager = require('../js/manager-experience.js');
+    const regua = html.slice(html.indexOf('function isRankableUser(u)'), html.indexOf('function showToast('));
+
+    assert.match(regua, /const naoCompetem = window\.ManagerExperience\?\.NON_RANKED_ROLES;/);
+    assert.match(regua, /if \(naoCompetem\) return !!u && !naoCompetem\.includes\(u\.role\);/);
+
+    // A régua do domínio conhece a função nova; a cópia antiga não conhecia.
+    assert.ok(manager.NON_RANKED_ROLES.includes('Gestor de Área'));
+    assert.equal(manager.isRankable({ name: 'K', role: 'Gestor de Área', team: 'Comercial', active: true }), false);
+
+    /* É `canManagerListUser` que dependia disso: para quem NÃO compete ele devolve true e a
+       ficha aparece; para quem compete, pergunta a equipe autorizada — e Comercial nunca
+       estaria lá, porque não é equipe de ranking. */
+    const lista = html.slice(html.indexOf('function canManagerListUser(u)'), html.indexOf('function matchesUserFilters('));
+    assert.match(lista, /if \(!isRankableUser\(u\)\) return true;/);
+    assert.match(lista, /return getManagerAuthorizedTeams\(\)\.includes\(u\.team\);/);
+    assert.ok(!manager.authorizedTeams({ role: 'Gestor Adm', active: true }).includes('Comercial'));
+});
+
+test('e-mail repetido não vira uma segunda ficha da mesma pessoa', () => {
+    const salvar = html.slice(html.indexOf('async function saveUser(e)'), html.indexOf('async function toggleUserActive('));
+
+    assert.match(salvar, /const emailNormalizado = email\.toLocaleLowerCase\('pt-BR'\);/, 'comparar sem caixa: "Kamilla@" e "kamilla@" são a mesma caixa postal');
+    assert.match(salvar, /id !== editId && String\(outro\.email \|\| ''\)\.toLocaleLowerCase\('pt-BR'\) === emailNormalizado/, 'editar a própria ficha não pode acusar duplicidade');
+    assert.match(salvar, /Este e-mail já está na ficha de \$\{repetido\[1\]\.name\}\. Edite a ficha existente em vez de criar outra\./);
+    // Ficha sem e-mail não é bloqueada: o vazio não é duplicidade.
+    assert.match(salvar, /const repetido = emailNormalizado && /);
+});
