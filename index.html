@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-cores-do-funil-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-produto-no-encaminhamento-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -7292,11 +7292,20 @@
             if (!view.next) {
                 return `<div class="actuar-feedback actuar-feedback-warning"><i class="fi fi-rr-user-slash"></i><div><strong>Ninguém disponível</strong><p>Não há analista elegível na fila de ${escapeHtml(teamLabel(item.team))} agora.</p></div></div>${fila}`;
             }
+            /* O que o encaminhamento exige, conferido ANTES de oferecer o botão. Barrar depois
+               do clique, com um aviso no canto da tela, deixa a gestão sem saber o que fazer:
+               o dado que falta foi preenchido lá no Portal, não aqui. Hoje só a marca cai
+               nesse caso, e apenas em solicitação anterior ao seletor de marcas. */
+            const marcasValidas = window.PriorityRotation?.BRANDS || [];
+            if (!marcasValidas.includes(item.brand)) {
+                return `<div class="actuar-feedback actuar-feedback-warning"><i class="fi fi-rr-triangle-warning"></i><div><strong>Falta o produto</strong><p>Esta solicitação foi registrada ${item.brand ? `com a marca "${escapeHtml(item.brand)}", que não está mais na lista` : 'sem marca'}. O rodízio precisa do produto para encaminhar. Peça à área que registre de novo, ou encaminhe pelo rodízio informando o produto à mão.</p></div></div>${fila}`;
+            }
             const proximo = users[view.next];
             return `<div class="external-distribution">
                 <div class="external-next">
                     <small>Próximo elegível em ${escapeHtml(teamLabel(item.team))}</small>
                     <strong>${escapeHtml(proximo?.name || view.next)}</strong>
+                    <small>Produto: ${escapeHtml(item.brand)}</small>
                 </div>
                 <span class="external-distribution-actions">
                     <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="externalSkipNext()">Pular a vez</button>
@@ -7334,8 +7343,13 @@
             const listaAnterior = deepClone(getStore().externalRequests || []);
             const analista = (getStore()?.users || defaultUsers)[view.next];
             try {
+                /* A marca já foi perguntada no Portal, e é obrigatória lá ("Cliente de qual
+                   marca?"). Ela é o produto do atendimento — não passá-la fazia o rodízio
+                   recusar o encaminhamento com "Escolha o produto", uma exigência que a
+                   gestão não tinha como cumprir daqui: o dado existia e não chegava. */
                 const briefing = {
                     demand: item.need,
+                    product: item.brand,
                     clientName: item.clientName,
                     clientId: item.clientId,
                     phone: item.phone,
@@ -12921,15 +12935,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-cores-do-funil-1"></script>
-    <script src="js/external-requests.js?v=20260819-cores-do-funil-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-cores-do-funil-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-cores-do-funil-1"></script>
-    <script src="js/performance-domain.js?v=20260819-cores-do-funil-1"></script>
-    <script src="js/manager-experience.js?v=20260819-cores-do-funil-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-cores-do-funil-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-cores-do-funil-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-cores-do-funil-1"></script>
-    <script src="js/performance-platform.js?v=20260819-cores-do-funil-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-produto-no-encaminhamento-1"></script>
+    <script src="js/external-requests.js?v=20260819-produto-no-encaminhamento-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-produto-no-encaminhamento-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-produto-no-encaminhamento-1"></script>
+    <script src="js/performance-domain.js?v=20260819-produto-no-encaminhamento-1"></script>
+    <script src="js/manager-experience.js?v=20260819-produto-no-encaminhamento-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-produto-no-encaminhamento-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-produto-no-encaminhamento-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-produto-no-encaminhamento-1"></script>
+    <script src="js/performance-platform.js?v=20260819-produto-no-encaminhamento-1"></script>
 </body>
 </html>

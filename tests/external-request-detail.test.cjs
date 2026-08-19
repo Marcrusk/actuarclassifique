@@ -205,3 +205,48 @@ test('os tons novos existem nos dois temas e passam de contraste', () => {
         assert.match(css, new RegExp(`\\.actuar-badge-${tom} \\{ border-color: color-mix\\(in srgb, var\\(--actuar-${tom}\\) 30%, transparent\\); background: var\\(--actuar-${tom}-soft\\); color: var\\(--actuar-${tom}\\); \\}`));
     }
 });
+
+/* ==========================================================================
+   O ENCAMINHAMENTO DO PORTAL PARAVA NO PRODUTO
+   Quando o produto virou obrigatório no rodízio, o caminho que vem do Portal não
+   foi ligado: a gestão validava, clicava em Encaminhar e recebia "Escolha o
+   produto do atendimento" — uma exigência que ela não tinha como cumprir dali,
+   porque a marca é perguntada lá no Portal, no ato do registro.
+   ========================================================================== */
+
+test('a marca registrada no Portal vira o produto do atendimento', () => {
+    const envio = html.slice(html.indexOf('async function externalAssign()'), html.indexOf('function externalSkipNext'));
+    assert.match(envio, /product: item\.brand,/, 'o dado existia e não chegava ao rodízio');
+
+    // O Portal já exige a marca no passo 1: não é informação nova pedida no meio do caminho.
+    assert.match(html, /if \(step === 1\) return \['portalBrand', 'portalClientId', 'portalClientName', 'portalPhone'\];/);
+    assert.match(html, /Escolha de qual marca o cliente é\./);
+});
+
+test('todo caminho que encaminha monta o briefing completo', () => {
+    /* Dois hoje: o despacho manual da gestão e o do Portal. Um terceiro que esquecesse um
+       campo só apareceria como recusa do domínio na frente de quem clicou. */
+    const chamadas = [...html.matchAll(/PriorityRotation\.assign\(/g)];
+    assert.equal(chamadas.length, 2, 'apareceu um caminho novo de encaminhamento: confira o briefing dele');
+
+    const campos = ['demand', 'product', 'clientName', 'clientId', 'phone', 'instructions'];
+    const despacho = html.slice(html.indexOf('async function confirmPriorityRotationDispatch('), html.indexOf('function closePriorityRotationDrawer('));
+    const portal = html.slice(html.indexOf('async function externalAssign()'), html.indexOf('function externalSkipNext'));
+    for (const campo of campos) {
+        assert.match(despacho, new RegExp(`${campo}:`), `o despacho manual não leva ${campo}`);
+        assert.match(portal, new RegExp(`${campo}:`), `o encaminhamento do Portal não leva ${campo}`);
+    }
+});
+
+test('faltando o produto, o aviso vem antes do clique — não depois', () => {
+    const painel = html.slice(html.indexOf('function externalDistributionPanel(item)'), html.indexOf('async function externalAssign()'));
+
+    /* Barrar depois do clique, num aviso no canto da tela, deixa a gestão sem saber o que
+       fazer: o dado que falta foi preenchido no Portal, não ali. */
+    assert.match(painel, /const marcasValidas = window\.PriorityRotation\?\.BRANDS \|\| \[\];/);
+    assert.match(painel, /if \(!marcasValidas\.includes\(item\.brand\)\)/);
+    assert.match(painel, /<strong>Falta o produto<\/strong>/);
+    assert.ok(painel.indexOf('marcasValidas.includes') < painel.indexOf('externalAssign()'), 'a checagem precisa vir antes do botão');
+    // E o produto aparece no painel, para a gestão conferir o que vai junto.
+    assert.match(painel, /Produto: \$\{escapeHtml\(item\.brand\)\}/);
+});
