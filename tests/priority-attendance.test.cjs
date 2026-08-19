@@ -452,3 +452,64 @@ test('o menu do analista conta o que está em aberto para ele', () => {
     // Recalculado a cada desenho do menu, senão só apareceria depois de abrir a tela.
     assert.match(doc, /restoreNavBadges\(contadores\);[\s\S]{0,220}updateAnalystNavBadges\(\);/);
 });
+
+/* ==========================================================================
+   PRIORIDADE FORA DO RODÍZIO
+   Nem todo atendimento prioritário nasce de um encaminhamento: às vezes acontece
+   e só depois vira registro. Esse caminho existia no formulário solto que a ficha
+   do atendimento substituiu, e sumiu junto — um atendimento legítimo ficava sem
+   como ser lançado.
+   ========================================================================== */
+
+test('o avulso tem caminho próprio, e não conclui a vez de ninguém', () => {
+    const doc = html();
+    const avulso = doc.slice(doc.indexOf('async function submitStandalonePriority(event)'), doc.indexOf('async function submitPriorityRequest(e)'));
+
+    /* A razão de ser um caminho separado: `submitPriorityRequest` CONCLUI a vez de quem tem
+       atendimento aberto. Passando por lá, registrar um caso de fora encerraria — sem
+       avisar — o chamado que o analista está conduzindo no rodízio. */
+    assert.doesNotMatch(avulso, /PriorityRotation\.complete|activeOf|priorityRotations/, 'o avulso não pode tocar no rodízio');
+    assert.match(avulso, /standalone: true,/, 'é isto que a gestão lê como "Fora do rodízio"');
+    assert.match(avulso, /userId: getCurrentProfileUserId\(\)/, 'assinado por quem está logado');
+
+    // Os campos que o usuário pediu, mais o desfecho.
+    for (const campo of ['standaloneProtocolo', 'standaloneJustificativa', 'standaloneResolution', 'standaloneReason']) {
+        assert.ok(doc.includes(`id="${campo}"`), `falta o campo ${campo}`);
+    }
+    assert.match(avulso, /resolution, resolutionReason: reason,/);
+});
+
+test('o desfecho do avulso usa a mesma lista fechada do rodízio', () => {
+    const doc = html();
+    const avulso = doc.slice(doc.indexOf('async function submitStandalonePriority(event)'), doc.indexOf('async function submitPriorityRequest(e)'));
+    /* Um desfecho digitado livre aqui viraria uma segunda taxonomia na mesma coluna do
+       relatório — resolvido de um jeito no rodízio e de outro fora dele. */
+    assert.match(avulso, /if \(!\(PriorityRotation\.RESOLUTION_REASONS\[resolution\] \|\| \[\]\)\.includes\(reason\)\)/);
+    assert.match(doc, /function syncStandaloneReasons\(\)/);
+    assert.match(doc, /rotulo\.textContent = desfecho === 'resolved' \? 'Como foi resolvido\?' : 'Por que não foi resolvido\?';/);
+});
+
+test('o card é do analista, e avisa quando há atendimento em curso', () => {
+    const doc = html();
+    const render = doc.slice(doc.indexOf('function renderStandalonePriorityCard()'), doc.indexOf('async function submitStandalonePriority(event)'));
+
+    // Em Modo Gestão o lançamento sairia assinado por quem está olhando.
+    assert.match(render, /const podeRegistrar = !isAdminLoggedIn && !isPecaLoggedIn && isRankableUser\(getStore\(\)\?\.users\?\.\[currentActiveUser\]\);/);
+    const envio = doc.slice(doc.indexOf('async function submitStandalonePriority(event)'), doc.indexOf('async function submitPriorityRequest(e)'));
+    assert.match(envio, /if \(isAdminLoggedIn \|\| isPecaLoggedIn\)/, 'esconder o card não é permissão');
+
+    /* Com atendimento aberto, o aviso aponta a ficha: quem quer encerrar a vez precisa ir
+       lá, e este formulário não faz isso. */
+    assert.match(render, /const aberto = currentOwnAttendance\(\);/);
+    assert.match(render, /Este registro é para um caso <em>fora<\/em> do rodízio e não encerra a sua vez/);
+
+    // E acompanha o rodízio no render, senão o aviso ficaria velho.
+    assert.match(doc, /renderPriorityAttendanceRecord\(\);\s*\n\s*\/\/[^\n]*\n\s*renderStandalonePriorityCard\(\);/);
+});
+
+test('falha ao salvar não deixa lançamento solto na tela', () => {
+    const doc = html();
+    const avulso = doc.slice(doc.indexOf('async function submitStandalonePriority(event)'), doc.indexOf('async function submitPriorityRequest(e)'));
+    assert.match(avulso, /appStore\.priorityRequests = \(appStore\.priorityRequests \|\| \[\]\)\.filter\(item => item\.id !== requestId\);/);
+    assert.ok(avulso.indexOf('const ok = await persistStore();') < avulso.indexOf("showToast('Prioridade avulsa enviada"), 'o aviso de sucesso vem depois do salvamento');
+});

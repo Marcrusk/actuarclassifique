@@ -298,8 +298,10 @@ test('Prioridades abre direto no histórico pelo endereço, e a tela perdeu o de
        campos que ele tinha viraram o fim da ficha do atendimento, que é camada e não
        depende do modo de layout. */
     assert.match(css, /\.priority-workspace \{ display: grid; grid-template-columns: 1fr;[^}]*align-items: start; \}/);
-    assert.match(css, /#viewAgent\.priorities-mode > :not\(\.analyst-priority-module-header\):not\(\.priority-workspace\):not\(\.priority-inline-history\)/);
-    assert.match(css, /#viewAgent\.dashboard-mode > \.priority-workspace, #viewAgent\.dashboard-mode > \.priority-inline-history \{ display: none; \}/);
+    /* A lista cresce junto com a tela: o card de prioridade avulsa entrou nas duas, senão
+       nasceria invisível — a visibilidade de #viewAgent é por exceção. */
+    assert.match(css, /#viewAgent\.priorities-mode > :not\(\.analyst-priority-module-header\):not\(\.priority-workspace\):not\(\.standalone-priority\):not\(\.priority-inline-history\)/);
+    assert.match(css, /#viewAgent\.dashboard-mode > \.priority-workspace, #viewAgent\.dashboard-mode > \.standalone-priority, #viewAgent\.dashboard-mode > \.priority-inline-history \{ display: none; \}/);
     assert.doesNotMatch(css.replace(/\/\*[\s\S]*?\*\//g, ''), /priority-registration-card/, 'sobrou regra do card removido');
 
     // Uma justificativa de relatório inteiro esticava a linha da tabela.
