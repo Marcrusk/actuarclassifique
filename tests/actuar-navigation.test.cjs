@@ -293,13 +293,14 @@ test('Prioridades abre direto no histórico pelo endereço, e a tela perdeu o de
     assert.ok(!modulo.includes('Acompanhe o rodízio, registre atendimentos'), 'a descrição repetida voltou');
     assert.equal((html.match(/Acompanhe o rodízio, registre atendimentos e consulte seus lançamentos\./g) || []).length, 1);
 
-    /* O card de registrar virou faixa de largura cheia: em meia tela as quatro
-       colunas do formulário se espremiam e sobrava coluna vazia embaixo. Como a
-       visibilidade de #viewAgent é por exceção, ele precisa constar na lista —
-       fora dela, o card simplesmente some da tela. */
+    /* A visibilidade de #viewAgent é por exceção: o que não estiver na lista some da
+       tela. O card de registrar saiu das duas listas junto com o próprio card — os dois
+       campos que ele tinha viraram o fim da ficha do atendimento, que é camada e não
+       depende do modo de layout. */
     assert.match(css, /\.priority-workspace \{ display: grid; grid-template-columns: 1fr;[^}]*align-items: start; \}/);
-    assert.match(css, /#viewAgent\.priorities-mode > :not\(\.analyst-priority-module-header\):not\(\.priority-registration-card\)/);
-    assert.match(css, /#viewAgent\.dashboard-mode > [^{]*\.priority-registration-card/);
+    assert.match(css, /#viewAgent\.priorities-mode > :not\(\.analyst-priority-module-header\):not\(\.priority-workspace\):not\(\.priority-inline-history\)/);
+    assert.match(css, /#viewAgent\.dashboard-mode > \.priority-workspace, #viewAgent\.dashboard-mode > \.priority-inline-history \{ display: none; \}/);
+    assert.doesNotMatch(css.replace(/\/\*[\s\S]*?\*\//g, ''), /priority-registration-card/, 'sobrou regra do card removido');
 
     // Uma justificativa de relatório inteiro esticava a linha da tabela.
     assert.match(css, /#myPriorityRequestsTable td:nth-child\(2\) \{[\s\S]*?-webkit-line-clamp: 2;/);

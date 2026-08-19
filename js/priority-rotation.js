@@ -22,6 +22,48 @@
         ajuste_solicitado: Object.freeze({ label: 'Precisa de ajuste', short: 'Ajuste', tone: 'primary', icon: 'fi-rr-edit', waitingOn: 'analista' })
     });
 
+    /* FICHA DO ATENDIMENTO
+       O atendimento prioritário só registrava protocolo e justificativa — dois campos de
+       uma linha. Tudo o que aconteceu entre receber o cliente e encerrar (quantas vezes se
+       tentou falar com ele, o que se descobriu no caminho, se resolveu e como) não tinha
+       onde ser escrito. A gestão então aprovava 50 pontos sabendo apenas o número do
+       protocolo, e o manual pedia "até 3 tentativas de contato" numa regra que nenhuma tela
+       conseguia cumprir nem conferir.
+
+       Canal e resultado são fechados de propósito: é o que permite CONTAR tentativas. Uma
+       nota livre por tentativa continua existindo, para o que a lista não prevê. */
+    const CONTACT_CHANNEL = Object.freeze({ CALL: 'call', WHATSAPP: 'whatsapp', EMAIL: 'email' });
+    const CONTACT_RESULT = Object.freeze({ ANSWERED: 'answered', NO_ANSWER: 'no_answer' });
+    const CONTACT_CHANNEL_LABEL = Object.freeze({ call: 'Ligação', whatsapp: 'WhatsApp', email: 'E-mail' });
+    const CONTACT_RESULT_LABEL = Object.freeze({ answered: 'Falou com o cliente', no_answer: 'Sem resposta' });
+
+    /* Resolvido responde COMO; não resolvido responde POR QUÊ. São duas perguntas
+       diferentes, e é por isso que a lista de motivos depende do desfecho: oferecer as oito
+       juntas deixaria "sem retorno do cliente" disponível para quem acabou de resolver. */
+    const RESOLUTION = Object.freeze({ RESOLVED: 'resolved', UNRESOLVED: 'unresolved' });
+    const RESOLUTION_REASONS = Object.freeze({
+        resolved: Object.freeze(['guidance', 'fix_applied', 'part_dispatched', 'forwarded']),
+        unresolved: Object.freeze(['no_answer', 'third_party', 'out_of_scope', 'rescheduled'])
+    });
+    const RESOLUTION_LABEL = Object.freeze({ resolved: 'Resolvido', unresolved: 'Não resolvido' });
+    const RESOLUTION_REASON_LABEL = Object.freeze({
+        guidance: 'Orientação ao cliente',
+        fix_applied: 'Correção aplicada',
+        part_dispatched: 'Peça enviada ou coletada',
+        forwarded: 'Encaminhado a outra área',
+        no_answer: 'Sem retorno do cliente',
+        third_party: 'Depende de terceiro',
+        out_of_scope: 'Fora do escopo do atendimento',
+        rescheduled: 'Reagendado com o cliente'
+    });
+
+    /* A regra vem do manual ("Clientes sem retorno devem receber até 3 tentativas de
+       contato durante a semana") e até agora vivia só como texto. Aqui ela vira condição:
+       dar o cliente como sem retorno exige as três tentativas registradas. Vale só para
+       este motivo — os outros sete não dependem de ter ligado para ninguém. */
+    const NO_ANSWER_MIN_ATTEMPTS = 3;
+    const RESOLUTION_DETAIL_MIN = 10;
+
     /* EXCLUSÃO AUDITADA DE LANÇAMENTO
        Mesma régua das peças: apagar a prioridade sem tirar os pontos mantém exatamente o
        erro que a exclusão existe para desfazer — um lançamento de teste que pontuou alguém.
@@ -204,14 +246,85 @@
         return appendEvents(rotation, [event('attendance_assigned', rotation, { analystId, actorId, now, previousState: before, nextState: snapshot(rotation) })]);
     }
 
-    function complete(input, actorId, priorityId, now = Date.now()) {
-        const rotation = clone(input);
+    /* Quem está com o atendimento é quem escreve nele. A checagem de dono repete a de
+       `complete()` de propósito: registrar tentativa e nota são portas novas para o mesmo
+       objeto, e uma porta sem tranca torna a outra decorativa. */
+    function assertOwnAttendance(rotation, actorId) {
         assert(rotation.current, 'Não existe atendimento em andamento.', 'no_attendance');
         assert(rotation.current.analystId === actorId, 'Este atendimento pertence a outro analista.', 'not_owner');
+    }
+
+    function attemptsOf(attendance) {
+        return Array.isArray(attendance?.contactAttempts) ? attendance.contactAttempts : [];
+    }
+    function notesOf(attendance) {
+        return Array.isArray(attendance?.notes) ? attendance.notes : [];
+    }
+    /* Quanto falta para poder encerrar por falta de retorno. A tela usa isto para mostrar
+       "2 de 3" em vez de deixar o analista descobrir o limite ao ser barrado. */
+    function noAnswerProgress(attendance) {
+        const feitas = attemptsOf(attendance).length;
+        return { done: feitas, required: NO_ANSWER_MIN_ATTEMPTS, missing: Math.max(0, NO_ANSWER_MIN_ATTEMPTS - feitas), allowed: feitas >= NO_ANSWER_MIN_ATTEMPTS };
+    }
+
+    function logContact(input, actorId, details, now = Date.now()) {
+        const rotation = clone(input);
+        assertOwnAttendance(rotation, actorId);
+        const channel = String(details?.channel || '');
+        const result = String(details?.result || '');
+        assert(Object.values(CONTACT_CHANNEL).includes(channel), 'Escolha o canal do contato.', 'invalid_channel');
+        assert(Object.values(CONTACT_RESULT).includes(result), 'Escolha o resultado do contato.', 'invalid_result');
+        const attempt = {
+            id: `try-${now}-${attemptsOf(rotation.current).length + 1}`,
+            channel, result,
+            note: String(details?.note || '').trim(),
+            at: now, byId: actorId
+        };
+        rotation.current = { ...rotation.current, contactAttempts: [...attemptsOf(rotation.current), attempt] };
+        return appendEvents(rotation, [event('contact_attempted', rotation, { analystId: actorId, actorId, now, reason: `${CONTACT_CHANNEL_LABEL[channel]} · ${CONTACT_RESULT_LABEL[result]}` })]);
+    }
+
+    function addNote(input, actorId, text, now = Date.now()) {
+        const rotation = clone(input);
+        assertOwnAttendance(rotation, actorId);
+        const conteudo = String(text || '').trim();
+        assert(conteudo.length >= 3, 'Escreva a nota antes de salvar.', 'note_required');
+        const nota = { id: `note-${now}-${notesOf(rotation.current).length + 1}`, text: conteudo, at: now, byId: actorId };
+        rotation.current = { ...rotation.current, notes: [...notesOf(rotation.current), nota] };
+        return appendEvents(rotation, [event('attendance_noted', rotation, { analystId: actorId, actorId, now })]);
+    }
+
+    /* O desfecho é obrigatório para encerrar: sem ele voltaríamos ao que existia, um
+       protocolo sem história. Validado aqui, e não na tela, porque a tela não é o único
+       caminho possível para o dado — e porque a regra das tentativas precisa olhar o
+       atendimento, que só o domínio tem inteiro. */
+    function normalizeOutcome(outcome, attendance) {
+        const resolution = String(outcome?.resolution || '');
+        assert(Object.values(RESOLUTION).includes(resolution), 'Escolha se o atendimento foi resolvido.', 'resolution_required');
+        const reason = String(outcome?.reason || '');
+        assert(RESOLUTION_REASONS[resolution].includes(reason),
+            resolution === RESOLUTION.RESOLVED ? 'Escolha como o atendimento foi resolvido.' : 'Escolha por que o atendimento não foi resolvido.',
+            'resolution_reason_required');
+        const detail = String(outcome?.detail || '').trim();
+        assert(detail.length >= RESOLUTION_DETAIL_MIN, `Descreva o desfecho em pelo menos ${RESOLUTION_DETAIL_MIN} caracteres.`, 'resolution_detail_required');
+        if (reason === 'no_answer') {
+            const progresso = noAnswerProgress(attendance);
+            assert(progresso.allowed, `Registre ${NO_ANSWER_MIN_ATTEMPTS} tentativas de contato antes de encerrar por falta de retorno. Há ${progresso.done}.`, 'attempts_required');
+        }
+        return { resolution, reason, detail };
+    }
+
+    function complete(input, actorId, priorityId, now = Date.now(), outcome = null) {
+        const rotation = clone(input);
+        assertOwnAttendance(rotation, actorId);
         if (rotation.current.priorityId === priorityId && rotation.current.status === ATTENDANCE_STATUS.COMPLETED) return rotation;
         assert(!rotation.events?.some(item => item.type === 'priority_registered' && item.relatedPriorityId === priorityId), 'Esta prioridade já concluiu uma vez do rodízio.', 'duplicate_completion');
+        const desfecho = normalizeOutcome(outcome, rotation.current);
         const before = snapshot(rotation);
-        const attendance = { ...rotation.current, status: ATTENDANCE_STATUS.COMPLETED, completedAt: now, priorityId };
+        const attendance = {
+            ...rotation.current, status: ATTENDANCE_STATUS.COMPLETED, completedAt: now, priorityId,
+            resolution: desfecho.resolution, resolutionReason: desfecho.reason, resolutionDetail: desfecho.detail
+        };
         rotation.queue = rotation.queue.filter(id => id !== actorId);
         if (rotation.participants[actorId]?.status === PARTICIPANT_STATUS.ACTIVE) rotation.queue.push(actorId);
         rotation.current = null;
@@ -352,5 +465,14 @@
         return lista.filter(item => matchesSearch(item, query, typeof resolveExtras === 'function' ? resolveExtras(item) : {}));
     }
 
-    return { ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, REQUEST_STATUS_META, statusMeta, PRIORITY_LOG_TYPES, pointLogsOf, deletionEntry, create, syncParticipants, nextId, canManage, start, assign, complete, skip, pauseParticipant, reactivateParticipant, reorder, setPaused, resolveCurrent, view, snapshot, matchesSearch, filterBySearch, normalizeSearch };
+    return {
+        ROTATION_STATUS, PARTICIPANT_STATUS, ATTENDANCE_STATUS, REQUEST_STATUS_META, statusMeta, PRIORITY_LOG_TYPES, pointLogsOf, deletionEntry,
+        create, syncParticipants, nextId, canManage, start, assign, complete, skip, pauseParticipant, reactivateParticipant, reorder, setPaused, resolveCurrent,
+        view, snapshot, matchesSearch, filterBySearch, normalizeSearch,
+        // Ficha do atendimento
+        CONTACT_CHANNEL, CONTACT_RESULT, CONTACT_CHANNEL_LABEL, CONTACT_RESULT_LABEL,
+        RESOLUTION, RESOLUTION_REASONS, RESOLUTION_LABEL, RESOLUTION_REASON_LABEL,
+        NO_ANSWER_MIN_ATTEMPTS, RESOLUTION_DETAIL_MIN,
+        logContact, addNote, attemptsOf, notesOf, noAnswerProgress, normalizeOutcome
+    };
 });

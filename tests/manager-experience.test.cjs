@@ -703,29 +703,31 @@ test('a busca de prioridades está nas três telas e nunca amplia o que o analis
     assert.match(html, /Nada encontrado para esta busca/);
 });
 
-test('registrar prioridade é só o formulário; a consulta vive no histórico', () => {
+test('registrar prioridade vive na ficha do atendimento; a consulta, no histórico', () => {
     const html = fs.readFileSync('index.html', 'utf8');
 
-    const inicioCard = html.indexOf('priority-registration-card');
-    const inicioHistorico = html.indexOf('id="priorityInlineHistorySection"');
-    assert.ok(inicioCard > 0 && inicioHistorico > inicioCard, 'a ordem das seções mudou; revise este teste');
-    const card = html.slice(inicioCard, inicioHistorico);
+    /* Antes existia um card solto "Registrar Prioridade" com dois campos de uma linha,
+       que era o único caminho para encerrar um atendimento — e não sabia sequer qual
+       atendimento estava em curso. Os dois campos passaram para a ficha, depois das
+       tentativas de contato, das notas e do desfecho. */
+    assert.ok(!html.includes('class="bg-surface border border-line rounded-2xl card-hover p-6 priority-registration-card"'),
+        'o card solto de registro voltou');
+    assert.ok(!html.includes('id="priorityRotationFormNotice"'), 'sobrou a faixa do card removido');
 
-    // Registrar e consultar são gestos diferentes: o card de registro fica com o
-    // formulário e nada mais — a lista empurrava o botão para o fim de um card estreito.
-    for (const fora of ['analystPrioritySearch', 'myPriorityRequestsTable', 'analyst-priority-filters', 'Meus Protocolos']) {
-        assert.ok(!card.includes(fora), `"${fora}" continua dentro de Registrar Prioridade`);
-    }
-    for (const dentro of ['Nº do Protocolo', 'Justificativa', 'Enviar para Validação', 'submitPriorityRequest(event)']) {
-        assert.ok(card.includes(dentro), `o formulário perdeu: ${dentro}`);
-    }
+    const inicioFicha = html.indexOf('id="priorityAttendanceModal"');
+    const fimFicha = html.indexOf('<!-- MODAL DE INTERVENÇÃO GERENCIAL NO RODÍZIO -->');
+    assert.ok(inicioFicha > 0 && fimFicha > inicioFicha, 'a ordem das seções mudou; revise este teste');
+    const ficha = html.slice(inicioFicha, fimFicha);
 
-    // E o que saiu está no Histórico de prioridades, não em qualquer outro lugar.
-    const historico = html.slice(inicioHistorico, html.indexOf('</section>', inicioHistorico));
-    for (const item of ['id="analystPrioritySearch"', 'id="myPriorityRequestsTable"', 'analyst-priority-filters', 'Meus protocolos']) {
-        assert.ok(historico.includes(item), `"${item}" não chegou ao Histórico de prioridades`);
+    // O formulário de encerramento está na ficha, e é ele que envia.
+    for (const dentro of ['priorityProtocolo', 'priorityJustificativa', 'submitPriorityRequest(event)', 'attendanceResolution', 'attendanceResolutionDetail']) {
+        assert.ok(ficha.includes(dentro), `a ficha perdeu: ${dentro}`);
     }
-    // Nada pode existir em duplicidade: dois campos com o mesmo id quebram a busca.
-    assert.equal((html.match(/id="analystPrioritySearch"/g) || []).length, 1);
-    assert.equal((html.match(/id="myPriorityRequestsTable"/g) || []).length, 1);
+    // Registrar e consultar continuam sendo gestos diferentes: a lista não entra na ficha.
+    for (const fora of ['analystPrioritySearch', 'myPriorityRequestsTable', 'analyst-priority-filters']) {
+        assert.ok(!ficha.includes(fora), `"${fora}" entrou na ficha do atendimento`);
+    }
+    // E a consulta segue no histórico, fora da ficha.
+    assert.ok(html.indexOf('id="priorityInlineHistorySection"') > 0);
+    assert.ok(html.includes('id="myPriorityRequestsTable"'));
 });

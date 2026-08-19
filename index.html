@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-tela-analista-5">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-ficha-atendimento-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -790,26 +790,11 @@
                  justificativa e botão). Espremido em meia tela ele virava três
                  campos empilhados, e ainda deixava ~270px de coluna vazia embaixo,
                  porque a lista que preenchia esse espaço mudou para o histórico. -->
-            <div class="bg-surface border border-line rounded-2xl card-hover p-6 priority-registration-card">
-                <h3 class="text-md font-bold text-white mb-1 flex items-center gap-2"><span class="priority-heading-icon" aria-hidden="true"><i class="fi fi-sr-star"></i></span> Registrar Prioridade</h3>
-                <p class="text-xs text-secondary mb-4">Envie o protocolo e a justificativa para validação da gestão. Após aprovado, <strong class="text-emerald-400">50 pontos</strong> são creditados automaticamente.</p>
-                <div id="priorityRotationFormNotice" class="hidden priority-rotation-form-notice"></div>
-                <form onsubmit="submitPriorityRequest(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div class="md:col-span-1">
-                        <label class="block text-xs text-secondary mb-1">Nº do Protocolo</label>
-                        <input type="text" id="priorityProtocolo" placeholder="Ex: 202608-1234" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-xs text-secondary mb-1">Justificativa</label>
-                        <input type="text" id="priorityJustificativa" placeholder="Explique o motivo da prioridade" required class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line">
-                    </div>
-                    <div>
-                        <button type="submit" class="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-black font-bold py-2.5 rounded-xl text-sm transition-all duration-200 shadow-[0_0_25px_-8px_rgba(245,158,11,0.5)]">
-                            <i class="fa-solid fa-paper-plane me-1"></i> Enviar para Validação
-                        </button>
-                    </div>
-                </form>
-            </div>
+            <!-- O card solto "Registrar Prioridade" saiu daqui: protocolo e justificativa
+                 eram tudo o que se pedia para encerrar um atendimento, soltos numa faixa que
+                 não sabia sequer qual atendimento estava em curso. Agora são os dois últimos
+                 campos da ficha (#priorityAttendanceModal), depois das tentativas de contato,
+                 das notas e do desfecho — e a ficha só abre para quem está atendendo. -->
             <!-- RODÍZIO DE PRIORIDADES -->
             <div class="priority-workspace">
                 <section id="priorityRotationCard" class="priority-rotation-card" aria-labelledby="priorityRotationTitle" aria-live="polite">
@@ -2564,6 +2549,74 @@
         </div>
     </div>
 
+    <!-- FICHA DO ATENDIMENTO PRIORITÁRIO
+         O analista tinha dois campos de uma linha para encerrar um atendimento: protocolo e
+         justificativa. Tudo entre receber o cliente e concluir — quantas vezes tentou falar
+         com ele, o que descobriu, se resolveu e como — não tinha onde ser escrito, e a
+         gestão aprovava pontos sabendo só o número do protocolo. -->
+    <div id="priorityAttendanceModal" class="hidden rotation-modal-layer" role="dialog" aria-modal="true" aria-labelledby="priorityAttendanceTitle">
+        <div class="rotation-modal-card attendance-record-card">
+            <header>
+                <div><span class="rotation-eyebrow">Atendimento prioritário</span><h2 id="priorityAttendanceTitle">Ficha do atendimento</h2><p id="priorityAttendanceSubtitle"></p></div>
+                <button type="button" class="actuar-icon-button" onclick="closePriorityAttendanceRecord()" aria-label="Fechar"><i class="fi fi-rr-cross-small"></i></button>
+            </header>
+            <div class="attendance-record-body">
+                <!-- O briefing acompanha o analista enquanto ele fala com o cliente: antes
+                     ficava só no card lá atrás, e fechar a tela era perder o telefone. -->
+                <section class="attendance-record-brief" aria-labelledby="attendanceBriefTitle">
+                    <h3 id="attendanceBriefTitle">Encaminhado pela gestão</h3>
+                    <div id="attendanceBriefBody"></div>
+                </section>
+
+                <section class="attendance-record-section" aria-labelledby="attendanceAttemptsTitle">
+                    <div class="attendance-record-section-head">
+                        <div><h3 id="attendanceAttemptsTitle">Tentativas de contato</h3><p>Cada tentativa fica registrada com canal, resultado e horário.</p></div>
+                        <span id="attendanceAttemptsProgress" class="attendance-attempts-progress"></span>
+                    </div>
+                    <ol id="attendanceAttemptsList" class="attendance-attempts-list"></ol>
+                    <form class="attendance-attempt-form" onsubmit="registerAttendanceContact(event)">
+                        <div class="actuar-field"><label for="attendanceContactChannel">Canal</label><select id="attendanceContactChannel" required><option value="call">Ligação</option><option value="whatsapp">WhatsApp</option><option value="email">E-mail</option></select></div>
+                        <div class="actuar-field"><label for="attendanceContactResult">Resultado</label><select id="attendanceContactResult" required><option value="no_answer">Sem resposta</option><option value="answered">Falou com o cliente</option></select></div>
+                        <div class="actuar-field"><label for="attendanceContactNote">Observação (opcional)</label><input id="attendanceContactNote" maxlength="200" autocomplete="off" placeholder="Ex.: caixa postal, retorno pedido para amanhã"></div>
+                        <button type="submit" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-phone-call"></i>Registrar tentativa</button>
+                    </form>
+                </section>
+
+                <section class="attendance-record-section" aria-labelledby="attendanceNotesTitle">
+                    <div class="attendance-record-section-head">
+                        <div><h3 id="attendanceNotesTitle">Notas internas</h3><p>Anotações do andamento. Ficam visíveis para a gestão e não vão para o cliente.</p></div>
+                    </div>
+                    <ol id="attendanceNotesList" class="attendance-notes-list"></ol>
+                    <form class="attendance-note-form" onsubmit="registerAttendanceNote(event)">
+                        <div class="actuar-field actuar-field-full"><label for="attendanceNoteText">Nova nota</label><textarea id="attendanceNoteText" rows="3" maxlength="800" placeholder="O que aconteceu, o que falta, o que foi combinado"></textarea></div>
+                        <button type="submit" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-notebook"></i>Salvar nota</button>
+                    </form>
+                </section>
+
+                <!-- Encerrar é o que credita pontos e devolve a vez ao rodízio, então é a
+                     última seção e a única com botão primário. -->
+                <section class="attendance-record-section attendance-record-close" aria-labelledby="attendanceCloseTitle">
+                    <div class="attendance-record-section-head">
+                        <div><h3 id="attendanceCloseTitle">Encerrar e enviar para validação</h3><p>O desfecho acompanha o lançamento até a aprovação da gestão.</p></div>
+                    </div>
+                    <form onsubmit="submitPriorityRequest(event)">
+                        <div class="actuar-form-grid">
+                            <div class="actuar-field"><label for="priorityProtocolo">Nº do protocolo</label><input id="priorityProtocolo" required maxlength="40" autocomplete="off" placeholder="Ex.: 202608-1234"></div>
+                            <div class="actuar-field"><label for="attendanceResolution">O atendimento foi resolvido?</label><select id="attendanceResolution" required onchange="syncAttendanceResolutionReasons()"><option value="resolved">Resolvido</option><option value="unresolved">Não resolvido</option></select></div>
+                            <div class="actuar-field actuar-field-full"><label for="attendanceResolutionReason" id="attendanceResolutionReasonLabel">Como foi resolvido?</label><select id="attendanceResolutionReason" required onchange="renderPriorityAttendanceRecord()"></select><small id="attendanceResolutionHint"></small></div>
+                            <div class="actuar-field actuar-field-full"><label for="attendanceResolutionDetail">Descreva o desfecho</label><textarea id="attendanceResolutionDetail" rows="3" required maxlength="800" placeholder="O que foi feito, o que ficou combinado, o que impediu a resolução"></textarea></div>
+                            <div class="actuar-field actuar-field-full"><label for="priorityJustificativa">Justificativa da prioridade</label><input id="priorityJustificativa" required maxlength="240" autocomplete="off" placeholder="Por que este atendimento era prioritário"></div>
+                        </div>
+                        <div class="actuar-form-actions">
+                            <button type="button" class="actuar-btn actuar-btn-secondary" onclick="closePriorityAttendanceRecord()">Fechar sem encerrar</button>
+                            <button type="submit" class="actuar-btn actuar-btn-primary"><i class="fi fi-rr-paper-plane"></i>Encerrar e enviar</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL DE INTERVENÇÃO GERENCIAL NO RODÍZIO -->
     <div id="priorityRotationActionModal" class="hidden rotation-modal-layer" role="dialog" aria-modal="true" aria-labelledby="priorityRotationActionTitle">
         <div class="rotation-modal-card">
@@ -3577,7 +3630,7 @@
             const selfNext = !view.current && view.next === currentActiveUser && isAnalystContext;
             let mainAction = '';
             if (view.status === 'active' && selfNext) mainAction = `<button id="priorityRotationStartButton" class="actuar-btn actuar-btn-primary" type="button" onclick="openPriorityRotationStartModal()"><i class="fi fi-rr-play"></i>Iniciar atendimento</button>`;
-            else if (currentOwner) mainAction = `<button class="actuar-btn actuar-btn-primary" type="button" onclick="focusPriorityForm()"><i class="fi fi-rr-star"></i>Registrar prioridade</button>`;
+            else if (currentOwner) mainAction = `<button class="actuar-btn actuar-btn-primary" type="button" onclick="openPriorityAttendanceRecord()"><i class="fi fi-rr-clipboard-list"></i>Abrir ficha do atendimento</button>`;
             else if (canManage && !view.current && view.next && view.status === 'active') mainAction = `<button class="actuar-btn actuar-btn-primary" type="button" onclick="openPriorityRotationDispatchModal()"><i class="fi fi-rr-paper-plane"></i>Encaminhar prioridade</button>`;
             else if (canManage) mainAction = `<button class="actuar-btn actuar-btn-primary" type="button" onclick="openPriorityRotationDrawer()"><i class="fi fi-rr-settings-sliders"></i>Gerenciar fila</button>`;
 
@@ -3593,11 +3646,8 @@
                 <section class="rotation-ops-following"><h4>Na sequência</h4>${renderPriorityRotationSequence(view)}</section>
                 <footer class="rotation-ops-footer"><div class="rotation-ops-meta"><span><strong>${view.queue.length}</strong> ativo${view.queue.length === 1 ? '' : 's'}</span><i aria-hidden="true"></i><span><strong>${view.paused.length}</strong> pausado${view.paused.length === 1 ? '' : 's'}</span><i aria-hidden="true"></i><span>Atualizado agora</span></div><div class="rotation-ops-footer-actions">${!view.current && !view.next ? mainAction : ''}<button class="actuar-btn actuar-btn-primary actuar-btn-sm" type="button" onclick="openPriorityRotationDrawer()">Ver fila completa</button><button class="rotation-ops-history-link" type="button" onclick="openPriorityRotationHistory()">Ver histórico</button></div></footer>`;
 
-            const notice = document.getElementById('priorityRotationFormNotice');
-            if (notice) {
-                notice.classList.toggle('hidden', !currentOwner);
-                notice.innerHTML = currentOwner ? `<strong>Atendimento em andamento.</strong> Este registro concluirá sua vez no rodízio de prioridades de ${teamLabel(team)}.` : '';
-            }
+            // A faixa do formulário solto saiu com ele; a ficha aberta acompanha o rodízio.
+            renderPriorityAttendanceRecord();
             if (document.getElementById('priorityRotationDrawer') && !document.getElementById('priorityRotationDrawer').classList.contains('hidden')) renderPriorityRotationDrawer();
             renderPriorityInlineHistories();
         }
@@ -3667,18 +3717,158 @@
             else if (submit) submit.disabled = false;
         }
 
-        function focusPriorityForm() {
+        /* ==========================================================================
+           FICHA DO ATENDIMENTO PRIORITÁRIO
+           Abria-se um formulário solto com protocolo e justificativa. A ficha põe no
+           mesmo lugar o briefing que a gestão mandou, as tentativas de contato, as notas
+           do andamento e o desfecho — e só existe para quem está com o atendimento.
+           A regra de quem pode escrever vive no domínio (assertOwnAttendance); aqui a
+           checagem é para não OFERECER o que seria recusado depois.
+           ========================================================================== */
+        function currentOwnAttendance() {
             const rotation = ensurePriorityRotation(currentPriorityRotationTeam());
-            if (rotation?.current?.analystId !== currentActiveUser || isAdminLoggedIn) {
+            if (isAdminLoggedIn) return null;
+            return rotation?.current?.analystId === currentActiveUser ? rotation.current : null;
+        }
+
+        function openPriorityAttendanceRecord() {
+            if (!currentOwnAttendance()) {
                 showToast('Somente o analista responsável pode registrar esta vez.', 'error');
                 return;
             }
+            const modal = document.getElementById('priorityAttendanceModal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            syncAttendanceResolutionReasons();
+            renderPriorityAttendanceRecord();
+            syncPriorityRotationOverlayScroll();
             document.getElementById('priorityProtocolo')?.focus({ preventScroll: true });
-            document.querySelector('.priority-registration-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function closePriorityAttendanceRecord() {
+            document.getElementById('priorityAttendanceModal')?.classList.add('hidden');
+            syncPriorityRotationOverlayScroll();
+        }
+
+        function priorityAttendanceOpen() {
+            return !document.getElementById('priorityAttendanceModal')?.classList.contains('hidden');
+        }
+
+        function attendanceStamp(timestamp) {
+            const data = new Date(Number(timestamp) || Date.now());
+            return `${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')} às ${String(data.getHours()).padStart(2, '0')}:${String(data.getMinutes()).padStart(2, '0')}`;
+        }
+
+        function renderPriorityAttendanceRecord() {
+            if (!priorityAttendanceOpen()) return;
+            const atendimento = currentOwnAttendance();
+            /* O atendimento pode ter terminado por fora enquanto a ficha estava aberta —
+               a gestão encerra pelo painel. Fechar é mais honesto do que deixar à vista
+               uma ficha cujos botões o domínio já recusa. */
+            if (!atendimento) { closePriorityAttendanceRecord(); return; }
+
+            const briefing = atendimento.briefing || {};
+            const subtitulo = document.getElementById('priorityAttendanceSubtitle');
+            if (subtitulo) subtitulo.textContent = `${briefing.clientName || 'Cliente'} · iniciado ${attendanceStamp(atendimento.startedAt)} · ${priorityRotationDuration(atendimento.startedAt)} em atendimento`;
+
+            const brief = document.getElementById('attendanceBriefBody');
+            if (brief) {
+                brief.innerHTML = [
+                    ['Demanda', briefing.demand], ['Cliente', briefing.clientName],
+                    ['ID do cliente', briefing.clientId], ['Telefone', briefing.phone],
+                    ['Instruções', briefing.instructions]
+                ].filter(([, valor]) => valor).map(([rotulo, valor]) => `<div><small>${rotulo}</small><strong>${escapeHtml(valor)}</strong></div>`).join('')
+                    || '<p class="attendance-record-empty">Este atendimento foi iniciado sem encaminhamento da gestão.</p>';
+            }
+
+            const tentativas = PriorityRotation.attemptsOf(atendimento);
+            const progresso = PriorityRotation.noAnswerProgress(atendimento);
+            const marcador = document.getElementById('attendanceAttemptsProgress');
+            if (marcador) {
+                /* O limite aparece antes de barrar. Descobrir a regra ao ser recusado é o
+                   tipo de coisa que faz o analista achar que o sistema quebrou. */
+                marcador.textContent = `${progresso.done} de ${progresso.required} registradas`;
+                marcador.classList.toggle('is-complete', progresso.allowed);
+            }
+            const listaTentativas = document.getElementById('attendanceAttemptsList');
+            if (listaTentativas) {
+                listaTentativas.innerHTML = tentativas.length ? tentativas.map((item, indice) => `
+                    <li class="${item.result === 'answered' ? 'is-answered' : 'is-no-answer'}">
+                        <span class="attendance-attempt-index">${indice + 1}</span>
+                        <span class="attendance-attempt-body">
+                            <strong>${escapeHtml(PriorityRotation.CONTACT_CHANNEL_LABEL[item.channel] || item.channel)} · ${escapeHtml(PriorityRotation.CONTACT_RESULT_LABEL[item.result] || item.result)}</strong>
+                            ${item.note ? `<small>${escapeHtml(item.note)}</small>` : ''}
+                        </span>
+                        <time>${attendanceStamp(item.at)}</time>
+                    </li>`).join('')
+                    : '<li class="attendance-record-empty">Nenhuma tentativa registrada ainda.</li>';
+            }
+
+            const notas = PriorityRotation.notesOf(atendimento);
+            const listaNotas = document.getElementById('attendanceNotesList');
+            if (listaNotas) {
+                listaNotas.innerHTML = notas.length ? notas.map(item => `
+                    <li><p>${escapeHtml(item.text)}</p><time>${attendanceStamp(item.at)}</time></li>`).join('')
+                    : '<li class="attendance-record-empty">Nenhuma nota registrada ainda.</li>';
+            }
+
+            const dica = document.getElementById('attendanceResolutionHint');
+            if (dica) {
+                const semRetorno = document.getElementById('attendanceResolutionReason')?.value === 'no_answer';
+                dica.textContent = semRetorno && !progresso.allowed
+                    ? `Faltam ${progresso.missing} tentativa${progresso.missing === 1 ? '' : 's'} para encerrar por falta de retorno.`
+                    : '';
+                dica.classList.toggle('is-blocking', Boolean(semRetorno && !progresso.allowed));
+            }
+        }
+
+        /* Resolvido pergunta COMO; não resolvido pergunta POR QUÊ. Oferecer as oito opções
+           juntas deixaria "sem retorno do cliente" à mão de quem acabou de resolver. */
+        function syncAttendanceResolutionReasons() {
+            const desfecho = document.getElementById('attendanceResolution')?.value || 'resolved';
+            const select = document.getElementById('attendanceResolutionReason');
+            const rotulo = document.getElementById('attendanceResolutionReasonLabel');
+            if (!select) return;
+            const anterior = select.value;
+            const opcoes = PriorityRotation.RESOLUTION_REASONS[desfecho] || [];
+            select.innerHTML = opcoes.map(chave => `<option value="${chave}">${escapeHtml(PriorityRotation.RESOLUTION_REASON_LABEL[chave] || chave)}</option>`).join('');
+            if (opcoes.includes(anterior)) select.value = anterior;
+            if (rotulo) rotulo.textContent = desfecho === 'resolved' ? 'Como foi resolvido?' : 'Por que não foi resolvido?';
+            renderPriorityAttendanceRecord();
+        }
+
+        async function registerAttendanceContact(event) {
+            event.preventDefault();
+            const canal = document.getElementById('attendanceContactChannel').value;
+            const resultado = document.getElementById('attendanceContactResult').value;
+            const nota = document.getElementById('attendanceContactNote').value.trim();
+            setFormBusy(event.target, true);
+            const ok = await persistPriorityRotationMutation(
+                currentPriorityRotationTeam(),
+                rotation => PriorityRotation.logContact(rotation, currentActiveUser, { channel: canal, result: resultado, note: nota }, Date.now()),
+                'Tentativa registrada.'
+            );
+            setFormBusy(event.target, false);
+            if (ok) document.getElementById('attendanceContactNote').value = '';
+            renderPriorityAttendanceRecord();
+        }
+
+        async function registerAttendanceNote(event) {
+            event.preventDefault();
+            const campo = document.getElementById('attendanceNoteText');
+            setFormBusy(event.target, true);
+            const ok = await persistPriorityRotationMutation(
+                currentPriorityRotationTeam(),
+                rotation => PriorityRotation.addNote(rotation, currentActiveUser, campo.value, Date.now()),
+                'Nota salva.'
+            );
+            setFormBusy(event.target, false);
+            if (ok) campo.value = '';
+            renderPriorityAttendanceRecord();
         }
 
         function syncPriorityRotationOverlayScroll() {
-            const ids = ['priorityRotationDrawer', 'priorityRotationStartModal', 'priorityRotationDispatchModal', 'priorityRotationActionModal', 'priorityRotationOrderModal', 'priorityApprovalReviewDrawer', 'priorityComplementModal', 'priorityDecisionReviewModal', 'managerTvConfigModal', 'piecesRequestModal', 'piecesDetailDrawer', 'piecesActionModal'];
+            const ids = ['priorityAttendanceModal', 'priorityRotationDrawer', 'priorityRotationStartModal', 'priorityRotationDispatchModal', 'priorityRotationActionModal', 'priorityRotationOrderModal', 'priorityApprovalReviewDrawer', 'priorityComplementModal', 'priorityDecisionReviewModal', 'managerTvConfigModal', 'piecesRequestModal', 'piecesDetailDrawer', 'piecesActionModal'];
             document.body.style.overflow = ids.some(id => !document.getElementById(id)?.classList.contains('hidden')) ? 'hidden' : '';
         }
 
@@ -8743,7 +8933,7 @@
 
         function focusMyPriorityLaunches(button) {
             setAnalystPrioritySubsection(button);
-            document.getElementById('myPriorityRequestsTable')?.closest('.priority-registration-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('priorityInlineHistorySection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function toggleFaqDept(dept) {
@@ -10588,6 +10778,14 @@
             const protocolo = document.getElementById('priorityProtocolo').value.trim();
             const justificativa = document.getElementById('priorityJustificativa').value.trim();
             if (!protocolo || !justificativa) { setFormBusy(e.target, false); return; }
+            /* O desfecho é lido aqui e validado no domínio. Validar só na tela deixaria a
+               regra das 3 tentativas do lado errado da fronteira: o `required` do HTML
+               não sabe contar tentativas, e o domínio sabe. */
+            const desfecho = {
+                resolution: document.getElementById('attendanceResolution').value,
+                reason: document.getElementById('attendanceResolutionReason').value,
+                detail: document.getElementById('attendanceResolutionDetail').value.trim()
+            };
 
             const team = currentPriorityRotationTeam();
             const rotationBefore = deepClone(ensurePriorityRotation(team));
@@ -10612,7 +10810,7 @@
             let nextName = '';
             if (rotationBefore.current?.analystId === currentActiveUser) {
                 try {
-                    const completed = PriorityRotation.complete(rotationBefore, currentActiveUser, requestId, Date.now());
+                    const completed = PriorityRotation.complete(rotationBefore, currentActiveUser, requestId, Date.now(), desfecho);
                     request.rotationId = rotationBefore.id;
                     request.rotationAttendanceId = rotationBefore.current.id;
                     request.rotationTeam = team;
@@ -10629,6 +10827,15 @@
                         request.attendanceInstructions = rotationBefore.current.briefing.instructions;
                         request.dispatchedBy = rotationBefore.current.assignedBy || null;
                     }
+                    /* Tudo o que a ficha reuniu acompanha o lançamento. Sem esta cópia, a
+                       gestão aprovaria olhando protocolo e justificativa como antes: o
+                       atendimento é apagado do rodízio (`rotation.current = null`) assim
+                       que a vez é concluída, e com ele iriam as tentativas e as notas. */
+                    request.resolution = completed.lastCompleted.resolution;
+                    request.resolutionReason = completed.lastCompleted.resolutionReason;
+                    request.resolutionDetail = completed.lastCompleted.resolutionDetail;
+                    request.contactAttempts = deepClone(PriorityRotation.attemptsOf(rotationBefore.current));
+                    request.attendanceNotes = deepClone(PriorityRotation.notesOf(rotationBefore.current));
                     nextName = priorityRotationUser(request.rotationNextParticipantId)?.name || '';
                     appStore.priorityRotations[team] = completed;
                     /* Se este atendimento veio do Portal de Prioridades, a solicitação
@@ -10652,6 +10859,8 @@
                     ? `Prioridade registrada. Sua vez foi concluída e ${nextName} agora é o próximo da fila.`
                     : "Protocolo de prioridade enviado para validação!");
                 e.target.reset();
+                syncAttendanceResolutionReasons();
+                closePriorityAttendanceRecord();
             } else {
                 appStore.priorityRequests = (appStore.priorityRequests || []).filter(item => item.id !== requestId);
                 appStore.priorityRotations[team] = rotationBefore;
@@ -10803,6 +11012,46 @@
             return `<details class="priority-audit-details"><summary>Histórico e auditoria</summary><div>${rows.map(item => { const actor = priorityEvaluationActor(item.actorId); return `<p><strong>${escapeHtml(item.label)}</strong><span>${formatRotationTime(item.at,true)} · ${escapeHtml(actor?.name || 'Sistema')}${item.reason ? ` · ${escapeHtml(item.reason)}` : ''}</span></p>`; }).join('')}</div></details>`;
         }
 
+        /* Pontuação padrão de uma prioridade aprovada. Era um 50 literal dentro de
+           approvePriorityRequest e de mais quatro lugares de projeção. Virou constante
+           porque a gestão passou a poder decidir outro valor na aprovação: com o número
+           solto, mudar o padrão exigia caçar ocorrências. */
+        const PRIORITY_DEFAULT_POINTS = 50;
+
+        /* O QUE ACONTECEU NO ATENDIMENTO, para quem decide os pontos.
+           A gestão aprovava vendo protocolo e justificativa. Tentativas de contato, notas
+           do andamento e desfecho não existiam como dado — agora vêm no próprio
+           lançamento, copiados da ficha no momento em que a vez foi concluída. */
+        function renderPriorityAttendanceEvidence(request) {
+            const tentativas = Array.isArray(request?.contactAttempts) ? request.contactAttempts : [];
+            const notas = Array.isArray(request?.attendanceNotes) ? request.attendanceNotes : [];
+            if (!request?.resolution && !tentativas.length && !notas.length) {
+                /* Lançamentos anteriores à ficha não têm nada disso, e fingir que têm seria
+                   pior do que dizer que o dado não existe para aquele período. */
+                return '<div class="priority-attendance-evidence is-legacy"><i class="fi fi-rr-info"></i><span><strong>Sem ficha de atendimento</strong><small>Lançamento anterior ao registro de tentativas, notas e desfecho.</small></span></div>';
+            }
+            const desfecho = request.resolution
+                ? `<div class="priority-attendance-outcome is-${escapeHtml(request.resolution)}">
+                       <span class="actuar-badge ${request.resolution === 'resolved' ? 'actuar-badge-success' : 'actuar-badge-warning'}">${escapeHtml(PriorityRotation.RESOLUTION_LABEL[request.resolution] || request.resolution)}</span>
+                       <strong>${escapeHtml(PriorityRotation.RESOLUTION_REASON_LABEL[request.resolutionReason] || '—')}</strong>
+                       <p>${escapeHtml(request.resolutionDetail || '—')}</p>
+                   </div>`
+                : '';
+            const semResposta = tentativas.filter(item => item.result === 'no_answer').length;
+            const listaTentativas = tentativas.length
+                ? `<ol class="priority-attendance-attempts">${tentativas.map((item, i) => `<li><span>${i + 1}</span><strong>${escapeHtml(PriorityRotation.CONTACT_CHANNEL_LABEL[item.channel] || item.channel)} · ${escapeHtml(PriorityRotation.CONTACT_RESULT_LABEL[item.result] || item.result)}</strong>${item.note ? `<small>${escapeHtml(item.note)}</small>` : ''}<time>${escapeHtml(formatRotationTime(item.at, true))}</time></li>`).join('')}</ol>`
+                : '<p class="priority-attendance-none">Nenhuma tentativa de contato registrada.</p>';
+            const listaNotas = notas.length
+                ? `<ul class="priority-attendance-notes">${notas.map(item => `<li><p>${escapeHtml(item.text)}</p><time>${escapeHtml(formatRotationTime(item.at, true))}</time></li>`).join('')}</ul>`
+                : '<p class="priority-attendance-none">Nenhuma nota interna registrada.</p>';
+            return `<section class="priority-attendance-evidence">
+                <header><small>Ficha do atendimento</small><span>${tentativas.length} tentativa${tentativas.length === 1 ? '' : 's'}${semResposta ? ` · ${semResposta} sem resposta` : ''} · ${notas.length} nota${notas.length === 1 ? '' : 's'}</span></header>
+                ${desfecho}
+                <div><small>Tentativas de contato</small>${listaTentativas}</div>
+                <div><small>Notas internas do analista</small>${listaNotas}</div>
+            </section>`;
+        }
+
         function openPriorityApprovalReview(id, readOnly = false) {
             const request = (getStore()?.priorityRequests || []).find(item => item.id === id);
             const managerAllowed = isAdminLoggedIn && request && canManagerViewAnalyst(request.userId);
@@ -10814,7 +11063,7 @@
             const operationSummary = record.completedAt ? `${user?.name || 'O analista'} iniciou o atendimento às ${new Date(record.startedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}, registrou a prioridade ${request.protocolo} e concluiu sua vez às ${new Date(record.completedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}.${nextUser ? ` Após a conclusão, foi movido para o final da fila e ${nextUser.name} passou a ser o próximo participante.` : ''}` : `${user?.name || 'O analista'} registrou a prioridade fora de uma conclusão de rodízio.`;
             document.getElementById('priorityApprovalReviewTitle').textContent = `Atendimento prioritário — Protocolo ${request.protocolo}`;
             document.getElementById('priorityApprovalReviewSubtitle').textContent = `${teamLabel(record.team)} · ${new Date(record.startedAt).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}`;
-            document.getElementById('priorityApprovalReviewBody').innerHTML = `<section class="priority-detail-identity"><div>${priorityRotationAvatar(user)}<span><small>Analista</small><strong>${escapeHtml(user?.name || '—')}</strong><p>${teamLabel(record.team)}</p></span></div><dl><div><dt>Data e período</dt><dd>${priorityAttendanceDateRange(record)}</dd></div><div><dt>Posição no rodízio</dt><dd>${record.position ? `${record.position}ª posição` : 'Não registrada'}</dd></div><div><dt>Origem</dt><dd>${record.origin}</dd></div><div><dt>Situação final</dt><dd>${priorityStatusLabel(request.status)}</dd></div></dl></section><section class="priority-detail-request"><header><div><small>Prioridade registrada</small><h3>Protocolo ${escapeHtml(request.protocolo)}</h3></div><span>${formatRotationTime(request.timestamp,true)}</span></header>${briefing.clientName ? `<dl><div><dt>Cliente</dt><dd>${escapeHtml(briefing.clientName)}</dd></div><div><dt>Registro relacionado</dt><dd>${escapeHtml(briefing.clientId || '—')}</dd></div><div><dt>Contato</dt><dd>${escapeHtml(briefing.phone || '—')}</dd></div><div><dt>Tipo</dt><dd>Prioridade de atendimento</dd></div></dl><div><small>Descrição da demanda</small><p>${escapeHtml(briefing.demand || '—')}</p></div><div><small>Instruções recebidas</small><p>${escapeHtml(briefing.instructions || '—')}</p></div>` : ''}<div class="priority-analyst-justification"><small>Justificativa do analista</small><blockquote>${escapeHtml(request.justificativa || '—')}</blockquote></div><div class="priority-evidence-empty"><i class="fi fi-rr-clip"></i><span><strong>Evidências e anexos</strong><small>Nenhum anexo foi registrado neste lançamento.</small></span></div></section>${renderPriorityEvaluationBlock(request)}<section class="priority-operation-explanation"><small>Relação com o rodízio</small><p>${escapeHtml(operationSummary)}</p></section>${renderPriorityAudit(request,record)}${managerAllowed && !readOnly && request.status === 'pendente' ? '<div class="actuar-field priority-review-note"><label for="priorityReviewObservation">Texto de fechamento da gestão</label><textarea id="priorityReviewObservation" rows="4" placeholder="Obrigatório para devolver ou reprovar; recomendado ao aprovar"></textarea></div>' : ''}`;
+            document.getElementById('priorityApprovalReviewBody').innerHTML = `<section class="priority-detail-identity"><div>${priorityRotationAvatar(user)}<span><small>Analista</small><strong>${escapeHtml(user?.name || '—')}</strong><p>${teamLabel(record.team)}</p></span></div><dl><div><dt>Data e período</dt><dd>${priorityAttendanceDateRange(record)}</dd></div><div><dt>Posição no rodízio</dt><dd>${record.position ? `${record.position}ª posição` : 'Não registrada'}</dd></div><div><dt>Origem</dt><dd>${record.origin}</dd></div><div><dt>Situação final</dt><dd>${priorityStatusLabel(request.status)}</dd></div></dl></section><section class="priority-detail-request"><header><div><small>Prioridade registrada</small><h3>Protocolo ${escapeHtml(request.protocolo)}</h3></div><span>${formatRotationTime(request.timestamp,true)}</span></header>${briefing.clientName ? `<dl><div><dt>Cliente</dt><dd>${escapeHtml(briefing.clientName)}</dd></div><div><dt>Registro relacionado</dt><dd>${escapeHtml(briefing.clientId || '—')}</dd></div><div><dt>Contato</dt><dd>${escapeHtml(briefing.phone || '—')}</dd></div><div><dt>Tipo</dt><dd>Prioridade de atendimento</dd></div></dl><div><small>Descrição da demanda</small><p>${escapeHtml(briefing.demand || '—')}</p></div><div><small>Instruções recebidas</small><p>${escapeHtml(briefing.instructions || '—')}</p></div>` : ''}<div class="priority-analyst-justification"><small>Justificativa do analista</small><blockquote>${escapeHtml(request.justificativa || '—')}</blockquote></div>${renderPriorityAttendanceEvidence(request)}<div class="priority-evidence-empty"><i class="fi fi-rr-clip"></i><span><strong>Evidências e anexos</strong><small>Nenhum anexo foi registrado neste lançamento.</small></span></div></section>${renderPriorityEvaluationBlock(request)}<section class="priority-operation-explanation"><small>Relação com o rodízio</small><p>${escapeHtml(operationSummary)}</p></section>${renderPriorityAudit(request,record)}${managerAllowed && !readOnly && request.status === 'pendente' ? '<div class="priority-review-decision"><div class="actuar-field priority-review-note"><label for="priorityReviewObservation">Texto de fechamento da gestão</label><textarea id="priorityReviewObservation" rows="4" placeholder="Obrigatório para devolver ou reprovar; recomendado ao aprovar"></textarea></div><div class="actuar-field priority-review-points"><label for="priorityReviewPoints">Pontos a creditar</label><input id="priorityReviewPoints" type="number" min="0" max="200" step="5" value="${PRIORITY_DEFAULT_POINTS}"><small>Padrão de ${PRIORITY_DEFAULT_POINTS} pts. O desfecho acima é informativo: quem define a pontuação é a gestão, caso a caso.</small></div></div>' : ''}`;
             let actions = `<button class="actuar-btn actuar-btn-secondary" onclick="closePriorityApprovalReview()">Voltar</button>`;
             // Única ação da ficha que tira o lançamento do fluxo: fica à esquerda, longe do resto.
             if (canDeletePriorityRequest()) actions += `<button class="actuar-btn actuar-btn-danger priority-delete-action" onclick="deletePriorityRequest('${request.id}')"><i class="fi fi-rr-trash"></i>Excluir lançamento</button>`;
@@ -11055,7 +11304,14 @@
             const note = document.getElementById('priorityReviewObservation')?.value.trim() || '';
             if (action !== 'approve' && !note) { showToast('Informe a observação da decisão.', 'error'); return; }
             if (action === 'approve') {
-                const ok = await approvePriorityRequest(request.id, note);
+                /* Quem decide a pontuação é a gestão, caso a caso. O desfecho que o analista
+                   registrou na ficha informa a decisão, mas não a toma: amarrar pontos ao
+                   "resolvido/não resolvido" criaria incentivo para classificar errado, e é
+                   justamente essa classificação que a gestão quer poder confiar. */
+                const campoPontos = document.getElementById('priorityReviewPoints');
+                const pontos = campoPontos ? Number(campoPontos.value) : PRIORITY_DEFAULT_POINTS;
+                if (!Number.isFinite(pontos) || pontos < 0) { showToast('Informe uma pontuação válida.', 'error'); return; }
+                const ok = await approvePriorityRequest(request.id, note, pontos);
                 if (!ok) return;
             } else {
                 const previous = deepClone(request);
@@ -11074,7 +11330,7 @@
             render();
         }
 
-        async function approvePriorityRequest(id, decisionNote = '') {
+        async function approvePriorityRequest(id, decisionNote = '', points = PRIORITY_DEFAULT_POINTS) {
             const req = (appStore.priorityRequests || []).find(r => r.id === id);
             if (!req || req.status !== "pendente") return false;
 
@@ -11091,7 +11347,9 @@
 
             const existingCredit = appStore.logs.find(log => log.type === 'PRIORITY' && log.relatedRequestId === req.id);
             const creditId = existingCredit ? null : uid();
-            if (!existingCredit) appStore.logs.push({ id: creditId, type: "PRIORITY", userId: req.userId, value: 50, relatedRequestId: req.id, protocolo: req.protocolo, timestamp: Date.now() });
+            const creditados = Number.isFinite(Number(points)) && Number(points) >= 0 ? Math.round(Number(points)) : PRIORITY_DEFAULT_POINTS;
+            req.grantedPoints = creditados;
+            if (!existingCredit) appStore.logs.push({ id: creditId, type: "PRIORITY", userId: req.userId, value: creditados, relatedRequestId: req.id, protocolo: req.protocolo, timestamp: Date.now() });
 
             const ok = await persistStore();
             if (!ok) {
@@ -11101,7 +11359,7 @@
                 showToast(lastPersistError || 'A aprovação não foi salva. Nenhum ponto foi concedido.', 'error');
                 return false;
             }
-            showToast("Prioridade aprovada! 50 pontos creditados.");
+            showToast(`Prioridade aprovada! ${creditados} ponto${creditados === 1 ? '' : 's'} creditado${creditados === 1 ? '' : 's'}.`);
             render();
             return true;
         }
@@ -11816,15 +12074,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-tela-analista-5"></script>
-    <script src="js/external-requests.js?v=20260819-tela-analista-5"></script>
-    <script src="js/actuar-fields.js?v=20260819-tela-analista-5"></script>
-    <script src="js/attendance-clock.js?v=20260819-tela-analista-5"></script>
-    <script src="js/performance-domain.js?v=20260819-tela-analista-5"></script>
-    <script src="js/manager-experience.js?v=20260819-tela-analista-5"></script>
-    <script src="js/priority-rotation.js?v=20260819-tela-analista-5"></script>
-    <script src="js/pieces-operations.js?v=20260819-tela-analista-5"></script>
-    <script src="js/pieces-ui.js?v=20260819-tela-analista-5"></script>
-    <script src="js/performance-platform.js?v=20260819-tela-analista-5"></script>
+    <script src="js/actuar-navigation.js?v=20260819-ficha-atendimento-1"></script>
+    <script src="js/external-requests.js?v=20260819-ficha-atendimento-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-ficha-atendimento-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-ficha-atendimento-1"></script>
+    <script src="js/performance-domain.js?v=20260819-ficha-atendimento-1"></script>
+    <script src="js/manager-experience.js?v=20260819-ficha-atendimento-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-ficha-atendimento-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-ficha-atendimento-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-ficha-atendimento-1"></script>
+    <script src="js/performance-platform.js?v=20260819-ficha-atendimento-1"></script>
 </body>
 </html>

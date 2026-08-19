@@ -262,10 +262,15 @@ test('concluir o atendimento leva a solicitação para aprovação, não para co
 });
 
 test('a aprovação fecha a solicitação junto, sem pontuação paralela', () => {
-    const aprova = html.slice(html.indexOf('async function approvePriorityRequest('), html.indexOf('showToast("Prioridade aprovada!'));
+    const aprova = html.slice(html.indexOf('async function approvePriorityRequest('), html.indexOf('function rejectPriorityRequest('));
     assert.match(aprova, /concluirSolicitacaoExterna\(req\.id, true\)/);
-    // O crédito continua sendo o de sempre: mesma prioridade, mesma régua.
-    assert.match(aprova, /type: "PRIORITY", userId: req\.userId, value: 50/);
+    /* O crédito deixou de ser um 50 literal: a gestão decide a pontuação na aprovação, e o
+       padrão vive em PRIORITY_DEFAULT_POINTS. Continua sendo UM crédito, do mesmo tipo e
+       para o mesmo analista — o que este teste guarda é a ausência de pontuação paralela. */
+    assert.match(aprova, /type: "PRIORITY", userId: req\.userId, value: creditados/);
+    assert.match(aprova, /const creditados = Number\.isFinite\(Number\(points\)\) && Number\(points\) >= 0 \? Math\.round\(Number\(points\)\) : PRIORITY_DEFAULT_POINTS;/,
+        'valor inválido precisa cair no padrão, nunca virar NaN em cima do extrato');
+    assert.match(html, /const PRIORITY_DEFAULT_POINTS = 50;/);
     // Falha no salvamento desfaz os dois lados.
     assert.match(aprova, /appStore\.externalRequests = externaAnterior;/);
 

@@ -86,7 +86,9 @@ test('nada é escrito em nome do analista que está sendo olhado', () => {
     assert.doesNotMatch(ator, /: currentActiveUser;/);
 
     // Lançamento e transferência são assinados pela sessão.
-    const prioridade = html.slice(html.indexOf('async function submitPriorityRequest('), html.indexOf('async function submitPriorityRequest(') + 1400);
+    /* Recorte até a próxima função, não por tamanho fixo: com 1400 caracteres o teste
+       passava a falhar sempre que a função crescia, sem que nada tivesse quebrado. */
+    const prioridade = html.slice(html.indexOf('async function submitPriorityRequest('), html.indexOf('let analystPriorityQuery'));
     assert.match(prioridade, /userId: getCurrentProfileUserId\(\)/);
     const transferencia = html.slice(html.indexOf('async function submitTransferRequest('), html.indexOf('async function submitTransferRequest(') + 900);
     assert.match(transferencia, /userId: getCurrentProfileUserId\(\)/);
