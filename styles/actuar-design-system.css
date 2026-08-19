@@ -3673,6 +3673,26 @@ body.nav-locked { overflow: hidden; }
 .priority-attendance-notes > li { padding: 8px 10px; border-radius: var(--actuar-radius); background: var(--actuar-surface); display: grid; gap: 3px; }
 .priority-attendance-notes p { margin: 0; color: var(--actuar-text); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .priority-attendance-none { margin: 0; color: var(--actuar-muted); font-size: 11px; font-style: italic; }
+/* PORTAL — SEGUNDA PORTA E QUADRO DA ÁREA
+   A porta de acompanhamento fica recolhida abaixo do PIN: a tarefa principal desta tela
+   continua sendo registrar, e uma segunda porta do mesmo tamanho competiria com ela. */
+.actuar-portal-second-door { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--actuar-border); display: grid; gap: 12px; justify-items: center; }
+.actuar-portal-door-link { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; background: transparent; color: var(--actuar-primary); font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.actuar-portal-door-link:hover { text-decoration: underline; }
+.actuar-portal-second-door form { width: 100%; }
+.actuar-portal-second-door form.hidden { display: none; }
+
+.portal-area-filters { display: grid; grid-template-columns: minmax(0, 2fr) minmax(160px, 1fr) auto; gap: 12px; align-items: end; margin-bottom: 14px; }
+.portal-area-summary { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; padding: 11px 14px; border: 1px solid var(--actuar-border); border-radius: var(--actuar-radius-large); background: var(--actuar-surface-muted); color: var(--actuar-text-secondary); font-size: 12px; }
+.portal-area-summary strong { color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 14px; }
+.portal-area-card-client { margin: 4px 0 0; color: var(--actuar-text); font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.portal-area-card-demand { margin: 4px 0 0; color: var(--actuar-text-secondary); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.portal-area-card footer { display: grid; gap: 3px; margin-top: 8px; }
+.portal-area-card footer time { color: var(--actuar-muted); font-size: 10px; }
+.portal-area-card footer small { color: var(--actuar-text-secondary); font-size: 11px; overflow-wrap: anywhere; }
+.portal-area-card-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--actuar-border); }
+@media (max-width: 720px) { .portal-area-filters { grid-template-columns: minmax(0, 1fr); } }
+
 /* ATENDIMENTOS SIMULTÂNEOS
    O bloco mostrava um cartão só. Com vários, o do próprio analista precisa se distinguir
    dos outros à primeira vista — ele é o único onde há um botão para clicar. */

@@ -347,8 +347,11 @@ test('a linha de ações tem só voltar e avançar', () => {
 
 test('o acesso não tem botão: o PIN completo entra', () => {
     assert.doesNotMatch(html, /portalEnterButton/, 'o botão de acessar não deve voltar');
-    const acesso = bloco('id="portalAccess"', '<!-- ETAPA 2');
-    assert.doesNotMatch(acesso, /type="submit"/, 'a tela de acesso não tem botão de enviar');
+    /* Recorta o FORMULÁRIO do PIN, não a tela inteira: a tela ganhou uma segunda porta,
+       para quem acompanha as solicitações da própria área, e essa tem botão — ela pede
+       senha, e senha não tem tamanho fixo que sirva de sinal de "terminei". */
+    const acesso = bloco('<form onsubmit="return portalEnter(event)"', '</form>');
+    assert.doesNotMatch(acesso, /type="submit"/, 'o formulário do PIN não tem botão de enviar');
     assert.match(acesso, /O acesso é liberado assim que os quatro dígitos estiverem corretos\./,
         'sem botão, a tela precisa dizer como se entra');
 

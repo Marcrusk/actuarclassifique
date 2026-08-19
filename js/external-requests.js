@@ -47,6 +47,27 @@
 
     function isClosed(status) { return Object.prototype.hasOwnProperty.call(CLOSED, status); }
 
+    /* A ÁREA QUE ABRIU, DENTRO DO PRÓPRIO CHAMADO
+       "Aguardando informação" existe para devolver a solicitação a quem registrou — mas
+       quem registrou não tinha tela nenhuma, então a devolução dependia de alguém avisar
+       por fora e a solicitação ficava parada.
+
+       O que a área pode fazer é deliberadamente pequeno: responder o complemento que a
+       gestão pediu, e desistir de um chamado que ela mesma abriu por engano. Nada disso
+       decide prioridade, ordem ou pontuação — isso continua sendo da gestão. */
+    function belongsToArea(request, areaName) {
+        const alvo = String(areaName || '').trim().toLocaleLowerCase('pt-BR');
+        return Boolean(alvo) && String(request?.requesterDepartment || '').trim().toLocaleLowerCase('pt-BR') === alvo;
+    }
+
+    function canAreaRespond(request) { return stageOf(request) === 'aguardando_info'; }
+
+    /* Cancelar só enquanto ninguém pegou o chamado. Depois que o analista está em
+       atendimento, desistir por fora deixaria a vez dele no rodízio pendurada num caso que
+       sumiu — quem encerra dali para a frente é a gestão, pelo painel dela. */
+    const AREA_CANCELABLE_STAGES = Object.freeze(['nova', 'triagem', 'aguardando_info', 'aguardando_distribuicao']);
+    function canAreaCancel(request) { return AREA_CANCELABLE_STAGES.includes(stageOf(request)); }
+
     function list(store) {
         return Array.isArray(store?.externalRequests) ? store.externalRequests : [];
     }
@@ -162,5 +183,6 @@
         };
     }
 
-    return { STAGES, STAGE_IDS, CLOSED, stageMeta, stageOf, isClosed, list, board, duplicatesOf, transition, deletionEntry, summarize };
+    return { STAGES, STAGE_IDS, CLOSED, stageMeta, stageOf, isClosed, list, board, duplicatesOf, transition, deletionEntry, summarize,
+        AREA_CANCELABLE_STAGES, belongsToArea, canAreaRespond, canAreaCancel };
 });

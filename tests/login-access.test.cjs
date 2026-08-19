@@ -80,12 +80,18 @@ test('o campo Usuário do login mostra apenas o nome', () => {
 });
 
 test('cada papel entra por exatamente uma porta de acesso', () => {
-    // As três portas particionam os papéis: sem isso alguém fica sem lugar para entrar.
+    /* As portas particionam os papéis: sem isso alguém fica sem lugar para entrar. Eram
+       três — analista, gestão e peças. `Gestor de Área` não entra por nenhuma delas: quem
+       acompanha o que a própria área registrou entra pelo PORTAL, que é uma quarta porta,
+       fora da aplicação. */
     const naoRankeados = require('../js/manager-experience.js').NON_RANKED_ROLES;
     const linha = html.match(/const PIECES_OPERATION_ROLES = new Set\(\[([^\]]+)\]\)/);
     assert.ok(linha, 'PIECES_OPERATION_ROLES precisa continuar declarado no shell');
     const papeisDePeca = linha[1].split(',').map(item => item.trim().replace(/^'|'$/g, ''));
 
-    assert.deepEqual([...naoRankeados].sort(), ['Gestor Adm', ...papeisDePeca].sort(),
-        'quem sai do login de analista precisa entrar pela porta de gestão ou pela de peças');
+    assert.deepEqual([...naoRankeados].sort(), ['Gestor Adm', 'Gestor de Área', ...papeisDePeca].sort(),
+        'quem sai do login de analista precisa entrar por alguma porta');
+    // E a porta do Gestor de Área existe mesmo, no Portal.
+    assert.match(html, /onsubmit="return portalAreaLogin\(event\)"/);
+    assert.match(html, /user\.role === 'Gestor de Área' && user\.active !== false/);
 });

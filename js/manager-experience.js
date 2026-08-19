@@ -28,7 +28,10 @@
     /* Perfis que executam a operação não competem no ranking. A lista estava parada em
        Envio/Coleta e não acompanhou Faturamento, Expedição, Logística e Toletus Lab:
        qualquer um deles lotado em Sistema ou Catraca entrava na lista de analistas. */
-    const NON_RANKED_ROLES = ['Gestor Adm', 'Envio/Coleta', 'Faturamento', 'Expedição', 'Logística/Faturamento', 'Toletus Lab'];
+    /* `Gestor de Área` entra aqui: quem acompanha o que a própria área abriu no Portal não
+       atende chamado, então não entra em ranking, bônus nem premiação — mesma régua do
+       Gestor Adm e dos papéis de peça. */
+    const NON_RANKED_ROLES = ['Gestor Adm', 'Gestor de Área', 'Envio/Coleta', 'Faturamento', 'Expedição', 'Logística/Faturamento', 'Toletus Lab'];
 
     function isRankable(user) {
         return Boolean(user && user.active !== false && !NON_RANKED_ROLES.includes(user.role));

@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-peca-so-catraca-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-gestor-de-area-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -333,6 +333,53 @@
                 <small class="actuar-portal-foot">O acesso é liberado assim que os quatro dígitos estiverem corretos.</small>
                 <small class="actuar-portal-foot">Acesso destinado às equipes autorizadas da Actuar Group.</small>
             </form>
+
+            <!-- SEGUNDA PORTA: QUEM ACOMPANHA, NÃO REGISTRA
+                 A área entra com PIN para ABRIR chamado. Quem responde pela área precisa de
+                 outra coisa — ver o que já foi aberto e em que pé está — e por isso entra com
+                 senha própria, conferida no banco como a dos analistas. Fica recolhida: a
+                 tarefa principal desta tela continua sendo registrar. -->
+            <div class="actuar-portal-second-door">
+                <button type="button" id="portalAreaDoorToggle" class="actuar-portal-door-link" aria-expanded="false" aria-controls="portalAreaDoor" onclick="portalToggleAreaDoor()">
+                    <i class="fi fi-rr-chart-tree-map" aria-hidden="true"></i>Acompanhar as solicitações da minha área
+                </button>
+                <form id="portalAreaDoor" class="actuar-portal-form hidden" onsubmit="return portalAreaLogin(event)" aria-describedby="portalAreaError">
+                    <div class="actuar-field">
+                        <label for="portalAreaUser">Quem é você?</label>
+                        <select id="portalAreaUser" required></select>
+                    </div>
+                    <div class="actuar-field">
+                        <label for="portalAreaPassword">Senha de acesso</label>
+                        <input type="password" id="portalAreaPassword" autocomplete="current-password" required placeholder="A mesma senha do Classifique">
+                    </div>
+                    <p class="actuar-login-error" id="portalAreaError" role="alert" hidden></p>
+                    <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg"><i class="fi fi-rr-sign-in-alt"></i>Entrar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- QUADRO DA ÁREA
+             Uma tela só, dentro do Portal: nem sidebar, nem cabeçalho da aplicação. Reaproveita
+             o mesmo quadro que a gestão lê — `ExternalRequests.board()` —, recortado à área da
+             pessoa. Duas telas montando o kanban por conta própria divergiriam na primeira
+             etapa nova. -->
+        <div id="portalAreaBoard" class="actuar-portal-panel hidden">
+            <div class="actuar-portal-greeting">
+                <div><h2 id="portalAreaTitle">Solicitações da área</h2><p id="portalAreaSubtitle">Acompanhe o que a sua área registrou, do envio à conclusão.</p></div>
+                <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="portalAreaLogout()"><i class="fi fi-rr-sign-out-alt"></i>Sair</button>
+            </div>
+            <div class="portal-area-filters">
+                <div class="actuar-field portal-area-search">
+                    <label for="portalAreaSearch">Localizar</label>
+                    <div class="actuar-input-icon"><i class="fi fi-rr-search" aria-hidden="true"></i>
+                        <input id="portalAreaSearch" type="search" oninput="renderPortalAreaBoard()" placeholder="Protocolo, cliente, ID ou telefone">
+                    </div>
+                </div>
+                <div class="actuar-field"><label for="portalAreaStageFilter">Etapa</label><select id="portalAreaStageFilter" onchange="renderPortalAreaBoard()"></select></div>
+                <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="refreshPortalAreaBoard()"><i class="fi fi-rr-refresh"></i>Atualizar</button>
+            </div>
+            <div id="portalAreaSummary" class="portal-area-summary" aria-live="polite"></div>
+            <div id="portalAreaColumns" class="external-board"></div>
         </div>
 
         <!-- ETAPA 2: SOLICITAÇÃO -->
@@ -1777,7 +1824,15 @@
                             <option value="Expedição">Expedição</option>
                             <option value="Logística/Faturamento">Logística/Faturamento completo</option>
                             <option value="Gestor Adm">Gestor Adm</option>
+                            <option value="Gestor de Área">Gestor de Área (acompanha o Portal)</option>
                         </select>
+                    </div>
+                    <!-- A área não fica no código: é a ficha da pessoa que diz qual ela
+                         acompanha. Sem isso, cada área nova pediria uma função nova. -->
+                    <div id="inputUserPortalAreaField" class="hidden">
+                        <label class="block text-xs text-secondary mb-1">Área do Portal</label>
+                        <select id="inputUserPortalArea" class="w-full bg-surface2 text-white text-sm rounded p-2.5 border border-line"></select>
+                        <p class="text-[10px] text-secondary mt-1">Ela verá no Portal apenas as solicitações abertas por esta área.</p>
                     </div>
                     <div>
                         <label class="block text-xs text-secondary mb-1">Departamento</label>
@@ -6061,10 +6116,229 @@
             caixa.hidden = !mensagem;
         }
 
+        /* ==========================================================================
+           QUEM ACOMPANHA A PRÓPRIA ÁREA NO PORTAL
+           A área abre chamado com PIN e nunca mais via o que aconteceu com ele. Havia até
+           uma etapa "Aguardando informação — devolvidas a quem registrou", que dependia de
+           alguém avisar por fora: sem tela, a solicitação ficava parada.
+
+           Esta é uma pessoa com ficha e senha no Classifique, função `Gestor de Área`, e a
+           área que ela acompanha vem do cadastro dela — não do código. Ela entra pelo Portal
+           e fica no Portal: a rota não monta a aplicação, então não há sidebar nem cabeçalho
+           interno para esconder.
+           ========================================================================== */
+        const PORTAL_AREA_SESSION_KEY = 'actuar-portal-area-session';
+        let portalAreaSession = null;
+
+        function portalAreaManagers() {
+            const usuarios = getStore()?.users || defaultUsers;
+            return Object.entries(usuarios)
+                .filter(([, user]) => user.role === 'Gestor de Área' && user.active !== false && String(user.portalArea || '').trim())
+                .sort((a, b) => String(a[1].name || '').localeCompare(String(b[1].name || ''), 'pt-BR'));
+        }
+
+        function readPortalAreaSession() {
+            try {
+                const salvo = JSON.parse(localStorage.getItem(PORTAL_AREA_SESSION_KEY) || 'null');
+                if (!salvo?.id) return null;
+                /* A sessão guardada não decide nada sozinha: a ficha é reconferida a cada
+                   abertura, então quem foi inativado ou trocou de função não volta com o
+                   acesso antigo. */
+                const user = (getStore()?.users || defaultUsers)[salvo.id];
+                if (!user || user.active === false || user.role !== 'Gestor de Área' || !user.portalArea) return null;
+                return { id: salvo.id, name: user.name, area: user.portalArea };
+            } catch (_) { return null; }
+        }
+
+        function portalToggleAreaDoor() {
+            const porta = document.getElementById('portalAreaDoor');
+            const gatilho = document.getElementById('portalAreaDoorToggle');
+            if (!porta) return;
+            const abrindo = porta.classList.contains('hidden');
+            porta.classList.toggle('hidden', !abrindo);
+            gatilho?.setAttribute('aria-expanded', String(abrindo));
+            if (!abrindo) return;
+            const select = document.getElementById('portalAreaUser');
+            const pessoas = portalAreaManagers();
+            select.innerHTML = pessoas.length
+                ? pessoas.map(([id, user]) => `<option value="${escapeHtml(id)}">${escapeHtml(user.name)} · ${escapeHtml(user.portalArea)}</option>`).join('')
+                : '<option value="">Nenhum acompanhamento cadastrado</option>';
+            select.disabled = !pessoas.length;
+            requestAnimationFrame(() => select.focus());
+        }
+
+        function portalAreaError(mensagem) {
+            const alvo = document.getElementById('portalAreaError');
+            if (!alvo) return;
+            alvo.textContent = mensagem || '';
+            alvo.hidden = !mensagem;
+        }
+
+        async function portalAreaLogin(event) {
+            event.preventDefault();
+            portalAreaError('');
+            const id = document.getElementById('portalAreaUser').value;
+            const senha = document.getElementById('portalAreaPassword').value;
+            const user = (getStore()?.users || defaultUsers)[id];
+            if (!id || !user) { portalAreaError('Escolha quem está entrando.'); return false; }
+            // Mesma conferência dos analistas: a senha vive no banco, nunca no frontend.
+            if (!await verifyLoginRemote(id, senha)) { portalAreaError('Senha incorreta.'); return false; }
+            portalAreaSession = { id, name: user.name, area: user.portalArea };
+            try { localStorage.setItem(PORTAL_AREA_SESSION_KEY, JSON.stringify({ id })); } catch (_) { /* sessão é conveniência */ }
+            document.getElementById('portalAreaPassword').value = '';
+            renderPortal();
+            return false;
+        }
+
+        function portalAreaLogout() {
+            portalAreaSession = null;
+            try { localStorage.removeItem(PORTAL_AREA_SESSION_KEY); } catch (_) { /* nada a limpar */ }
+            renderPortal();
+        }
+
+        /* O recorte da área é aplicado ANTES de qualquer filtro de tela: os filtros são
+           conveniência, e conveniência não pode ser o que separa uma área da outra. */
+        function portalAreaRequests() {
+            const dominio = window.ExternalRequests;
+            if (!dominio || !portalAreaSession) return [];
+            return dominio.list(getStore()).filter(item => dominio.belongsToArea(item, portalAreaSession.area));
+        }
+
+        function renderPortalAreaBoard() {
+            const colunas = document.getElementById('portalAreaColumns');
+            const dominio = window.ExternalRequests;
+            if (!colunas || !dominio || !portalAreaSession) return;
+
+            const etapaFiltro = document.getElementById('portalAreaStageFilter');
+            if (etapaFiltro && !etapaFiltro.options.length) {
+                etapaFiltro.innerHTML = '<option value="Todas">Todas</option>'
+                    + dominio.STAGES.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`).join('')
+                    + Object.entries(dominio.CLOSED).map(([id, meta]) => `<option value="${escapeHtml(id)}">${escapeHtml(meta.label)}</option>`).join('');
+            }
+            const etapa = etapaFiltro?.value || 'Todas';
+            const busca = (document.getElementById('portalAreaSearch')?.value || '').trim().toLocaleLowerCase('pt-BR');
+            const combina = item => {
+                if (!busca) return true;
+                return [item.protocol, item.clientId, item.clientName, item.phone, item.brand, item.demand]
+                    .some(campo => String(campo || '').toLocaleLowerCase('pt-BR').includes(busca));
+            };
+
+            const lista = portalAreaRequests().filter(combina);
+            const quadro = dominio.board(lista);
+            const resumo = document.getElementById('portalAreaSummary');
+            if (resumo) {
+                const abertas = quadro.stages.reduce((soma, coluna) => soma + coluna.items.length, 0);
+                resumo.innerHTML = `<span><strong>${abertas}</strong> em andamento</span><span><strong>${quadro.closed.length}</strong> encerradas</span><span><strong>${quadro.total}</strong> no total</span>`;
+            }
+
+            const visiveis = etapa === 'Todas' ? quadro.stages : quadro.stages.filter(coluna => coluna.id === etapa);
+            const mostrarEncerradas = (etapa === 'Todas' || dominio.isClosed(etapa)) && quadro.closed.length;
+            colunas.innerHTML = visiveis.map(coluna => `
+                <section class="external-column" aria-label="${escapeHtml(coluna.label)}">
+                    <header title="${escapeHtml(coluna.hint)}"><strong>${escapeHtml(coluna.label)}</strong><span class="external-count">${coluna.items.length}</span></header>
+                    <div class="external-column-body">${coluna.items.map(portalAreaCard).join('') || `<p class="external-empty">${escapeHtml(coluna.hint)}</p>`}</div>
+                </section>`).join('')
+                + (mostrarEncerradas ? `
+                <section class="external-column is-closed" aria-label="Encerradas">
+                    <header title="Saíram do fluxo sem avançar."><strong>Encerradas</strong><span class="external-count">${quadro.closed.length}</span></header>
+                    <div class="external-column-body">${quadro.closed.filter(item => etapa === 'Todas' || dominio.stageOf(item) === etapa).map(portalAreaCard).join('')}</div>
+                </section>` : '')
+                || `<p class="external-empty">Nenhuma solicitação da sua área neste recorte.</p>`;
+        }
+
+        function portalAreaCard(item) {
+            const dominio = window.ExternalRequests;
+            const etapa = dominio.stageMeta(dominio.stageOf(item));
+            /* As duas únicas ações da área: responder o que a gestão pediu e desistir de um
+               chamado aberto por engano. Prioridade, ordem e pontuação seguem sendo da
+               gestão — a regra de quem pode o quê está no domínio. */
+            const acoes = [
+                dominio.canAreaRespond(item) ? `<button type="button" class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="portalAreaRespond('${escapeHtml(item.id)}')"><i class="fi fi-rr-comment-alt"></i>Responder</button>` : '',
+                dominio.canAreaCancel(item) ? `<button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="portalAreaCancel('${escapeHtml(item.id)}')"><i class="fi fi-rr-cross-circle"></i>Cancelar</button>` : ''
+            ].join('');
+            return `<article class="external-card portal-area-card">
+                <header><strong>${escapeHtml(item.protocol || '—')}</strong><span class="actuar-badge actuar-badge-${escapeHtml(etapa.tone || 'neutral')}">${escapeHtml(etapa.label)}</span></header>
+                <p class="portal-area-card-client">${escapeHtml(item.clientName || 'Cliente não informado')}${item.clientId ? ` · ${escapeHtml(item.clientId)}` : ''}</p>
+                ${item.demand ? `<p class="portal-area-card-demand">${escapeHtml(item.demand)}</p>` : ''}
+                <footer><time>${escapeHtml(ActuarFields.formatMoment(item.createdAt))}</time>${item.lastReason ? `<small>${escapeHtml(item.lastReason)}</small>` : ''}</footer>
+                ${acoes ? `<div class="portal-area-card-actions">${acoes}</div>` : ''}
+            </article>`;
+        }
+
+        /* Toda escrita da área reconfere o recorte e a etapa no domínio antes de salvar: o
+           botão some quando não cabe, mas sumir botão não é permissão. */
+        async function portalAreaMutate(id, proximo, opcoes) {
+            const dominio = window.ExternalRequests;
+            const atual = portalAreaRequests().find(item => item.id === id);
+            if (!atual) { showToast('Esta solicitação não é da sua área.', 'error'); return; }
+            if (!opcoes.permitido(atual)) { showToast('Esta solicitação já saiu desta etapa.', 'error'); return; }
+            const texto = await actuarConfirm(opcoes.dialogo);
+            if (!texto) return;
+            const anterior = deepClone(getStore().externalRequests || []);
+            try {
+                const atualizado = dominio.transition(atual, proximo, {
+                    actorName: `${portalAreaSession.name} · ${portalAreaSession.area}`,
+                    reason: texto, reasonRequired: true, text: opcoes.texto(texto)
+                });
+                appStore.externalRequests = anterior.map(item => (item.id === id ? atualizado : item));
+                const ok = await persistStore();
+                if (!ok) throw new Error(lastPersistError || 'Não foi possível salvar.');
+                showToast(opcoes.sucesso);
+                renderPortal();
+            } catch (erro) {
+                appStore.externalRequests = anterior;
+                showToast(erro.message || 'Não foi possível concluir a ação.', 'error');
+            }
+        }
+
+        function portalAreaRespond(id) {
+            return portalAreaMutate(id, 'triagem', {
+                permitido: item => window.ExternalRequests.canAreaRespond(item),
+                dialogo: { icon: 'comment-alt', title: 'Responder o que a gestão pediu', message: 'A solicitação volta para a triagem com a sua resposta registrada.', input: { label: 'Complemento', placeholder: 'Informe o que foi solicitado.' }, confirmLabel: 'Enviar resposta' },
+                texto: valor => `Complemento enviado pela área: ${valor}`,
+                sucesso: 'Resposta enviada. A solicitação voltou para a triagem.'
+            });
+        }
+
+        function portalAreaCancel(id) {
+            return portalAreaMutate(id, 'cancelada', {
+                permitido: item => window.ExternalRequests.canAreaCancel(item),
+                dialogo: { tone: 'danger', icon: 'cross-circle', title: 'Cancelar esta solicitação?', message: 'Ela sai do fluxo sem atendimento. Só é possível enquanto nenhum analista assumiu o caso.', input: { label: 'Motivo do cancelamento', placeholder: 'Ex.: o cliente resolveu por outro canal.' }, confirmLabel: 'Cancelar solicitação' },
+                texto: valor => `Cancelada pela área que registrou: ${valor}`,
+                sucesso: 'Solicitação cancelada.'
+            });
+        }
+
+        function refreshPortalAreaBoard() {
+            if (typeof refreshExternalRequests === 'function') { refreshExternalRequests(); return; }
+            renderPortalAreaBoard();
+        }
+
         function renderPortal() {
             if (!isPortalRoute()) return;
             portalSession = portalSession || readPortalSession();
+            portalAreaSession = portalAreaSession || readPortalAreaSession();
             portalRenderMembers();
+
+            /* Três estados nesta tela, e não dois: quem não se identificou, quem vai
+               registrar um chamado, e quem veio acompanhar o que a área dela já registrou.
+               Quem acompanha não vê o formulário — a tela dela é o quadro. */
+            const acompanhando = Boolean(portalAreaSession);
+            document.getElementById('portalAreaBoard')?.classList.toggle('hidden', !acompanhando);
+            if (acompanhando) {
+                document.getElementById('portalAccess')?.classList.add('hidden');
+                document.getElementById('portalForm')?.classList.add('hidden');
+                document.getElementById('portalSuccess')?.classList.add('hidden');
+                document.getElementById('portalHeader')?.classList.remove('hidden');
+                document.getElementById('portalIdentity')?.classList.remove('hidden');
+                const nome = document.getElementById('portalIdentityName');
+                if (nome) nome.textContent = `${portalAreaSession.name} · ${portalAreaSession.area}`;
+                const titulo = document.getElementById('portalAreaTitle');
+                if (titulo) titulo.textContent = `Solicitações · ${portalAreaSession.area}`;
+                renderPortalAreaBoard();
+                return;
+            }
+
             const identificado = Boolean(portalSession);
             document.getElementById('portalAccess')?.classList.toggle('hidden', identificado);
             /* A faixa do topo só faz sentido depois de identificado: é onde mora o nome e o
@@ -8650,6 +8924,17 @@
            e o salvamento ainda descartava o que fosse digitado. Resultado: analista e Toletus
            Lab cadastrados sem senha alguma, barrados no login por "senha não cadastrada". */
         function onUserRoleChange(role, editando = Boolean(document.getElementById('editUserId')?.value)) {
+            /* A área só é perguntada a quem vai usá-la. Perguntar sempre encheria a ficha de
+               um campo que não diz nada para analista nem para gestor. */
+            const areaField = document.getElementById('inputUserPortalAreaField');
+            const areaSelect = document.getElementById('inputUserPortalArea');
+            if (areaField && areaSelect) {
+                const gestorDeArea = role === 'Gestor de Área';
+                areaField.classList.toggle('hidden', !gestorDeArea);
+                if (gestorDeArea && !areaSelect.options.length) {
+                    areaSelect.innerHTML = portalDepartments().map(item => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('');
+                }
+            }
             const label = document.getElementById('inputUserPasswordLabel');
             if (label) {
                 label.textContent = editando
@@ -8670,6 +8955,9 @@
             document.getElementById('inputUserName').value = u.name;
             document.getElementById('inputUserEmail').value = u.email || '';
             document.getElementById('inputUserRole').value = u.role;
+            onUserRoleChange(u.role, true);
+            const areaSelect = document.getElementById('inputUserPortalArea');
+            if (areaSelect && u.portalArea) areaSelect.value = u.portalArea;
             document.getElementById('inputUserTeam').value = u.team;
             document.getElementById('inputUserPassword').value = "";
             document.getElementById('inputUserPhoto').value = "";
@@ -8776,6 +9064,8 @@
             const email = document.getElementById('inputUserEmail').value.trim();
             const role = document.getElementById('inputUserRole').value;
             const team = document.getElementById('inputUserTeam').value;
+            const portalArea = role === 'Gestor de Área' ? document.getElementById('inputUserPortalArea').value : '';
+            if (role === 'Gestor de Área' && !portalArea) { showToast('Escolha a área do Portal desta pessoa.', 'error'); return; }
             const password = document.getElementById('inputUserPassword').value;
             const photoData = document.getElementById('inputUserPhotoData').value;
 
@@ -8807,6 +9097,8 @@
                 appStore.users[editId].email = email || undefined;
                 appStore.users[editId].role = role;
                 appStore.users[editId].team = team;
+                // Trocar de função tira a área junto: guardá-la num analista seria lixo com aparência de permissão.
+                appStore.users[editId].portalArea = portalArea || undefined;
                 if (password) {
                     const saved = await setUserPasswordRemote(editId, password);
                     if (!saved) return;
@@ -8824,7 +9116,7 @@
                 // com direito a "cadastrado com sucesso" e login impossível depois.
                 const saved = await setUserPasswordRemote(newId, password);
                 if (!saved) return;
-                appStore.users[newId] = { name, email: email || undefined, team, role, initial: initials, active: true, photo: photoData || undefined, hasPassword: true };
+                appStore.users[newId] = { name, email: email || undefined, team, role, portalArea: portalArea || undefined, initial: initials, active: true, photo: photoData || undefined, hasPassword: true };
                 applyShiftProfile(newId);
                 showToast("Novo usuário cadastrado com sucesso!");
             }
@@ -12284,15 +12576,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-peca-so-catraca-1"></script>
-    <script src="js/external-requests.js?v=20260819-peca-so-catraca-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-peca-so-catraca-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-peca-so-catraca-1"></script>
-    <script src="js/performance-domain.js?v=20260819-peca-so-catraca-1"></script>
-    <script src="js/manager-experience.js?v=20260819-peca-so-catraca-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-peca-so-catraca-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-peca-so-catraca-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-peca-so-catraca-1"></script>
-    <script src="js/performance-platform.js?v=20260819-peca-so-catraca-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-gestor-de-area-1"></script>
+    <script src="js/external-requests.js?v=20260819-gestor-de-area-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-gestor-de-area-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-gestor-de-area-1"></script>
+    <script src="js/performance-domain.js?v=20260819-gestor-de-area-1"></script>
+    <script src="js/manager-experience.js?v=20260819-gestor-de-area-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-gestor-de-area-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-gestor-de-area-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-gestor-de-area-1"></script>
+    <script src="js/performance-platform.js?v=20260819-gestor-de-area-1"></script>
 </body>
 </html>
