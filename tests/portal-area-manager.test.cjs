@@ -105,3 +105,68 @@ test('responder devolve à triagem; cancelar sai do fluxo', () => {
     // E o domínio recusa uma transição para a etapa em que a solicitação já está.
     assert.throws(() => E.transition(req({ status: 'triagem' }), 'triagem', { reason: 'texto' }), /já está nesta etapa/);
 });
+
+/* ==========================================================================
+   A SEGUNDA PORTA COMO PARTE DO CARD, NÃO COMO REMENDO
+   Ela nasceu com <select> nativo, sem recuo lateral e encostando na borda de
+   baixo — o card tem `overflow: hidden`, então não sobrava nem a folga da sombra.
+   Duas linguagens de controle no mesmo card fazem a segunda parecer colada.
+   ========================================================================== */
+
+const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+test('a escolha da pessoa usa o mesmo seletor da área, não um <select> nativo', () => {
+    const porta = html.slice(html.indexOf('<div class="actuar-portal-second-door">'), html.indexOf('<!-- QUADRO DA ÁREA'));
+    // Sem os comentários: eles citam o controle que saiu, para explicar por que saiu.
+    const markup = porta.replace(/<!--[\s\S]*?-->/g, '');
+
+    assert.doesNotMatch(markup, /<select/, 'o controle nativo entrega o visual do sistema operacional, não o do produto');
+    assert.match(markup, /class="actuar-picker-trigger"/);
+    assert.match(markup, /class="actuar-picker-panel"/);
+    // O valor continua num campo escondido, como no seletor de área.
+    assert.match(markup, /<input type="hidden" id="portalAreaUser" value="">/);
+    // Avatar com iniciais e a área na segunda linha: é ela que distingue dois nomes iguais.
+    assert.match(html, /portalAreaInitials\(user\)/);
+    assert.match(html, /<small>\$\{escapeHtml\(user\.portalArea\)\}<\/small>/);
+
+    // Teclado igual ao de cima: setas, Enter, Escape, e clicar fora fecha.
+    for (const fn of ['portalToggleAreaMembers', 'portalPickAreaMember', 'portalAreaMemberKey', 'portalAreaTriggerKey']) {
+        assert.ok(html.includes(`function ${fn}(`), `falta ${fn}`);
+    }
+    assert.match(html, /if \(portalAreaMembersOpen\(\) && !event\.target\.closest\('\.actuar-picker'\)\) portalToggleAreaMembers\(false\);/);
+});
+
+test('o bloco respira dentro do card e acompanha o recuo do formulário do PIN', () => {
+    assert.match(css, /\.actuar-portal-second-door \{ padding: 4px 32px 26px;/, 'sem respiro embaixo o link encosta na borda');
+    /* O filete atravessa o card inteiro; o conteúdo é que fica recuado. Uma linha que para
+       antes da borda lê como erro de alinhamento, não como divisão. */
+    assert.match(css, /\.actuar-portal-second-door::before \{ content: ""; display: block; height: 1px; margin: 0 -32px 14px;/);
+    /* O formulário já está num bloco recuado: repetir o padding do PIN estreitaria os campos
+       em relação ao seletor de área logo acima. */
+    assert.match(css, /\.actuar-portal-shell \.actuar-portal-second-door \.actuar-portal-form \{ padding: 0; \}/);
+});
+
+test('a senha não anuncia de onde vem, e dá para conferir o que foi digitado', () => {
+    const porta = html.slice(html.indexOf('<div class="actuar-portal-second-door">'), html.indexOf('<!-- QUADRO DA ÁREA'));
+    assert.ok(!porta.includes('A mesma senha do Classifique'), 'o texto sobre a origem da senha saiu');
+    assert.doesNotMatch(porta, /id="portalAreaPassword"[^>]*placeholder=/, 'o campo não precisa de placeholder: o rótulo já diz o que é');
+
+    // Revelar existe porque senha às cegas erra, e errar aqui custa uma tentativa inteira.
+    assert.match(porta, /class="actuar-field-with-action"/);
+    assert.match(html, /function portalToggleAreaPassword\(\)/);
+    assert.match(html, /campo\.type = revelando \? 'text' : 'password';/);
+    assert.match(html, /botao\.setAttribute\('aria-label', revelando \? 'Ocultar senha' : 'Mostrar senha'\);/);
+
+    /* O recuo do texto vem da base do Design System, que carrega a cadeia de :not() para
+       ganhar dela mesma. Uma regra curta aqui perderia e o olho voltaria por cima da senha. */
+    assert.ok(!/\.actuar-portal-second-door \.actuar-field-with-action input\s*\{/.test(css));
+});
+
+test('a lista de nomes não flutua: o card recorta o que sai dele', () => {
+    /* Mesma lição que o seletor de área já tinha aprendido — `overflow: hidden` existe para
+       arredondar o bloco da marca, e um painel absoluto some por baixo dele. */
+    assert.ok(!/\.actuar-portal-second-door \.actuar-picker-panel \{[^}]*position: absolute/.test(css));
+    // Sem ninguém cadastrado, a lista diz o que falta em vez de abrir vazia.
+    assert.match(html, /Nenhum acompanhamento cadastrado\. Peça à gestão um acesso com a função Gestor de Área\./);
+    assert.match(css, /\.actuar-picker-empty \{/);
+});

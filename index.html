@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-gestor-de-area-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-porta-area-2">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -341,16 +341,42 @@
                  tarefa principal desta tela continua sendo registrar. -->
             <div class="actuar-portal-second-door">
                 <button type="button" id="portalAreaDoorToggle" class="actuar-portal-door-link" aria-expanded="false" aria-controls="portalAreaDoor" onclick="portalToggleAreaDoor()">
-                    <i class="fi fi-rr-chart-tree-map" aria-hidden="true"></i>Acompanhar as solicitações da minha área
+                    <i class="fi fi-rr-chart-tree-map" aria-hidden="true"></i>
+                    <span>Acompanhar as solicitações da minha área</span>
+                    <i class="fi fi-rr-angle-small-down actuar-portal-door-caret" aria-hidden="true"></i>
                 </button>
                 <form id="portalAreaDoor" class="actuar-portal-form hidden" onsubmit="return portalAreaLogin(event)" aria-describedby="portalAreaError">
+                    <!-- O mesmo seletor da área acima, não um <select> nativo: dois controles
+                         com linguagens diferentes no mesmo card fazem o segundo parecer
+                         remendo. Aqui o avatar carrega as iniciais e a linha de baixo diz a
+                         área — que é o que distingue duas pessoas de mesmo nome. -->
                     <div class="actuar-field">
-                        <label for="portalAreaUser">Quem é você?</label>
-                        <select id="portalAreaUser" required></select>
+                        <span class="actuar-field-label" id="portalAreaPickerLabel">Quem é você?</span>
+                        <input type="hidden" id="portalAreaUser" value="">
+                        <div class="actuar-picker">
+                            <button type="button" id="portalAreaTrigger" class="actuar-picker-trigger"
+                                    aria-haspopup="listbox" aria-expanded="false" aria-controls="portalAreaPanel" aria-labelledby="portalAreaPickerLabel"
+                                    onclick="portalToggleAreaMembers()" onkeydown="portalAreaTriggerKey(event)">
+                                <span class="actuar-picker-avatar" id="portalAreaAvatar" aria-hidden="true"><i class="fi fi-rr-user"></i></span>
+                                <span class="actuar-picker-copy">
+                                    <strong id="portalAreaPickedName">Selecione o seu nome</strong>
+                                    <small id="portalAreaPickedRole">Acompanhamento por área</small>
+                                </span>
+                                <i class="fi fi-rr-angle-small-down actuar-picker-caret" aria-hidden="true"></i>
+                            </button>
+                            <div id="portalAreaPanel" class="actuar-picker-panel" hidden>
+                                <ul id="portalAreaList" class="actuar-picker-list" role="listbox" aria-labelledby="portalAreaPickerLabel"></ul>
+                            </div>
+                        </div>
                     </div>
                     <div class="actuar-field">
                         <label for="portalAreaPassword">Senha de acesso</label>
-                        <input type="password" id="portalAreaPassword" autocomplete="current-password" required placeholder="A mesma senha do Classifique">
+                        <!-- Revelar existe porque senha digitada às cegas erra, e errar aqui
+                             custa uma tentativa inteira. O padrão continua oculto. -->
+                        <div class="actuar-field-with-action">
+                            <input type="password" id="portalAreaPassword" autocomplete="current-password" required>
+                            <button type="button" class="actuar-input-action" id="portalAreaReveal" aria-label="Mostrar senha" onclick="portalToggleAreaPassword()"><i class="fi fi-rr-eye" aria-hidden="true"></i></button>
+                        </div>
                     </div>
                     <p class="actuar-login-error" id="portalAreaError" role="alert" hidden></p>
                     <button type="submit" class="actuar-btn actuar-btn-primary actuar-btn-lg"><i class="fi fi-rr-sign-in-alt"></i>Entrar</button>
@@ -6157,15 +6183,90 @@
             const abrindo = porta.classList.contains('hidden');
             porta.classList.toggle('hidden', !abrindo);
             gatilho?.setAttribute('aria-expanded', String(abrindo));
-            if (!abrindo) return;
-            const select = document.getElementById('portalAreaUser');
-            const pessoas = portalAreaManagers();
-            select.innerHTML = pessoas.length
-                ? pessoas.map(([id, user]) => `<option value="${escapeHtml(id)}">${escapeHtml(user.name)} · ${escapeHtml(user.portalArea)}</option>`).join('')
-                : '<option value="">Nenhum acompanhamento cadastrado</option>';
-            select.disabled = !pessoas.length;
-            requestAnimationFrame(() => select.focus());
+            if (!abrindo) { portalToggleAreaMembers(false); return; }
+            portalRenderAreaMembers();
+            requestAnimationFrame(() => document.getElementById('portalAreaTrigger')?.focus());
         }
+
+        function portalAreaInitials(user) {
+            return String(user?.name || '?').split(/\s+/).map(parte => parte[0]).join('').slice(0, 2).toUpperCase();
+        }
+
+        function portalRenderAreaMembers() {
+            const lista = document.getElementById('portalAreaList');
+            if (!lista) return;
+            const escolhido = document.getElementById('portalAreaUser')?.value;
+            const pessoas = portalAreaManagers();
+            /* Sem ninguém cadastrado, a lista diz o que falta em vez de abrir vazia — quem
+               chega aqui sem acesso precisa saber que é cadastro, não senha errada. */
+            lista.innerHTML = pessoas.length ? pessoas.map(([id, user], indice) => `
+                <li role="option" data-id="${escapeHtml(id)}" tabindex="-1"
+                    aria-selected="${id === escolhido}" onclick="portalPickAreaMember('${escapeHtml(id)}')" onkeydown="portalAreaMemberKey(event, ${indice})">
+                    <span class="actuar-picker-avatar" aria-hidden="true">${user.photo ? `<img src="${escapeHtml(user.photo)}" alt="">` : escapeHtml(portalAreaInitials(user))}</span>
+                    <span class="actuar-picker-copy"><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.portalArea)}</small></span>
+                    <i class="fi fi-rr-check actuar-picker-tick" aria-hidden="true"></i>
+                </li>`).join('')
+                : '<li class="actuar-picker-empty">Nenhum acompanhamento cadastrado. Peça à gestão um acesso com a função Gestor de Área.</li>';
+        }
+
+        function portalAreaMembersOpen() {
+            return document.getElementById('portalAreaTrigger')?.getAttribute('aria-expanded') === 'true';
+        }
+
+        function portalToggleAreaMembers(abrir = !portalAreaMembersOpen()) {
+            const gatilho = document.getElementById('portalAreaTrigger');
+            const painel = document.getElementById('portalAreaPanel');
+            if (!gatilho || !painel) return;
+            gatilho.setAttribute('aria-expanded', String(abrir));
+            painel.hidden = !abrir;
+            if (abrir) { portalRenderAreaMembers(); document.querySelector('#portalAreaList li[tabindex]')?.focus(); }
+        }
+
+        function portalPickAreaMember(id) {
+            const user = (getStore()?.users || defaultUsers)[id];
+            if (!user) return;
+            document.getElementById('portalAreaUser').value = id;
+            const avatar = document.getElementById('portalAreaAvatar');
+            if (avatar) avatar.innerHTML = user.photo ? `<img src="${escapeHtml(user.photo)}" alt="">` : escapeHtml(portalAreaInitials(user));
+            document.getElementById('portalAreaPickedName').textContent = user.name;
+            document.getElementById('portalAreaPickedRole').textContent = user.portalArea || 'Acompanhamento por área';
+            document.getElementById('portalAreaTrigger')?.classList.add('is-filled');
+            document.querySelectorAll('#portalAreaList li').forEach(item => item.setAttribute('aria-selected', String(item.dataset.id === id)));
+            portalAreaError('');
+            portalToggleAreaMembers(false);
+            // Escolhido o nome, o passo seguinte é a senha: sem clique extra no caminho.
+            document.getElementById('portalAreaPassword')?.focus();
+        }
+
+        function portalAreaMemberKey(event, indice) {
+            const itens = [...document.querySelectorAll('#portalAreaList li[tabindex]')];
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); portalPickAreaMember(itens[indice]?.dataset.id); return; }
+            if (event.key === 'Escape') { event.preventDefault(); portalToggleAreaMembers(false); document.getElementById('portalAreaTrigger')?.focus(); return; }
+            const passo = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;
+            if (!passo) return;
+            event.preventDefault();
+            itens[(indice + passo + itens.length) % itens.length]?.focus();
+        }
+
+        function portalAreaTriggerKey(event) {
+            if (['ArrowDown', 'Enter', ' '].includes(event.key)) { event.preventDefault(); portalToggleAreaMembers(true); }
+        }
+
+        function portalToggleAreaPassword() {
+            const campo = document.getElementById('portalAreaPassword');
+            const botao = document.getElementById('portalAreaReveal');
+            if (!campo || !botao) return;
+            const revelando = campo.type === 'password';
+            campo.type = revelando ? 'text' : 'password';
+            botao.setAttribute('aria-label', revelando ? 'Ocultar senha' : 'Mostrar senha');
+            botao.innerHTML = `<i class="fi fi-rr-eye${revelando ? '-crossed' : ''}" aria-hidden="true"></i>`;
+            campo.focus();
+        }
+
+        // Clicar fora fecha, como no seletor de área acima.
+        document.addEventListener('click', event => {
+            if (portalAreaMembersOpen() && !event.target.closest('.actuar-picker')) portalToggleAreaMembers(false);
+        });
 
         function portalAreaError(mensagem) {
             const alvo = document.getElementById('portalAreaError');
@@ -12576,15 +12677,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-gestor-de-area-1"></script>
-    <script src="js/external-requests.js?v=20260819-gestor-de-area-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-gestor-de-area-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-gestor-de-area-1"></script>
-    <script src="js/performance-domain.js?v=20260819-gestor-de-area-1"></script>
-    <script src="js/manager-experience.js?v=20260819-gestor-de-area-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-gestor-de-area-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-gestor-de-area-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-gestor-de-area-1"></script>
-    <script src="js/performance-platform.js?v=20260819-gestor-de-area-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-porta-area-2"></script>
+    <script src="js/external-requests.js?v=20260819-porta-area-2"></script>
+    <script src="js/actuar-fields.js?v=20260819-porta-area-2"></script>
+    <script src="js/attendance-clock.js?v=20260819-porta-area-2"></script>
+    <script src="js/performance-domain.js?v=20260819-porta-area-2"></script>
+    <script src="js/manager-experience.js?v=20260819-porta-area-2"></script>
+    <script src="js/priority-rotation.js?v=20260819-porta-area-2"></script>
+    <script src="js/pieces-operations.js?v=20260819-porta-area-2"></script>
+    <script src="js/pieces-ui.js?v=20260819-porta-area-2"></script>
+    <script src="js/performance-platform.js?v=20260819-porta-area-2"></script>
 </body>
 </html>
