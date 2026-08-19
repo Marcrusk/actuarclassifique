@@ -414,9 +414,6 @@ body.actuar-app .actuar-filter-select select:hover { border-color: var(--actuar-
 .actuar-sidebar-item.is-active i { color: var(--actuar-primary); }
 .actuar-sidebar-footer { margin-top: 16px !important; }
 .actuar-page-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 24px; align-items: end; margin-bottom: 20px; }
-.actuar-page-back { grid-column: 1 / -1; width: fit-content; min-height: 32px; padding: 0 10px; border: 1px solid transparent; border-radius: var(--actuar-radius); background: transparent; color: var(--actuar-secondary); display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; cursor: pointer; }
-.actuar-page-back:hover { background: var(--actuar-surface-muted); color: var(--actuar-foreground); }
-.actuar-page-back[hidden] { display: none; }
 .actuar-page-title { margin: 0; color: var(--actuar-foreground-structural); font-size: clamp(20px, 2.4vw, 26px); line-height: 1.25; font-weight: 700; }
 .actuar-page-description { max-width: 720px; margin: 5px 0 0; color: var(--actuar-secondary); font-size: 12px; line-height: 1.55; }
 .actuar-page-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }

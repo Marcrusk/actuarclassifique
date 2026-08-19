@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-tela-analista-4">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-tela-analista-5">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -656,9 +656,11 @@
     <aside id="appSidebar" class="actuar-sidebar hidden" aria-label="Navegação principal"></aside>
     <main id="appContent" class="actuar-main">
         <header id="pageHeader" class="actuar-page-header">
-            <button id="pageBackButton" class="actuar-page-back" type="button" onclick="navigateBack()" hidden>
-                <i class="fi fi-rr-arrow-left" aria-hidden="true"></i>Voltar
-            </button>
+            <!-- O "Voltar" do cabeçalho saiu: a sidebar navega entre telas e o botão do
+                 navegador desfaz o passo. Um terceiro caminho para a mesma coisa, que só
+                 aparecia às vezes (dependia da profundidade no histórico), era ruído. A
+                 máquina de histórico continua: `navigateBack()` serve os "Cancelar" dos
+                 formulários e o "Voltar aos resultados" da consulta gerencial. -->
             <div>
                 <h1 id="pageTitle" class="actuar-page-title">Dashboard individual</h1>
                 <p id="pageDescription" class="actuar-page-description">Acompanhe indicadores, pontuação e solicitações do analista selecionado.</p>
@@ -4384,10 +4386,8 @@
                     : { title: 'Analista', description: 'Escolha um analista no filtro do topo para ver as métricas dele no período selecionado.' }
             };
             const meta = currentRoute.name === 'admin' && adminMeta[currentRoute.section] ? adminMeta[currentRoute.section] : (ROUTE_META[currentRoute.name] || ROUTE_META.dashboard);
-            const state = window.history.state || {};
             const pageTitle = document.getElementById('pageTitle');
             const pageDescription = document.getElementById('pageDescription');
-            const pageBackButton = document.getElementById('pageBackButton');
             const headerContext = document.getElementById('headerContext');
             if (pageTitle) pageTitle.textContent = meta.title;
             if (pageDescription) pageDescription.textContent = meta.description;
@@ -4400,7 +4400,6 @@
                 const anteriores = partes.slice(0, -1).map(parte => `${escapeHtml(parte)} / `).join('');
                 headerContext.innerHTML = `Performance do Atendimento / ${anteriores}<strong>${escapeHtml(ultimo)}</strong>`;
             }
-            if (pageBackButton) pageBackButton.hidden = !(state.actuarBackRoute && (state.actuarDepth || 0) > 0);
             updatePageActions();
             updateProfileUI();
             document.title = `${meta.title} | Performance do Atendimento | Actuar`;
@@ -11817,15 +11816,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-tela-analista-4"></script>
-    <script src="js/external-requests.js?v=20260819-tela-analista-4"></script>
-    <script src="js/actuar-fields.js?v=20260819-tela-analista-4"></script>
-    <script src="js/attendance-clock.js?v=20260819-tela-analista-4"></script>
-    <script src="js/performance-domain.js?v=20260819-tela-analista-4"></script>
-    <script src="js/manager-experience.js?v=20260819-tela-analista-4"></script>
-    <script src="js/priority-rotation.js?v=20260819-tela-analista-4"></script>
-    <script src="js/pieces-operations.js?v=20260819-tela-analista-4"></script>
-    <script src="js/pieces-ui.js?v=20260819-tela-analista-4"></script>
-    <script src="js/performance-platform.js?v=20260819-tela-analista-4"></script>
+    <script src="js/actuar-navigation.js?v=20260819-tela-analista-5"></script>
+    <script src="js/external-requests.js?v=20260819-tela-analista-5"></script>
+    <script src="js/actuar-fields.js?v=20260819-tela-analista-5"></script>
+    <script src="js/attendance-clock.js?v=20260819-tela-analista-5"></script>
+    <script src="js/performance-domain.js?v=20260819-tela-analista-5"></script>
+    <script src="js/manager-experience.js?v=20260819-tela-analista-5"></script>
+    <script src="js/priority-rotation.js?v=20260819-tela-analista-5"></script>
+    <script src="js/pieces-operations.js?v=20260819-tela-analista-5"></script>
+    <script src="js/pieces-ui.js?v=20260819-tela-analista-5"></script>
+    <script src="js/performance-platform.js?v=20260819-tela-analista-5"></script>
 </body>
 </html>

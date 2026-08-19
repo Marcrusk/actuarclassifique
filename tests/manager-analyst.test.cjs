@@ -216,3 +216,24 @@ test('o Feedback de Monitoramento não usa cor literal do tema claro', () => {
     assert.match(css, /\.monitoring-feedback-item \{[^}]*border: 1px solid var\(--actuar-border\)/);
     assert.match(css, /\.monitoring-feedback-note \{[^}]*color: var\(--actuar-text-secondary\)/);
 });
+
+test('o cabeçalho não tem mais botão de voltar, e a máquina de histórico continua', () => {
+    const doc = html();
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+
+    /* Um terceiro caminho para a mesma coisa — sidebar e botão do navegador já fazem —
+       e que só aparecia às vezes, porque dependia da profundidade no histórico. */
+    assert.doesNotMatch(doc, /id="pageBackButton"/, 'o botão de voltar voltou ao cabeçalho');
+    assert.doesNotMatch(css, /\.actuar-page-back/, 'sobrou CSS morto do botão removido');
+
+    /* Mas `navigateBack()` fica: serve os "Cancelar" dos formulários e o "Voltar aos
+       resultados" da consulta gerencial. Apagá-la junto quebraria esses caminhos. */
+    assert.match(doc, /function navigateBack\(\)/);
+    assert.match(doc, /onclick="navigateBack\(\)">Cancelar</);
+    assert.match(doc, /onclick="navigateBack\(\)"><i class="fi fi-rr-arrow-left"><\/i>Voltar aos resultados/);
+    assert.match(fs.readFileSync('js/performance-platform.js', 'utf8'), /onclick="navigateBack\(\)"/);
+
+    // E o estado que alimentava só o botão saiu junto, sem virar variável morta.
+    const meta = doc.slice(doc.indexOf('const adminMeta = {'), doc.indexOf('function updatePageActions'));
+    assert.doesNotMatch(meta, /const state = window\.history\.state/, 'variável morta ficou no cabeçalho');
+});
