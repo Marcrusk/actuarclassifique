@@ -3706,6 +3706,48 @@ body.nav-locked { overflow: hidden; }
 .actuar-portal-second-door .actuar-input-action { height: 100%; color: #8E9298; }
 .actuar-portal-second-door .actuar-input-action:hover { color: #FFF; }
 
+/* O QUADRO PRECISA DE MESA
+   Herdando `.actuar-portal-panel`, o kanban nascia com 680px e centralizado na vertical:
+   oito etapas espremidas numa coluna e meia, com o resto da tela vazio em cima e embaixo.
+   Aqui ele ocupa a largura útil e começa no topo — se não couber tudo, rola na horizontal,
+   que é como um funil se lê. */
+.actuar-portal-panel.is-board { width: min(1560px, 100%); padding: 24px 24px 18px; }
+/* O contêiner centraliza na vertical, e com razão: o card de acesso é pequeno e ficaria
+   perdido no topo. O quadro é o oposto — ele quer a tela inteira, e centralizado sobrava
+   vazio em cima e embaixo enquanto as colunas se espremiam. */
+.actuar-portal > .actuar-portal-panel.is-board { margin-top: 0; margin-bottom: 0; }
+.actuar-portal:has(> .actuar-portal-panel.is-board:not(.hidden)) { justify-content: flex-start; }
+.actuar-portal-panel.is-board .external-board { padding-bottom: 12px; }
+/* Altura pelo que sobra da janela, não por um número fixo: o cartão mais alto define a
+   coluna, e o resto rola por dentro dela. */
+.actuar-portal-panel.is-board .external-column-body { max-height: calc(100vh - 340px); min-height: 220px; }
+.actuar-portal-panel.is-board .external-column { flex-basis: 300px; }
+/* A barra horizontal fica visível: sem ela, ninguém descobre que há mais etapas à direita. */
+.actuar-portal-panel.is-board .external-board::-webkit-scrollbar { height: 10px; }
+.actuar-portal-panel.is-board .external-board::-webkit-scrollbar-thumb { border-radius: 999px; background: #3A3A45; }
+.actuar-portal-panel.is-board .external-board::-webkit-scrollbar-thumb:hover { background: #52545A; }
+
+/* SAÍDA DO PORTAL — UMA SÓ, NO CABEÇALHO
+   Havia duas: esta e outra dentro do quadro. A de dentro saiu; esta ganhou forma de botão,
+   porque um texto solto ao lado do nome não parece clicável. */
+.actuar-portal-exit {
+    display: inline-flex; align-items: center; gap: 7px;
+    min-height: 34px; padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px;
+    background: rgba(255, 255, 255, .05); color: #C5C7CA;
+    font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: background-color var(--actuar-transition), border-color var(--actuar-transition), color var(--actuar-transition);
+}
+.actuar-portal-exit:hover { border-color: rgba(255, 255, 255, .28); background: rgba(255, 255, 255, .1); color: #FFF; }
+.actuar-portal-exit:focus-visible { outline: none; border-color: var(--actuar-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--actuar-primary) 28%, transparent); }
+.actuar-portal-exit i { font-size: 13px; }
+
+@media (max-width: 900px) {
+    .actuar-portal-panel.is-board { padding: 18px 16px 14px; }
+    .actuar-portal-panel.is-board .external-column { flex-basis: 84vw; }
+    .actuar-portal-panel.is-board .external-column-body { max-height: none; }
+}
+
 .portal-area-filters { display: grid; grid-template-columns: minmax(0, 2fr) minmax(160px, 1fr) auto; gap: 12px; align-items: end; margin-bottom: 14px; }
 .portal-area-summary { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; padding: 11px 14px; border: 1px solid var(--actuar-border); border-radius: var(--actuar-radius-large); background: var(--actuar-surface-muted); color: var(--actuar-text-secondary); font-size: 12px; }
 .portal-area-summary strong { color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 14px; }

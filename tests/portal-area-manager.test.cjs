@@ -221,3 +221,39 @@ test('e-mail repetido não vira uma segunda ficha da mesma pessoa', () => {
     // Ficha sem e-mail não é bloqueada: o vazio não é duplicidade.
     assert.match(salvar, /const repetido = emailNormalizado && /);
 });
+
+test('a saída do Portal é uma só, e serve às duas portas', () => {
+    /* Havia duas: a do cabeçalho e outra dentro do quadro. Pior, a do cabeçalho — a mais
+       visível — não fazia nada para quem entrou pela porta de acompanhamento: limpava a
+       sessão do PIN, que ela não tinha, e redesenhava o mesmo quadro. */
+    const sair = html.slice(html.indexOf('function portalSignOut()'), html.indexOf('let portalStep = 1;'));
+    assert.match(sair, /sessionStorage\.removeItem\(PORTAL_SESSION_KEY\)/);
+    assert.match(sair, /localStorage\.removeItem\(PORTAL_AREA_SESSION_KEY\)/);
+    assert.match(sair, /portalAreaSession = null;/);
+
+    assert.ok(!html.includes('portalAreaLogout'), 'a segunda saída voltou');
+    assert.equal((html.match(/portalSignOut\(\)/g) || []).length, 2, 'uma definição e um botão: nada além disso');
+    // E ela virou botão de verdade, não um texto solto ao lado do nome.
+    assert.match(html, /<button type="button" class="actuar-portal-exit" onclick="portalSignOut\(\)">/);
+    assert.match(css, /\.actuar-portal-exit \{/);
+});
+
+test('o quadro ocupa a tela em vez de caber num card de acesso', () => {
+    /* Herdando `.actuar-portal-panel`, o kanban nascia com 680px e centralizado na vertical:
+       oito etapas espremidas em pouco mais de uma coluna, com o resto da tela vazio.
+       Medido em Chrome a 1600×1000: 680 -> 1552px de largura, 1,5 -> 4,8 colunas à vista,
+       e o painel passou a começar a 105px do topo em vez de flutuar no meio. */
+    assert.match(html, /id="portalAreaBoard" class="actuar-portal-panel is-board hidden"/);
+    assert.match(css, /\.actuar-portal-panel\.is-board \{ width: min\(1560px, 100%\); padding: 24px 24px 18px; \}/);
+    assert.match(css, /\.actuar-portal > \.actuar-portal-panel\.is-board \{ margin-top: 0; margin-bottom: 0; \}/);
+    /* O contêiner centraliza na vertical, e com razão para o card de acesso. Com o quadro
+       aberto ele passa a alinhar ao topo. */
+    assert.match(css, /\.actuar-portal:has\(> \.actuar-portal-panel\.is-board:not\(\.hidden\)\) \{ justify-content: flex-start; \}/);
+
+    // Altura pelo que sobra da janela, não por um número fixo; e a coluna rola por dentro.
+    assert.match(css, /\.actuar-portal-panel\.is-board \.external-column-body \{ max-height: calc\(100vh - 340px\); min-height: 220px; \}/);
+    // Se as oito etapas não couberem, rola — e a barra é visível, senão ninguém descobre.
+    assert.match(css, /\.actuar-portal-panel\.is-board \.external-board::-webkit-scrollbar \{ height: 10px; \}/);
+    // No celular a coluna ocupa a largura da tela e para de limitar a altura.
+    assert.match(css, /\.actuar-portal-panel\.is-board \.external-column \{ flex-basis: 84vw; \}/);
+});
