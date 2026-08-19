@@ -2447,6 +2447,11 @@ body.actuar-locked { overflow: hidden; }
 .actuar-confirm-card h2 { margin: 2px 0 0; color: var(--actuar-foreground); font-size: 17px; line-height: 1.3; font-weight: 700; }
 .actuar-confirm-card p { margin: 0; color: var(--actuar-secondary); font-size: 13px; line-height: 1.55; }
 .actuar-confirm-card p[hidden] { display: none; }
+/* O diálogo alterna entre caixa de motivo e campo de senha. A regra genérica de
+   controles não mexe em `display`, então o atributo `hidden` bastaria — mas ela usa
+   `!important` no resto, e deixar isto implícito é o tipo de coisa que quebra na próxima
+   linha adicionada ali. Com a senha à mostra, o campo errado ficaria visível. */
+#actuarConfirmField > [hidden] { display: none !important; }
 .actuar-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; width: 100%; margin-top: 10px; }
 .actuar-confirm-actions .actuar-btn[hidden] { display: none; }
 @keyframes actuar-confirm-in { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }

@@ -125,7 +125,10 @@ test('a decisão da gestão passa pelo diálogo do produto, com motivo obrigató
     assert.doesNotMatch(html, /(?<![.\w])prompt\(/);
     assert.match(html, /id="actuarConfirmField"/);
     const dialogo = html.slice(html.indexOf("if (event.target?.closest?.('#actuarConfirmOk'))"), html.indexOf('closeActuarConfirm(true);'));
-    assert.match(dialogo, /texto\.length < 3/, 'confirmar sem motivo não pode fechar');
+    /* O mínimo deixou de ser fixo: motivo pede três caracteres, senha pede só não estar
+       vazia — o diálogo passou a atender os dois desde que a senha ganhou campo próprio. */
+    assert.match(dialogo, /const minimo = entrada === segredo \? 1 : 3;/);
+    assert.match(dialogo, /texto\.length < minimo/, 'confirmar sem motivo não pode fechar');
     assert.match(dialogo, /closeActuarConfirm\(texto\)/, 'quem chama recebe o motivo direto');
 });
 

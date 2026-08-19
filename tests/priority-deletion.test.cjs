@@ -220,3 +220,39 @@ test('a linha da auditoria carrega o registro e sabe expandir', () => {
     // Expandir é estado da tela, não da base: recarregar não deve deixar linhas abertas.
     assert.match(html, /let expandedHistoryRows = new Set\(\);/);
 });
+
+test('a senha da exclusão é pedida em campo mascarado, não na caixa de motivo', () => {
+    /* O diálogo tinha um único campo: `<textarea rows="3">`. Servia bem para o motivo e
+       mal para a senha — ela aparecia por extenso na tela, numa caixa de três linhas que
+       convidava a escrever um parágrafo. */
+    assert.match(html, /<input type="password" id="actuarConfirmSecret" autocomplete="current-password" spellcheck="false" hidden>/);
+    assert.match(html, /const pedeSenha = options\.input\?\.type === 'password';/);
+    assert.match(html, /entrada\.hidden = Boolean\(pedeSenha\);/);
+    assert.match(html, /segredo\.hidden = !pedeSenha;/);
+
+    // Os dois pedidos de senha do sistema declaram o tipo — prioridade e peça.
+    assert.equal((html.match(/input: \{ type: 'password', label: 'Senha do seu acesso de gestão'/g) || []).length, 2);
+    // E nenhum pedido de senha sobrou usando a caixa de motivo.
+    assert.doesNotMatch(html, /input: \{ label: 'Senha/);
+
+    // O rótulo aponta para o campo que está à vista, senão clicar nele não foca nada.
+    assert.match(html, /rotulo\.setAttribute\('for', alvo\.id\);/);
+    // E o foco vai para o campo certo ao abrir.
+    assert.match(html, /options\.input \? alvo :/);
+});
+
+test('o diálogo não deixa a senha para trás nem julga o conteúdo dela', () => {
+    assert.match(html, /function closeActuarConfirm\(resultado\) \{[\s\S]{0,400}if \(segredo\) segredo\.value = '';/);
+
+    /* Motivo exige três caracteres porque "ok" não explica nada. Senha exige só não estar
+       vazia: quem julga o conteúdo é o servidor (verifyLoginRemote), e recusar aqui por
+       tamanho vazaria a regra da senha para a tela. */
+    assert.match(html, /const minimo = entrada === segredo \? 1 : 3;/);
+    // A senha não é aparada: espaço em branco pode fazer parte dela.
+    assert.match(html, /const texto = entrada === segredo \? \(entrada\?\.value \|\| ''\) : \(entrada\?\.value \|\| ''\)\.trim\(\);/);
+    // Mensagem de erro própria — "Informe o motivo" numa senha é instrução errada.
+    assert.match(html, /erroEntrada\.textContent = pedeSenha \? 'Digite a sua senha para continuar\.' : 'Informe o motivo para continuar\.';/);
+
+    const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
+    assert.match(css, /#actuarConfirmField > \[hidden\] \{ display: none !important; \}/);
+});
