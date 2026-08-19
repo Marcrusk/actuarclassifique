@@ -124,6 +124,11 @@ html.dark .pieces-module{color:#f3f4f6}html.dark .pieces-heading,html.dark .piec
     --actuar-warning-soft: #FBF8D9;
     --actuar-danger: #D9352F;
     --actuar-danger-soft: #FBDADA;
+    /* "Aguardando aprovação" dividia o âmbar com outras três esperas. Distinguir a espera que
+       depende da GESTÃO das que dependem do cliente ou da fila é o que faz o quadro ser lido
+       de relance. Rosa por ser a única família ainda livre entre âmbar, verde e vermelho. */
+    --actuar-pink: #B0154F;
+    --actuar-pink-soft: #FCE4EC;
     --actuar-info: #266ED9;
     --actuar-info-soft: #DDE9F8;
     --actuar-radius-input: 4px;
@@ -159,6 +164,8 @@ html.dark {
     --actuar-warning-soft: #36301B;
     --actuar-danger: #D25F5B;
     --actuar-danger-soft: #492222;
+    --actuar-pink: #F9A8C9;
+    --actuar-pink-soft: #3D1A28;
     --actuar-info: #6396E3;
     --actuar-info-soft: #202E40;
     --actuar-shadow-xs: 0 1px 2px rgba(0, 0, 0, .24);
@@ -442,6 +449,7 @@ body.actuar-app .actuar-filter-select select:hover { border-color: var(--actuar-
 .actuar-badge-success { border-color: color-mix(in srgb, var(--actuar-success) 30%, transparent); background: var(--actuar-success-soft); color: var(--actuar-success); }
 .actuar-badge-warning { border-color: color-mix(in srgb, var(--actuar-warning) 30%, transparent); background: var(--actuar-warning-soft); color: var(--actuar-warning); }
 .actuar-badge-danger { border-color: color-mix(in srgb, var(--actuar-danger) 30%, transparent); background: var(--actuar-danger-soft); color: var(--actuar-danger); }
+.actuar-badge-pink { border-color: color-mix(in srgb, var(--actuar-pink) 30%, transparent); background: var(--actuar-pink-soft); color: var(--actuar-pink); }
 /* Faltava: "Fora do rodízio" já usava esta classe e saía sem cor, borda nem fundo — texto
    solto no meio das tags coloridas. */
 .actuar-badge-neutral { border-color: var(--actuar-border); background: var(--actuar-surface-subtle); color: var(--actuar-secondary); }

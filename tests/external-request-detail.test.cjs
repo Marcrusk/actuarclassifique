@@ -137,3 +137,29 @@ test('"fila ocupada" e "sem analista" voltaram a ser causas diferentes', () => {
     const condicoes = (etiqueta.match(/if \(!view\.next\)/g) || []).length;
     assert.equal(condicoes, 1, 'a condição duplicada voltou');
 });
+
+test('"Aguardando aprovação" tem tom próprio, e ele vem do domínio', () => {
+    const E = require('../js/external-requests.js');
+    const etapa = E.STAGES.find(item => item.id === 'aguardando_aprovacao');
+
+    /* Das quatro esperas do quadro, esta é a única que depende da GESTÃO. Com o mesmo âmbar
+       das outras três, "quem está me devendo" só se descobria lendo o rótulo de cada coluna. */
+    assert.equal(etapa.tone, 'pink');
+    for (const outra of ['aguardando_info', 'aguardando_distribuicao', 'sem_retorno']) {
+        assert.equal(E.STAGES.find(item => item.id === outra).tone, 'warning', `${outra} não deveria ter mudado de tom`);
+    }
+
+    /* O tom é nome de token, não cor — é o que o próprio domínio diz: "quem muda a paleta
+       muda em um lugar". Então o rosa precisa existir como variante de badge. */
+    assert.match(css, /\.actuar-badge-pink \{ border-color: color-mix\(in srgb, var\(--actuar-pink\) 30%, transparent\); background: var\(--actuar-pink-soft\); color: var\(--actuar-pink\); \}/);
+    // E como token nos DOIS temas: definido só num deles, sumiria no outro.
+    assert.match(css, /--actuar-pink: #B0154F;\s*\n\s*--actuar-pink-soft: #FCE4EC;/, 'tema claro');
+    assert.match(css, /--actuar-pink: #F9A8C9;\s*\n\s*--actuar-pink-soft: #3D1A28;/, 'tema escuro');
+
+    // A etiqueta contextual do cartão acompanha, senão a mesma etapa teria duas cores.
+    assert.match(html, /if \(etapa === 'aguardando_aprovacao'\) return \{ tone: 'pink', icon: 'fi-rr-check-circle', label: 'Aguarda aprovação' \};/);
+
+    /* Medido em Chrome: 5.69 no claro e 8.33 no escuro — o melhor contraste da paleta de
+       badges. Nenhuma cor foi escrita à mão nas telas; tudo sai do token. */
+    assert.ok(!/actuar-badge-pink[^}]*#[0-9a-fA-F]{3,6}/.test(css), 'cor literal na variante do badge');
+});

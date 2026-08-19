@@ -26,7 +26,10 @@
            indistinguível de "em atendimento" — e um chamado sem resposta há dias parecia
            trabalho em andamento, cobrando o analista por algo que não depende dele. */
         Object.freeze({ id: 'sem_retorno', label: 'Sem retorno do cliente', hint: 'O analista tentou contato e o cliente não respondeu.', tone: 'warning' }),
-        Object.freeze({ id: 'aguardando_aprovacao', label: 'Aguardando aprovação', hint: 'Concluídas pelo analista, à espera da gestão.', tone: 'warning' }),
+        /* Rosa, e não âmbar: das quatro esperas do quadro, esta é a única que depende da
+           GESTÃO. Com o mesmo tom das outras três, "quem está me devendo" só se descobria
+           lendo o rótulo de cada coluna. */
+        Object.freeze({ id: 'aguardando_aprovacao', label: 'Aguardando aprovação', hint: 'Concluídas pelo analista, à espera da gestão.', tone: 'pink' }),
         Object.freeze({ id: 'concluida', label: 'Concluídas', hint: 'Aprovadas e pontuadas.', tone: 'success' })
     ]);
 
