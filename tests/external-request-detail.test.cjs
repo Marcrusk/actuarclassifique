@@ -85,3 +85,20 @@ test('a ficha fecha por Esc e reabre no estado novo depois de uma ação', () =>
     assert.match(html, /if \(portalAreaDetailId === id\) openPortalAreaDetail\(id\);/);
     assert.match(html, /function closePortalAreaDetail\(\) \{[\s\S]{0,200}document\.body\.style\.overflow = '';/);
 });
+
+test('cancelar aparece em vermelho, nos dois lugares', () => {
+    /* Cancelar tira a solicitação do fluxo e não tem volta pela tela da área. Em cinza, ao
+       lado de "Responder", parecia uma alternativa neutra — a cor precisa dizer o peso
+       antes do clique, não só o diálogo depois dele. */
+    const cancelar = [...html.matchAll(/<button type="button" class="([^"]+)" onclick="portalAreaCancel\(/g)].map(item => item[1]);
+    assert.equal(cancelar.length, 2, 'o botão existe no cartão e na ficha');
+    for (const classes of cancelar) {
+        assert.ok(classes.includes('actuar-btn-danger'), `botão de cancelar sem tom de perigo: ${classes}`);
+        assert.ok(!classes.includes('actuar-btn-secondary'), 'o tom neutro precisa sair junto');
+    }
+    // Responder continua primário: é a ação que faz a solicitação andar.
+    assert.match(html, /class="actuar-btn actuar-btn-primary" onclick="portalAreaRespond\(/);
+
+    // Texto branco sobre o vermelho do Design System: 4.67 de contraste, medido em Chrome.
+    assert.match(css, /\.actuar-btn-danger \{ background: var\(--actuar-danger\); border-color: var\(--actuar-danger\); color: #FFF; \}/);
+});

@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-ficha-chamado-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-cancelar-vermelho-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -6405,7 +6405,9 @@
 
             const acoes = [
                 dominio.canAreaRespond(item) ? `<button type="button" class="actuar-btn actuar-btn-primary" onclick="portalAreaRespond('${escapeHtml(item.id)}')"><i class="fi fi-rr-comment-alt"></i>Responder</button>` : '',
-                dominio.canAreaCancel(item) ? `<button type="button" class="actuar-btn actuar-btn-secondary" onclick="portalAreaCancel('${escapeHtml(item.id)}')"><i class="fi fi-rr-cross-circle"></i>Cancelar solicitação</button>` : ''
+                /* Vermelho: cancelar tira a solicitação do fluxo e não tem volta pela tela
+                   dela. Em cinza, ao lado de "Responder", parecia uma alternativa neutra. */
+                dominio.canAreaCancel(item) ? `<button type="button" class="actuar-btn actuar-btn-danger" onclick="portalAreaCancel('${escapeHtml(item.id)}')"><i class="fi fi-rr-cross-circle"></i>Cancelar solicitação</button>` : ''
             ].join('');
             document.getElementById('portalAreaDetailFooter').innerHTML = acoes || '<span class="external-empty">Nesta etapa não há ação da sua área.</span>';
 
@@ -6428,7 +6430,7 @@
                gestão — a regra de quem pode o quê está no domínio. */
             const acoes = [
                 dominio.canAreaRespond(item) ? `<button type="button" class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="portalAreaRespond('${escapeHtml(item.id)}')"><i class="fi fi-rr-comment-alt"></i>Responder</button>` : '',
-                dominio.canAreaCancel(item) ? `<button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="portalAreaCancel('${escapeHtml(item.id)}')"><i class="fi fi-rr-cross-circle"></i>Cancelar</button>` : ''
+                dominio.canAreaCancel(item) ? `<button type="button" class="actuar-btn actuar-btn-danger actuar-btn-sm" onclick="portalAreaCancel('${escapeHtml(item.id)}')"><i class="fi fi-rr-cross-circle"></i>Cancelar</button>` : ''
             ].join('');
             /* O cartão inteiro abre a ficha. Os botões param o clique: um "Cancelar" que
                também abre a gaveta atrás do diálogo confunde o que está sendo confirmado. */
@@ -12890,15 +12892,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-ficha-chamado-1"></script>
-    <script src="js/external-requests.js?v=20260819-ficha-chamado-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-ficha-chamado-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-ficha-chamado-1"></script>
-    <script src="js/performance-domain.js?v=20260819-ficha-chamado-1"></script>
-    <script src="js/manager-experience.js?v=20260819-ficha-chamado-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-ficha-chamado-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-ficha-chamado-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-ficha-chamado-1"></script>
-    <script src="js/performance-platform.js?v=20260819-ficha-chamado-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-cancelar-vermelho-1"></script>
+    <script src="js/external-requests.js?v=20260819-cancelar-vermelho-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-cancelar-vermelho-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-cancelar-vermelho-1"></script>
+    <script src="js/performance-domain.js?v=20260819-cancelar-vermelho-1"></script>
+    <script src="js/manager-experience.js?v=20260819-cancelar-vermelho-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-cancelar-vermelho-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-cancelar-vermelho-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-cancelar-vermelho-1"></script>
+    <script src="js/performance-platform.js?v=20260819-cancelar-vermelho-1"></script>
 </body>
 </html>
