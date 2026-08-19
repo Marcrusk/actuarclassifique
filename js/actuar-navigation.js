@@ -97,7 +97,10 @@
                         /* A tela de Prioridades é longa: registrar fica no topo e o
                            histórico no fim. Sem essas duas entradas, quem queria só
                            consultar precisava abrir a tela e rolar até achar. */
-                        id: 'priorities', label: 'Prioridades', icon: 'fi-rr-star', route: rota('priorities'),
+                        /* O analista só descobria que tinha algo aberto entrando na tela. O
+                           contador vem da própria tela, como os da gestão — aqui só existe o
+                           lugar onde ele aparece. */
+                        id: 'priorities', label: 'Prioridades', icon: 'fi-rr-star', route: rota('priorities'), badgeId: 'myPriorityOpenBadge',
                         children: [
                             { id: 'priorities-visao', label: 'Visão geral', route: rota('priorities') },
                             { id: 'priorities-historico', label: 'Histórico', route: rota('priorities', 'historico') }
@@ -108,7 +111,7 @@
             },
             {
                 id: 'operacao', title: 'Operação', items: [
-                    { id: 'pecas', label: 'Solicitações de peças', icon: 'fi-rr-box-open', route: rota('pecas') },
+                    { id: 'pecas', label: 'Solicitações de peças', icon: 'fi-rr-box-open', route: rota('pecas'), badgeId: 'myPiecesOpenBadge' },
                     { id: 'envio', label: 'Envio', icon: 'fi-rr-truck-side', route: rota('envio'), when: () => Boolean(abas.envio) },
                     { id: 'coleta', label: 'Coleta', icon: 'fi-rr-inbox', route: rota('coleta'), when: () => Boolean(abas.coleta) },
                     { id: 'tasks', label: 'Tasks', icon: 'fi-rr-list-check', route: rota('tasks'), when: () => Boolean(abas.tasks) }

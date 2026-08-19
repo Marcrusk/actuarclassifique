@@ -52,6 +52,25 @@
         if (currentContext().mode !== 'manager') return 0;
         return allowedRecords().filter(row => row.requestStatus === 'pending_manager_check').length;
     }
+    /* Estados em que a solicitação ainda depende de alguém. `approved` e `rejected` saem:
+       são fim de linha, e um contador que nunca zera deixa de ser sinal. */
+    const OPEN_REQUEST_STATUSES = ['draft', 'pending_lab_review', 'pending_manager_check', 'pending_review', 'correction_requested'];
+
+    /* O analista só descobria que tinha peça em aberto entrando na tela. Mesmo desenho do
+       contador da gestão: quem calcula é quem tem os dados, o menu só mostra. */
+    function updateAnalystOpenBadge() {
+        const badge = document.getElementById('myPiecesOpenBadge');
+        if (!badge) return 0;
+        const context = currentContext();
+        const count = context.mode === 'analyst'
+            ? records().filter(row => row.analystId === context.actorId && OPEN_REQUEST_STATUSES.includes(row.requestStatus)).length
+            : 0;
+        badge.textContent = count > 99 ? '99+' : String(count);
+        badge.classList.toggle('hidden', count === 0);
+        badge.setAttribute('aria-label', count === 1 ? '1 solicitação de peça sua em aberto' : `${count} solicitações de peça suas em aberto`);
+        return count;
+    }
+
     function updatePendingBadge() {
         const badge = document.getElementById('admPiecesPendingBadge');
         if (!badge) return 0;
@@ -813,7 +832,7 @@
         const ok = await persistStore(); if (!ok) throw new Error(lastPersistError || 'Não foi possível salvar a solicitação.'); renderPiecesModule();
     }
 
-    window.renderPiecesModule = renderPiecesModule; window.updatePiecesPendingBadge = updatePendingBadge; window.canRequestPieces = canRequestPieces;
+    window.renderPiecesModule = renderPiecesModule; window.updatePiecesPendingBadge = updatePendingBadge; window.updateMyPiecesBadge = updateAnalystOpenBadge; window.canRequestPieces = canRequestPieces;
     window.updatePiecesScorePreview = () => {
         const total = document.querySelectorAll('[name="pieceCriterion"]').length;
         const marcados = document.querySelectorAll('[name="pieceCriterion"]:checked').length;

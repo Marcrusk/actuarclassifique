@@ -384,3 +384,68 @@ test('a tela mostra os atendimentos no plural, e a ficha só no cartão do dono'
     // Encerrar passou para a linha do participante, que escala para N atendimentos.
     assert.match(doc, /\$\{isCurrent \? `<button onclick="openPriorityRotationAction\('resolve','\$\{id\}'\)">Encerrar atendimento<\/button>` : ''\}/);
 });
+
+test('o botão da ficha vive no cartão de quem atende, nunca no cartão do próximo', () => {
+    const doc = html();
+
+    /* REGRESSÃO: quando os cartões viraram vários, a ação principal — que incluía "Abrir
+       ficha do atendimento" do analista em atendimento — continuou sendo despejada no
+       cartão do PRÓXIMO. O analista via a ficha dele oferecida em cima do nome do colega,
+       e a tela dava a entender que ele podia abrir o atendimento de outra pessoa. */
+    const acaoDoProximo = doc.slice(doc.indexOf("let nextAction = '';"), doc.indexOf('card.innerHTML = `'));
+    assert.doesNotMatch(acaoDoProximo, /openPriorityAttendanceRecord\(\)/, 'a ficha voltou para o cartão do próximo');
+    assert.match(acaoDoProximo, /if \(view\.status === 'active' && selfNext\)/, 'iniciar continua sendo do próprio próximo');
+    assert.match(acaoDoProximo, /else if \(canManage && view\.next && view\.status === 'active'\)/, 'encaminhar continua sendo da gestão');
+
+    // Quem monta a ficha é o cartão do atendimento, e ele confere o dono.
+    const cartao = doc.slice(doc.indexOf('function renderPriorityAttendanceCard(attendance)'), doc.indexOf('function renderPriorityRotationPrimary(view'));
+    assert.match(cartao, /const meu = !isAdminLoggedIn && attendance\.analystId === currentActiveUser;/);
+    assert.match(cartao, /const acao = meu \? `<button[^`]*openPriorityAttendanceRecord\(\)/);
+    assert.match(doc, /\$\{renderPriorityRotationPrimary\(view, nextAction\)\}/);
+});
+
+test('encaminhar e administrar a fila continuam fechados para o analista', () => {
+    const doc = html();
+    // A permissão de encaminhar depende de estar em Modo Gestão, não só do papel.
+    assert.match(doc, /function canManagePriorityRotation\(team\) \{\s*\n\s*return isAdminLoggedIn && window\.PriorityRotation\?\.canManage/);
+
+    // Nenhuma das três portas de encaminhamento existe sem canManage.
+    for (const trecho of [
+        /const contextualAction = canManage && view\.status === 'active' && view\.next/,
+        /else if \(canManage && view\.next && view\.status === 'active'\) nextAction =/,
+        /const fallbackAction = canManage \?/
+    ]) assert.match(doc, trecho);
+
+    // Na fila completa, o menu de ações de cada participante também é só da gestão.
+    assert.match(doc, /const actions = canManage \? `<details class="rotation-actions-menu"/);
+    // E a ficha continua recusando quem não é o dono, mesmo que um botão escape.
+    const abrir = doc.slice(doc.indexOf('function openPriorityAttendanceRecord()'), doc.indexOf('function closePriorityAttendanceRecord()'));
+    assert.match(abrir, /if \(!currentOwnAttendance\(\)\) \{/);
+});
+
+test('o menu do analista conta o que está em aberto para ele', () => {
+    const doc = html();
+    const nav = fs.readFileSync('js/actuar-navigation.js', 'utf8');
+    const pecas = fs.readFileSync('js/pieces-ui.js', 'utf8');
+
+    // Lugar no menu: Prioridades (que ramifica) e Solicitações de peças.
+    assert.match(nav, /route: rota\('priorities'\), badgeId: 'myPriorityOpenBadge'/);
+    assert.match(nav, /route: rota\('pecas'\), badgeId: 'myPiecesOpenBadge'/);
+    /* Grupo fechado escondia o contador: o badge só era desenhado nas folhas, e Prioridades
+       tem filhos. Agora o próprio grupo mostra o dele. */
+    assert.match(doc, /<span>\$\{escapeHtml\(item\.label\)\}<\/span>\$\{navBadgeMarkup\(item\.badgeId\)\}\s*\n\s*<i class="fi fi-rr-angle-small-down actuar-nav-chevron"/);
+
+    const conta = doc.slice(doc.indexOf('function updateAnalystNavBadges()'), doc.indexOf('function renderGlobalNav()'));
+    // Conta o que ainda depende de alguém — aprovada e reprovada não contam.
+    assert.match(conta, /\['pendente', 'ajuste_solicitado'\]\.includes\(item\.status\)/);
+    assert.match(conta, /PriorityRotation\.activeOf\(ensurePriorityRotation\(currentPriorityRotationTeam\(\)\), eu\) \? 1 : 0/);
+    // E some em Modo Gestão, onde "as minhas" não quer dizer nada.
+    assert.match(conta, /if \(isAdminLoggedIn \|\| isPecaLoggedIn \|\| !eu\) \{ badge\.classList\.add\('hidden'\); return; \}/);
+
+    // Peças: quem tem os dados é quem conta, como já era para a gestão.
+    assert.match(pecas, /const OPEN_REQUEST_STATUSES = \['draft', 'pending_lab_review', 'pending_manager_check', 'pending_review', 'correction_requested'\];/);
+    assert.match(pecas, /window\.updateMyPiecesBadge = updateAnalystOpenBadge;/);
+    assert.match(conta, /window\.updateMyPiecesBadge\?\.\(\);/);
+    // Recalculado a cada desenho do menu, senão só apareceria depois de abrir a tela.
+    assert.match(doc, /restoreNavBadges\(contadores\);[\s\S]{0,220}updateAnalystNavBadges\(\);/);
+});
