@@ -13,7 +13,7 @@
        são elas que abrem chamado — mas não existiam no cadastro, então não havia como
        registrar alguém do Comercial: o campo Departamento só oferecia Sistema, Catraca e
        as três de apoio. Um teste garante que as duas listas não voltem a divergir. */
-    const SUPPORT_DEPARTMENTS = ['Logística', 'Toletus Lab', 'Administrativo', 'Comercial', 'Retenção', 'Financeiro', 'Implantação'];
+    const SUPPORT_DEPARTMENTS = ['Logística', 'Toletus Lab', 'Administrativo', 'Comercial', 'MKT', 'Retenção', 'Implantação'];
     const DEPARTMENTS = [...TEAMS, ...SUPPORT_DEPARTMENTS];
     const PERIODS = ['ALL', 'Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5'];
     const DEFAULT_FILTERS = Object.freeze({ team: 'Todos', analyst: 'Todos', category: 'Geral', month: 'atual', period: 'ALL', cycle: 'atual', cycleStatus: 'Todos' });

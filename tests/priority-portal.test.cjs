@@ -45,9 +45,13 @@ test('a área vem de lista fechada, sem texto livre', () => {
        dava uma certeza que o acesso não sustenta. A área é o que o acesso comprova e o que
        a gestão precisa para triar e medir de onde vem a demanda. */
     const lista = bloco('const PORTAL_DEPARTMENTS = [', '];');
-    for (const area of ['Comercial', 'Administrativo', 'Retenção', 'Financeiro', 'Implantação']) {
+    for (const area of ['Comercial', 'MKT', 'Administrativo', 'Retenção', 'Implantação']) {
         assert.ok(lista.includes(`name: '${area}'`), `área ausente: ${area}`);
     }
+    /* Financeiro saiu: nao havia ninguem lotado nela nem chamado aberto por ela, e a lista
+       de areas e a de departamentos do cadastro andam juntas — uma area sem departamento
+       nao consegue ter Gestor de Area. */
+    assert.ok(!lista.includes("name: 'Financeiro'"), 'Financeiro voltou sem passar pelo cadastro');
     assert.match(html, /<input type="hidden" id="portalCollaborator" value="">/);
     const picker = bloco('<div class="actuar-picker">', '</ul>');
     assert.match(picker, /role="listbox"/);

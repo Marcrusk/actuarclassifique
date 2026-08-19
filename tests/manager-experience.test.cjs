@@ -349,7 +349,7 @@ test('departamentos de apoio existem no cadastro sem entrar no ranking', () => {
     /* As áreas do Portal entraram no cadastro: elas já abriam chamado, mas não existiam
        como departamento, então não havia como registrar alguém do Comercial. Continuam
        fora de TEAMS, que é onde há disputa. */
-    assert.deepEqual(manager.DEPARTMENTS, ['Sistema', 'Catraca', 'Logística', 'Toletus Lab', 'Administrativo', 'Comercial', 'Retenção', 'Financeiro', 'Implantação']);
+    assert.deepEqual(manager.DEPARTMENTS, ['Sistema', 'Catraca', 'Logística', 'Toletus Lab', 'Administrativo', 'Comercial', 'MKT', 'Retenção', 'Implantação']);
     for (const time of manager.TEAMS) assert.ok(manager.DEPARTMENTS.includes(time), 'o cadastro precisa manter as equipes de ranking');
 
     const pessoas = {
