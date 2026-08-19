@@ -260,6 +260,16 @@ test('a gestão alcança o Portal sem digitar o endereço', () => {
     assert.match(cabecalho, /onclick="copyPortalLink\(\)"/);
     assert.match(cabecalho, /aria-label="Copiar o endereço do Portal"/, 'botão só de ícone precisa de nome acessível');
 
+    /* Uma peça só, com identidade própria: os dois botões são sobre o MESMO destino, e
+       soltos em cinza pareciam mais duas ações da tela. O Portal não é uma ação, é um lugar. */
+    assert.match(cabecalho, /<div class="portal-shortcut" role="group" aria-label="Portal de Prioridades">/);
+    assert.match(css, /\.portal-shortcut \{[^}]*background: var\(--actuar-primary\)/);
+    /* Preenchido, e não primária sobre o fundo dela: branco sobre a primária mede 6.85 no
+       claro e 5.70 no escuro, enquanto a primária sobre `-soft` cai a 2.54 no escuro. */
+    assert.match(css, /\.portal-shortcut > button \{[^}]*color: #FFF;/);
+    // O filete separa os dois gestos sem quebrar a peça.
+    assert.match(css, /\.portal-shortcut-link \{[^}]*border-left: 1px solid rgba\(255, 255, 255, \.22\) !important;/);
+
     const link = html.slice(html.indexOf('function portalLink()'), html.indexOf('async function copyPortalLink()'));
     /* Montado a partir da ROTA, não escrito à mão: colado numa constante, desatualizaria no
        dia em que a rota mudasse de nome e chegaria quebrado a quem recebeu por mensagem. */

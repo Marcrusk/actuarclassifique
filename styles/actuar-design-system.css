@@ -4355,6 +4355,32 @@ body.actuar-app .actuar-picker-search input::placeholder { color: #6F7378; }
    à direita. O Portal é a outra ponta desta tela e vive fora dela — o endereço era digitado
    à mão toda vez. */
 .external-panel-head { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+/* ATALHO PARA O PORTAL
+   Dois botoes sobre o MESMO destino. Soltos e em cinza, pareciam mais duas acoes da tela —
+   e o Portal nao e uma acao, e um lugar. Agrupados numa peca so, na cor da marca e com a
+   seta de "sai daqui", eles passam a se ler como um caminho para fora.
+
+   Preenchido de propósito: e o unico botao primario deste painel, entao nao disputa com
+   nada; e branco sobre a primaria tem contraste alto nos dois temas, ao contrario da
+   primaria sobre o fundo dela. */
+.portal-shortcut { display: inline-flex; align-items: stretch; flex: none; border-radius: 999px; overflow: hidden; background: var(--actuar-primary); box-shadow: 0 6px 18px color-mix(in srgb, var(--actuar-primary) 34%, transparent); }
+.portal-shortcut > button { border: 0; background: transparent; color: #FFF; font-family: inherit; cursor: pointer; transition: background-color var(--actuar-transition); }
+.portal-shortcut > button:hover { background: rgba(255, 255, 255, .14); }
+.portal-shortcut > button:focus-visible { outline: 2px solid #FFF; outline-offset: -3px; }
+
+.portal-shortcut-open { display: flex; align-items: center; gap: 10px; padding: 8px 14px; text-align: left; }
+.portal-shortcut-icon { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 50%; background: rgba(255, 255, 255, .18); font-size: 13px; }
+.portal-shortcut-copy { display: grid; gap: 1px; }
+.portal-shortcut-copy small { font-size: 10px; font-weight: 600; letter-spacing: .02em; opacity: .82; text-transform: uppercase; }
+.portal-shortcut-copy strong { font-size: 13px; font-weight: 700; line-height: 1.2; }
+.portal-shortcut-out { font-size: 12px; opacity: .85; }
+
+/* O filete separa as duas acoes sem quebrar a peca: sao o mesmo destino, mas gestos
+   diferentes — abrir e levar o endereco. */
+.portal-shortcut-link { width: 44px; display: grid; place-items: center; font-size: 14px; border-left: 1px solid rgba(255, 255, 255, .22) !important; }
+
+@media (max-width: 640px) { .portal-shortcut { width: 100%; } .portal-shortcut-open { flex: 1; } }
+
 .external-panel-actions { display: flex; align-items: center; gap: 8px; flex: none; }
 
 .external-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
