@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-tom-aprovacao-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-cores-do-funil-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -6362,7 +6362,7 @@
             const visiveis = etapa === 'Todas' ? quadro.stages : quadro.stages.filter(coluna => coluna.id === etapa);
             const mostrarEncerradas = (etapa === 'Todas' || dominio.isClosed(etapa)) && quadro.closed.length;
             colunas.innerHTML = visiveis.map(coluna => `
-                <section class="external-column" aria-label="${escapeHtml(coluna.label)}">
+                <section class="external-column is-tone-${escapeHtml(coluna.tone || 'neutral')}" aria-label="${escapeHtml(coluna.label)}">
                     <header title="${escapeHtml(coluna.hint)}"><strong>${escapeHtml(coluna.label)}</strong><span class="external-count">${coluna.items.length}</span></header>
                     <div class="external-column-body">${coluna.items.map(portalAreaCard).join('') || `<p class="external-empty">${escapeHtml(coluna.hint)}</p>`}</div>
                 </section>`).join('')
@@ -6447,8 +6447,14 @@
                     <!-- Software ou Catraca: é o que diz de quem o chamado depende agora. -->
                     <span class="actuar-badge actuar-badge-neutral">${escapeHtml(item.team ? teamLabel(item.team) : '—')}</span>
                 </header>
-                <span class="actuar-badge actuar-badge-${escapeHtml(etapa.tone || 'neutral')} external-card-tag">${escapeHtml(etapa.label)}</span>
-                ${tag ? `<span class="actuar-badge actuar-badge-${escapeHtml(tag.tone)} external-card-tag"><i class="fi ${escapeHtml(tag.icon)}" aria-hidden="true"></i>${escapeHtml(tag.label)}</span>` : ''}
+                <!-- UMA etiqueta. O cartão trazia o nome da etapa e a etiqueta contextual
+                     logo abaixo — "Aguardando aprovação" e "Aguarda aprovação" —, e ainda
+                     estava dentro da coluna com esse mesmo título: a terceira vez a dizer o
+                     mesmo. Fica a contextual, que é a única que acrescenta (o nome de quem
+                     está com o chamado, de quem é a bola). Sem ela, o nome da etapa. -->
+                ${tag
+                    ? `<span class="actuar-badge actuar-badge-${escapeHtml(tag.tone)} external-card-tag"><i class="fi ${escapeHtml(tag.icon)}" aria-hidden="true"></i>${escapeHtml(tag.label)}</span>`
+                    : `<span class="actuar-badge actuar-badge-${escapeHtml(etapa.tone || 'neutral')} external-card-tag">${escapeHtml(etapa.label)}</span>`}
                 <!-- O começo da descrição, cortado em duas linhas pelo CSS: o suficiente para
                      reconhecer o caso sem o cartão virar parágrafo. O resto está na ficha. -->
                 <p class="external-card-need">${escapeHtml(item.need || 'Sem descrição registrada.')}</p>
@@ -7033,6 +7039,9 @@
         /* Tag do card. Repetir o nome da coluna não acrescentaria nada — o card já está
            dentro dela. O que a coluna NÃO diz é por que a solicitação não anda: a fila está
            pausada? ocupada? pronta? E, em atendimento, com quem está. É isso que vira tag. */
+        /* A etiqueta usa o MESMO tom da etapa: se a coluna é violeta e o cartão dentro dela
+           é azul, a cor deixa de ser pista e vira ruído. Ela só acrescenta o QUE a etapa não
+           diz — o nome de quem está com o chamado. */
         function externalCardTag(item) {
             const etapa = externalDomain().stageOf(item);
             const users = getStore()?.users || defaultUsers;
@@ -7045,14 +7054,14 @@
                    `view.current` para `!view.next` — a segunda virou linha morta. */
                 if (!view.next && (view.active || []).length) return { tone: 'warning', icon: 'fi-rr-clock', label: 'Fila ocupada' };
                 if (!view.next) return { tone: 'warning', icon: 'fi-rr-user-slash', label: 'Sem analista' };
-                return { tone: 'success', icon: 'fi-rr-paper-plane', label: `Pronta para ${users[view.next]?.name?.split(' ')[0] || 'distribuir'}` };
+                return { tone: 'teal', icon: 'fi-rr-paper-plane', label: `Pronta para ${users[view.next]?.name?.split(' ')[0] || 'distribuir'}` };
             }
             if (etapa === 'em_atendimento') {
-                return { tone: 'primary', icon: 'fi-rr-user', label: users[item.analystId]?.name?.split(' ')[0] || 'Em atendimento' };
+                return { tone: 'violet', icon: 'fi-rr-user', label: users[item.analystId]?.name?.split(' ')[0] || 'Em atendimento' };
             }
             if (etapa === 'sem_retorno') {
                 const users2 = getStore()?.users || defaultUsers;
-                return { tone: 'warning', icon: 'fi-rr-phone-slash', label: `Sem retorno · ${users2[item.analystId]?.name?.split(' ')[0] || 'cliente'}` };
+                return { tone: 'orange', icon: 'fi-rr-phone-slash', label: `Sem retorno · ${users2[item.analystId]?.name?.split(' ')[0] || 'cliente'}` };
             }
             if (etapa === 'aguardando_info') return { tone: 'warning', icon: 'fi-rr-comment-question', label: 'Aguarda o solicitante' };
             if (etapa === 'aguardando_aprovacao') return { tone: 'pink', icon: 'fi-rr-check-circle', label: 'Aguarda aprovação' };
@@ -7099,7 +7108,7 @@
             const quadro = dominio.board(externalVisibleRequests(), { team, brand });
 
             alvo.innerHTML = quadro.stages.map(coluna => `
-                <section class="external-column" aria-label="${escapeHtml(coluna.label)}">
+                <section class="external-column is-tone-${escapeHtml(coluna.tone || 'neutral')}" aria-label="${escapeHtml(coluna.label)}">
                     <header title="${escapeHtml(coluna.hint)}">
                         <strong>${escapeHtml(coluna.label)}</strong>
                         <span class="external-count">${coluna.items.length}</span>
@@ -12912,15 +12921,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-tom-aprovacao-1"></script>
-    <script src="js/external-requests.js?v=20260819-tom-aprovacao-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-tom-aprovacao-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-tom-aprovacao-1"></script>
-    <script src="js/performance-domain.js?v=20260819-tom-aprovacao-1"></script>
-    <script src="js/manager-experience.js?v=20260819-tom-aprovacao-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-tom-aprovacao-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-tom-aprovacao-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-tom-aprovacao-1"></script>
-    <script src="js/performance-platform.js?v=20260819-tom-aprovacao-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-cores-do-funil-1"></script>
+    <script src="js/external-requests.js?v=20260819-cores-do-funil-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-cores-do-funil-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-cores-do-funil-1"></script>
+    <script src="js/performance-domain.js?v=20260819-cores-do-funil-1"></script>
+    <script src="js/manager-experience.js?v=20260819-cores-do-funil-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-cores-do-funil-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-cores-do-funil-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-cores-do-funil-1"></script>
+    <script src="js/performance-platform.js?v=20260819-cores-do-funil-1"></script>
 </body>
 </html>

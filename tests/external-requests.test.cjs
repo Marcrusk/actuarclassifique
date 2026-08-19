@@ -28,7 +28,12 @@ test('o quadro tem as etapas do processo, e encerradas fora delas', () => {
        o cliente ficava indistinguível de trabalho em andamento — e cobrava o analista por
        algo que não depende dele. */
     assert.deepEqual(ext.STAGE_IDS, ['nova', 'triagem', 'aguardando_info', 'aguardando_distribuicao', 'em_atendimento', 'sem_retorno', 'aguardando_aprovacao', 'concluida']);
-    assert.equal(ext.stageMeta('sem_retorno').tone, 'warning');
+    /* Uma cor por etapa. As oito dividiam quatro tons — três `primary` e três `warning` —,
+       então a cor não distinguia nada e achar onde um chamado estava exigia ler os oito
+       títulos. O tom é nome de token do Design System, nunca cor. */
+    assert.deepEqual(ext.STAGES.map(item => item.tone),
+        ['info', 'primary', 'warning', 'teal', 'violet', 'orange', 'pink', 'success']);
+    assert.equal(new Set(ext.STAGES.map(item => item.tone)).size, ext.STAGES.length, 'duas etapas voltaram a dividir o mesmo tom');
     // Encerramentos não viram coluna: um quadro com uma coluna por exceção fica ilegível.
     for (const fim of ['rejeitada', 'duplicada', 'cancelada']) {
         assert.ok(ext.isClosed(fim), `${fim} deveria ser encerramento`);

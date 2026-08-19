@@ -16,16 +16,24 @@
        vira um estado aqui, para parar de existir só na cabeça das pessoas.
        ========================================================================== */
 
+    /* UMA COR POR ETAPA, na ordem em que o chamado anda: azul chegou, índigo a gestão olha,
+       âmbar espera o solicitante, teal está pronta e espera a fila, violeta o analista está
+       nela, laranja espera o cliente, rosa espera a gestão de novo, verde acabou.
+
+       Antes as oito dividiam quatro tons — três eram `primary` e três `warning` —, então a
+       cor não distinguia nada: a coluna dizia o nome, o cartão repetia, e achar onde um
+       chamado estava exigia ler. O tom é nome de token, nunca cor: quem muda a paleta muda
+       em um lugar. */
     const STAGES = Object.freeze([
-        Object.freeze({ id: 'nova', label: 'Novas solicitações', hint: 'Chegaram do portal e ninguém olhou ainda.', tone: 'primary' }),
+        Object.freeze({ id: 'nova', label: 'Novas solicitações', hint: 'Chegaram do portal e ninguém olhou ainda.', tone: 'info' }),
         Object.freeze({ id: 'triagem', label: 'Em triagem', hint: 'A gestão está avaliando o pedido.', tone: 'primary' }),
         Object.freeze({ id: 'aguardando_info', label: 'Aguardando informação', hint: 'Devolvidas a quem registrou, à espera de complemento.', tone: 'warning' }),
-        Object.freeze({ id: 'aguardando_distribuicao', label: 'Aguardando distribuição', hint: 'Validadas, esperando o rodízio liberar um analista.', tone: 'warning' }),
-        Object.freeze({ id: 'em_atendimento', label: 'Em atendimento', hint: 'Com o analista, em execução.', tone: 'primary' }),
+        Object.freeze({ id: 'aguardando_distribuicao', label: 'Aguardando distribuição', hint: 'Validadas, esperando o rodízio liberar um analista.', tone: 'teal' }),
+        Object.freeze({ id: 'em_atendimento', label: 'Em atendimento', hint: 'Com o analista, em execução.', tone: 'violet' }),
         /* Parado esperando o CLIENTE, não a equipe. Sem uma etapa própria, esse caso ficava
            indistinguível de "em atendimento" — e um chamado sem resposta há dias parecia
            trabalho em andamento, cobrando o analista por algo que não depende dele. */
-        Object.freeze({ id: 'sem_retorno', label: 'Sem retorno do cliente', hint: 'O analista tentou contato e o cliente não respondeu.', tone: 'warning' }),
+        Object.freeze({ id: 'sem_retorno', label: 'Sem retorno do cliente', hint: 'O analista tentou contato e o cliente não respondeu.', tone: 'orange' }),
         /* Rosa, e não âmbar: das quatro esperas do quadro, esta é a única que depende da
            GESTÃO. Com o mesmo tom das outras três, "quem está me devendo" só se descobria
            lendo o rótulo de cada coluna. */

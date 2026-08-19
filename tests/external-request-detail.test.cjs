@@ -110,7 +110,7 @@ test('o cartão diz quem está atendendo, de que equipe é, e o começo da descr
        com o chamado; nas outras etapas diz de quem é a bola. Reescrevê-la aqui faria as duas
        telas contarem histórias diferentes do mesmo estado. */
     assert.match(cartao, /const tag = externalCardTag\(item\);/);
-    assert.match(html, /if \(etapa === 'em_atendimento'\) \{\s*\n\s*return \{ tone: 'primary', icon: 'fi-rr-user', label: users\[item\.analystId\]\?\.name\?\.split\(' '\)\[0\]/);
+    assert.match(html, /if \(etapa === 'em_atendimento'\) \{\s*\n\s*return \{ tone: 'violet', icon: 'fi-rr-user', label: users\[item\.analystId\]\?\.name\?\.split\(' '\)\[0\]/);
 
     // Equipe: Software ou Catraca, com o rótulo que o resto da aplicação usa.
     assert.match(cartao, /teamLabel\(item\.team\)/);
@@ -145,9 +145,11 @@ test('"Aguardando aprovação" tem tom próprio, e ele vem do domínio', () => {
     /* Das quatro esperas do quadro, esta é a única que depende da GESTÃO. Com o mesmo âmbar
        das outras três, "quem está me devendo" só se descobria lendo o rótulo de cada coluna. */
     assert.equal(etapa.tone, 'pink');
-    for (const outra of ['aguardando_info', 'aguardando_distribuicao', 'sem_retorno']) {
-        assert.equal(E.STAGES.find(item => item.id === outra).tone, 'warning', `${outra} não deveria ter mudado de tom`);
-    }
+    /* As outras esperas deixaram de dividir o âmbar: cada uma diz de quem é a bola pela cor
+       — teal espera a fila, violeta está com o analista, laranja espera o cliente. */
+    assert.equal(E.STAGES.find(item => item.id === 'aguardando_info').tone, 'warning');
+    assert.equal(E.STAGES.find(item => item.id === 'aguardando_distribuicao').tone, 'teal');
+    assert.equal(E.STAGES.find(item => item.id === 'sem_retorno').tone, 'orange');
 
     /* O tom é nome de token, não cor — é o que o próprio domínio diz: "quem muda a paleta
        muda em um lugar". Então o rosa precisa existir como variante de badge. */
@@ -162,4 +164,44 @@ test('"Aguardando aprovação" tem tom próprio, e ele vem do domínio', () => {
     /* Medido em Chrome: 5.69 no claro e 8.33 no escuro — o melhor contraste da paleta de
        badges. Nenhuma cor foi escrita à mão nas telas; tudo sai do token. */
     assert.ok(!/actuar-badge-pink[^}]*#[0-9a-fA-F]{3,6}/.test(css), 'cor literal na variante do badge');
+});
+
+test('cada etapa tem a sua cor, e o cartão não repete o que a coluna já diz', () => {
+    const E = require('../js/external-requests.js');
+
+    // Oito etapas, oito tons — nenhum dividido.
+    assert.equal(new Set(E.STAGES.map(item => item.tone)).size, 8);
+
+    /* O cartão trazia o nome da etapa E a etiqueta contextual — "Aguardando aprovação" e
+       "Aguarda aprovação" —, dentro de uma coluna com esse mesmo título: três vezes o mesmo.
+       Fica a contextual, que é a única que acrescenta; sem ela, o nome da etapa. */
+    const cartao = html.slice(html.indexOf('function portalAreaCard(item)'), html.indexOf('async function portalAreaMutate'));
+    const etiquetas = (cartao.match(/actuar-badge-\$\{escapeHtml\((tag|etapa)\.tone/g) || []);
+    assert.equal(etiquetas.length, 2, 'as duas etiquetas precisam ser alternativas, não empilhadas');
+    assert.match(cartao, /\$\{tag\s*\n\s*\? `<span class="actuar-badge actuar-badge-\$\{escapeHtml\(tag\.tone\)\}/, 'a contextual tem precedência');
+    assert.match(cartao, /: `<span class="actuar-badge actuar-badge-\$\{escapeHtml\(etapa\.tone \|\| 'neutral'\)\}/, 'e o nome da etapa é o alternativo');
+
+    /* A etiqueta usa o MESMO tom da etapa: coluna violeta com cartão azul dentro faz a cor
+       deixar de ser pista e virar ruído. */
+    const etiqueta = html.slice(html.indexOf('function externalCardTag(item)'), html.indexOf('function externalCard(item)'));
+    assert.match(etiqueta, /label: users\[item\.analystId\]\?\.name\?\.split\(' '\)\[0\] \|\| 'Em atendimento'/);
+    for (const [etapa, tom] of [['em_atendimento', 'violet'], ['sem_retorno', 'orange'], ['aguardando_aprovacao', 'pink']]) {
+        assert.ok(etiqueta.includes(`tone: '${tom}'`), `a etiqueta de ${etapa} precisa usar o tom da etapa`);
+    }
+
+    // A coluna carrega o tom no topo: o funil passa a ser lido pela cor, não pelos títulos.
+    assert.equal((html.match(/class="external-column is-tone-\$\{escapeHtml\(coluna\.tone \|\| 'neutral'\)\}"/g) || []).length, 2, 'gestão e Portal');
+    for (const tom of ['info', 'primary', 'warning', 'teal', 'violet', 'orange', 'pink', 'success']) {
+        assert.match(css, new RegExp(`\\.external-column\\.is-tone-${tom} \\{ border-top-color: var\\(--actuar-${tom}\\); \\}`), `falta a faixa de ${tom}`);
+    }
+});
+
+test('os tons novos existem nos dois temas e passam de contraste', () => {
+    /* Medido em Chrome sobre o próprio fundo: teal 5.24/7.37, violet 6.30/6.98,
+       orange 4.98/7.27, pink 5.69/8.33 (claro/escuro). Definir num tema só some no outro. */
+    for (const tom of ['teal', 'violet', 'orange', 'pink']) {
+        assert.equal((css.match(new RegExp(`--actuar-${tom}: #`, 'g')) || []).length, 2, `--actuar-${tom} precisa existir nos dois temas`);
+        assert.equal((css.match(new RegExp(`--actuar-${tom}-soft: #`, 'g')) || []).length, 2, `--actuar-${tom}-soft precisa existir nos dois temas`);
+        assert.match(css, new RegExp(`\\.actuar-badge-${tom} \\{ border-color: color-mix\\(in srgb, var\\(--actuar-${tom}\\) 30%, transparent\\); background: var\\(--actuar-${tom}-soft\\); color: var\\(--actuar-${tom}\\); \\}`));
+    }
 });

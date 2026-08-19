@@ -129,6 +129,15 @@ html.dark .pieces-module{color:#f3f4f6}html.dark .pieces-heading,html.dark .piec
        de relance. Rosa por ser a única família ainda livre entre âmbar, verde e vermelho. */
     --actuar-pink: #B0154F;
     --actuar-pink-soft: #FCE4EC;
+    /* Uma cor por etapa do funil. As oito dividiam quatro tons, e três delas se repetiam:
+       a coluna dizia o nome, o cartão repetia, e nada disso ajudava a achar de relance onde
+       um chamado estava. Todas medidas sobre o próprio fundo, nos dois temas. */
+    --actuar-teal: #0E6E6D;
+    --actuar-teal-soft: #DDF3F2;
+    --actuar-violet: #7038A0;
+    --actuar-violet-soft: #F1E6F8;
+    --actuar-orange: #A8490A;
+    --actuar-orange-soft: #FCEBDA;
     --actuar-info: #266ED9;
     --actuar-info-soft: #DDE9F8;
     --actuar-radius-input: 4px;
@@ -166,6 +175,12 @@ html.dark {
     --actuar-danger-soft: #492222;
     --actuar-pink: #F9A8C9;
     --actuar-pink-soft: #3D1A28;
+    --actuar-teal: #5FD4D0;
+    --actuar-teal-soft: #123634;
+    --actuar-violet: #C79BE8;
+    --actuar-violet-soft: #2C1B3C;
+    --actuar-orange: #F2A765;
+    --actuar-orange-soft: #3A2415;
     --actuar-info: #6396E3;
     --actuar-info-soft: #202E40;
     --actuar-shadow-xs: 0 1px 2px rgba(0, 0, 0, .24);
@@ -450,6 +465,10 @@ body.actuar-app .actuar-filter-select select:hover { border-color: var(--actuar-
 .actuar-badge-warning { border-color: color-mix(in srgb, var(--actuar-warning) 30%, transparent); background: var(--actuar-warning-soft); color: var(--actuar-warning); }
 .actuar-badge-danger { border-color: color-mix(in srgb, var(--actuar-danger) 30%, transparent); background: var(--actuar-danger-soft); color: var(--actuar-danger); }
 .actuar-badge-pink { border-color: color-mix(in srgb, var(--actuar-pink) 30%, transparent); background: var(--actuar-pink-soft); color: var(--actuar-pink); }
+.actuar-badge-teal { border-color: color-mix(in srgb, var(--actuar-teal) 30%, transparent); background: var(--actuar-teal-soft); color: var(--actuar-teal); }
+.actuar-badge-violet { border-color: color-mix(in srgb, var(--actuar-violet) 30%, transparent); background: var(--actuar-violet-soft); color: var(--actuar-violet); }
+.actuar-badge-orange { border-color: color-mix(in srgb, var(--actuar-orange) 30%, transparent); background: var(--actuar-orange-soft); color: var(--actuar-orange); }
+.actuar-badge-info { border-color: color-mix(in srgb, var(--actuar-info) 30%, transparent); background: var(--actuar-info-soft); color: var(--actuar-info); }
 /* Faltava: "Fora do rodízio" já usava esta classe e saía sem cor, borda nem fundo — texto
    solto no meio das tags coloridas. */
 .actuar-badge-neutral { border-color: var(--actuar-border); background: var(--actuar-surface-subtle); color: var(--actuar-secondary); }
@@ -4343,6 +4362,19 @@ body.actuar-app .actuar-picker-search input::placeholder { color: #6F7378; }
 }
 .external-column > header strong { color: var(--actuar-foreground); font-size: 12px; }
 .external-count { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: var(--actuar-surface); color: var(--actuar-secondary); font-family: Geist, "Open Sans", sans-serif; font-size: 11px; text-align: center; }
+/* A cor da etapa no topo da coluna. O funil passa a ser lido pela cor — antes só pelo
+   texto do cabeçalho, o que obriga a ler oito títulos para achar onde um chamado está. O
+   tom vem do domínio; aqui só há a forma. */
+.external-column { border-top: 3px solid var(--actuar-border); }
+.external-column.is-tone-info { border-top-color: var(--actuar-info); }
+.external-column.is-tone-primary { border-top-color: var(--actuar-primary); }
+.external-column.is-tone-warning { border-top-color: var(--actuar-warning); }
+.external-column.is-tone-teal { border-top-color: var(--actuar-teal); }
+.external-column.is-tone-violet { border-top-color: var(--actuar-violet); }
+.external-column.is-tone-orange { border-top-color: var(--actuar-orange); }
+.external-column.is-tone-pink { border-top-color: var(--actuar-pink); }
+.external-column.is-tone-success { border-top-color: var(--actuar-success); }
+.external-column.is-tone-danger { border-top-color: var(--actuar-danger); }
 .external-column.is-closed { opacity: .78; }
 .external-column-body { display: grid; gap: 9px; padding: 10px; max-height: 62vh; overflow-y: auto; }
 .external-empty { margin: 0; padding: 14px 10px; color: var(--actuar-secondary); font-size: 11px; line-height: 1.45; text-align: center; }
