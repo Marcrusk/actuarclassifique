@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-renovar-acesso-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-ficha-chamado-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -405,6 +405,23 @@
             </div>
             <div id="portalAreaSummary" class="portal-area-summary" aria-live="polite"></div>
             <div id="portalAreaColumns" class="external-board"></div>
+        </div>
+
+        <!-- FICHA DO CHAMADO, NO PORTAL
+             O cartão do quadro cabe num relance: protocolo, cliente e etapa. Quem acompanha
+             de verdade precisa do resto — o que foi registrado na abertura e o que o analista
+             fez depois. A gaveta é própria do Portal porque a da gestão carrega ações de
+             gestão no rodapé; o CONTEÚDO é montado pelos mesmos renderizadores. -->
+        <div id="portalAreaDetail" class="hidden rotation-drawer-layer" role="dialog" aria-modal="true" aria-labelledby="portalAreaDetailTitle">
+            <button class="rotation-drawer-backdrop" type="button" onclick="closePortalAreaDetail()" aria-label="Fechar detalhe"></button>
+            <aside class="rotation-drawer-panel external-drawer" tabindex="-1">
+                <header>
+                    <div><span class="rotation-eyebrow">Solicitação</span><h2 id="portalAreaDetailTitle">Protocolo</h2><p id="portalAreaDetailSubtitle"></p></div>
+                    <button type="button" class="actuar-icon-button" onclick="closePortalAreaDetail()" aria-label="Fechar"><i class="fi fi-rr-cross-small"></i></button>
+                </header>
+                <div id="portalAreaDetailBody" class="rotation-drawer-body"></div>
+                <footer id="portalAreaDetailFooter"></footer>
+            </aside>
         </div>
 
         <!-- ETAPA 2: SOLICITAÇÃO -->
@@ -6357,6 +6374,52 @@
                 || `<p class="external-empty">Nenhuma solicitação da sua área neste recorte.</p>`;
         }
 
+        /* A ficha do chamado, do lado de quem abriu. Mesmo conteúdo que a gestão lê — os
+           renderizadores são os mesmos —, sem as ações que não são dela. */
+        let portalAreaDetailId = null;
+
+        function openPortalAreaDetail(id) {
+            const dominio = window.ExternalRequests;
+            const item = portalAreaRequests().find(row => row.id === id);
+            if (!item || !dominio) return;
+            portalAreaDetailId = id;
+            const etapa = dominio.stageMeta(dominio.stageOf(item));
+            const linha = (rotulo, valor) => `<div><dt>${escapeHtml(rotulo)}</dt><dd>${escapeHtml(valor || '—')}</dd></div>`;
+
+            document.getElementById('portalAreaDetailTitle').textContent = item.protocol || 'Solicitação';
+            document.getElementById('portalAreaDetailSubtitle').textContent = `${item.clientName || 'Cliente'} · registrada ${ActuarFields.formatMoment(item.createdAt)}`;
+            document.getElementById('portalAreaDetailBody').innerHTML = `
+                <p class="external-stage"><span class="actuar-badge actuar-badge-${escapeHtml(etapa.tone)}">${escapeHtml(etapa.label)}</span><em>${escapeHtml(etapa.hint)}</em></p>
+                <div class="pieces-detail-block"><h3>Cliente</h3><dl class="external-facts">
+                    ${linha('Nome', item.clientName)}${linha('ID', item.clientId)}${linha('Marca', item.brand)}${linha('Telefone', item.phone)}
+                </dl></div>
+                <div class="pieces-detail-block"><h3>O que o cliente precisa</h3><p class="pieces-detail-copy">${escapeHtml(item.need || '—')}</p></div>
+                <div class="pieces-detail-block"><h3>Quem registrou</h3><dl class="external-facts">
+                    ${linha('Área', item.requesterDepartment)}${linha('Equipe de destino', item.team ? teamLabel(item.team) : '')}${linha('Registrada em', ActuarFields.formatMoment(item.createdAt))}
+                </dl></div>
+                ${externalAttendanceDetail(item)}
+                ${item.lastReason ? `<div class="history-detail-quote"><small>Último parecer</small><blockquote>${escapeHtml(item.lastReason)}</blockquote></div>` : ''}
+                <!-- Aberta por padrão: acompanhar É ler a linha do tempo. Na gestão ela fica
+                     recolhida porque lá o trabalho é decidir, não acompanhar. -->
+                <details class="pieces-audit" open><summary>Linha do tempo</summary><div>${(item.events || []).slice().reverse().map(evento => `<div><i class="fi fi-rr-time-past"></i><span><strong>${escapeHtml(evento.text)}</strong><small>${escapeHtml(evento.by || 'Sistema')} · ${escapeHtml(ActuarFields.formatMoment(evento.at))}</small></span></div>`).join('') || '<p class="external-empty">Sem movimentações registradas.</p>'}</div></details>`;
+
+            const acoes = [
+                dominio.canAreaRespond(item) ? `<button type="button" class="actuar-btn actuar-btn-primary" onclick="portalAreaRespond('${escapeHtml(item.id)}')"><i class="fi fi-rr-comment-alt"></i>Responder</button>` : '',
+                dominio.canAreaCancel(item) ? `<button type="button" class="actuar-btn actuar-btn-secondary" onclick="portalAreaCancel('${escapeHtml(item.id)}')"><i class="fi fi-rr-cross-circle"></i>Cancelar solicitação</button>` : ''
+            ].join('');
+            document.getElementById('portalAreaDetailFooter').innerHTML = acoes || '<span class="external-empty">Nesta etapa não há ação da sua área.</span>';
+
+            document.getElementById('portalAreaDetail').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => document.querySelector('#portalAreaDetail .rotation-drawer-panel')?.focus());
+        }
+
+        function closePortalAreaDetail() {
+            portalAreaDetailId = null;
+            document.getElementById('portalAreaDetail')?.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
         function portalAreaCard(item) {
             const dominio = window.ExternalRequests;
             const etapa = dominio.stageMeta(dominio.stageOf(item));
@@ -6367,7 +6430,12 @@
                 dominio.canAreaRespond(item) ? `<button type="button" class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="portalAreaRespond('${escapeHtml(item.id)}')"><i class="fi fi-rr-comment-alt"></i>Responder</button>` : '',
                 dominio.canAreaCancel(item) ? `<button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="portalAreaCancel('${escapeHtml(item.id)}')"><i class="fi fi-rr-cross-circle"></i>Cancelar</button>` : ''
             ].join('');
-            return `<article class="external-card portal-area-card">
+            /* O cartão inteiro abre a ficha. Os botões param o clique: um "Cancelar" que
+               também abre a gaveta atrás do diálogo confunde o que está sendo confirmado. */
+            return `<article class="external-card portal-area-card" tabindex="0" role="button"
+                    aria-label="Abrir ${escapeHtml(item.protocol || 'solicitação')}"
+                    onclick="if(!event.target.closest('.portal-area-card-actions')) openPortalAreaDetail('${escapeHtml(item.id)}')"
+                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPortalAreaDetail('${escapeHtml(item.id)}')}">
                 <header><strong>${escapeHtml(item.protocol || '—')}</strong><span class="actuar-badge actuar-badge-${escapeHtml(etapa.tone || 'neutral')}">${escapeHtml(etapa.label)}</span></header>
                 <p class="portal-area-card-client">${escapeHtml(item.clientName || 'Cliente não informado')}${item.clientId ? ` · ${escapeHtml(item.clientId)}` : ''}</p>
                 ${item.demand ? `<p class="portal-area-card-demand">${escapeHtml(item.demand)}</p>` : ''}
@@ -6395,7 +6463,10 @@
                 const ok = await persistStore();
                 if (!ok) throw new Error(lastPersistError || 'Não foi possível salvar.');
                 showToast(opcoes.sucesso);
+                /* A ficha aberta reabre no estado novo: fechá-la e devolver ao quadro faria a
+                   pessoa procurar o mesmo chamado de novo só para conferir o que mudou. */
                 renderPortal();
+                if (portalAreaDetailId === id) openPortalAreaDetail(id);
             } catch (erro) {
                 appStore.externalRequests = anterior;
                 showToast(erro.message || 'Não foi possível concluir a ação.', 'error');
@@ -7048,6 +7119,64 @@
             return externalDomain()?.list(getStore()).find(item => item.id === id) || null;
         }
 
+        /* ==========================================================================
+           O CHAMADO INTEIRO, PARA OS DOIS LADOS
+           A área que abriu via protocolo, cliente e a etapa — e nada do que aconteceu
+           depois. A gestão via um pouco mais, mas também parava no que foi registrado na
+           abertura: nenhuma das duas telas mostrava quem pegou o chamado, desde quando,
+           quantas vezes tentou falar com o cliente ou como terminou.
+
+           Tudo isso já existe: fica na ficha do atendimento, dentro do rodízio enquanto está
+           em curso, e no lançamento depois de concluído. Faltava ligar as pontas — e um
+           renderizador só, porque duas telas montando o mesmo bloco divergem na primeira
+           mudança.
+           ========================================================================== */
+        function externalLinkedAttendance(item) {
+            if (!item?.team || !window.PriorityRotation) return null;
+            const rodizio = ensurePriorityRotation(item.team);
+            return item.attendanceId ? PriorityRotation.attendanceById(rodizio, item.attendanceId) : null;
+        }
+
+        function externalAttendanceDetail(item) {
+            const usuarios = getStore()?.users || defaultUsers;
+            const analista = usuarios[item?.analystId];
+            const emCurso = externalLinkedAttendance(item);
+            const lancamento = typeof externalPriorityRequest === 'function' ? externalPriorityRequest(item) : null;
+
+            if (!analista && !emCurso && !lancamento) {
+                /* Antes de ser encaminhada não há o que contar — e inventar um bloco vazio
+                   faria parecer que falta informação, quando falta ACONTECER. */
+                return `<div class="pieces-detail-block"><h3>Atendimento</h3><p class="external-empty">Ainda não foi encaminhada a um analista. Assim que o rodízio liberar alguém, o andamento aparece aqui.</p></div>`;
+            }
+
+            const linha = (rotulo, valor) => `<div><dt>${escapeHtml(rotulo)}</dt><dd>${escapeHtml(valor || '—')}</dd></div>`;
+            const inicio = emCurso?.startedAt || lancamento?.rotationStartedAt;
+            const situacao = emCurso
+                ? `Em andamento há ${priorityRotationDuration(emCurso.startedAt)}`
+                : lancamento
+                    ? `Concluído pelo analista · ${escapeHtml(priorityStatusLabel(lancamento.status) || lancamento.status)}`
+                    : 'Encaminhado, aguardando início';
+
+            /* A ficha do atendimento é a MESMA que a gestão lê na aprovação e que a auditoria
+               abre numa exclusão: tentativas, notas e desfecho. Enquanto está em curso ela
+               vive no rodízio, então é montada a partir dele. */
+            const fonte = lancamento || (emCurso ? {
+                resolution: emCurso.resolution, resolutionReason: emCurso.resolutionReason, resolutionDetail: emCurso.resolutionDetail,
+                contactAttempts: PriorityRotation.attemptsOf(emCurso), attendanceNotes: PriorityRotation.notesOf(emCurso)
+            } : null);
+
+            return `<div class="pieces-detail-block"><h3>Atendimento</h3>
+                <dl class="external-facts">
+                    ${linha('Analista', analista?.name)}
+                    ${linha('Situação', situacao)}
+                    ${linha('Início', inicio ? ActuarFields.formatMoment(inicio) : '')}
+                    ${linha('Protocolo do atendimento', lancamento?.protocolo)}
+                </dl>
+                ${lancamento?.justificativa ? `<div class="history-detail-quote"><small>Justificativa do analista</small><blockquote>${escapeHtml(lancamento.justificativa)}</blockquote></div>` : ''}
+                ${fonte ? renderPriorityAttendanceEvidence(fonte) : ''}
+            </div>`;
+        }
+
         function openExternalRequest(id) {
             const item = externalRequestById(id);
             if (!item) return;
@@ -7070,6 +7199,7 @@
                 <div class="pieces-detail-block"><h3>Quem registrou</h3><dl class="external-facts">
                     ${linha('Área', item.requesterDepartment)}${linha('Registrada em', ActuarFields.formatMoment(item.createdAt))}
                 </dl></div>
+                ${externalAttendanceDetail(item)}
                 ${dominio.stageOf(item) === 'aguardando_distribuicao' ? `<div class="pieces-detail-block"><h3>Distribuição</h3>${externalDistributionPanel(item)}</div>` : ''}
                 <details class="pieces-audit"><summary>Histórico</summary><div>${(item.events || []).map(evento => `<div><i class="fi fi-rr-time-past"></i><span><strong>${escapeHtml(evento.text)}</strong><small>${escapeHtml(evento.by || '—')} · ${escapeHtml(ActuarFields.formatMoment(evento.at))}</small></span></div>`).join('') || '<p>Sem eventos.</p>'}</div></details>`;
 
@@ -11249,7 +11379,9 @@
                 if (overlay && !overlay.classList.contains('hidden')) closeRankingPresentation();
                 const searchResults = document.getElementById('faqSearchResults');
                 if (searchResults && !searchResults.classList.contains('hidden')) clearFaqSearch();
-                if (!document.getElementById('priorityComplementModal')?.classList.contains('hidden')) closePriorityComplementModal();
+                // A ficha do Portal entra na mesma corrente: camada aberta fecha com Esc.
+                if (!document.getElementById('portalAreaDetail')?.classList.contains('hidden')) closePortalAreaDetail();
+                else if (!document.getElementById('priorityComplementModal')?.classList.contains('hidden')) closePriorityComplementModal();
                 else if (!document.getElementById('priorityDecisionReviewModal')?.classList.contains('hidden')) closePriorityDecisionReviewModal();
                 else if (!document.getElementById('managerTvConfigModal')?.classList.contains('hidden')) closeManagerTvConfig();
                 else if (!document.getElementById('priorityApprovalReviewDrawer')?.classList.contains('hidden')) closePriorityApprovalReview();
@@ -12758,15 +12890,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-renovar-acesso-1"></script>
-    <script src="js/external-requests.js?v=20260819-renovar-acesso-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-renovar-acesso-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-renovar-acesso-1"></script>
-    <script src="js/performance-domain.js?v=20260819-renovar-acesso-1"></script>
-    <script src="js/manager-experience.js?v=20260819-renovar-acesso-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-renovar-acesso-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-renovar-acesso-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-renovar-acesso-1"></script>
-    <script src="js/performance-platform.js?v=20260819-renovar-acesso-1"></script>
+    <script src="js/actuar-navigation.js?v=20260819-ficha-chamado-1"></script>
+    <script src="js/external-requests.js?v=20260819-ficha-chamado-1"></script>
+    <script src="js/actuar-fields.js?v=20260819-ficha-chamado-1"></script>
+    <script src="js/attendance-clock.js?v=20260819-ficha-chamado-1"></script>
+    <script src="js/performance-domain.js?v=20260819-ficha-chamado-1"></script>
+    <script src="js/manager-experience.js?v=20260819-ficha-chamado-1"></script>
+    <script src="js/priority-rotation.js?v=20260819-ficha-chamado-1"></script>
+    <script src="js/pieces-operations.js?v=20260819-ficha-chamado-1"></script>
+    <script src="js/pieces-ui.js?v=20260819-ficha-chamado-1"></script>
+    <script src="js/performance-platform.js?v=20260819-ficha-chamado-1"></script>
 </body>
 </html>

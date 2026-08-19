@@ -3751,6 +3751,13 @@ body.nav-locked { overflow: hidden; }
 .portal-area-filters { display: grid; grid-template-columns: minmax(0, 2fr) minmax(160px, 1fr) auto; gap: 12px; align-items: end; margin-bottom: 14px; }
 .portal-area-summary { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; padding: 11px 14px; border: 1px solid var(--actuar-border); border-radius: var(--actuar-radius-large); background: var(--actuar-surface-muted); color: var(--actuar-text-secondary); font-size: 12px; }
 .portal-area-summary strong { color: var(--actuar-text); font-family: Geist, 'Open Sans', sans-serif; font-size: 14px; }
+/* O cartão do quadro abre a ficha: precisa parecer clicável antes de alguém tentar. */
+.portal-area-card[role="button"] { cursor: pointer; transition: border-color var(--actuar-transition), transform var(--actuar-transition); }
+.portal-area-card[role="button"]:hover { border-color: var(--actuar-primary); transform: translateY(-1px); }
+.portal-area-card[role="button"]:focus-visible { outline: none; border-color: var(--actuar-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--actuar-primary) 26%, transparent); }
+/* As ações ficam fora do clique do cartão: um "Cancelar" que também abre a gaveta atrás do
+   diálogo confunde o que está sendo confirmado. */
+.portal-area-card-actions { position: relative; z-index: 1; }
 .portal-area-card-client { margin: 4px 0 0; color: var(--actuar-text); font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
 .portal-area-card-demand { margin: 4px 0 0; color: var(--actuar-text-secondary); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
 .portal-area-card footer { display: grid; gap: 3px; margin-top: 8px; }
