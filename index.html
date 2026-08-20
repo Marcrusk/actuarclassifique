@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260820-esteira-sem-retorno-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260820-sem-retorno-aprovacao-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -7597,54 +7597,77 @@
             await externalDecide('em_atendimento', { text: 'O cliente respondeu. Atendimento retomado.', toast: 'Atendimento retomado.' });
         }
 
-        /* A terceira saída da esteira: a gestão avalia as tentativas e decide que o caso
-           acabou mesmo sem resposta do cliente. Fecha o atendimento do analista, credita o
-           trabalho das tentativas e leva o card para Concluídas — as outras duas saídas são
-           retomar (cliente respondeu) e encerrar sem pontuação. */
+        /* A terceira saída da esteira: a gestão avalia o esforço e manda para validação.
+           NÃO credita aqui. A primeira versão desta ação creditava 50 pontos no clique — sem
+           lançamento, sem passar pela fila de Aprovações e sem ficar no histórico de decisão.
+           Um chamado em que o cliente nunca respondeu é exatamente o caso em que alguém
+           precisa conferir se as tentativas aconteceram mesmo, e essa conferência já existe:
+           é a tela de Aprovações, onde a ficha inteira está à vista e a gestão digita os
+           pontos. Aqui só se fecha a vez do analista e se põe o caso na fila. */
         async function externalConcludeNoAnswer() {
             const item = externalRequestById(externalOpenId);
             if (!item) return;
             const atendimento = externalLinkedAttendance(item);
             const analista = getStore()?.users?.[item.analystId];
-            const tentativas = atendimento ? PriorityRotation.attemptsOf(atendimento).length : 0;
+            const tentativas = atendimento ? PriorityRotation.attemptsOf(atendimento) : [];
 
             const parecer = await actuarConfirm({
-                icon: 'check-circle', title: 'Concluir mesmo sem retorno do cliente?',
-                message: `${analista?.name || 'O analista'} formalizou ${tentativas} tentativa(s). O chamado vai para Concluídas e ${PRIORITY_DEFAULT_POINTS} pontos são creditados pelo trabalho feito.`,
-                input: { label: 'Parecer da gestão', placeholder: 'Ex.: tentativas suficientes, cliente não retornou em cinco dias.' },
-                confirmLabel: 'Validar e pontuar'
+                icon: 'paper-plane', title: 'Enviar para validação da pontuação?',
+                message: `${analista?.name || 'O analista'} formalizou ${tentativas.length} tentativa(s) sem resposta do cliente. O chamado sai da esteira e vai para Aprovações, onde as tentativas ficam à vista e você decide a pontuação — nenhum ponto é creditado agora.`,
+                input: { label: 'Parecer da gestão', placeholder: 'Ex.: tentativas conferidas, cliente não retornou em cinco dias.' },
+                confirmLabel: 'Enviar para aprovação'
             });
             if (!parecer) return;
 
-            const anterior = { externas: deepClone(getStore().externalRequests || []), logs: deepClone(getStore().logs || []), rodizio: deepClone(ensurePriorityRotation(item.team)) };
+            const anterior = {
+                externas: deepClone(getStore().externalRequests || []),
+                lancamentos: deepClone(getStore().priorityRequests || []),
+                rodizio: deepClone(ensurePriorityRotation(item.team))
+            };
             try {
-                /* Fecha a vez do analista pelo domínio do rodízio: o atendimento estava aberto
-                   justamente para poder retomar, e sem fechar ele ficaria preso na fila. */
+                /* Fecha a vez do analista: o atendimento ficou aberto para poder retomar se o
+                   cliente voltasse, e sem fechar ele seguiria preso na fila. */
                 if (atendimento) {
                     appStore.priorityRotations[item.team] = PriorityRotation.resolveCurrent(
                         anterior.rodizio, 'end_move', currentAdminId, parecer, Date.now(), atendimento.id
                     );
                 }
-                appStore.logs.push({
-                    id: uid(), type: 'PRIORITY', userId: item.analystId, value: PRIORITY_DEFAULT_POINTS,
-                    protocolo: item.protocol, relatedRequestId: item.id, registradoPor: currentAdminId, timestamp: Date.now()
-                });
+                /* O lançamento nasce PENDENTE e leva a ficha junto — é ela que sustenta a
+                   decisão de quem vai aprovar. */
+                const lancamentoId = uid();
+                appStore.priorityRequests = [...(getStore().priorityRequests || []), {
+                    id: lancamentoId,
+                    userId: item.analystId,
+                    protocolo: item.protocol,
+                    justificativa: `Sem retorno do cliente após ${tentativas.length} tentativa(s). Parecer da gestão: ${parecer}`,
+                    status: 'pendente',
+                    resolution: 'unresolved', resolutionReason: 'no_answer',
+                    resolutionDetail: parecer,
+                    contactAttempts: deepClone(tentativas),
+                    attendanceNotes: atendimento ? deepClone(PriorityRotation.notesOf(atendimento)) : [],
+                    rotationAttendanceId: atendimento?.id || null,
+                    rotationTeam: item.team,
+                    rotationBriefing: atendimento ? deepClone(atendimento.briefing) : undefined,
+                    clientName: item.clientName, clientId: item.clientId, product: item.brand,
+                    timestamp: Date.now()
+                }];
                 const dominio = externalDomain();
-                const atualizado = dominio.transition(item, 'concluida', {
+                const atualizado = dominio.transition(item, 'aguardando_aprovacao', {
                     actorName: getCurrentManager()?.name || 'Gestão', reason: parecer, reasonRequired: true,
-                    text: `Concluída pela gestão sem retorno do cliente: ${parecer}`
+                    patch: { priorityRequestId: lancamentoId },
+                    text: `Enviada para validação da pontuação após ${tentativas.length} tentativa(s) sem retorno: ${parecer}`
                 });
                 appStore.externalRequests = dominio.list(getStore()).map(row => (row.id === item.id ? atualizado : row));
                 const ok = await persistStore();
                 if (!ok) throw new Error(lastPersistError || 'Não foi possível salvar.');
-                showToast(`Concluída. ${PRIORITY_DEFAULT_POINTS} pontos creditados a ${analista?.name || 'o analista'}.`);
+                showToast('Enviada para Aprovações. Nenhum ponto foi creditado ainda.');
                 closeExternalRequest();
                 render();
             } catch (erro) {
                 appStore.externalRequests = anterior.externas;
-                appStore.logs = anterior.logs;
+                appStore.priorityRequests = anterior.lancamentos;
                 appStore.priorityRotations[item.team] = anterior.rodizio;
-                showToast(erro.message || 'Não foi possível concluir.', 'error');
+                showToast(erro.message || 'Não foi possível enviar para aprovação.', 'error');
             }
         }
 
@@ -7791,11 +7814,11 @@
             }
             if (etapa === 'sem_retorno') {
                 /* Três saídas, e "deixar na esteira" é não clicar em nenhuma: retomar porque o
-                   cliente voltou, encerrar sem pontuação, ou concluir pontuando o trabalho das
-                   tentativas. */
+                   cliente voltou, encerrar sem pontuação, ou mandar para Aprovações — onde
+                   alguém confere as tentativas antes de qualquer ponto ser creditado. */
                 return fechar
                     + `<button type="button" class="actuar-btn actuar-btn-danger" onclick="externalGiveUp()">Encerrar sem retorno</button>`
-                    + `<button type="button" class="actuar-btn actuar-btn-success" onclick="externalConcludeNoAnswer()"><i class="fi fi-rr-check"></i>Validar e pontuar</button>`
+                    + `<button type="button" class="actuar-btn actuar-btn-secondary" onclick="externalConcludeNoAnswer()"><i class="fi fi-rr-paper-plane"></i>Enviar para aprovação</button>`
                     + `<button type="button" class="actuar-btn actuar-btn-primary" onclick="externalClientAnswered()"><i class="fi fi-rr-comment-check"></i>Cliente respondeu</button>`;
             }
             if (etapa === 'concluida') return fechar;
@@ -13249,15 +13272,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260820-esteira-sem-retorno-1"></script>
-    <script src="js/external-requests.js?v=20260820-esteira-sem-retorno-1"></script>
-    <script src="js/actuar-fields.js?v=20260820-esteira-sem-retorno-1"></script>
-    <script src="js/attendance-clock.js?v=20260820-esteira-sem-retorno-1"></script>
-    <script src="js/performance-domain.js?v=20260820-esteira-sem-retorno-1"></script>
-    <script src="js/manager-experience.js?v=20260820-esteira-sem-retorno-1"></script>
-    <script src="js/priority-rotation.js?v=20260820-esteira-sem-retorno-1"></script>
-    <script src="js/pieces-operations.js?v=20260820-esteira-sem-retorno-1"></script>
-    <script src="js/pieces-ui.js?v=20260820-esteira-sem-retorno-1"></script>
-    <script src="js/performance-platform.js?v=20260820-esteira-sem-retorno-1"></script>
+    <script src="js/actuar-navigation.js?v=20260820-sem-retorno-aprovacao-1"></script>
+    <script src="js/external-requests.js?v=20260820-sem-retorno-aprovacao-1"></script>
+    <script src="js/actuar-fields.js?v=20260820-sem-retorno-aprovacao-1"></script>
+    <script src="js/attendance-clock.js?v=20260820-sem-retorno-aprovacao-1"></script>
+    <script src="js/performance-domain.js?v=20260820-sem-retorno-aprovacao-1"></script>
+    <script src="js/manager-experience.js?v=20260820-sem-retorno-aprovacao-1"></script>
+    <script src="js/priority-rotation.js?v=20260820-sem-retorno-aprovacao-1"></script>
+    <script src="js/pieces-operations.js?v=20260820-sem-retorno-aprovacao-1"></script>
+    <script src="js/pieces-ui.js?v=20260820-sem-retorno-aprovacao-1"></script>
+    <script src="js/performance-platform.js?v=20260820-sem-retorno-aprovacao-1"></script>
 </body>
 </html>

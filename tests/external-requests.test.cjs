@@ -382,3 +382,47 @@ test('sem retorno é sobre o cliente, e tem saída dos dois lados', () => {
     const tag = html.slice(html.indexOf('function externalCardTag(item)'), html.indexOf('function externalCard(item)'));
     assert.match(tag, /etapa === 'sem_retorno'[\s\S]*Sem retorno/);
 });
+
+test('sem retorno não credita ponto: vai para validação da gestão', () => {
+    const acao = html.slice(html.indexOf('async function externalConcludeNoAnswer()'), html.indexOf('async function externalGiveUp()'));
+
+    /* A primeira versão desta ação creditava 50 pontos no clique — sem lançamento, sem passar
+       pela fila de Aprovações e sem ficar no histórico de decisão. Um chamado em que o
+       cliente nunca respondeu é exatamente o caso em que alguém precisa conferir se as
+       tentativas aconteceram mesmo. */
+    assert.doesNotMatch(acao, /type: 'PRIORITY'/, 'nenhum ponto pode ser creditado aqui');
+    assert.doesNotMatch(acao, /appStore\.logs/, 'crédito é da tela de Aprovações, não desta');
+
+    // O lançamento nasce PENDENTE e cai na fila onde a decisão já acontece.
+    assert.match(acao, /status: 'pendente',/);
+    assert.match(acao, /dominio\.transition\(item, 'aguardando_aprovacao'/);
+    assert.match(acao, /patch: \{ priorityRequestId: lancamentoId \}/, 'é por esta chave que a aprovação acha a solicitação');
+    assert.match(acao, /Nenhum ponto foi creditado ainda\./);
+
+    /* E leva a ficha junto: é ela que sustenta a decisão de quem vai aprovar — as tentativas
+       com a descrição do que foi enviado, e as notas. */
+    assert.match(acao, /contactAttempts: deepClone\(tentativas\)/);
+    assert.match(acao, /attendanceNotes: atendimento \? deepClone\(PriorityRotation\.notesOf\(atendimento\)\) : \[\]/);
+    assert.match(acao, /resolution: 'unresolved', resolutionReason: 'no_answer'/);
+
+    // A vez do analista é fechada: o atendimento ficou aberto só para poder retomar.
+    assert.match(acao, /PriorityRotation\.resolveCurrent\(\s*\n?\s*anterior\.rodizio, 'end_move'/);
+    // Falha ao salvar devolve os três lados.
+    assert.match(acao, /appStore\.priorityRequests = anterior\.lancamentos;/);
+
+    // O botão não promete o que não faz, e por isso não usa o verde de aprovação.
+    assert.match(html, /class="actuar-btn actuar-btn-secondary" onclick="externalConcludeNoAnswer\(\)"><i class="fi fi-rr-paper-plane"><\/i>Enviar para aprovação<\/button>/);
+});
+
+test('as três saídas da esteira continuam existindo, e nenhuma some sem querer', () => {
+    /* Ao reescrever a ação de enviar para aprovação, o recorte engoliu `externalGiveUp` —
+       a função sumiu inteira e só um teste existente percebeu. */
+    for (const fn of ['externalNoAnswer', 'externalClientAnswered', 'externalGiveUp', 'externalConcludeNoAnswer']) {
+        assert.equal((html.match(new RegExp(`function ${fn}\\(`, 'g')) || []).length, 1, `${fn} precisa existir exatamente uma vez`);
+    }
+    // lastIndexOf: a primeira ocorrência é a das etiquetas do cartão, não a das ações.
+    const acoes = html.slice(html.lastIndexOf("if (etapa === 'sem_retorno')"), html.indexOf("if (etapa === 'concluida') return fechar;"));
+    for (const fn of ['externalGiveUp', 'externalConcludeNoAnswer', 'externalClientAnswered']) {
+        assert.ok(acoes.includes(fn), `a esteira perdeu a saída ${fn}`);
+    }
+});
