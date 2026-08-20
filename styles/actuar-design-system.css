@@ -4483,6 +4483,30 @@ body.actuar-app .actuar-picker-search input::placeholder { color: #6F7378; }
 .external-queue li.is-paused { opacity: .6; }
 .external-queue-empty { justify-content: center; color: var(--actuar-secondary); }
 .external-queue-note { margin: 8px 0 0; color: var(--actuar-secondary); font-size: 11px; }
+
+/* A fila como escolha. O <li> continua sendo a moldura e o <button> ocupa-o por inteiro:
+   assim o alvo do clique é a linha toda, não o nome, e as bordas de estado (próximo,
+   escolhido) continuam sendo desenhadas por um elemento só. */
+.external-queue.is-selectable li { padding: 0; transition: border-color .15s ease, background .15s ease; }
+.external-queue.is-selectable li > button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 10px; border: 0; border-radius: inherit; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.external-queue.is-selectable li > button:hover { background: var(--actuar-surface-muted); }
+.external-queue.is-selectable li > button:focus-visible { outline: 2px solid var(--actuar-primary); outline-offset: -2px; }
+.external-queue.is-selectable li > button > i { margin-left: auto; color: var(--actuar-primary); font-size: 12px; }
+/* Escolhido vence "próximo" na cor: quando são a mesma pessoa não há conflito, e quando
+   não são é a escolha que precisa saltar — ela é a que contraria a expectativa. */
+.external-queue li.is-picked { border-color: var(--actuar-primary); background: var(--actuar-primary-soft); box-shadow: inset 3px 0 0 var(--actuar-primary); }
+.external-queue li.is-picked .external-queue-pos { color: var(--actuar-primary); font-weight: 700; }
+.external-queue li.is-busy { opacity: .55; }
+/* Preterido: quem era o próximo quando a escolha foi outra. Perde o preenchimento para não
+   disputar atenção com o escolhido, e guarda um traço da cor — a vez dele continua de pé. */
+.external-queue li.is-next.is-superseded { border-color: var(--actuar-border); background: var(--actuar-surface); }
+.external-queue li.is-next.is-superseded .external-queue-pos { color: var(--actuar-secondary); font-weight: 600; }
+.external-queue li.is-next.is-superseded strong { color: var(--actuar-secondary); }
+.external-queue-hint { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; color: var(--actuar-secondary); font-size: 11px; }
+/* Encaminhar fora da ordem é exceção, e o painel diz isso antes do clique — âmbar, o mesmo
+   tom que o resto do sistema usa para "atenção, confira", nunca vermelho: não é erro. */
+.external-distribution.is-out-of-turn { border-color: var(--actuar-warning); background: var(--actuar-warning-soft); }
+.external-distribution.is-out-of-turn .external-next > small:last-child { color: var(--actuar-warning); }
 .external-card-tag { width: fit-content; }
 
 /* Excluir é a única ação da ficha que tira o lançamento do fluxo: fica à esquerda, longe

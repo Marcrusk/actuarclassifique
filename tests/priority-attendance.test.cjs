@@ -336,8 +336,50 @@ test('o limite é por pessoa: ninguém recebe um segundo chamado antes de fechar
     let r = R.assign(fila(), 'ana', 'gestor', brief(1), AGORA + 1);
     assert.throws(() => R.assign(r, 'ana', 'gestor', brief(9), AGORA + 2), /Este analista já está com um atendimento em andamento/);
     assert.throws(() => R.start(r, 'ana', AGORA + 2), /Você já está com um atendimento em andamento/);
-    // E continua valendo a ordem: não dá para saltar para o terceiro da fila.
-    assert.throws(() => R.assign(r, 'caio', 'gestor', brief(9), AGORA + 2), /só pode ser encaminhado ao próximo da fila/);
+    // Saltar para o terceiro da fila é possível, mas nunca em silêncio.
+    assert.throws(() => R.assign(r, 'caio', 'gestor', brief(9), AGORA + 2), /fora da ordem da fila exige um motivo/);
+});
+
+test('escolher fora da ordem é permitido com motivo, e quem foi passado não perde a vez', () => {
+    /* A gestão precisava de quem já conhecia o cliente e a única saída era pular a vez de
+       cada um até chegar nele: para escolher o quarto, três iam para o fim da fila — a fila
+       era reorganizada inteira por causa de uma exceção. */
+    const antes = fila();
+    const ordemAntes = R.view(antes).queue;
+    const terceiro = ordemAntes[2];
+
+    assert.throws(() => R.assign(antes, terceiro, 'gestor', brief(1), AGORA + 1), /exige um motivo/);
+    assert.throws(() => R.assign(antes, terceiro, 'gestor', brief(1), AGORA + 1, null, { outOfTurnReason: 'ok' }), /exige um motivo/,
+        'motivo de duas letras não é motivo');
+
+    const r = R.assign(antes, terceiro, 'gestor', brief(1), AGORA + 1, null, { outOfTurnReason: 'já atendeu este cliente na semana passada' });
+    assert.equal(R.activeOf(r, terceiro).analystId, terceiro);
+
+    // O que estava na frente continua na frente: a exceção não reorganiza a fila.
+    assert.deepEqual(R.view(r).queue, ordemAntes, 'ninguém foi empurrado para trás');
+    assert.equal(R.view(r).next, ordemAntes[0], 'e a vez continua sendo de quem já era');
+
+    // O desvio fica no atendimento e na linha do tempo, com autor e motivo.
+    assert.equal(R.activeOf(r, terceiro).outOfTurn, true);
+    assert.match(R.activeOf(r, terceiro).outOfTurnReason, /já atendeu este cliente/);
+    const desvio = r.events.filter(e => e.type === 'turn_overridden');
+    assert.equal(desvio.length, 1);
+    assert.equal(desvio[0].actorId, 'gestor');
+    assert.equal(desvio[0].analystId, terceiro);
+    assert.match(desvio[0].reason, /já atendeu este cliente/);
+    // E `attendance_assigned` continua saindo, porque é por ele que se lê o início.
+    assert.equal(r.events.filter(e => e.type === 'attendance_assigned').length, 1);
+});
+
+test('encaminhar ao próximo continua sem pedir nada, e fora da fila não é escolha', () => {
+    const r = R.assign(fila(), R.view(fila()).next, 'gestor', brief(1), AGORA + 1);
+    assert.equal(r.events.filter(e => e.type === 'turn_overridden').length, 0, 'o caminho normal não vira exceção');
+    assert.equal(R.activeOf(r, R.view(fila()).next).outOfTurn, undefined);
+
+    // Quem não está na fila não pode ser escolhido, nem com motivo: pausado ou de fora da
+    // equipe, ele não está disponível — e "com motivo" não é uma senha mestra.
+    assert.throws(() => R.assign(fila(), 'ninguem', 'gestor', brief(1), AGORA + 1, null, { outOfTurnReason: 'porque sim, senhor' }),
+        /não está na fila do rodízio/);
 });
 
 test('com todos ocupados não há próximo, e a fila diz isso em vez de escolher alguém', () => {

@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260820-sem-retorno-aprovacao-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260820-escolher-analista-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -4284,7 +4284,7 @@
         const PRIORITY_ROTATION_EVENT_LABELS = {
             attendance_started: ['Atendimento iniciado', 'play'], attendance_assigned: ['Atendimento encaminhado', 'paper-plane'], priority_registered: ['Prioridade registrada', 'star'],
             attendance_completed: ['Atendimento concluído', 'check-circle'], rotation_advanced: ['Rodízio avançado', 'arrow-right'],
-            turn_skipped: ['Vez pulada', 'forward'], participant_paused: ['Participante pausado', 'pause'],
+            turn_skipped: ['Vez pulada', 'forward'], turn_overridden: ['Escolha fora da ordem', 'user-add'], participant_paused: ['Participante pausado', 'pause'],
             participant_reactivated: ['Participante reativado', 'play'], order_corrected: ['Ordem corrigida', 'sort'],
             rotation_paused: ['Rodízio pausado', 'pause'], rotation_reactivated: ['Rodízio reativado', 'play'],
             attendance_cancelled: ['Atendimento cancelado', 'cross-circle'], attendance_ended_by_manager: ['Atendimento encerrado pela gestão', 'stop']
@@ -7376,6 +7376,10 @@
         function openExternalRequest(id) {
             const item = externalRequestById(id);
             if (!item) return;
+            /* Trocar de solicitação zera quem foi escolhido para receber: a escolha é daquele
+               encaminhamento. Carregada adiante, ela mandaria o próximo chamado para alguém
+               que a gestão escolheu pensando em outro cliente — e sem avisar. */
+            if (externalOpenId !== id) externalAssigneeId = null;
             externalOpenId = id;
             const dominio = externalDomain();
             const etapa = dominio.stageMeta(dominio.stageOf(item));
@@ -7415,21 +7419,50 @@
             return PriorityRotation.view(ensurePriorityRotation(team));
         }
 
+        /* QUEM RECEBE O ATENDIMENTO
+           A fila mostra a ordem e, quando dá para distribuir, é também por onde se escolhe.
+           A escolha vive só enquanto a solicitação está aberta na tela: é uma decisão daquele
+           encaminhamento, não uma preferência a guardar. Trocar de solicitação zera. */
+        let externalAssigneeId = null;
+        function externalAssignee(view) {
+            const escolhido = externalAssigneeId;
+            const ocupados = new Set((view?.active || []).map(a => a.analystId));
+            const elegivel = escolhido && (view?.queue || []).includes(escolhido) && !ocupados.has(escolhido);
+            return elegivel ? escolhido : (view?.next || null);
+        }
+        function externalPickAssignee(id) {
+            const item = externalRequestById(externalOpenId);
+            if (!item) return;
+            externalAssigneeId = id;
+            openExternalRequest(item.id);
+        }
+
         // A fila inteira, com posição e estado de cada um. Decidir para quem mandar sem ver
         // quem vem depois obriga a abrir outra tela e voltar.
-        function externalQueueList(view, users, item) {
+        function externalQueueList(view, users, item, selecionavel) {
             const rodizio = ensurePriorityRotation(item.team);
             const pausados = new Set((view.paused || []).map(p => p.userId));
+            const emAtendimento = new Map((view.active || []).map(a => [a.analystId, a]));
+            const escolhido = selecionavel ? externalAssignee(view) : null;
             const fila = (view.queue || []).map((id, indice) => {
                 const pessoa = users[id];
                 const ehProximo = id === view.next;
-                const estado = pausados.has(id) ? 'Pausado' : ehProximo ? 'Próximo' : `${indice + 1}º`;
-                return `<li class="${ehProximo ? 'is-next' : ''}${pausados.has(id) ? ' is-paused' : ''}">
-                    <span class="external-queue-pos">${escapeHtml(estado)}</span>
-                    <strong>${escapeHtml(pessoa?.name || id)}</strong>
-                </li>`;
+                const ocupado = emAtendimento.has(id);
+                const estado = pausados.has(id) ? 'Pausado' : ocupado ? 'Atendendo' : ehProximo ? 'Próximo' : `${indice + 1}º`;
+                /* Duas linhas azuis competindo não dizem qual vale. Quando a escolha desvia da
+                   ordem, o destaque é dela — quem era o próximo continua rotulado "Próximo",
+                   mas em tom apagado: a vez dele não sumiu, só não é o que vai acontecer agora. */
+                const preterido = ehProximo && escolhido && escolhido !== id;
+                const classes = [ehProximo ? 'is-next' : '', preterido ? 'is-superseded' : '', pausados.has(id) ? 'is-paused' : '', ocupado ? 'is-busy' : '', id === escolhido ? 'is-picked' : ''].filter(Boolean).join(' ');
+                const conteudo = `<span class="external-queue-pos">${escapeHtml(estado)}</span><strong>${escapeHtml(pessoa?.name || id)}</strong>`;
+                /* Só vira botão quando clicar leva a algum lugar. Quem está em atendimento ou
+                   pausado continua na lista — some quem está e some por que a fila anda —,
+                   mas não responde ao clique, em vez de responder com um erro. */
+                if (!selecionavel || ocupado || pausados.has(id)) return `<li class="${classes}">${conteudo}</li>`;
+                return `<li class="${classes}"><button type="button" onclick="externalPickAssignee('${escapeHtml(id)}')" aria-pressed="${id === escolhido}">${conteudo}${id === escolhido ? '<i class="fi fi-rr-check" aria-hidden="true"></i>' : ''}</button></li>`;
             }).join('');
-            return `<ol class="external-queue" aria-label="Fila do rodízio">${fila || '<li class="external-queue-empty">Fila vazia.</li>'}</ol>`
+            return `<ol class="external-queue${selecionavel ? ' is-selectable' : ''}" aria-label="Fila do rodízio">${fila || '<li class="external-queue-empty">Fila vazia.</li>'}</ol>`
+                + (selecionavel ? '<p class="external-queue-hint"><i class="fi fi-rr-cursor-finger" aria-hidden="true"></i>Toque em alguém da fila para encaminhar direto a essa pessoa.</p>' : '')
                 + (rodizio?.lastCompleted ? `<p class="external-queue-note">Último atendimento: ${escapeHtml(users[rodizio.lastCompleted.analystId]?.name || '—')} · ${escapeHtml(ActuarFields.formatMoment(rodizio.lastCompleted.completedAt))}</p>` : '');
         }
 
@@ -7439,7 +7472,7 @@
             if (!view || view.status === 'missing') {
                 return `<div class="actuar-feedback actuar-feedback-warning"><i class="fi fi-rr-triangle-warning"></i><div><strong>Rodízio indisponível</strong><p>Não há fila configurada para ${escapeHtml(teamLabel(item.team))}.</p></div></div>`;
             }
-            const fila = externalQueueList(view, users, item);
+            const fila = externalQueueList(view, users, item, false);
             if (view.status !== 'active') {
                 /* Pausado, a gestão resolve aqui mesmo. Mandar a pessoa para outra tela para
                    voltar depois é o tipo de vaivém que faz a solicitação ficar esquecida. */
@@ -7465,18 +7498,25 @@
             if (!marcasValidas.includes(item.brand)) {
                 return `<div class="actuar-feedback actuar-feedback-warning"><i class="fi fi-rr-triangle-warning"></i><div><strong>Falta o produto</strong><p>Esta solicitação foi registrada ${item.brand ? `com a marca "${escapeHtml(item.brand)}", que não está mais na lista` : 'sem marca'}. O rodízio precisa do produto para encaminhar. Peça à área que registre de novo, ou encaminhe pelo rodízio informando o produto à mão.</p></div></div>${fila}`;
             }
-            const proximo = users[view.next];
-            return `<div class="external-distribution">
+            const destinoId = externalAssignee(view);
+            const destino = users[destinoId];
+            const foraDaOrdem = destinoId !== view.next;
+            /* O cabeçalho diz para quem vai, não quem é o próximo: com a escolha livre, "o
+               próximo" deixou de ser sempre a resposta. Fora da ordem, ele avisa — e o botão
+               muda de rótulo, porque encaminhar assim vai pedir um motivo. */
+            return `<div class="external-distribution${foraDaOrdem ? ' is-out-of-turn' : ''}">
                 <div class="external-next">
-                    <small>Próximo elegível em ${escapeHtml(teamLabel(item.team))}</small>
-                    <strong>${escapeHtml(proximo?.name || view.next)}</strong>
-                    <small>Produto: ${escapeHtml(item.brand)}</small>
+                    <small>${foraDaOrdem ? `Escolhido em ${escapeHtml(teamLabel(item.team))}` : `Próximo elegível em ${escapeHtml(teamLabel(item.team))}`}</small>
+                    <strong>${escapeHtml(destino?.name || destinoId)}</strong>
+                    <small>Produto: ${escapeHtml(item.brand)}${foraDaOrdem ? ` · fora da ordem, à frente de ${escapeHtml(users[view.next]?.name || 'quem está na fila')}` : ''}</small>
                 </div>
                 <span class="external-distribution-actions">
-                    <button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="externalSkipNext()">Pular a vez</button>
-                    <button type="button" class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="externalAssign()"><i class="fi fi-rr-paper-plane"></i>Encaminhar</button>
+                    ${foraDaOrdem
+                        ? `<button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="externalPickAssignee('${escapeHtml(view.next)}')">Voltar à ordem</button>`
+                        : `<button type="button" class="actuar-btn actuar-btn-secondary actuar-btn-sm" onclick="externalSkipNext()">Pular a vez</button>`}
+                    <button type="button" class="actuar-btn actuar-btn-primary actuar-btn-sm" onclick="externalAssign()"><i class="fi fi-rr-paper-plane"></i>${foraDaOrdem ? 'Encaminhar com motivo' : 'Encaminhar'}</button>
                 </span>
-            </div>${fila}`;
+            </div>${externalQueueList(view, users, item, true)}`;
         }
 
         async function externalResumeRotation() {
@@ -7503,10 +7543,26 @@
             if (!dominio || !item) return;
             const view = externalRotationView(item.team);
             if (!view?.next) { showToast('A fila mudou: não há próximo elegível agora.', 'error'); return; }
+            const users = getStore()?.users || defaultUsers;
+            const destinoId = externalAssignee(view);
+            const analista = users[destinoId];
+
+            /* Fora da ordem, o motivo é pedido ANTES de mexer em qualquer coisa. Ele não é
+               burocracia: é o que explica, meses depois, por que a fila não foi respeitada
+               naquele dia — e é o que impede que a exceção vire o hábito silencioso. */
+            let motivoOrdem = '';
+            if (destinoId !== view.next) {
+                motivoOrdem = await actuarConfirm({
+                    icon: 'user-add', title: `Encaminhar para ${analista?.name || 'este analista'} fora da ordem?`,
+                    message: `${users[view.next]?.name || 'Quem está na frente'} continua na frente: ninguém perde a vez. Só ${analista?.name || 'o escolhido'} vai para o fim da fila ao concluir.`,
+                    input: { label: 'Por que esta pessoa?', placeholder: 'Ex.: já atendeu este cliente na semana passada.' },
+                    confirmLabel: 'Encaminhar'
+                });
+                if (!motivoOrdem) return;
+            }
 
             const rotacaoAnterior = deepClone(ensurePriorityRotation(item.team));
             const listaAnterior = deepClone(getStore().externalRequests || []);
-            const analista = (getStore()?.users || defaultUsers)[view.next];
             try {
                 /* A marca já foi perguntada no Portal, e é obrigatória lá ("Cliente de qual
                    marca?"). Ela é o produto do atendimento — não passá-la fazia o rodízio
@@ -7520,16 +7576,20 @@
                     phone: item.phone,
                     instructions: `Solicitação ${item.protocol}, registrada pela área ${item.requesterDepartment}.`
                 };
-                const rodizio = PriorityRotation.assign(deepClone(rotacaoAnterior), view.next, currentAdminId, briefing, Date.now());
+                const rodizio = PriorityRotation.assign(deepClone(rotacaoAnterior), destinoId, currentAdminId, briefing, Date.now(), null, { outOfTurnReason: motivoOrdem });
                 const atualizado = dominio.transition(item, 'em_atendimento', {
                     actorName: getCurrentManager()?.name || 'Gestão',
-                    patch: { analystId: view.next, attendanceId: PriorityRotation.activeOf(rodizio, view.next)?.id || null, assignedAt: Date.now() },
-                    text: `Encaminhada para ${analista?.name || view.next} pelo rodízio.`
+                    patch: { analystId: destinoId, attendanceId: PriorityRotation.activeOf(rodizio, destinoId)?.id || null, assignedAt: Date.now() },
+                    reason: motivoOrdem || '',
+                    text: motivoOrdem
+                        ? `Encaminhada para ${analista?.name || destinoId} fora da ordem do rodízio: ${motivoOrdem}`
+                        : `Encaminhada para ${analista?.name || destinoId} pelo rodízio.`
                 });
                 appStore.priorityRotations[item.team] = rodizio;
                 appStore.externalRequests = listaAnterior.map(linha => (linha.id === item.id ? atualizado : linha));
                 const ok = await persistStore();
                 if (!ok) throw new Error(lastPersistError || 'Não foi possível encaminhar.');
+                externalAssigneeId = null;
                 renderExternalBoard();
                 renderPriorityRotation();
                 openExternalRequest(item.id);
@@ -13272,15 +13332,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260820-sem-retorno-aprovacao-1"></script>
-    <script src="js/external-requests.js?v=20260820-sem-retorno-aprovacao-1"></script>
-    <script src="js/actuar-fields.js?v=20260820-sem-retorno-aprovacao-1"></script>
-    <script src="js/attendance-clock.js?v=20260820-sem-retorno-aprovacao-1"></script>
-    <script src="js/performance-domain.js?v=20260820-sem-retorno-aprovacao-1"></script>
-    <script src="js/manager-experience.js?v=20260820-sem-retorno-aprovacao-1"></script>
-    <script src="js/priority-rotation.js?v=20260820-sem-retorno-aprovacao-1"></script>
-    <script src="js/pieces-operations.js?v=20260820-sem-retorno-aprovacao-1"></script>
-    <script src="js/pieces-ui.js?v=20260820-sem-retorno-aprovacao-1"></script>
-    <script src="js/performance-platform.js?v=20260820-sem-retorno-aprovacao-1"></script>
+    <script src="js/actuar-navigation.js?v=20260820-escolher-analista-1"></script>
+    <script src="js/external-requests.js?v=20260820-escolher-analista-1"></script>
+    <script src="js/actuar-fields.js?v=20260820-escolher-analista-1"></script>
+    <script src="js/attendance-clock.js?v=20260820-escolher-analista-1"></script>
+    <script src="js/performance-domain.js?v=20260820-escolher-analista-1"></script>
+    <script src="js/manager-experience.js?v=20260820-escolher-analista-1"></script>
+    <script src="js/priority-rotation.js?v=20260820-escolher-analista-1"></script>
+    <script src="js/pieces-operations.js?v=20260820-escolher-analista-1"></script>
+    <script src="js/pieces-ui.js?v=20260820-escolher-analista-1"></script>
+    <script src="js/performance-platform.js?v=20260820-escolher-analista-1"></script>
 </body>
 </html>

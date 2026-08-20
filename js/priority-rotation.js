@@ -269,7 +269,7 @@
         return appendEvents(rotation, [event('attendance_started', rotation, { analystId: actorId, actorId, now, previousState: before, nextState: snapshot(rotation) })]);
     }
 
-    function assign(input, analystId, actorId, details, now = Date.now(), attendanceId = null) {
+    function assign(input, analystId, actorId, details, now = Date.now(), attendanceId = null, options = {}) {
         const rotation = withActive(clone(input));
         const briefing = {
             demand: String(details?.demand || '').trim(),
@@ -284,7 +284,19 @@
            ninguém recebe um segundo chamado antes de fechar o primeiro. */
         assert(!isBusy(rotation, analystId), 'Este analista já está com um atendimento em andamento.', 'attendance_in_progress');
         assert(nextId(rotation), 'Todos os analistas da fila já estão em atendimento.', 'queue_busy');
-        assert(nextId(rotation) === analystId, 'O atendimento só pode ser encaminhado ao próximo da fila.', 'not_next');
+        assert(rotation.queue.includes(analystId), 'Este analista não está na fila do rodízio.', 'not_in_queue');
+        /* ESCOLHER FORA DA ORDEM
+           A ordem é o que torna a fila justa, então ela continua sendo o padrão e o destino
+           sugerido. Mas há motivo legítimo para desviar dela — quem já conhece aquele cliente,
+           quem domina aquele produto — e a única saída que existia era pular a vez de cada um
+           até chegar na pessoa certa: para escolher o quarto, três iam para o fim da fila.
+
+           Agora dá para escolher direto, e a exceção custa uma justificativa que fica no
+           histórico. Quem foi passado para trás não perde nada: continua onde estava, na
+           frente. Só o escolhido vai para o fim quando concluir. */
+        const foraDaOrdem = nextId(rotation) !== analystId;
+        const motivoOrdem = String(options.outOfTurnReason || '').trim();
+        assert(!foraDaOrdem || motivoOrdem.length >= 3, 'Encaminhar fora da ordem da fila exige um motivo.', 'out_of_turn_reason_required');
         assert(briefing.demand && briefing.clientName && briefing.clientId && briefing.phone && briefing.instructions, 'Preencha todas as informações do atendimento.', 'briefing_required');
         /* A marca é fechada: digitada livre, "Facil Fit", "fácil-fit" e "FÁCIL FIT" viram
            três produtos diferentes no primeiro relatório que agrupar por ela. */
@@ -298,9 +310,17 @@
             startedAt: now,
             positionBefore: rotation.queue.indexOf(analystId) + 1,
             assignedBy: actorId,
+            ...(foraDaOrdem ? { outOfTurn: true, outOfTurnReason: motivoOrdem } : {}),
             briefing
         });
-        return appendEvents(rotation, [event('attendance_assigned', rotation, { analystId, actorId, now, previousState: before, nextState: snapshot(rotation) })]);
+        /* Dois eventos, e não um com um campo a mais: o desvio da ordem é uma decisão da
+           gestão, com autor e motivo próprios, e precisa ser legível como tal na linha do
+           tempo. `attendance_assigned` continua saindo igual para quem lê o início do
+           atendimento por ele. */
+        const eventos = [];
+        if (foraDaOrdem) eventos.push(event('turn_overridden', rotation, { analystId, actorId, reason: motivoOrdem, now, previousState: before, nextState: snapshot(rotation) }));
+        eventos.push(event('attendance_assigned', rotation, { analystId, actorId, reason: motivoOrdem || null, now, previousState: before, nextState: snapshot(rotation) }));
+        return appendEvents(rotation, eventos);
     }
 
     /* Quem está com o atendimento é quem escreve nele. A checagem de dono repete a de

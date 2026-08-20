@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const ext = require('../js/external-requests.js');
 
 const html = fs.readFileSync('index.html', 'utf8');
+const css = fs.readFileSync('styles/actuar-design-system.css', 'utf8');
 
 /* O que entra pelo Portal de Prioridades não é uma prioridade ainda: é um pedido. Vira
    prioridade quando a gestão tria. Estas etapas são o processo que hoje acontece por
@@ -184,8 +185,9 @@ test('encaminhar move rodízio e solicitação juntos, ou nenhum dos dois', () =
     assert.match(assign, /appStore\.priorityRotations\[item\.team\] = rotacaoAnterior;[\s\S]*appStore\.externalRequests = listaAnterior;/,
         'a falha precisa desfazer os dois lados');
     // A solicitação guarda para quem foi e qual atendimento do rodízio a representa.
-    assert.match(assign, /analystId: view\.next/);
-    assert.match(assign, /attendanceId: PriorityRotation\.activeOf\(rodizio, view\.next\)\?\.id/);
+    // `destinoId` e não `view.next`: com a escolha livre, nem sempre são a mesma pessoa.
+    assert.match(assign, /analystId: destinoId/);
+    assert.match(assign, /attendanceId: PriorityRotation\.activeOf\(rodizio, destinoId\)\?\.id/);
 });
 
 test('fila ocupada faz a solicitação esperar, não furar', () => {
@@ -201,14 +203,77 @@ test('fila ocupada faz a solicitação esperar, não furar', () => {
     assert.match(painel, /Ninguém disponível/);
 });
 
-test('a exceção é pular com motivo, não escolher fora da ordem', () => {
-    /* O rodízio recusa destino que não seja o próximo (`not_next`). Furar isso em código
-       seria desfazer, por conveniência, a regra que dá confiança à fila. */
+test('pular continua sendo pular: com motivo, e sem tirar a vez de ninguém', () => {
     const skip = html.slice(html.indexOf('async function externalSkipNext()'), html.indexOf('function externalActions('));
     assert.match(skip, /PriorityRotation\.skip\(/);
     assert.match(skip, /input: \{ label: 'Por que pular\?'/, 'pular sem motivo não pode');
     assert.match(skip, /não perde a vez/, 'quem é pulado vai para o fim, não perde a vez');
-    assert.doesNotMatch(html, /assign\([^)]*escolhido/, 'não deve existir caminho para furar a fila');
+});
+
+test('dá para escolher quem recebe direto na fila, sem pular a vez de três para chegar no quarto', () => {
+    /* A ordem continua sendo o padrão. O que mudou é que sair dela deixou de custar a
+       reorganização da fila inteira: para escolher o quarto, a gestão pulava a vez dos três
+       da frente, e cada pulo mandava alguém para o fim por um motivo que não era dele. */
+    const lista = html.slice(html.indexOf('function externalQueueList('), html.indexOf('function externalDistributionPanel('));
+    assert.match(lista, /onclick="externalPickAssignee\('\$\{escapeHtml\(id\)\}'\)"/);
+    assert.match(lista, /aria-pressed="\$\{id === escolhido\}"/, 'seleção precisa ser anunciada, não só colorida');
+
+    // Só é clicável quem pode receber. Ocupado e pausado continuam visíveis — some quem
+    // está e some por que a fila anda — mas não respondem ao clique com um erro.
+    assert.match(lista, /if \(!selecionavel \|\| ocupado \|\| pausados\.has\(id\)\) return `<li class="\$\{classes\}">\$\{conteudo\}<\/li>`;/);
+    assert.match(lista, /const emAtendimento = new Map\(\(view\.active \|\| \[\]\)\.map\(a => \[a\.analystId, a\]\)\);/);
+    // Ocupado se identifica como tal: no print que originou isto, três posições apareciam
+    // como 1º/2º/3º sem explicar por que a vez tinha pulado para o quarto.
+    assert.match(lista, /ocupado \? 'Atendendo' :/);
+
+    /* Duas linhas realçadas não dizem qual vale. Quando a escolha desvia da ordem, o
+       destaque é dela e o antigo próximo fica apagado — sem sumir, porque a vez é dele. */
+    assert.match(lista, /const preterido = ehProximo && escolhido && escolhido !== id;/);
+    assert.match(css, /\.external-queue li\.is-next\.is-superseded \{ border-color: var\(--actuar-border\); background: var\(--actuar-surface\); \}/);
+    assert.match(css, /\.external-queue li\.is-picked \{[^}]*var\(--actuar-primary\)/);
+
+    /* A escolha é daquele encaminhamento, não uma preferência guardada: só a fila do painel
+       de distribuição é clicável, e as versões de aviso (pausado, ocupado, sem elegível)
+       seguem sendo lista de leitura. */
+    const painel = html.slice(html.indexOf('function externalDistributionPanel('), html.indexOf('async function externalResumeRotation()'));
+    assert.match(painel, /const fila = externalQueueList\(view, users, item, false\);/);
+    assert.match(painel, /\$\{externalQueueList\(view, users, item, true\)\}`;/);
+});
+
+test('fora da ordem avisa antes, pede motivo e não empurra ninguém para trás', () => {
+    const painel = html.slice(html.indexOf('function externalDistributionPanel('), html.indexOf('async function externalResumeRotation()'));
+    // O cabeçalho passa a dizer para quem VAI, e destaca quando não é o próximo.
+    assert.match(painel, /const foraDaOrdem = destinoId !== view\.next;/);
+    assert.match(painel, /Escolhido em \$\{escapeHtml\(teamLabel\(item\.team\)\)\}/);
+    assert.match(painel, /fora da ordem, à frente de/);
+    // O rótulo do botão não esconde o pedágio, e há caminho de volta em um clique.
+    assert.match(painel, /\$\{foraDaOrdem \? 'Encaminhar com motivo' : 'Encaminhar'\}/);
+    assert.match(painel, /Voltar à ordem/);
+
+    const assign = html.slice(html.indexOf('async function externalAssign()'), html.indexOf('async function externalSkipNext()'));
+    // Motivo pedido ANTES de mexer em qualquer coisa, e desistir ali não deixa rastro.
+    assert.match(assign, /input: \{ label: 'Por que esta pessoa\?'/);
+    assert.match(assign, /if \(!motivoOrdem\) return;/);
+    assert.ok(assign.indexOf("if (!motivoOrdem) return;") < assign.indexOf('const rotacaoAnterior'), 'o motivo vem antes do snapshot');
+    assert.match(assign, /continua na frente: ninguém perde a vez/);
+
+    // O destino do encaminhamento é o escolhido, nos três lugares que precisam concordar.
+    assert.match(assign, /PriorityRotation\.assign\(deepClone\(rotacaoAnterior\), destinoId, currentAdminId, briefing, Date\.now\(\), null, \{ outOfTurnReason: motivoOrdem \}\)/);
+    assert.match(assign, /patch: \{ analystId: destinoId, attendanceId: PriorityRotation\.activeOf\(rodizio, destinoId\)\?\.id \|\| null, assignedAt: Date\.now\(\) \}/);
+    assert.match(assign, /Encaminhada para \$\{analista\?\.name \|\| destinoId\} fora da ordem do rodízio: \$\{motivoOrdem\}/);
+    assert.doesNotMatch(assign, /view\.next, currentAdminId, briefing/, 'não pode sobrar caminho encaminhando ao próximo por engano');
+
+    // A escolha morre com o encaminhamento e ao trocar de solicitação: a próxima começa
+    // pela ordem, e não com alguém escolhido pensando em outro cliente.
+    assert.match(html, /if \(externalOpenId !== id\) externalAssigneeId = null;/);
+    assert.match(assign, /externalAssigneeId = null;/);
+    const escolha = html.slice(html.indexOf('let externalAssigneeId = null;'), html.indexOf('function externalQueueList('));
+    assert.match(escolha, /const elegivel = escolhido && \(view\?\.queue \|\| \[\]\)\.includes\(escolhido\) && !ocupados\.has\(escolhido\);/,
+        'se a fila mudar embaixo da escolha, ela volta a ser o próximo');
+    assert.match(escolha, /return elegivel \? escolhido : \(view\?\.next \|\| null\);/);
+
+    // E o desvio aparece no histórico do rodízio com nome próprio.
+    assert.match(html, /turn_overridden: \['Escolha fora da ordem', 'user-add'\]/);
 });
 
 test('a tag do card diz por que a solicitação não anda, não o nome da coluna', () => {
