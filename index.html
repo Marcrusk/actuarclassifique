@@ -78,7 +78,7 @@
         .glass { background: #FFFFFF; }
         .bar-fill { transition: width 0.8s cubic-bezier(.16,1,.3,1); }
     </style>
-    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260819-so-o-meu-chamado-1">
+    <link rel="stylesheet" href="styles/actuar-design-system.css?v=20260820-esteira-sem-retorno-1">
 </head>
 <body class="actuar-app bg-bg text-white font-sans min-h-screen antialiased">
 
@@ -2758,7 +2758,7 @@
                     <form class="attendance-attempt-form" onsubmit="registerAttendanceContact(event)">
                         <div class="actuar-field"><label for="attendanceContactChannel">Canal</label><select id="attendanceContactChannel" required><option value="call">Ligação</option><option value="whatsapp">WhatsApp</option><option value="email">E-mail</option></select></div>
                         <div class="actuar-field"><label for="attendanceContactResult">Resultado</label><select id="attendanceContactResult" required><option value="no_answer">Sem resposta</option><option value="answered">Falou com o cliente</option></select></div>
-                        <div class="actuar-field"><label for="attendanceContactNote">Observação (opcional)</label><input id="attendanceContactNote" maxlength="200" autocomplete="off" placeholder="Ex.: caixa postal, retorno pedido para amanhã"></div>
+                        <div class="actuar-field"><label for="attendanceContactNote">O que foi enviado</label><input id="attendanceContactNote" required maxlength="200" autocomplete="off" placeholder="Ex.: mensagem sobre a integração, pedindo retorno"></div>
                         <button type="submit" class="actuar-btn actuar-btn-secondary"><i class="fi fi-rr-phone-call"></i>Registrar tentativa</button>
                     </form>
                 </section>
@@ -2790,6 +2790,9 @@
                         </div>
                         <div class="actuar-form-actions">
                             <button type="button" class="actuar-btn actuar-btn-secondary" onclick="closePriorityAttendanceRecord()">Fechar sem encerrar</button>
+                            <!-- Não conclui: o atendimento continua com o analista e o chamado
+                                 vai para a esteira de sem retorno, onde a gestão decide. -->
+                            <button type="button" id="attendanceNoAnswerButton" class="actuar-btn actuar-btn-secondary" onclick="markAttendanceNoAnswer()"><i class="fi fi-rr-phone-slash"></i>Marcar sem retorno</button>
                             <button type="submit" class="actuar-btn actuar-btn-primary"><i class="fi fi-rr-paper-plane"></i>Encerrar e enviar</button>
                         </div>
                     </form>
@@ -4008,13 +4011,30 @@
             }
 
             const tentativas = PriorityRotation.attemptsOf(atendimento);
-            const progresso = PriorityRotation.noAnswerProgress(atendimento);
+            /* Conta as DESCRITAS, não as registradas: é a descrição do que foi enviado que
+               sustenta encerrar por falta de retorno na frente de quem abriu o chamado. */
+            const progresso = PriorityRotation.noAnswerReady(atendimento);
             const marcador = document.getElementById('attendanceAttemptsProgress');
             if (marcador) {
                 /* O limite aparece antes de barrar. Descobrir a regra ao ser recusado é o
                    tipo de coisa que faz o analista achar que o sistema quebrou. */
-                marcador.textContent = `${progresso.done} de ${progresso.required} registradas`;
+                marcador.textContent = `${progresso.done} de ${progresso.required} formalizadas`;
                 marcador.classList.toggle('is-complete', progresso.allowed);
+            }
+
+            /* O botão diz por que não pode ser clicado, em vez de sumir: sumido, o analista
+               não descobre que existe um caminho para o cliente que não responde. */
+            const botaoSemRetorno = document.getElementById('attendanceNoAnswerButton');
+            if (botaoSemRetorno) {
+                const jaMarcado = Boolean(atendimento.noAnswerAt);
+                botaoSemRetorno.disabled = jaMarcado || !progresso.allowed;
+                botaoSemRetorno.title = jaMarcado
+                    ? 'Este atendimento já está marcado como sem retorno.'
+                    : progresso.allowed ? 'O chamado vai para a esteira de sem retorno, e continua com você.'
+                        : `Faltam ${progresso.missing} tentativa${progresso.missing === 1 ? '' : 's'} formalizada${progresso.missing === 1 ? '' : 's'}.`;
+                botaoSemRetorno.innerHTML = jaMarcado
+                    ? '<i class="fi fi-rr-phone-slash"></i>Sem retorno marcado'
+                    : '<i class="fi fi-rr-phone-slash"></i>Marcar sem retorno';
             }
             const listaTentativas = document.getElementById('attendanceAttemptsList');
             if (listaTentativas) {
@@ -4040,11 +4060,10 @@
 
             const dica = document.getElementById('attendanceResolutionHint');
             if (dica) {
-                const semRetorno = document.getElementById('attendanceResolutionReason')?.value === 'no_answer';
-                dica.textContent = semRetorno && !progresso.allowed
-                    ? `Faltam ${progresso.missing} tentativa${progresso.missing === 1 ? '' : 's'} para encerrar por falta de retorno.`
+                dica.textContent = atendimento.noAnswerAt
+                    ? 'Este chamado está na esteira de sem retorno. Encerrar aqui é para quando o cliente voltar a responder e o caso se resolver.'
                     : '';
-                dica.classList.toggle('is-blocking', Boolean(semRetorno && !progresso.allowed));
+                dica.classList.toggle('is-blocking', false);
             }
         }
 
@@ -4056,7 +4075,9 @@
             const rotulo = document.getElementById('attendanceResolutionReasonLabel');
             if (!select) return;
             const anterior = select.value;
-            const opcoes = PriorityRotation.RESOLUTION_REASONS[desfecho] || [];
+            /* "Sem retorno do cliente" sai daqui: concluir manda para APROVAÇÃO, e um chamado
+               sem contato não terminou — ele espera. Tem porta própria, ao lado. */
+            const opcoes = (PriorityRotation.RESOLUTION_REASONS[desfecho] || []).filter(chave => chave !== 'no_answer');
             select.innerHTML = opcoes.map(chave => `<option value="${chave}">${escapeHtml(PriorityRotation.RESOLUTION_REASON_LABEL[chave] || chave)}</option>`).join('');
             if (opcoes.includes(anterior)) select.value = anterior;
             if (rotulo) rotulo.textContent = desfecho === 'resolved' ? 'Como foi resolvido?' : 'Por que não foi resolvido?';
@@ -4077,6 +4098,51 @@
             setFormBusy(event.target, false);
             if (ok) document.getElementById('attendanceContactNote').value = '';
             renderPriorityAttendanceRecord();
+        }
+
+        /* MARCAR SEM RETORNO — do lado do analista.
+           Duas escritas que precisam andar juntas: o atendimento fica marcado no rodízio (e
+           continua aberto, com ele) e o chamado do Portal vai para a esteira. Se a segunda
+           não acontecesse, o quadro da gestão continuaria dizendo "Em atendimento" para um
+           caso que está esperando o cliente — que é exatamente o que a etapa existe para
+           distinguir. */
+        async function markAttendanceNoAnswer() {
+            const atendimento = currentOwnAttendance();
+            if (!atendimento) { showToast('Somente o analista responsável pode marcar esta vez.', 'error'); return; }
+            const progresso = PriorityRotation.noAnswerReady(atendimento);
+            if (!progresso.allowed) {
+                showToast(`Formalize ${progresso.required} tentativas com a descrição do que foi enviado. Há ${progresso.done}.`, 'error');
+                return;
+            }
+            if (!await actuarConfirm({
+                icon: 'phone-slash', title: 'Marcar como sem retorno do cliente?',
+                message: `As ${progresso.done} tentativas ficam registradas. O atendimento continua com você — se o cliente responder, você retoma de onde parou — e o chamado passa para a esteira de sem retorno, onde a gestão decide o encerramento.`,
+                confirmLabel: 'Marcar sem retorno'
+            })) return;
+
+            const team = currentPriorityRotationTeam();
+            const ok = await persistPriorityRotationMutation(
+                team,
+                rotation => PriorityRotation.markNoAnswer(rotation, currentActiveUser, Date.now()),
+                'Marcado como sem retorno do cliente.'
+            );
+            if (!ok) return;
+            /* O card do Portal acompanha. `transition` recusa ir para a etapa em que já está,
+               então só move o que ainda não está lá. */
+            const dominio = externalDomain();
+            const externa = dominio?.list(getStore()).find(item => item.attendanceId === atendimento.id && dominio.stageOf(item) === 'em_atendimento');
+            if (externa) {
+                const usuario = getStore()?.users?.[currentActiveUser]?.name || 'Analista';
+                const atualizado = dominio.transition(externa, 'sem_retorno', {
+                    actorName: usuario,
+                    reason: PriorityRotation.attemptsOf(atendimento).map((item, i) => `${i + 1}. ${PriorityRotation.CONTACT_CHANNEL_LABEL[item.channel] || item.channel}: ${item.note}`).join(' | '),
+                    text: `${usuario} formalizou ${progresso.done} tentativas sem resposta do cliente.`
+                });
+                appStore.externalRequests = dominio.list(getStore()).map(item => (item.id === externa.id ? atualizado : item));
+                await persistStore();
+            }
+            renderPriorityAttendanceRecord();
+            render();
         }
 
         async function registerAttendanceNote(event) {
@@ -7517,7 +7583,69 @@
         }
 
         async function externalClientAnswered() {
+            /* O card volta a "Em atendimento" E o atendimento sai da espera. Mover só o card
+               deixaria a ficha do analista dizendo "sem retorno" num chamado que voltou a
+               andar — e o botão continuaria bloqueado para ele. */
+            const item = externalRequestById(externalOpenId);
+            const atendimento = item ? externalLinkedAttendance(item) : null;
+            if (atendimento?.noAnswerAt) {
+                await persistPriorityRotationMutation(
+                    item.team,
+                    rotation => PriorityRotation.resumeFromNoAnswer(rotation, atendimento.analystId, Date.now())
+                );
+            }
             await externalDecide('em_atendimento', { text: 'O cliente respondeu. Atendimento retomado.', toast: 'Atendimento retomado.' });
+        }
+
+        /* A terceira saída da esteira: a gestão avalia as tentativas e decide que o caso
+           acabou mesmo sem resposta do cliente. Fecha o atendimento do analista, credita o
+           trabalho das tentativas e leva o card para Concluídas — as outras duas saídas são
+           retomar (cliente respondeu) e encerrar sem pontuação. */
+        async function externalConcludeNoAnswer() {
+            const item = externalRequestById(externalOpenId);
+            if (!item) return;
+            const atendimento = externalLinkedAttendance(item);
+            const analista = getStore()?.users?.[item.analystId];
+            const tentativas = atendimento ? PriorityRotation.attemptsOf(atendimento).length : 0;
+
+            const parecer = await actuarConfirm({
+                icon: 'check-circle', title: 'Concluir mesmo sem retorno do cliente?',
+                message: `${analista?.name || 'O analista'} formalizou ${tentativas} tentativa(s). O chamado vai para Concluídas e ${PRIORITY_DEFAULT_POINTS} pontos são creditados pelo trabalho feito.`,
+                input: { label: 'Parecer da gestão', placeholder: 'Ex.: tentativas suficientes, cliente não retornou em cinco dias.' },
+                confirmLabel: 'Validar e pontuar'
+            });
+            if (!parecer) return;
+
+            const anterior = { externas: deepClone(getStore().externalRequests || []), logs: deepClone(getStore().logs || []), rodizio: deepClone(ensurePriorityRotation(item.team)) };
+            try {
+                /* Fecha a vez do analista pelo domínio do rodízio: o atendimento estava aberto
+                   justamente para poder retomar, e sem fechar ele ficaria preso na fila. */
+                if (atendimento) {
+                    appStore.priorityRotations[item.team] = PriorityRotation.resolveCurrent(
+                        anterior.rodizio, 'end_move', currentAdminId, parecer, Date.now(), atendimento.id
+                    );
+                }
+                appStore.logs.push({
+                    id: uid(), type: 'PRIORITY', userId: item.analystId, value: PRIORITY_DEFAULT_POINTS,
+                    protocolo: item.protocol, relatedRequestId: item.id, registradoPor: currentAdminId, timestamp: Date.now()
+                });
+                const dominio = externalDomain();
+                const atualizado = dominio.transition(item, 'concluida', {
+                    actorName: getCurrentManager()?.name || 'Gestão', reason: parecer, reasonRequired: true,
+                    text: `Concluída pela gestão sem retorno do cliente: ${parecer}`
+                });
+                appStore.externalRequests = dominio.list(getStore()).map(row => (row.id === item.id ? atualizado : row));
+                const ok = await persistStore();
+                if (!ok) throw new Error(lastPersistError || 'Não foi possível salvar.');
+                showToast(`Concluída. ${PRIORITY_DEFAULT_POINTS} pontos creditados a ${analista?.name || 'o analista'}.`);
+                closeExternalRequest();
+                render();
+            } catch (erro) {
+                appStore.externalRequests = anterior.externas;
+                appStore.logs = anterior.logs;
+                appStore.priorityRotations[item.team] = anterior.rodizio;
+                showToast(erro.message || 'Não foi possível concluir.', 'error');
+            }
         }
 
         async function externalGiveUp() {
@@ -7662,8 +7790,12 @@
                 return fechar + `<button type="button" class="actuar-btn actuar-btn-secondary" onclick="externalNoAnswer()"><i class="fi fi-rr-phone-slash"></i>Marcar sem retorno</button>`;
             }
             if (etapa === 'sem_retorno') {
+                /* Três saídas, e "deixar na esteira" é não clicar em nenhuma: retomar porque o
+                   cliente voltou, encerrar sem pontuação, ou concluir pontuando o trabalho das
+                   tentativas. */
                 return fechar
                     + `<button type="button" class="actuar-btn actuar-btn-danger" onclick="externalGiveUp()">Encerrar sem retorno</button>`
+                    + `<button type="button" class="actuar-btn actuar-btn-success" onclick="externalConcludeNoAnswer()"><i class="fi fi-rr-check"></i>Validar e pontuar</button>`
                     + `<button type="button" class="actuar-btn actuar-btn-primary" onclick="externalClientAnswered()"><i class="fi fi-rr-comment-check"></i>Cliente respondeu</button>`;
             }
             if (etapa === 'concluida') return fechar;
@@ -13117,15 +13249,15 @@
             await PerformancePlatform.init(supabaseClient);
         };
     </script>
-    <script src="js/actuar-navigation.js?v=20260819-so-o-meu-chamado-1"></script>
-    <script src="js/external-requests.js?v=20260819-so-o-meu-chamado-1"></script>
-    <script src="js/actuar-fields.js?v=20260819-so-o-meu-chamado-1"></script>
-    <script src="js/attendance-clock.js?v=20260819-so-o-meu-chamado-1"></script>
-    <script src="js/performance-domain.js?v=20260819-so-o-meu-chamado-1"></script>
-    <script src="js/manager-experience.js?v=20260819-so-o-meu-chamado-1"></script>
-    <script src="js/priority-rotation.js?v=20260819-so-o-meu-chamado-1"></script>
-    <script src="js/pieces-operations.js?v=20260819-so-o-meu-chamado-1"></script>
-    <script src="js/pieces-ui.js?v=20260819-so-o-meu-chamado-1"></script>
-    <script src="js/performance-platform.js?v=20260819-so-o-meu-chamado-1"></script>
+    <script src="js/actuar-navigation.js?v=20260820-esteira-sem-retorno-1"></script>
+    <script src="js/external-requests.js?v=20260820-esteira-sem-retorno-1"></script>
+    <script src="js/actuar-fields.js?v=20260820-esteira-sem-retorno-1"></script>
+    <script src="js/attendance-clock.js?v=20260820-esteira-sem-retorno-1"></script>
+    <script src="js/performance-domain.js?v=20260820-esteira-sem-retorno-1"></script>
+    <script src="js/manager-experience.js?v=20260820-esteira-sem-retorno-1"></script>
+    <script src="js/priority-rotation.js?v=20260820-esteira-sem-retorno-1"></script>
+    <script src="js/pieces-operations.js?v=20260820-esteira-sem-retorno-1"></script>
+    <script src="js/pieces-ui.js?v=20260820-esteira-sem-retorno-1"></script>
+    <script src="js/performance-platform.js?v=20260820-esteira-sem-retorno-1"></script>
 </body>
 </html>

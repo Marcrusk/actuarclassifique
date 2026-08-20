@@ -50,7 +50,7 @@ test('do registro no Portal até a pontuação, sem bloqueio no meio', () => {
 
     // 4. O analista registra o andamento na ficha — e só na dele.
     rodizio = R.logContact(rodizio, 'arthur', { channel: 'call', result: 'no_answer', note: 'caixa postal' }, ++t);
-    rodizio = R.logContact(rodizio, 'arthur', { channel: 'whatsapp', result: 'answered' }, ++t);
+    rodizio = R.logContact(rodizio, 'arthur', { channel: 'whatsapp', result: 'answered', note: 'mensagem sobre a integração' }, ++t);
     rodizio = R.addNote(rodizio, 'arthur', 'Orientado a atualizar o firmware.', ++t);
     assert.equal(R.activeOf(rodizio, 'pedro_m'), null, 'ninguém escreve na ficha de outro');
 
@@ -140,4 +140,44 @@ test('dois chamados do Portal andam ao mesmo tempo', () => {
     assert.equal(R.view(rodizio).next, 'pedro', 'com Arthur ocupado, a vez anda');
     rodizio = R.assign(rodizio, 'pedro', 'gestor', brief(2), ++t);
     assert.equal(R.activeList(rodizio).length, 2, 'o segundo não espera o primeiro acabar');
+});
+
+test('sem retorno é esteira, não conclusão: o card espera a gestão', () => {
+    let t = T;
+    const mv = (item, proximo, opcoes = {}) => E.transition(item, proximo, { now: ++t, actorName: 'Gestão', ...opcoes });
+
+    let rodizio = R.create('Sistema', ['arthur', 'pedro'], t);
+    let externa = mv(mv(solicitacao(), 'triagem'), 'aguardando_distribuicao');
+    rodizio = R.assign(rodizio, 'arthur', 'gestor', briefingDe(externa), ++t);
+    const atendimento = R.activeOf(rodizio, 'arthur');
+    externa = mv(externa, 'em_atendimento', { patch: { analystId: 'arthur', attendanceId: atendimento.id } });
+
+    /* Era aqui que o caso descarrilava: sem porta própria, o analista concluía com "sem
+       retorno" e concluir manda para APROVAÇÃO — o chamado terminava aprovado e pontuado
+       sem ninguém ter falado com o cliente. */
+    assert.throws(() => R.complete(rodizio, 'arthur', 'p1', ++t, { resolution: 'unresolved', reason: 'no_answer', detail: 'não respondeu' }),
+        /use "Marcar sem retorno" na ficha/);
+
+    for (let i = 1; i <= 3; i += 1) {
+        rodizio = R.logContact(rodizio, 'arthur', { channel: 'whatsapp', result: 'no_answer', note: `mensagem ${i} sobre a integração` }, ++t);
+    }
+    rodizio = R.markNoAnswer(rodizio, 'arthur', ++t);
+    externa = mv(externa, 'sem_retorno', { actorName: 'Arthur', reason: '3 tentativas sem resposta', reasonRequired: true });
+
+    assert.equal(E.stageOf(externa), 'sem_retorno', 'o card cai na esteira certa');
+    assert.notEqual(R.activeOf(rodizio, 'arthur'), null, 'e o atendimento continua com ele');
+    assert.equal(E.board([externa]).stages.find(coluna => coluna.id === 'sem_retorno').items.length, 1);
+
+    // Saída 1: o cliente respondeu — retoma com quem já conduzia.
+    const retomado = R.resumeFromNoAnswer(rodizio, 'arthur', ++t);
+    assert.equal(R.activeOf(retomado, 'arthur').noAnswerAt, undefined);
+    assert.equal(E.stageOf(mv(externa, 'em_atendimento')), 'em_atendimento');
+
+    // Saída 2: a gestão valida as tentativas e conclui, pontuando o trabalho feito.
+    const fechado = R.resolveCurrent(rodizio, 'end_move', 'gestor', 'tentativas suficientes', ++t, atendimento.id);
+    assert.equal(R.activeOf(fechado, 'arthur'), null, 'a vez dele é fechada, senão fica preso na fila');
+    assert.equal(E.stageOf(mv(externa, 'concluida', { reason: 'tentativas suficientes' })), 'concluida');
+
+    // Saída 3: encerrar sem pontuação continua existindo, e sai do funil.
+    assert.ok(E.isClosed(E.stageOf(mv(externa, 'cancelada', { reason: 'cliente não retornou' }))));
 });

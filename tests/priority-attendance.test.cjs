@@ -45,22 +45,54 @@ test('resolvido pergunta COMO; não resolvido pergunta POR QUÊ, e os motivos n�
     }
 });
 
-test('dar o cliente como sem retorno exige as 3 tentativas do manual', () => {
+test('sem retorno tem porta própria: formaliza 3 tentativas e NÃO conclui', () => {
     let r = emAtendimento();
-    const semRetorno = { resolution: 'unresolved', reason: 'no_answer', detail: 'Cliente não respondeu em nenhum canal.' };
+
+    /* Concluir manda para APROVAÇÃO — e um chamado em que o analista nunca falou com o
+       cliente não terminou, ele espera. Era assim que um caso sem contato aparecia aprovado
+       e pontuado, longe da esteira de sem retorno. */
+    assert.throws(() => R.complete(r, 'ana', 'p1', AGORA, { resolution: 'unresolved', reason: 'no_answer', detail: 'não respondeu nada' }),
+        /use "Marcar sem retorno" na ficha/);
 
     assert.equal(R.NO_ANSWER_MIN_ATTEMPTS, 3);
-    assert.deepEqual(R.noAnswerProgress(R.activeOf(r, 'ana')), { done: 0, required: 3, missing: 3, allowed: false });
-    assert.throws(() => R.complete(r, 'ana', 'p1', AGORA, semRetorno), /Registre 3 tentativas de contato .* Há 0\./);
+    assert.deepEqual(R.noAnswerReady(R.activeOf(r, 'ana')), { done: 0, required: 3, missing: 3, allowed: false });
+    assert.throws(() => R.markNoAnswer(r, 'ana', AGORA), /Formalize 3 tentativas com a descrição do que foi enviado\. Há 0\./);
 
-    r = R.logContact(r, 'ana', { channel: 'call', result: 'no_answer' }, AGORA + 1);
-    r = R.logContact(r, 'ana', { channel: 'whatsapp', result: 'no_answer' }, AGORA + 2);
-    assert.deepEqual(R.noAnswerProgress(R.activeOf(r, 'ana')), { done: 2, required: 3, missing: 1, allowed: false });
-    assert.throws(() => R.complete(r, 'ana', 'p1', AGORA, semRetorno), /Há 2\./);
+    // Conta as DESCRITAS: um contador sem o que foi enviado não sustenta o encerramento.
+    r = R.logContact(r, 'ana', { channel: 'call', result: 'no_answer', note: 'liguei, caixa postal' }, AGORA + 1);
+    r = R.logContact(r, 'ana', { channel: 'whatsapp', result: 'no_answer', note: 'mensagem sobre a integração' }, AGORA + 2);
+    assert.equal(R.noAnswerReady(R.activeOf(r, 'ana')).missing, 1);
+    assert.throws(() => R.markNoAnswer(r, 'ana', AGORA), /Há 2\./);
 
-    r = R.logContact(r, 'ana', { channel: 'email', result: 'no_answer' }, AGORA + 3);
-    const fim = R.complete(r, 'ana', 'p1', AGORA + 4, semRetorno);
-    assert.equal(fim.lastCompleted.resolutionReason, 'no_answer');
+    r = R.logContact(r, 'ana', { channel: 'email', result: 'no_answer', note: 'e-mail com o resumo' }, AGORA + 3);
+    r = R.markNoAnswer(r, 'ana', AGORA + 4);
+
+    /* O atendimento CONTINUA com ele: é isso que permite retomar de onde parou se o cliente
+       responder, com a ficha, as tentativas e as notas. */
+    const marcado = R.activeOf(r, 'ana');
+    assert.ok(marcado, 'marcar não pode fechar o atendimento');
+    assert.equal(marcado.noAnswerAt, AGORA + 4);
+    assert.equal(R.attemptsOf(marcado).length, 3);
+    assert.throws(() => R.markNoAnswer(r, 'ana', AGORA + 5), /já está marcado/);
+});
+
+test('a tentativa exige a descrição do que foi enviado', () => {
+    const r = emAtendimento();
+    assert.throws(() => R.logContact(r, 'ana', { channel: 'whatsapp', result: 'no_answer' }, AGORA), /Descreva o que foi enviado/);
+    assert.throws(() => R.logContact(r, 'ana', { channel: 'whatsapp', result: 'no_answer', note: '  ' }, AGORA), /Descreva o que foi enviado/);
+});
+
+test('cliente responde: retoma com quem já conduzia, sem perder nada', () => {
+    let r = emAtendimento();
+    for (let i = 1; i <= 3; i += 1) r = R.logContact(r, 'ana', { channel: 'whatsapp', result: 'no_answer', note: `tentativa ${i}` }, AGORA + i);
+    r = R.markNoAnswer(r, 'ana', AGORA + 4);
+
+    const retomado = R.resumeFromNoAnswer(r, 'ana', AGORA + 5);
+    const atual = R.activeOf(retomado, 'ana');
+    assert.equal(atual.noAnswerAt, undefined, 'sai da espera');
+    assert.equal(R.attemptsOf(atual).length, 3, 'as tentativas ficam');
+    // Retomar o que não está em espera não inventa evento nem quebra.
+    assert.equal(R.activeOf(R.resumeFromNoAnswer(retomado, 'ana', AGORA + 6), 'ana').noAnswerAt, undefined);
 });
 
 test('a exigência das tentativas vale só para "sem retorno" — os outros sete não dependem de ligar', () => {
@@ -75,15 +107,15 @@ test('a exigência das tentativas vale só para "sem retorno" — os outros sete
 
 test('só o dono escreve na ficha, e tentativa precisa de canal e resultado válidos', () => {
     const r = emAtendimento();
-    assert.throws(() => R.logContact(r, 'bruno', { channel: 'call', result: 'no_answer' }, AGORA), /pertence a outro analista/);
+    assert.throws(() => R.logContact(r, 'bruno', { channel: 'call', result: 'no_answer', note: 'mensagem sobre a integração' }, AGORA), /pertence a outro analista/);
     assert.throws(() => R.addNote(r, 'bruno', 'nota', AGORA), /pertence a outro analista/);
-    assert.throws(() => R.logContact(r, 'ana', { channel: 'pombo', result: 'no_answer' }, AGORA), /Escolha o canal do contato/);
-    assert.throws(() => R.logContact(r, 'ana', { channel: 'call', result: 'talvez' }, AGORA), /Escolha o resultado do contato/);
+    assert.throws(() => R.logContact(r, 'ana', { channel: 'pombo', result: 'no_answer', note: 'mensagem sobre a integração' }, AGORA), /Escolha o canal do contato/);
+    assert.throws(() => R.logContact(r, 'ana', { channel: 'call', result: 'talvez', note: 'mensagem sobre a integração' }, AGORA), /Escolha o resultado do contato/);
     assert.throws(() => R.addNote(r, 'ana', '  ', AGORA), /Escreva a nota antes de salvar/);
 
     // Sem atendimento em andamento não há ficha para escrever.
     const parado = R.create('Sistema', ['ana'], AGORA);
-    assert.throws(() => R.logContact(parado, 'ana', { channel: 'call', result: 'no_answer' }, AGORA), /Não existe atendimento em andamento/);
+    assert.throws(() => R.logContact(parado, 'ana', { channel: 'call', result: 'no_answer', note: 'mensagem sobre a integração' }, AGORA), /Não existe atendimento em andamento/);
 });
 
 test('tentativas e notas ficam no atendimento concluído, com autor e horário', () => {
@@ -108,7 +140,7 @@ test('tentativas e notas ficam no atendimento concluído, com autor e horário',
 
 test('cada escrita na ficha vira evento auditável do rodízio', () => {
     let r = emAtendimento();
-    r = R.logContact(r, 'ana', { channel: 'call', result: 'answered' }, AGORA + 1);
+    r = R.logContact(r, 'ana', { channel: 'call', result: 'answered', note: 'mensagem sobre a integração' }, AGORA + 1);
     r = R.addNote(r, 'ana', 'Combinado retorno amanhã.', AGORA + 2);
     const tipos = r.events.map(e => e.type);
     assert.ok(tipos.includes('contact_attempted'));
@@ -134,7 +166,10 @@ test('a ficha substitui o formulário solto e só abre para quem está atendendo
     const render = doc.slice(doc.indexOf('function renderPriorityAttendanceRecord()'), doc.indexOf('function syncAttendanceResolutionReasons()'));
     assert.match(render, /if \(!atendimento\) \{ closePriorityAttendanceRecord\(\); return; \}/);
     // E o progresso das tentativas aparece antes de barrar.
-    assert.match(render, /\$\{progresso\.done\} de \$\{progresso\.required\} registradas/);
+    // Conta as FORMALIZADAS, e o botão de sem retorno diz por que não pode ser clicado.
+    assert.match(render, /\$\{progresso\.done\} de \$\{progresso\.required\} formalizadas/);
+    assert.match(render, /const progresso = PriorityRotation\.noAnswerReady\(atendimento\);/);
+    assert.match(render, /botaoSemRetorno\.disabled = jaMarcado \|\| !progresso\.allowed;/);
 });
 
 test('o desfecho viaja com o lançamento até a gestão', () => {
@@ -314,7 +349,7 @@ test('com todos ocupados não há próximo, e a fila diz isso em vez de escolher
 
 test('cada um escreve só na própria ficha, mesmo com várias abertas', () => {
     let r = R.assign(R.assign(fila(), 'ana', 'gestor', brief(1), AGORA + 1), 'bruno', 'gestor', brief(2), AGORA + 2);
-    r = R.logContact(r, 'bruno', { channel: 'call', result: 'no_answer' }, AGORA + 3);
+    r = R.logContact(r, 'bruno', { channel: 'call', result: 'no_answer', note: 'mensagem sobre a integração' }, AGORA + 3);
     r = R.addNote(r, 'ana', 'Nota da ana.', AGORA + 4);
 
     assert.equal(R.attemptsOf(R.activeOf(r, 'bruno')).length, 1);

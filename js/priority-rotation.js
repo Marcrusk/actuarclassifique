@@ -332,6 +332,10 @@
         const result = String(details?.result || '');
         assert(Object.values(CONTACT_CHANNEL).includes(channel), 'Escolha o canal do contato.', 'invalid_channel');
         assert(Object.values(CONTACT_RESULT).includes(result), 'Escolha o resultado do contato.', 'invalid_result');
+        /* A descrição deixou de ser opcional. "3 tentativas" sem dizer o que foi enviado em
+           cada uma não é formalização — é um contador, e não sustenta encerrar um chamado
+           por falta de retorno na frente de quem abriu. */
+        assert(String(details?.note || '').trim().length >= 3, 'Descreva o que foi enviado nesta tentativa.', 'note_required');
         const attempt = {
             id: `try-${now}-${attemptsOf(atendimento).length + 1}`,
             channel, result,
@@ -365,11 +369,45 @@
             'resolution_reason_required');
         const detail = String(outcome?.detail || '').trim();
         assert(detail.length >= RESOLUTION_DETAIL_MIN, `Descreva o desfecho em pelo menos ${RESOLUTION_DETAIL_MIN} caracteres.`, 'resolution_detail_required');
-        if (reason === 'no_answer') {
-            const progresso = noAnswerProgress(attendance);
-            assert(progresso.allowed, `Registre ${NO_ANSWER_MIN_ATTEMPTS} tentativas de contato antes de encerrar por falta de retorno. Há ${progresso.done}.`, 'attempts_required');
-        }
+        /* "Sem retorno do cliente" deixou de ser desfecho de conclusão: concluir manda para
+           APROVAÇÃO, e um chamado sem contato não terminou — ele espera. Agora tem porta
+           própria (`markNoAnswer`), que mantém o atendimento aberto e leva o card para a
+           esteira certa. Bloquear aqui é o que impede o caminho antigo de voltar. */
+        assert(reason !== 'no_answer', 'Para um cliente que não respondeu, use "Marcar sem retorno" na ficha — o atendimento continua com você e o chamado vai para a esteira de sem retorno.', 'use_mark_no_answer');
         return { resolution, reason, detail };
+    }
+
+    /* SEM RETORNO DO CLIENTE — PORTA DO ANALISTA
+       A etapa já existia e só a gestão a alcançava. Sem porta, o analista usava a única que
+       tinha — concluir — e concluir manda para APROVAÇÃO: um chamado em que ele nunca falou
+       com o cliente terminava aprovado e pontuado, longe da esteira de sem retorno.
+
+       Marcar não conclui: o atendimento continua com ele, com a ficha, as tentativas e as
+       notas. Se o cliente responder, retoma de onde parou. */
+    function noAnswerReady(attendance) {
+        const descritas = attemptsOf(attendance).filter(item => String(item.note || '').trim().length >= 3);
+        return { done: descritas.length, required: NO_ANSWER_MIN_ATTEMPTS, missing: Math.max(0, NO_ANSWER_MIN_ATTEMPTS - descritas.length), allowed: descritas.length >= NO_ANSWER_MIN_ATTEMPTS };
+    }
+
+    function markNoAnswer(input, actorId, now = Date.now()) {
+        const rotation = withActive(clone(input));
+        const atual = assertOwnAttendance(rotation, actorId);
+        assert(!atual.noAnswerAt, 'Este atendimento já está marcado como sem retorno.', 'already_no_answer');
+        const progresso = noAnswerReady(atual);
+        assert(progresso.allowed, `Formalize ${NO_ANSWER_MIN_ATTEMPTS} tentativas com a descrição do que foi enviado. Há ${progresso.done}.`, 'attempts_required');
+        replaceActive(rotation, { ...atual, noAnswerAt: now });
+        return appendEvents(rotation, [event('attendance_no_answer', rotation, { analystId: actorId, actorId, now })]);
+    }
+
+    /* O cliente voltou a responder: o atendimento sai da espera e continua com quem já o
+       conduzia — é para isso que ele ficou aberto. */
+    function resumeFromNoAnswer(input, actorId, now = Date.now()) {
+        const rotation = withActive(clone(input));
+        const atual = activeOf(rotation, actorId);
+        if (!atual || !atual.noAnswerAt) return rotation;
+        const { noAnswerAt, ...retomado } = atual;
+        replaceActive(rotation, retomado);
+        return appendEvents(rotation, [event('attendance_resumed', rotation, { analystId: actorId, actorId, now })]);
     }
 
     function complete(input, actorId, priorityId, now = Date.now(), outcome = null) {
@@ -545,6 +583,7 @@
         CONTACT_CHANNEL, CONTACT_RESULT, CONTACT_CHANNEL_LABEL, CONTACT_RESULT_LABEL,
         RESOLUTION, RESOLUTION_REASONS, RESOLUTION_LABEL, RESOLUTION_REASON_LABEL,
         NO_ANSWER_MIN_ATTEMPTS, RESOLUTION_DETAIL_MIN,
-        logContact, addNote, attemptsOf, notesOf, noAnswerProgress, normalizeOutcome
+        logContact, addNote, attemptsOf, notesOf, noAnswerProgress, normalizeOutcome,
+        noAnswerReady, markNoAnswer, resumeFromNoAnswer
     };
 });
