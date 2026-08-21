@@ -136,6 +136,9 @@
             {
                 id: 'operacao', title: 'Operação', items: [
                     { id: 'pecas', label: 'Operação de peças', icon: 'fi-rr-box-open', route: rota('pecas') },
+                    /* Só o Toletus Lab. Ele valida e pontua a peça na entrada, mas a nota
+                       avulsa do analista ainda dependia de a gestão abrir o Modo Gestão. */
+                    { id: 'pontuacao', label: 'Pontuação de peças', icon: 'fi-rr-star', route: rota('pontuacao'), when: () => Boolean(abas.pontuacao) },
                     { id: 'envio', label: 'Envio', icon: 'fi-rr-truck-side', route: rota('envio'), when: () => Boolean(abas.envio) },
                     { id: 'coleta', label: 'Coleta', icon: 'fi-rr-inbox', route: rota('coleta'), when: () => Boolean(abas.coleta) }
                 ]

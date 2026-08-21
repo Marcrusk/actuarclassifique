@@ -610,7 +610,7 @@ test('acesso por equipe: Catraca abre Envio e Coleta, Software abre Tasks', () =
         assert.ok(html.includes(`<div id="${tela}" class="hidden space-y-6">`), `tela ausente: ${tela}`);
     }
     for (const meta of [/envio: \{ title: 'Envio'/, /coleta: \{ title: 'Coleta'/, /tasks: \{ title: 'Tasks'/]) assert.match(html, meta);
-    assert.match(html, /const views = \{ ranking: 'viewRanking', envio: 'viewEnvio', coleta: 'viewColeta', tasks: 'viewTasks', faq: 'viewFaq', pecas: 'viewPecas' \};/);
+    assert.match(html, /const views = \{ ranking: 'viewRanking', envio: 'viewEnvio', coleta: 'viewColeta', tasks: 'viewTasks', faq: 'viewFaq', pecas: 'viewPecas', pontuacao: 'viewPontuacaoPecas' \};/);
 
     // A regra de quem vê o quê continua sendo uma função só, agora consumida pelo menu.
     const inicio = html.indexOf('function publicTabAccess()');
@@ -625,10 +625,10 @@ test('acesso por equipe: Catraca abre Envio e Coleta, Software abre Tasks', () =
     };
     const para = (id, opts = {}) => acesso(() => ({ users: usuarios }), usuarios, Boolean(opts.peca), opts.peca || null, id, 'Toletus Lab')();
 
-    assert.deepEqual(para('dyego'), { envio: true, coleta: true, tasks: false, pecas: true }, 'Catraca movimenta peça, não vê Tasks');
-    assert.deepEqual(para('lucas'), { envio: false, coleta: false, tasks: true, pecas: false }, 'Software vê só Tasks: solicitação de peça é trabalho de Catraca');
-    assert.deepEqual(para('lucas', { peca: 'jeremias' }), { envio: true, coleta: true, tasks: false, pecas: true }, 'no acesso do Lab valem Envio e Coleta');
-    assert.deepEqual(para('ninguem'), { envio: false, coleta: false, tasks: false, pecas: false }, 'sem equipe resolvida, nenhuma aba de operação');
+    assert.deepEqual(para('dyego'), { envio: true, coleta: true, tasks: false, pecas: true, pontuacao: false }, 'Catraca movimenta peça, não vê Tasks');
+    assert.deepEqual(para('lucas'), { envio: false, coleta: false, tasks: true, pecas: false, pontuacao: false }, 'Software vê só Tasks: solicitação de peça é trabalho de Catraca');
+    assert.deepEqual(para('lucas', { peca: 'jeremias' }), { envio: true, coleta: true, tasks: false, pecas: true, pontuacao: true }, 'no acesso do Lab valem Envio, Coleta e a pontuação de peças');
+    assert.deepEqual(para('ninguem'), { envio: false, coleta: false, tasks: false, pecas: false, pontuacao: false }, 'sem equipe resolvida, nenhuma aba de operação');
 
     // É essa mesma função que monta o menu — não existe segunda lista de permissão.
     assert.match(html, /publicTabs: publicTabAccess\(\)/);

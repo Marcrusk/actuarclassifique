@@ -2297,22 +2297,10 @@
                      peças deste mês não teria como ser lançada, e o analista de catraca
                      ficaria sem a métrica no ranking. A partir do próximo ciclo a pontuação
                      volta a sair da central, e esta área pode sair junto. -->
-                <section class="piece-manual-score" aria-labelledby="pieceManualTitle">
-                    <header>
-                        <span class="rotation-eyebrow">Lançamento manual · ponte deste ciclo</span>
-                        <h3 id="pieceManualTitle">Nota de peças do analista</h3>
-                        <p>Enquanto o ciclo já aberto não passa pela central, a gestão lança a nota direto. O valor entra no total do analista como qualquer pontuação de peça.</p>
-                    </header>
-                    <form onsubmit="submitManualPieceScore(event)">
-                        <div class="actuar-field"><label for="pieceManualAnalyst">Analista de catraca</label><select id="pieceManualAnalyst" required></select></div>
-                        <div class="actuar-field"><label for="pieceManualScore">Nota</label><input id="pieceManualScore" type="number" min="0" max="100" step="1" required placeholder="0 a 100"></div>
-                        <div class="actuar-field"><label for="pieceManualNote">Observação</label><input id="pieceManualNote" maxlength="160" autocomplete="off" placeholder="O que a nota considerou (opcional)"></div>
-                        <button type="submit" class="actuar-btn actuar-btn-primary"><i class="fi fi-rr-check"></i>Lançar nota</button>
-                    </form>
-                    <!-- O que já foi lançado fica à vista: sem isto, saber se a nota de alguém
-                         já entrou exigiria procurar no Histórico. -->
-                    <div id="pieceManualRecent" class="piece-manual-recent" aria-live="polite"></div>
-                </section>
+                <!-- A ficha é montada por renderManualPieceScore(). A mesma ponte serve à
+                     gestão aqui e ao Toletus Lab em #/pontuacao: duas cópias do formulário
+                     no HTML seriam duas regras de pontuação para manter em dia. -->
+                <div id="admManualPieceScore"></div>
                 <div id="admPiecesModule" class="pieces-module" aria-live="polite"></div>
             </div>
             <!-- FIM PAINEL PEÇAS CATRACA -->
@@ -2467,6 +2455,15 @@
                 </div>
             </section>
             <div id="piecesModuleStandalone" class="pieces-module" aria-live="polite"></div>
+        </div>
+
+        <!-- VISÃO PONTUAÇÃO DE PEÇAS — TOLETUS LAB
+             Quem valida a peça na entrada é o Lab, mas a nota avulsa do analista só saía
+             do Modo Gestão: Antônio e Jeremias validavam e ficavam dependendo de a gestão
+             abrir a tela para o ponto entrar. É a MESMA ponte do painel de peças da
+             gestão, montada aqui — não uma segunda regra de pontuação. -->
+        <div id="viewPontuacaoPecas" class="hidden space-y-6">
+            <div id="labManualPieceScore"></div>
         </div>
 
         <div id="piecesRequestModal" class="hidden rotation-modal-layer pieces-modal-layer" role="dialog" aria-modal="true" aria-labelledby="piecesRequestTitle">
@@ -4693,6 +4690,7 @@
             notifications: { title: 'Notificações', description: 'Acompanhe decisões, prazos e eventos relacionados ao seu trabalho.' },
             admin: { title: 'Modo Gestão', description: 'Gerencie usuários, lançamentos, validações e o histórico da operação.' },
             pecas: { title: 'Operação de peças', description: 'Processe notas fiscais, envios, coletas e rastreios até a conclusão.' },
+            pontuacao: { title: 'Pontuação de peças', description: 'Lance a nota de peças do analista de catraca, fora do fluxo da central.' },
             profile: { title: 'Editar perfil', description: 'Atualize seus dados permitidos e altere sua senha de acesso.' }
         };
 
@@ -4839,7 +4837,7 @@
                 console.error('Falha ao desenhar a tela:', erro);
                 showToast('Parte desta tela não pôde ser carregada. Atualize a página se algo estiver faltando.', 'error');
             }
-            if (['dashboard', 'priorities', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'pecas'].includes(currentRoute.name)) {
+            if (['dashboard', 'priorities', 'ranking', 'envio', 'coleta', 'tasks', 'faq', 'pecas', 'pontuacao'].includes(currentRoute.name)) {
                 switchPublicTabView(currentRoute.name);
                 if (currentRoute.name === 'priorities') focusPrioritySection(currentRoute.section);
             }
@@ -6138,14 +6136,80 @@
            é isso que permite separar o que veio da ponte do que veio do fluxo, sem depender
            de olhar a data.
            ========================================================================== */
+        /* QUEM LANÇA
+           Era só a gestão, e o efeito prático era o Toletus Lab validar a peça na entrada
+           e ficar esperando alguém abrir o Modo Gestão para a nota do analista entrar.
+           Antônio e Jeremias já validam e pontuam dentro do fluxo; a nota avulsa era a
+           última parte que ainda dependia de outra pessoa.
+
+           O escopo continua sendo de cada um: a gestão alcança os analistas que ela
+           gerencia, o Lab alcança os analistas de catraca — os únicos que esta ponte
+           pontua. Sem acesso, não há ficha na tela nem lançamento aceito. */
+        function isCatracaAnalyst(user) {
+            return Boolean(user && user.active !== false && user.team === 'Catraca' && user.role === 'Analista de catraca');
+        }
+
+        function manualPieceScoreAccess() {
+            if (isAdminLoggedIn) return { mount: 'admManualPieceScore', actorId: currentAdminId, canSee: id => canManagerViewAnalyst(id) };
+            const usuarios = getStore()?.users || defaultUsers;
+            const operador = isPecaLoggedIn ? usuarios[currentPecaUserId] : null;
+            if (operador && operador.active !== false && operador.role === LAB_ROLE_NAME) {
+                return { mount: 'labManualPieceScore', actorId: currentPecaUserId, canSee: id => isCatracaAnalyst(usuarios[id]) };
+            }
+            return null;
+        }
+
         function manualPieceScoreLogs() {
+            const acesso = manualPieceScoreAccess();
+            if (!acesso) return [];
             return (getStore()?.logs || [])
-                .filter(log => log.type === 'PECA' && log.manualEntry && canManagerViewAnalyst(log.userId))
+                .filter(log => log.type === 'PECA' && log.manualEntry && acesso.canSee(log.userId))
                 .sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
         }
 
+        const MANUAL_PIECE_MOUNTS = ['admManualPieceScore', 'labManualPieceScore'];
+
+        function manualPieceScoreMarkup() {
+            return `<section class="piece-manual-score" aria-labelledby="pieceManualTitle">
+                <header>
+                    <span class="rotation-eyebrow">Lançamento manual · ponte deste ciclo</span>
+                    <h3 id="pieceManualTitle">Nota de peças do analista</h3>
+                    <p>Enquanto o ciclo já aberto não passa pela central, a nota é lançada direto aqui. O valor entra no total do analista como qualquer pontuação de peça.</p>
+                </header>
+                <form onsubmit="submitManualPieceScore(event)">
+                    <div class="actuar-field"><label for="pieceManualAnalyst">Analista de catraca</label><select id="pieceManualAnalyst" required></select></div>
+                    <div class="actuar-field"><label for="pieceManualScore">Nota</label><input id="pieceManualScore" type="number" min="0" max="100" step="1" required placeholder="0 a 100"></div>
+                    <div class="actuar-field"><label for="pieceManualNote">Observação</label><input id="pieceManualNote" maxlength="160" autocomplete="off" placeholder="O que a nota considerou (opcional)"></div>
+                    <button type="submit" class="actuar-btn actuar-btn-primary"><i class="fi fi-rr-check"></i>Lançar nota</button>
+                </form>
+                <!-- O que já foi lançado fica à vista: sem isto, saber se a nota de alguém
+                     já entrou exigiria procurar no Histórico. -->
+                <div id="pieceManualRecent" class="piece-manual-recent" aria-live="polite"></div>
+            </section>`;
+        }
+
         function renderManualPieceScore() {
-            const area = document.getElementById('pieceManualRecent');
+            const acesso = manualPieceScoreAccess();
+            // O mount de quem não está na tela fica vazio: o formulário tem ids únicos,
+            // e duas cópias no DOM fariam getElementById devolver a errada.
+            MANUAL_PIECE_MOUNTS.forEach(id => {
+                const outro = document.getElementById(id);
+                if (outro && (!acesso || acesso.mount !== id)) outro.replaceChildren();
+            });
+            const mount = acesso ? document.getElementById(acesso.mount) : null;
+            if (!mount) return;
+            /* A ficha é montada UMA vez. Redesenhá-la a cada render() apagaria o que a
+               pessoa está digitando — a tela se redesenha sozinha quando o store sincroniza. */
+            if (!mount.querySelector('.piece-manual-score')) mount.innerHTML = manualPieceScoreMarkup();
+            /* A lista de analistas, ao contrário, acompanha o cadastro: quem entrou ou saiu
+               desde que a ficha foi montada precisa aparecer. A escolha em curso é devolvida
+               ao select, senão trocar de tela no meio do preenchimento zeraria o campo. */
+            const select = mount.querySelector('#pieceManualAnalyst');
+            const escolhido = select ? select.value : '';
+            populateCatracaAnalystOptions('pieceManualAnalyst');
+            if (select && escolhido && select.querySelector(`option[value="${escolhido}"]`)) select.value = escolhido;
+
+            const area = mount.querySelector('#pieceManualRecent');
             if (!area) return;
             const usuarios = getStore()?.users || defaultUsers;
             const lancamentos = manualPieceScoreLogs();
@@ -6167,10 +6231,12 @@
             const nota = Number(document.getElementById('pieceManualScore').value);
             const observacao = document.getElementById('pieceManualNote').value.trim();
 
-            /* A tela só é montada dentro do Modo Gestão, mas quem concede ponto confere
-               permissão de novo: o formulário existe no DOM da página inteira. */
-            if (!isAdminLoggedIn) { showToast('Somente a gestão lança nota de peças.', 'error'); return; }
-            if (!analystId || !canManagerViewAnalyst(analystId)) { showToast('Escolha um analista dentro do seu escopo de gestão.', 'error'); return; }
+            /* Quem concede ponto confere permissão de novo: o formulário existe no DOM da
+               página inteira, e o escopo é conferido junto do perfil — não basta ser
+               gestão ou Lab, o analista tem de estar ao alcance de quem lança. */
+            const acesso = manualPieceScoreAccess();
+            if (!acesso) { showToast('Somente a gestão e o Toletus Lab lançam nota de peças.', 'error'); return; }
+            if (!analystId || !acesso.canSee(analystId)) { showToast('Escolha um analista de catraca dentro do seu escopo.', 'error'); return; }
             if (!Number.isFinite(nota) || nota < 0 || nota > 100) { showToast('A nota precisa estar entre 0 e 100.', 'error'); return; }
 
             const usuarios = getStore()?.users || defaultUsers;
@@ -6185,7 +6251,7 @@
             const registro = {
                 id: uid(), type: 'PECA', userId: analystId, value: Math.round(nota),
                 tipo: 'Nota de peças (lançamento manual)', note: observacao,
-                manualEntry: true, registradoPor: currentAdminId, timestamp: Date.now()
+                manualEntry: true, registradoPor: acesso.actorId, timestamp: Date.now()
             };
             appStore.logs.push(registro);
             const ok = await persistStore();
@@ -8190,6 +8256,9 @@
             tasks:      { periodo: false, contexto: false },
             faq:        { periodo: false, contexto: false },
             pecas:      { periodo: false, contexto: false },
+            // A nota lançada entra no ciclo em andamento: um seletor de mês na barra
+            // prometeria escolher o período do lançamento, e não é o que acontece.
+            pontuacao:  { periodo: false, contexto: false },
             profile:    { periodo: false, contexto: false }
         };
 
@@ -8285,7 +8354,7 @@
                — ranking, dashboards e nomes de analistas continuariam no DOM, visíveis no
                código-fonte da página para quem tem só o link do portal. */
             if (isPortalRoute()) {
-                ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin', 'viewProfile', 'viewPlatform']
+                ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewPontuacaoPecas', 'viewAdmin', 'viewProfile', 'viewPlatform']
                     .forEach(id => document.getElementById(id)?.classList.add('hidden'));
                 document.getElementById('globalNavBody')?.replaceChildren();
                 renderPortal();
@@ -8299,7 +8368,7 @@
             const metrics = getAggregatedMetrics(activeMonthKey, activePeriodFilter);
 
             if (window.PerformancePlatform && PerformancePlatform.isSecureRoute(currentRoute.name)) {
-                ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin', 'viewProfile'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+                ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewPontuacaoPecas', 'viewAdmin', 'viewProfile'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
                 document.getElementById('viewPlatform')?.classList.remove('hidden');
                 PerformancePlatform.renderCurrentRoute(currentRoute);
                 finalizeActuarUi();
@@ -8317,7 +8386,7 @@
 
             const profileView = document.getElementById('viewProfile');
             if (currentRoute.name === 'profile') {
-                ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin'].forEach(id => document.getElementById(id).classList.add('hidden'));
+                ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewPontuacaoPecas', 'viewAdmin'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
                 profileView.classList.remove('hidden');
                 renderProfileScreen(currentRoute.section);
                 finalizeActuarUi();
@@ -8350,6 +8419,7 @@
                 document.getElementById('viewTasks').classList.add('hidden');
                 document.getElementById('viewFaq').classList.add('hidden');
                 document.getElementById('viewPecas').classList.add('hidden');
+                document.getElementById('viewPontuacaoPecas').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
                 syncManagerSectionViews();
                 /* Depois de preencher a barra, quem manda é a escolha dela: `currentActiveUser`
@@ -8368,7 +8438,6 @@
                 renderManagerPanel('transferências', renderAdminTransferRequests);
                 renderManagerPanel('experiência gerencial', renderManagerExperience);
                 if (activeAdminTab === 'pecas') renderManagerPanel('peças', renderPiecesExperience);
-                renderManualPieceScore();
                 window.updatePiecesPendingBadge?.();
             } else if (currentRoute.name === 'pecas') {
                 document.getElementById('viewAgent').classList.add('hidden');
@@ -8378,12 +8447,20 @@
                 document.getElementById('viewTasks').classList.add('hidden');
                 document.getElementById('viewFaq').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.add('hidden');
+                document.getElementById('viewPontuacaoPecas').classList.add('hidden');
                 document.getElementById('viewPecas').classList.remove('hidden');
                 document.getElementById('piecesAnalystEntry')?.classList.toggle('hidden', isPecaLoggedIn || window.canRequestPieces?.() === false);
                 renderPiecesExperience();
+            } else if (currentRoute.name === 'pontuacao') {
+                /* Tela do Toletus Lab. A ficha é montada logo abaixo por
+                   renderManualPieceScore(), que decide sozinho o mount pelo perfil. */
+                ['viewAgent', 'viewRanking', 'viewEnvio', 'viewColeta', 'viewTasks', 'viewFaq', 'viewPecas', 'viewAdmin']
+                    .forEach(id => document.getElementById(id)?.classList.add('hidden'));
+                document.getElementById('viewPontuacaoPecas').classList.remove('hidden');
             } else {
                 document.getElementById('viewAdmin').classList.add('hidden');
                 document.getElementById('viewPecas').classList.add('hidden');
+                document.getElementById('viewPontuacaoPecas').classList.add('hidden');
                 renderAnalystDashboard(user, usersList, metrics);
             }
 
@@ -8391,6 +8468,11 @@
             // da equipe dele, e a rota precisa acompanhar o que ele pode ver.
             if (!syncPublicTabAccess()) return;
 
+            /* Fora do ramo da gestão: a mesma ficha atende o Modo Gestão e a tela do Lab,
+               e é ela que sabe em qual dos dois mounts se desenhar. Protegida como os
+               painéis da gestão eram: daqui em diante ela roda em toda rota, e uma falha
+               dela derrubaria o desenho do ranking e do dashboard junto. */
+            renderManagerPanel('a nota de peças', renderManualPieceScore);
             renderLeaderboard(metrics);
             renderTopDashboard(metrics);
             renderYouAreHereGauges(metrics);
@@ -9820,7 +9902,7 @@
    Software via a tela inteira no menu — inclusive o contador de peças em aberto, que para
    ele nunca teria número. Esconder o item não basta, e é por isso que a lista existe: a
    rota vive no endereço, e quem colasse #/pecas entraria assim mesmo. */
-        const OPERATION_TABS = ['envio', 'coleta', 'tasks', 'pecas'];
+        const OPERATION_TABS = ['envio', 'coleta', 'tasks', 'pecas', 'pontuacao'];
         function publicTabAccess() {
             const usuarios = getStore()?.users || defaultUsers;
             /* Numa sessão de peças o currentActiveUser continua sendo o analista escolhido no
@@ -9830,10 +9912,12 @@
                ao dashboard pela própria rota. Quem manda na regra é quem está logado. */
             const operador = isPecaLoggedIn ? usuarios[currentPecaUserId] : null;
             // O acesso operacional existe para operar peça: é a tela de trabalho dele.
-            if (operador) return { envio: true, coleta: true, tasks: false, pecas: true };
+            // Lançar nota de peça é do Toletus Lab: Faturamento, Expedição e Envio/Coleta
+            // operam a peça, mas não pontuam o analista.
+            if (operador) return { envio: true, coleta: true, tasks: false, pecas: true, pontuacao: operador.role === LAB_ROLE_NAME };
             const equipe = usuarios[currentActiveUser]?.team || '';
             const catraca = equipe === 'Catraca';
-            return { envio: catraca, coleta: catraca, tasks: equipe === 'Sistema', pecas: catraca };
+            return { envio: catraca, coleta: catraca, tasks: equipe === 'Sistema', pecas: catraca, pontuacao: false };
         }
 
         /* Esconder o botão não basta: a rota vive no endereço, e quem colar
@@ -10079,7 +10163,7 @@
         }
 
         function switchPublicTabView(tab) {
-            const views = { ranking: 'viewRanking', envio: 'viewEnvio', coleta: 'viewColeta', tasks: 'viewTasks', faq: 'viewFaq', pecas: 'viewPecas' };
+            const views = { ranking: 'viewRanking', envio: 'viewEnvio', coleta: 'viewColeta', tasks: 'viewTasks', faq: 'viewFaq', pecas: 'viewPecas', pontuacao: 'viewPontuacaoPecas' };
             const btns = { dashboard: 'btnTabDashboard', priorities: 'btnTabPriorities', pecas: 'btnTabPecas', ranking: 'btnTabRanking', envio: 'btnTabEnvio', coleta: 'btnTabColeta', tasks: 'btnTabTasks', faq: 'btnTabFaq' };
             const activeClass = "px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-glow";
             const inactiveClass = "px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-secondary hover:text-white bg-surface hover:bg-surface2 border border-line";
@@ -11341,18 +11425,19 @@
             persistViewContext();
         }
 
+        /* A lista oferecida é a mesma que o envio aceita. Enquanto ela tinha regra própria
+           (equipe autorizada) e o envio conferia outra (canManagerViewAnalyst), dava para
+           escolher alguém no select e levar erro ao lançar. */
         function populateCatracaAnalystOptions(selectId) {
             const el = document.getElementById(selectId);
             if (!el) return;
-            const store = getStore();
-            const usersList = store.users || defaultUsers;
+            const usersList = getStore()?.users || defaultUsers;
+            const acesso = manualPieceScoreAccess();
             let opts = "";
             Object.keys(usersList).forEach(id => {
-                const u = usersList[id];
-                const teamAuthorized = !isAdminLoggedIn || getManagerAuthorizedTeams().includes('Catraca');
-                if (teamAuthorized && u.team === "Catraca" && u.role === "Analista de catraca" && u.active !== false) {
-                    opts += `<option value="${id}">${u.name}</option>`;
-                }
+                if (!isCatracaAnalyst(usersList[id])) return;
+                if (acesso && !acesso.canSee(id)) return;
+                opts += `<option value="${id}">${escapeHtml(usersList[id].name)}</option>`;
             });
             el.innerHTML = opts || `<option value="">Nenhum analista disponível</option>`;
         }
